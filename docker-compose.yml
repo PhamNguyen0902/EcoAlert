@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: ecoalert_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - ecoalert_network
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: ecoalert_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ecoalert_network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: ecoalert_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - ecoalert_network
+
+  api-gateway:
+    build: 
+      context: ./backend
+      args:
+        SERVICE_NAME: api-gateway
+    container_name: ecoalert_api_gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET}
+      - USER_SERVICE_URL=http://user-service:3001
+      - ALERT_SERVICE_URL=http://alert-service:3002
+      - MEDIA_SERVICE_URL=http://media-service:3003
+      - GIS_SERVICE_URL=http://gis-service:3004
+    depends_on:
+      - user-service
+      - alert-service
+      - media-service
+      - gis-service
+    networks:
+      - ecoalert_network
+
+  user-service:
+    build: 
+      context: ./backend
+      args:
+        SERVICE_NAME: user-service
+    container_name: ecoalert_user_service
+    environment:
+      - PORT=3001
+      - MONGO_URI=${MONGO_URI_USER}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - ecoalert_network
+
+  alert-service:
+    build: 
+      context: ./backend
+      args:
+        SERVICE_NAME: alert-service
+    container_name: ecoalert_alert_service
+    environment:
+      - PORT=3002
+      - MONGO_URI=${MONGO_URI_ALERT}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - ecoalert_network
+
+  media-service:
+    build: 
+      context: ./backend
+      args:
+        SERVICE_NAME: media-service
+    container_name: ecoalert_media_service
+    environment:
+      - PORT=3003
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+    networks:
+      - ecoalert_network
+
+  gis-service:
+    build: 
+      context: ./backend
+      args:
+        SERVICE_NAME: gis-service
+    container_name: ecoalert_gis_service
+    environment:
+      - PORT=3004
+      - MONGO_URI=${MONGO_URI_GIS}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - ecoalert_network
+
+  ai-service:
+    build: 
+      context: ./backend
+      args:
+        SERVICE_NAME: ai-service
+    container_name: ecoalert_ai_service
+    environment:
+      - PORT=3005
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - rabbitmq
+    networks:
+      - ecoalert_network
+
+  notification-service:
+    build: 
+      context: ./backend
+      args:
+        SERVICE_NAME: notification-service
+    container_name: ecoalert_notification_service
+    environment:
+      - PORT=3006
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    depends_on:
+      - rabbitmq
+    networks:
+      - ecoalert_network
+
+networks:
+  ecoalert_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
