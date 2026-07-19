@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: ecoalert_mongodb_infra
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data_infra:/data/db
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: ecoalert_redis_infra
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: ecoalert_rabbitmq_infra
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  mongo_data_infra:
