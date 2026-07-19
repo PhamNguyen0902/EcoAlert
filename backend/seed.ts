@@ -2,14 +2,22 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 
+const atlasUri =
+  "mongodb+srv://son123:son123@cluster0.piq0xrr.mongodb.net"; // Dán chuỗi của bạn vào đây
 // Setup Mongoose connections
-const userDbUri = 'mongodb://localhost:27017/ecoalert-user-db';
-const alertDbUri = 'mongodb://localhost:27017/ecoalert-alert-db';
-const gisDbUri = 'mongodb://localhost:27017/ecoalert-gis-db';
+const userDb = mongoose.createConnection(
+  `${atlasUri}/ecoalert-user-db?retryWrites=true&w=majority`,
+);
+const alertDb = mongoose.createConnection(
+  `${atlasUri}/ecoalert-alert-db?retryWrites=true&w=majority`,
+);
+const gisDb = mongoose.createConnection(
+  `${atlasUri}/ecoalert-gis-db?retryWrites=true&w=majority`,
+);
 
-const userDb = mongoose.createConnection(userDbUri);
-const alertDb = mongoose.createConnection(alertDbUri);
-const gisDb = mongoose.createConnection(gisDbUri);
+// const userDb = mongoose.createConnection(userDbUri);
+// const alertDb = mongoose.createConnection(alertDbUri);
+// const gisDb = mongoose.createConnection(gisDbUri);
 
 // Define Schemas manually for seeding to avoid complex imports
 const userSchema = new mongoose.Schema({
