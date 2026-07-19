@@ -18,5 +18,6 @@ router.post('/', validate(createAlertSchema), asyncHandler(alertController.creat
 router.get('/', asyncHandler(alertController.getAlerts));
 router.get('/:id', asyncHandler(alertController.getAlertById));
 router.patch('/:id/status', validate(updateAlertStatusSchema), asyncHandler(alertController.updateStatus));
+router.delete('/:id', asyncHandler(alertController.deleteAlert));
 
 export default router;

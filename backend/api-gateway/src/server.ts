@@ -5,6 +5,10 @@ import dotenv from 'dotenv';
 import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import jwt from 'jsonwebtoken';
 import { createLogger, HTTP_STATUS, errorResponse } from '@ecoalert/shared';
+import rateLimit from 'express-rate-limit';
+import morgan from 'morgan';
+import Redis from 'ioredis';
+import { randomUUID } from 'crypto';
 
 dotenv.config();
 
@@ -12,9 +16,38 @@ const app = express();
 const logger = createLogger('api-gateway');
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+
+const redisClient = new Redis(REDIS_URL);
+
+redisClient.on('connect', () => logger.info('Gateway connected to Redis'));
+redisClient.on('error', (err) => logger.error('Gateway Redis error:', err));
 
 app.use(cors());
 app.use(helmet());
+
+// Logging
+app.use(morgan('combined', {
+  stream: { write: (message) => logger.info(message.trim()) }
+}));
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: errorResponse('Too many requests, please try again later.')
+});
+app.use(limiter);
+
+// Request ID Injection
+app.use((req, res, next) => {
+  const reqId = randomUUID();
+  req.headers['x-request-id'] = reqId;
+  res.setHeader('x-request-id', reqId);
+  next();
+});
 
 // Health check
 app.get('/health', (req, res) => {
@@ -22,7 +55,7 @@ app.get('/health', (req, res) => {
 });
 
 // Authentication Middleware for Gateway
-const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   // Allow unauthenticated access to certain routes
   const publicRoutes = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh-token'];
   if (publicRoutes.includes(req.path)) {
@@ -35,6 +68,18 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   }
 
   const token = authHeader.split(' ')[1];
+  
+  // Check blacklist
+  try {
+    const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+    if (isBlacklisted) {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json(errorResponse('Token is blacklisted'));
+    }
+  } catch (err) {
+    logger.error('Redis blacklist check error', err);
+    // Proceed if redis is down to not break everything, or fail fast. We fail open here.
+  }
+
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     // Attach to headers so downstream services can read it
@@ -78,8 +123,9 @@ setupProxy('/api/v1/users', process.env.USER_SERVICE_URL || 'http://localhost:30
 setupProxy('/api/v1/alerts', process.env.ALERT_SERVICE_URL || 'http://localhost:3002');
 setupProxy('/api/v1/media', process.env.MEDIA_SERVICE_URL || 'http://localhost:3003');
 setupProxy('/api/v1/gis', process.env.GIS_SERVICE_URL || 'http://localhost:3004');
+setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006');
 
-// Note: AI and Notification services are event-driven, they don't expose public REST APIs to the frontend.
+// Note: AI service is event-driven, it doesn't expose public REST APIs to the frontend.
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

@@ -14,7 +14,7 @@ const refreshTokenSchema = new Schema<IRefreshToken>({
 }, { timestamps: true });
 
 refreshTokenSchema.plugin(baseSchemaPlugin);
-refreshTokenSchema.index({ token: 1 }, { unique: true });
+
 refreshTokenSchema.index({ userId: 1 });
 refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
