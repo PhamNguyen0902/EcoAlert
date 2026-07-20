@@ -1,39 +1,42 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useLogin } from '../hooks/hooks';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import { Leaf } from 'lucide-react';
-import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useLogin } from "../hooks/hooks";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Leaf } from "lucide-react";
+import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const navigate = useNavigate();
   const loginMutation = useLogin();
-  const [email, setEmail] = useState('john.citizen@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    loginMutation.mutate({ email, password }, {
-      onSuccess: (data) => {
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('refreshToken', data.data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
-        toast.success('Successfully logged in');
-        navigate('/dashboard');
+    loginMutation.mutate(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          localStorage.setItem("token", data.data.token);
+          localStorage.setItem("refreshToken", data.data.refreshToken);
+          localStorage.setItem("user", JSON.stringify(data.data.user));
+          toast.success("Successfully logged in");
+          navigate("/dashboard");
+        },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.message || "Login failed");
+        },
       },
-      onError: (err: any) => {
-        toast.error(err.response?.data?.message || 'Login failed');
-      }
-    });
+    );
   };
 
   return (
     <div className="flex min-h-screen bg-slate-50">
       <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -50,8 +53,11 @@ export default function Login() {
               Sign in to your account
             </h2>
             <p className="mt-2 text-sm leading-6 text-gray-500">
-              Not a member?{' '}
-              <Link to="/register" className="font-semibold text-primary hover:text-primary/80">
+              Not a member?{" "}
+              <Link
+                to="/register"
+                className="font-semibold text-primary hover:text-primary/80"
+              >
                 Register now
               </Link>
             </p>
@@ -67,6 +73,7 @@ export default function Login() {
                     name="email"
                     type="email"
                     autoComplete="email"
+                    placeholder="exmaple@gmail.com"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -85,13 +92,18 @@ export default function Login() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
                   />
                 </div>
               </div>
 
               <div>
-                <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-                  {loginMutation.isPending ? 'Signing in...' : 'Sign in'}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Signing in..." : "Sign in"}
                 </Button>
               </div>
             </form>
@@ -105,7 +117,7 @@ export default function Login() {
           alt="Forest background"
         />
         <div className="absolute inset-0 flex flex-col justify-center px-12 text-white">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
@@ -113,13 +125,14 @@ export default function Login() {
           >
             Protecting our environment, together.
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
             className="mt-6 text-xl max-w-xl text-green-50"
           >
-            EcoAlert leverages AI and real-time GIS to instantly classify and route environmental incidents to the right authorities.
+            EcoAlert leverages AI and real-time GIS to instantly classify and
+            route environmental incidents to the right authorities.
           </motion.p>
         </div>
       </div>
