@@ -92,7 +92,7 @@ async function seed() {
 
     const users = await User.insertMany([
       {
-        email: "admin@ecoalert.local",
+        email: "admin@gmail.com",
         password: hashPassword("admin123"),
         fullName: "Super Admin",
         role: "ADMIN",
@@ -101,7 +101,7 @@ async function seed() {
         isDeleted: false,
       },
       {
-        email: "officer1@ecoalert.local",
+        email: "officer1@gmail.com",
         password: hashPassword("officer123"),
         fullName: "John Doe",
         role: "OFFICER",
@@ -110,7 +110,7 @@ async function seed() {
         isDeleted: false,
       },
       {
-        email: "officer2@ecoalert.local",
+        email: "officer2@gmail.com",
         password: hashPassword("officer123"),
         fullName: "Jane Smith",
         role: "OFFICER",
@@ -119,7 +119,7 @@ async function seed() {
         isDeleted: false,
       },
       {
-        email: "citizen1@ecoalert.local",
+        email: "citizen1@gmail.com",
         password: hashPassword("citizen123"),
         fullName: "Alice Johnson",
         role: "CITIZEN",
@@ -128,7 +128,7 @@ async function seed() {
         isDeleted: false,
       },
       {
-        email: "citizen2@ecoalert.local",
+        email: "citizen2@gmail.com",
         password: hashPassword("citizen123"),
         fullName: "Bob Williams",
         role: "CITIZEN",
@@ -137,7 +137,7 @@ async function seed() {
         isDeleted: false,
       },
       {
-        email: "citizen3@ecoalert.local",
+        email: "citizen3@gmail.com",
         password: hashPassword("citizen123"),
         fullName: "Charlie Brown",
         role: "CITIZEN",
@@ -146,7 +146,7 @@ async function seed() {
         isDeleted: false,
       },
       {
-        email: "citizen4@ecoalert.local",
+        email: "citizen4@gmail.com",
         password: hashPassword("citizen123"),
         fullName: "David Clark",
         role: "CITIZEN",
@@ -155,7 +155,7 @@ async function seed() {
         isDeleted: false,
       },
       {
-        email: "citizen5@ecoalert.local",
+        email: "citizen5@gmail.com",
         password: hashPassword("citizen123"),
         fullName: "Eve Davis",
         role: "CITIZEN",
