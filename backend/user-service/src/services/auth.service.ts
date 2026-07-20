@@ -33,7 +33,7 @@ export class AuthService {
     const userObj = user.toObject();
     delete userObj.password;
 
-    return { user: userObj, ...tokens };
+    return { user: userObj, ...tokens, token: tokens.accessToken };
   }
 
   async login(data: LoginDto) {
@@ -73,7 +73,7 @@ export class AuthService {
     const userObj = user.toObject();
     delete userObj.password;
 
-    return { user: userObj, ...tokens };
+    return { user: userObj, ...tokens, token: tokens.accessToken };
   }
 
   async refreshToken(oldRefreshToken: string) {
@@ -95,7 +95,8 @@ export class AuthService {
       role: user.role as UserRole,
     };
 
-    return tokenService.generateAuthTokens(payload);
+    const tokens = await tokenService.generateAuthTokens(payload);
+    return { ...tokens, token: tokens.accessToken };
   }
 }
 

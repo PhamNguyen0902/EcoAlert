@@ -69,6 +69,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   const token = authHeader.split(' ')[1];
+  logger.info(`Received token of length ${token?.length}: "${token?.substring(0, 30)}..."`);
   
   // Check blacklist
   try {
