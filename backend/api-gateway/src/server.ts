@@ -58,7 +58,8 @@ app.get('/health', (req, res) => {
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   // Allow unauthenticated access to certain routes
   const publicRoutes = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh-token'];
-  if (publicRoutes.includes(req.path)) {
+  const cleanPath = req.originalUrl.split('?')[0];
+  if (publicRoutes.includes(cleanPath)) {
     return next();
   }
 
@@ -97,12 +98,13 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 app.use('/api', verifyToken);
 
 // Proxy configuration
-const setupProxy = (path: string, target: string) => {
+const setupProxy = (path: string, target: string, rewrite: boolean = false) => {
   app.use(
     path,
     createProxyMiddleware({
       target,
       changeOrigin: true,
+      pathRewrite: rewrite ? { [`^${path}`]: '' } : undefined,
       onProxyReq: fixRequestBody,
       onError: (err, req, res) => {
         logger.error(`Proxy error for ${path}`, err);
@@ -120,10 +122,10 @@ const setupProxy = (path: string, target: string) => {
 
 setupProxy('/api/v1/auth', process.env.USER_SERVICE_URL || 'http://localhost:3001');
 setupProxy('/api/v1/users', process.env.USER_SERVICE_URL || 'http://localhost:3001');
-setupProxy('/api/v1/alerts', process.env.ALERT_SERVICE_URL || 'http://localhost:3002');
-setupProxy('/api/v1/media', process.env.MEDIA_SERVICE_URL || 'http://localhost:3003');
-setupProxy('/api/v1/gis', process.env.GIS_SERVICE_URL || 'http://localhost:3004');
-setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006');
+setupProxy('/api/v1/alerts', process.env.ALERT_SERVICE_URL || 'http://localhost:3002', true);
+setupProxy('/api/v1/media', process.env.MEDIA_SERVICE_URL || 'http://localhost:3003', true);
+setupProxy('/api/v1/gis', process.env.GIS_SERVICE_URL || 'http://localhost:3004', true);
+setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', true);
 
 // Note: AI service is event-driven, it doesn't expose public REST APIs to the frontend.
 
