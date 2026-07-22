@@ -106,8 +106,11 @@ export const userService = {
     const res = await api.patch("/v1/users/change-password", data);
     return res.data.data;
   },
-  getUsers: async (page = 1, limit = 10): Promise<PaginatedResult<User>> => {
-    const res = await api.get(`/v1/users?page=${page}&limit=${limit}`);
+  getUsers: async (page = 1, limit = 10, role?: string, search?: string): Promise<PaginatedResult<User>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (role && role !== 'all') params.append('role', role);
+    if (search) params.append('search', search);
+    const res = await api.get(`/v1/users?${params}`);
     return res.data.data;
   },
   getUserById: async (id: string): Promise<User> => {

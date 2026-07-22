@@ -182,10 +182,16 @@ export const useUpdateProfile = () => {
   });
 };
 
-export const useUsers = (page = 1, limit = 10) => {
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: userService.changePassword,
+  });
+};
+
+export const useUsers = (page = 1, limit = 10, role?: string, search?: string) => {
   return useQuery({
-    queryKey: ["users", page, limit],
-    queryFn: () => userService.getUsers(page, limit),
+    queryKey: ["users", page, limit, role, search],
+    queryFn: () => userService.getUsers(page, limit, role, search),
   });
 };
 

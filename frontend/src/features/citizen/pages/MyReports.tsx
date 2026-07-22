@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Search, Eye, FileText, Plus, Trash2 } from "lucide-react";
+import { Search, Eye, FileText, Plus, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import type { Alert } from "@/types";
+import EditReportModal from "../components/EditReportModal";
 
 const severityColor: Record<string, string> = {
   critical: "destructive",
@@ -29,6 +30,7 @@ export default function MyReports() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
 
   // Hook lấy danh sách báo cáo & Hook xóa báo cáo
   const { data: alertsData, isLoading } = useAlerts(
@@ -47,7 +49,6 @@ export default function MyReports() {
 
   // Hàm xử lý Xóa / Hủy báo cáo
   const handleDelete = (id: string, status: string) => {
-    // Chỉ cho phép hủy/xóa khi báo cáo chưa được cán bộ xử lý
     if (status !== "pending" && status !== "ai_analyzing") {
       toast.error("Chỉ có thể xóa báo cáo khi đang ở trạng thái chờ duyệt!");
       return;
@@ -73,7 +74,7 @@ export default function MyReports() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">My Reports</h1>
           <p className="text-muted-foreground mt-1">
-            Track the status of your environmental incident reports
+            Track and manage your environmental incident reports
           </p>
         </div>
         <Button asChild>
@@ -110,8 +111,7 @@ export default function MyReports() {
       ) : (
         <div className="space-y-3">
           {alerts.map((alert, i) => {
-            // Kiểm tra báo cáo có thể hủy hay không
-            const canDelete =
+            const canEditOrDelete =
               alert.status === "pending" || alert.status === "ai_analyzing";
 
             return (
@@ -169,7 +169,7 @@ export default function MyReports() {
                         </div>
                       </div>
 
-                      {/* Nhóm nút hành động: Xem chi tiết + Xóa */}
+                      {/* Action buttons: View, Edit, Delete */}
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
                           variant="ghost"
@@ -182,20 +182,31 @@ export default function MyReports() {
                           </Link>
                         </Button>
 
-                        {/* Nút Xóa (chỉ hiển thị khi báo cáo ở trạng thái chờ duyệt) */}
-                        {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            onClick={() =>
-                              handleDelete(alert._id, alert.status)
-                            }
-                            disabled={deleteAlertMutation.isPending}
-                            title="Delete / Cancel Report"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        {canEditOrDelete && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                              onClick={() => setEditingAlert(alert)}
+                              title="Edit Report"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              onClick={() =>
+                                handleDelete(alert._id, alert.status)
+                              }
+                              disabled={deleteAlertMutation.isPending}
+                              title="Delete / Cancel Report"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -231,6 +242,14 @@ export default function MyReports() {
             </Button>
           </div>
         </div>
+      )}
+
+      {editingAlert && (
+        <EditReportModal
+          alert={editingAlert}
+          isOpen={!!editingAlert}
+          onClose={() => setEditingAlert(null)}
+        />
       )}
     </div>
   );
