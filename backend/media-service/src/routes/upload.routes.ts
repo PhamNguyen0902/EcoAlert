@@ -7,7 +7,7 @@ const router = Router();
 
 // Multer in-memory storage
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
@@ -25,6 +25,10 @@ const requireAuth = (req: any, res: any, next: any) => {
   next();
 };
 
-router.post('/upload', requireAuth, upload.single('image'), asyncHandler(uploadController.upload));
-
+router.post(
+  '/upload',
+  requireAuth,
+  upload.single('image'),
+  asyncHandler(uploadController.upload)
+);
 export default router;

@@ -11,25 +11,25 @@ const s3Client = new S3Client({
 });
 
 export class S3Service {
-  async uploadImage(file: Express.Multer.File, folder: string = 'ecoalert/alerts'): Promise<string> {
+  async uploadImage(file: Express.Multer.File, folder = 'ecoalert/alerts') {
+
     try {
       const fileExtension = file.originalname.split('.').pop() || 'jpg';
       const key = `${folder}/${randomUUID()}.${fileExtension}`;
-      const bucketName = process.env.AWS_S3_BUCKET_NAME;
 
       const command = new PutObjectCommand({
-        Bucket: bucketName,
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: key,
         Body: file.buffer,
         ContentType: file.mimetype,
       });
 
-      await s3Client.send(command);
+      const result = await s3Client.send(command);
 
-      return `https://${bucketName}.s3.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${key}`;
-    } catch (error: any) {
-      console.error('S3 Upload Error:', error);
-      throw new AppError('Failed to upload image to AWS S3', 500);
+      return `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+    } catch (err) {
+      throw err;
     }
   }
 }
