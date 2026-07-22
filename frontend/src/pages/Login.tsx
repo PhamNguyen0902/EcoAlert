@@ -10,16 +10,14 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { getRoleHome } from "../lib/routes";
 
+import { ThemeToggle } from "../components/ui/theme-toggle";
+
 export default function Login() {
   const navigate = useNavigate();
   const loginMutation = useLogin();
   const { login, isAuthenticated, role } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // if (isAuthenticated && role) {
-  //   return <Navigate to={getRoleHome(role)} replace />;
-  // }
 
   if (isAuthenticated && role) {
     const targetPath = getRoleHome(role);
@@ -36,20 +34,13 @@ export default function Login() {
         onSuccess: (data) => {
           const loginData = data.data;
 
-          console.log("Response:", data);
-          console.log("LoginData:", loginData);
-          console.log("User:", loginData.user);
-          console.log("Role:", loginData.user.role);
-
           login({
             token: loginData.token || loginData.accessToken,
             refreshToken: loginData.refreshToken,
             user: loginData.user,
           });
 
-          console.log("Navigate to:", getRoleHome(loginData.user.role));
-
-          toast.success("Successfully logged in");
+          toast.success("Successfully logged in", { duration: 1000 });
           navigate(getRoleHome(loginData.user.role), { replace: true });
         },
       },
@@ -57,20 +48,23 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-background text-foreground">
       <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm lg:w-96">
           <div>
-            <div className="flex items-center gap-2 font-bold text-2xl text-primary">
-              <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shadow-sm">
-                <Leaf size={24} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-2xl text-primary">
+                <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shadow-sm">
+                  <Leaf size={24} />
+                </div>
+                EcoAlert
               </div>
-              EcoAlert
+              <ThemeToggle />
             </div>
-            <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-gray-900">
+            <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-foreground">
               Sign in to your account
             </h2>
-            <p className="mt-2 text-sm leading-6 text-gray-500">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Not a member?{" "}
               <Link
                 to="/register"

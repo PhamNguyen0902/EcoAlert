@@ -8,6 +8,8 @@ import { Leaf } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
+import { ThemeToggle } from '../components/ui/theme-toggle';
+
 export default function Register() {
   const navigate = useNavigate();
   const registerMutation = useRegister();
@@ -42,7 +44,7 @@ export default function Register() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-background text-foreground">
       <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -51,16 +53,19 @@ export default function Register() {
           className="mx-auto w-full max-w-sm lg:w-96"
         >
           <div>
-            <div className="flex items-center gap-2 font-bold text-2xl text-primary">
-              <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shadow-sm">
-                <Leaf size={24} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-2xl text-primary">
+                <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shadow-sm">
+                  <Leaf size={24} />
+                </div>
+                EcoAlert
               </div>
-              EcoAlert
+              <ThemeToggle />
             </div>
-            <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-gray-900">
+            <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-foreground">
               Create an account
             </h2>
-            <p className="mt-2 text-sm leading-6 text-gray-500">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Already have an account?{' '}
               <Link to="/login" className="font-semibold text-primary hover:text-primary/80">
                 Log in

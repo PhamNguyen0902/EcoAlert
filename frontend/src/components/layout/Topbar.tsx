@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
+import { ThemeToggle } from "../ui/theme-toggle"
 import { useUnreadCount } from "../../hooks/hooks"
 
 export function Topbar() {
@@ -18,7 +19,7 @@ export function Topbar() {
   const userStr = localStorage.getItem('user')
   const user = userStr ? JSON.parse(userStr) : null
   
-  const { data: unreadCount } = useUnreadCount()
+  const { data: unreadCount = 0 } = useUnreadCount()
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -41,6 +42,8 @@ export function Topbar() {
       </div>
       
       <div className="flex items-center gap-4">
+        <ThemeToggle />
+
         <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground" onClick={() => navigate('/notifications')}>
           <Bell size={20} />
           {unreadCount > 0 && (
