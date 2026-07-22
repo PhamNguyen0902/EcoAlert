@@ -15,11 +15,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (localStorage.getItem('ecoalert-theme') as Theme) || 'system';
   });
   
-  const [isDark, setIsDark] = useState<boolean>(false);
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem('ecoalert-theme') as Theme;
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    return typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
+  });
 
   useEffect(() => {
+    const root = window.document.documentElement;
+
     const applyTheme = (currentTheme: Theme) => {
-      const root = window.document.documentElement;
       let shouldBeDark = false;
 
       if (currentTheme === 'system') {
@@ -32,20 +38,34 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (shouldBeDark) {
         root.classList.add('dark');
+        root.style.colorScheme = 'dark';
       } else {
         root.classList.remove('dark');
+        root.style.colorScheme = 'light';
       }
     };
 
     applyTheme(theme);
 
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => applyTheme('system');
-      
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = () => {
+      if (theme === 'system') {
+        applyTheme('system');
+      }
+    };
+    mediaQuery.addEventListener('change', handleSystemChange);
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'ecoalert-theme' && e.newValue) {
+        setThemeState(e.newValue as Theme);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleSystemChange);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
