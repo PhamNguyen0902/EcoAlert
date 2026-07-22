@@ -61,10 +61,10 @@ export default function AlertDetail() {
         </Button>
         <h2 className="text-3xl font-bold tracking-tight flex-1 truncate">{alert.title}</h2>
         <div className="flex gap-2 hidden sm:flex">
-          <Badge variant={alert.severity === 'CRITICAL' ? 'destructive' : alert.severity === 'HIGH' ? 'warning' : 'default'} className="text-sm px-3 py-1">
+          <Badge variant={alert.severity === 'critical' ? 'destructive' : alert.severity === 'high' ? 'warning' : 'default'} className="text-sm px-3 py-1">
             {alert.severity || 'UNKNOWN SEVERITY'}
           </Badge>
-          <Badge variant={['RESOLVED', 'CLOSED'].includes(alert.status) ? 'success' : 'outline'} className="text-sm px-3 py-1">
+          <Badge variant={['resolved', 'closed'].includes(alert.status) ? 'success' : 'outline'} className="text-sm px-3 py-1">
             {alert.status}
           </Badge>
         </div>
@@ -174,7 +174,7 @@ export default function AlertDetail() {
             </CardContent>
           </Card>
 
-          {isOfficerOrAdmin && alert.status !== 'CLOSED' && (
+          {isOfficerOrAdmin && alert.status !== 'closed' && (
             <Card className="border-primary/50 shadow-sm">
               <CardHeader className="pb-3 bg-primary/5 border-b">
                 <CardTitle className="text-primary flex items-center gap-2">
@@ -182,10 +182,10 @@ export default function AlertDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-3">
-                {alert.status === 'PENDING' && (
+                {alert.status === 'pending' && (
                   <Button 
                     className="w-full" 
-                    onClick={() => handleUpdateStatus('VERIFIED')}
+                    onClick={() => handleUpdateStatus('verified')}
                     disabled={updateStatusMutation.isPending}
                   >
                     Verify & Accept Report
@@ -202,7 +202,7 @@ export default function AlertDetail() {
                   </Button>
                 )}
 
-                {alert.status === 'IN_PROGRESS' && (
+                {alert.status === 'in_progress' && (
                   <Button 
                     className="w-full bg-green-600 hover:bg-green-700" 
                     onClick={() => handleUpdateStatus('RESOLVED')}

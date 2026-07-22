@@ -1,18 +1,32 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { useLogin } from "../hooks/hooks";
+import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Leaf } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { getRoleHome } from "../lib/routes";
 
 export default function Login() {
   const navigate = useNavigate();
   const loginMutation = useLogin();
+  const { login, isAuthenticated, role } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // if (isAuthenticated && role) {
+  //   return <Navigate to={getRoleHome(role)} replace />;
+  // }
+
+  if (isAuthenticated && role) {
+    const targetPath = getRoleHome(role);
+    if (targetPath) {
+      return <Navigate to={targetPath} replace />;
+    }
+  }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,14 +34,23 @@ export default function Login() {
       { email, password },
       {
         onSuccess: (data) => {
-          localStorage.setItem("token", data.data.token);
-          localStorage.setItem("refreshToken", data.data.refreshToken);
-          localStorage.setItem("user", JSON.stringify(data.data.user));
+          const loginData = data.data;
+
+          console.log("Response:", data);
+          console.log("LoginData:", loginData);
+          console.log("User:", loginData.user);
+          console.log("Role:", loginData.user.role);
+
+          login({
+            token: loginData.token || loginData.accessToken,
+            refreshToken: loginData.refreshToken,
+            user: loginData.user,
+          });
+
+          console.log("Navigate to:", getRoleHome(loginData.user.role));
+
           toast.success("Successfully logged in");
-          navigate("/dashboard");
-        },
-        onError: (err: any) => {
-          toast.error(err.response?.data?.message || "Login failed");
+          navigate(getRoleHome(loginData.user.role), { replace: true });
         },
       },
     );
@@ -36,12 +59,7 @@ export default function Login() {
   return (
     <div className="flex min-h-screen bg-slate-50">
       <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mx-auto w-full max-w-sm lg:w-96"
-        >
+        <div className="mx-auto w-full max-w-sm lg:w-96">
           <div>
             <div className="flex items-center gap-2 font-bold text-2xl text-primary">
               <div className="bg-primary text-primary-foreground p-1.5 rounded-lg shadow-sm">
@@ -108,7 +126,7 @@ export default function Login() {
               </div>
             </form>
           </div>
-        </motion.div>
+        </div>
       </div>
       <div className="relative hidden w-0 flex-1 lg:block bg-green-900">
         <img

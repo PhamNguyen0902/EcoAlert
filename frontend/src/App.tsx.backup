@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { LoadingSpinner } from './components/ui/loading-spinner';
 import { useAuth } from './contexts/AuthContext';
 import { getRoleHome } from './lib/routes';
@@ -58,19 +58,15 @@ function RoleRedirect() {
 
 function App() {
   return (
-    <Routes>
-      <Route element={
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
-      }>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* Citizen Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['CITIZEN']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['citizen']} />}>
           <Route element={<CitizenLayout />}>
             <Route path="/home" element={<CitizenHome />} />
             <Route path="/report" element={<CreateReport />} />
@@ -82,7 +78,7 @@ function App() {
         </Route>
 
         {/* Officer Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['OFFICER']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['officer']} />}>
           <Route element={<OfficerLayout />}>
             <Route path="/officer/dashboard" element={<OfficerDashboard />} />
             <Route path="/officer/assigned" element={<AssignedReports />} />
@@ -96,7 +92,7 @@ function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<UserManagement />} />
@@ -120,8 +116,8 @@ function App() {
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

@@ -12,8 +12,7 @@ export default function Register() {
   const navigate = useNavigate();
   const registerMutation = useRegister();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    fullName: '',
     email: '',
     password: ''
   });
@@ -24,15 +23,22 @@ export default function Register() {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    registerMutation.mutate(formData, {
-      onSuccess: () => {
-        toast.success('Registration successful! Please log in.');
-        navigate('/login');
+    registerMutation.mutate(
+      {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password
       },
-      onError: (err: any) => {
-        toast.error(err.response?.data?.message || 'Registration failed');
+      {
+        onSuccess: () => {
+          toast.success('Registration successful! Please log in.');
+          navigate('/login');
+        },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.message || 'Registration failed');
+        }
       }
-    });
+    );
   };
 
   return (
@@ -64,18 +70,10 @@ export default function Register() {
 
           <div className="mt-10">
             <form onSubmit={handleRegister} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First name</Label>
-                  <div className="mt-2">
-                    <Input id="firstName" name="firstName" required value={formData.firstName} onChange={handleChange} />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Last name</Label>
-                  <div className="mt-2">
-                    <Input id="lastName" name="lastName" required value={formData.lastName} onChange={handleChange} />
-                  </div>
+              <div>
+                <Label htmlFor="fullName">Full name</Label>
+                <div className="mt-2">
+                  <Input id="fullName" name="fullName" required value={formData.fullName} onChange={handleChange} />
                 </div>
               </div>
 
