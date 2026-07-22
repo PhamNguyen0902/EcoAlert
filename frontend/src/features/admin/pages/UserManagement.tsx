@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserRole } from '@/types';
+import { User } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function UserManagement() {
@@ -29,11 +29,11 @@ export default function UserManagement() {
 
   if (isLoading) return <LoadingSpinner />;
 
-  const filteredUsers = data?.users?.filter(u => {
+  const filteredUsers = (data?.items || []).filter((u: User) => {
     const matchesSearch = u.fullName.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
     return matchesSearch && matchesRole;
-  }) || [];
+  });
 
   return (
     <div className="space-y-6">
@@ -81,7 +81,7 @@ export default function UserManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map(user => (
+                {filteredUsers.map((user: User) => (
                   <tr key={user._id} className="border-b last:border-0 hover:bg-muted/50">
                     <td className="p-4">{user.fullName}</td>
                     <td className="p-4">{user.email}</td>
@@ -100,16 +100,16 @@ export default function UserManagement() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => { changeRole.mutate({ userId: user._id, role: 'admin' }); toast.success('Role updated'); }}>
+                          <DropdownMenuItem onClick={() => { changeRole.mutate({ id: user._id, role: 'admin' }); toast.success('Role updated'); }}>
                             Make Admin
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => { changeRole.mutate({ userId: user._id, role: 'officer' }); toast.success('Role updated'); }}>
+                          <DropdownMenuItem onClick={() => { changeRole.mutate({ id: user._id, role: 'officer' }); toast.success('Role updated'); }}>
                             Make Officer
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => { changeRole.mutate({ userId: user._id, role: 'citizen' }); toast.success('Role updated'); }}>
+                          <DropdownMenuItem onClick={() => { changeRole.mutate({ id: user._id, role: 'citizen' }); toast.success('Role updated'); }}>
                             Make Citizen
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => { toggleStatus.mutate(user._id); toast.success('Status toggled'); }}>
+                          <DropdownMenuItem onClick={() => { toggleStatus.mutate({ id: user._id, isActive: !user.isActive }); toast.success('Status toggled'); }}>
                             Toggle Status
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-red-600" onClick={() => { 

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Eye, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { Alert } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function ReportManagement() {
@@ -19,9 +20,9 @@ export default function ReportManagement() {
 
   if (isLoading) return <LoadingSpinner />;
 
-  const filteredAlerts = data?.alerts?.filter(a => 
+  const filteredAlerts = (data?.items || []).filter((a: Alert) => 
     a.title.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  );
 
   return (
     <div className="space-y-6">
@@ -57,7 +58,7 @@ export default function ReportManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAlerts.map(alert => (
+                {filteredAlerts.map((alert: Alert) => (
                   <tr key={alert._id} className="border-b last:border-0 hover:bg-muted/50">
                     <td className="p-4 font-medium">{alert.title}</td>
                     <td className="p-4 capitalize">{alert.category}</td>
