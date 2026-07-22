@@ -9,9 +9,10 @@ export class UploadController {
     }
 
     const imageUrl = await s3Service.uploadImage(req.file);
-    res
-      .status(200)
-      .json(successResponse({ url: imageUrl }, "Image uploaded successfully"));
+
+    res.status(200).json(
+      successResponse({ url: imageUrl }, "Image uploaded successfully")
+    );
   }
 }
 
