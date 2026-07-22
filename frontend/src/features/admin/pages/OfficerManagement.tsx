@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { User } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function OfficerManagement() {
@@ -12,7 +13,7 @@ export default function OfficerManagement() {
 
   if (isLoading) return <LoadingSpinner />;
 
-  const officers = data?.users?.filter(u => u.role === 'officer') || [];
+  const officers = (data?.items || []).filter((u: User) => u.role?.toLowerCase() === 'officer');
 
   return (
     <div className="space-y-6">
@@ -21,7 +22,7 @@ export default function OfficerManagement() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {officers.map(officer => (
+        {officers.map((officer: User) => (
           <Card key={officer._id}>
             <CardHeader className="flex flex-row items-center gap-4">
               <Avatar className="h-14 w-14">
@@ -53,7 +54,7 @@ export default function OfficerManagement() {
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => { toggleStatus.mutate(officer._id); toast.success('Status updated'); }}
+                    onClick={() => { toggleStatus.mutate({ id: officer._id, isActive: !officer.isActive }); toast.success('Status updated'); }}
                   >
                     {officer.isActive ? 'Deactivate' : 'Activate'}
                   </Button>

@@ -1,7 +1,7 @@
-import { Outlet } from 'react-router-dom';
-import AdminSidebar from './AdminSidebar';
-import AdminTopbar from './AdminTopbar';
-import { Toaster } from 'react-hot-toast';
+import { Outlet } from "react-router-dom";
+import AdminSidebar from "./AdminSidebar";
+import AdminTopbar from "./AdminTopbar";
+import { Toaster } from "react-hot-toast";
 
 export default function AdminLayout() {
   return (

@@ -32,13 +32,13 @@ export default function AdminSidebar() {
   return (
     <div
       className={cn(
-        "flex flex-col bg-slate-900 text-slate-300 transition-all duration-300",
+        "flex flex-col bg-card text-foreground border-r border-border dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 transition-all duration-300",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
-      <div className="flex h-16 items-center justify-center border-b border-slate-800 px-4">
+      <div className="flex h-16 items-center justify-center border-b border-border dark:border-slate-800 px-4">
         <Leaf className="h-8 w-8 text-green-500 shrink-0" />
-        {!isCollapsed && <span className="ml-3 text-lg font-bold text-white whitespace-nowrap">EcoAlert Admin</span>}
+        {!isCollapsed && <span className="ml-3 text-lg font-bold text-foreground dark:text-white whitespace-nowrap">EcoAlert Admin</span>}
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
@@ -51,8 +51,8 @@ export default function AdminSidebar() {
               cn(
                 "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-white/10 text-white"
-                  : "hover:bg-white/5 hover:text-white",
+                  ? "bg-primary text-primary-foreground dark:bg-white/10 dark:text-white"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-white/5 dark:hover:text-white",
                 isCollapsed && "justify-center"
               )
             }
@@ -63,10 +63,10 @@ export default function AdminSidebar() {
         ))}
       </nav>
 
-      <div className="border-t border-slate-800 p-3">
+      <div className="border-t border-border dark:border-slate-800 p-3">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="flex w-full items-center justify-center rounded-lg p-2 hover:bg-white/5 hover:text-white"
+          className="flex w-full items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-white/5 dark:hover:text-white"
         >
           {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </button>
