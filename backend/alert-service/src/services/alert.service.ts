@@ -1,6 +1,6 @@
 import { alertRepository } from '../repositories/alert.repository';
 import { CreateAlertDto, UpdateAlertStatusDto } from '../dtos/alert.dto';
-import { NotFoundError, BadRequestError, AlertStatus, EVENTS } from '@ecoalert/shared';
+import { NotFoundError, BadRequestError, AlertStatus, Severity, EVENTS } from '@ecoalert/shared';
 import { rabbitMQService } from './rabbitmq.service';
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -81,7 +81,7 @@ export class AlertService {
     const updatedAlert = await alertRepository.update(id, {
       category: category as any,
       aiConfidence: confidence,
-      aiSuggestedPriority: priority as any,
+      aiSuggestedPriority: priority ? (priority.toLowerCase() as any) : Severity.LOW,
       status: newStatus
     });
 
