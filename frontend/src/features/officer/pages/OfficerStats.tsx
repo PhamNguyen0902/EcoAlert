@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useAlerts } from '@/hooks/hooks';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/ui/stat-card';
 import { 
@@ -14,6 +15,16 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function OfficerStats() {
   const { data, isLoading } = useAlerts(1, 1000);
+  const { isDark } = useTheme();
+
+  const gridColor = isDark ? '#334155' : '#e5e7eb';
+  const textColor = isDark ? '#94a3b8' : '#64748b';
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#0f172a' : '#ffffff',
+    borderColor: isDark ? '#334155' : '#e2e8f0',
+    color: isDark ? '#f8fafc' : '#0f172a',
+    borderRadius: '0.5rem',
+  };
 
   const stats = useMemo(() => {
     if (!data?.items) return null;
@@ -106,10 +117,10 @@ export default function OfficerStats() {
             <div className="h-[300px] w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={stats.timelineData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-                  <RechartsTooltip />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+                  <XAxis dataKey="name" stroke={textColor} fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke={textColor} fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
+                  <RechartsTooltip contentStyle={tooltipStyle} />
                   <Line type="monotone" dataKey="value" name="Reports" stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -134,11 +145,11 @@ export default function OfficerStats() {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {stats.statusData.map((entry, index) => (
+                    {stats.statusData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip />
+                  <RechartsTooltip contentStyle={tooltipStyle} />
                   <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
               </ResponsiveContainer>
@@ -156,10 +167,10 @@ export default function OfficerStats() {
             <div className="h-[350px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.categoryData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-                  <XAxis type="number" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis dataKey="name" type="category" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} width={100} />
-                  <RechartsTooltip cursor={{ fill: 'transparent' }} />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke={gridColor} />
+                  <XAxis type="number" stroke={textColor} fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis dataKey="name" type="category" stroke={textColor} fontSize={12} tickLine={false} axisLine={false} width={100} />
+                  <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={tooltipStyle} />
                   <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
