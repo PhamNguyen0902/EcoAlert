@@ -5,6 +5,7 @@ import React, {
   useEffect,
 } from 'react';
 import { User, UserRole } from '@/types';
+import toast from 'react-hot-toast';
 
 interface AuthState {
   user: User | null;
@@ -65,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    toast.dismiss();
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
