@@ -101,7 +101,99 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
+  html {
+    scroll-behavior: smooth;
   }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .dark .glass {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .dark .glass-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(160 84% 39%) 100%);
+  }
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(142 60% 95%) 0%, hsl(200 60% 95%) 50%, hsl(260 60% 96%) 100%);
+  }
+  .dark .gradient-hero {
+    background: linear-gradient(135deg, hsl(142 40% 8%) 0%, hsl(200 40% 8%) 50%, hsl(260 40% 10%) 100%);
+  }
+  .gradient-card-green {
+    background: linear-gradient(135deg, hsl(142 76% 36% / 0.1) 0%, hsl(160 84% 39% / 0.05) 100%);
+  }
+  .gradient-card-blue {
+    background: linear-gradient(135deg, hsl(217 91% 60% / 0.1) 0%, hsl(199 89% 48% / 0.05) 100%);
+  }
+  .gradient-card-amber {
+    background: linear-gradient(135deg, hsl(38 92% 50% / 0.1) 0%, hsl(45 93% 47% / 0.05) 100%);
+  }
+  .gradient-card-red {
+    background: linear-gradient(135deg, hsl(0 84% 60% / 0.1) 0%, hsl(0 72% 51% / 0.05) 100%);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+.dark .leaflet-tile-pane {
+  filter: brightness(0.7) contrast(1.1) saturate(0.8);
+}
+.dark .leaflet-control-zoom a {
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }

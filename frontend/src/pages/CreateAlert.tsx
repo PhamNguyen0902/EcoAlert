@@ -102,7 +102,9 @@ export default function CreateAlert() {
       toast.loading('Submitting report...', { id: 'submit' });
       
       await createAlertMutation.mutateAsync({
-        ...formData,
+        title: formData.title,
+        description: formData.description,
+        address: formData.address,
         location: {
           type: 'Point',
           coordinates: [position[1], position[0]] // GeoJSON [lng, lat]
