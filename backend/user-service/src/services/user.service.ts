@@ -27,9 +27,19 @@ export class UserService {
     await userRepository.update(userId, { password: newHashed });
   }
 
-  async getUsers(page: number, limit: number) {
+  async getUsers(page: number, limit: number, role?: string, search?: string) {
     const skip = (page - 1) * limit;
-    return userRepository.findPaginated({}, skip, limit);
+    const filter: any = {};
+    if (role && role !== 'all') {
+      filter.role = role.toUpperCase();
+    }
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    return userRepository.findPaginated(filter, skip, limit);
   }
 
   async changeRole(userId: string, targetUserId: string, role: UserRole) {

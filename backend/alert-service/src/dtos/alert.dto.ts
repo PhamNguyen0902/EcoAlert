@@ -22,3 +22,18 @@ export const assignOfficerSchema = z.object({
   officerId: z.string()
 });
 export type AssignOfficerDto = z.infer<typeof assignOfficerSchema>;
+
+export const updateAlertSchema = z.object({
+  title: z.string().min(5).optional(),
+  description: z.string().min(10).optional(),
+  mediaUrls: z.array(z.string()).optional(),
+  location: z.object({
+    type: z.literal('Point'),
+    coordinates: z.tuple([z.number(), z.number()])
+  }).optional(),
+  address: z.string().optional(),
+  category: z.nativeEnum(AlertCategory).optional(),
+  severity: z.nativeEnum(Severity).optional()
+});
+export type UpdateAlertDto = z.infer<typeof updateAlertSchema>;
+
