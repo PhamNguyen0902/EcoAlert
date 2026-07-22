@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAlerts } from '@/hooks/hooks';
+import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const trendData = [
@@ -18,7 +19,16 @@ const severityData = [
 const COLORS = ['#ef4444', '#f97316', '#3b82f6'];
 
 export default function Analytics() {
-  const { data, isLoading } = useAlerts(1, 1000);
+  const { isLoading } = useAlerts(1, 1000);
+  const { isDark } = useTheme();
+
+  const textColor = isDark ? '#94a3b8' : '#64748b';
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#0f172a' : '#ffffff',
+    borderColor: isDark ? '#334155' : '#e2e8f0',
+    color: isDark ? '#f8fafc' : '#0f172a',
+    borderRadius: '0.5rem',
+  };
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -26,7 +36,7 @@ export default function Analytics() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h2>
-        <select className="border rounded-md px-3 py-1 bg-background text-sm">
+        <select className="border rounded-md px-3 py-1 bg-background text-foreground text-sm border-input">
           <option>Last 6 Months</option>
           <option>Last Year</option>
           <option>All Time</option>
@@ -41,9 +51,9 @@ export default function Analytics() {
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <XAxis dataKey="name" stroke={textColor} />
+                <YAxis stroke={textColor} />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
@@ -57,9 +67,9 @@ export default function Analytics() {
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <XAxis dataKey="name" stroke={textColor} />
+                <YAxis stroke={textColor} />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -78,7 +88,7 @@ export default function Analytics() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={tooltipStyle} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -91,9 +101,9 @@ export default function Analytics() {
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <XAxis dataKey="name" stroke={textColor} />
+                <YAxis stroke={textColor} />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Area type="monotone" dataKey="value" stroke="#8b5cf6" fill="#c4b5fd" />
               </AreaChart>
             </ResponsiveContainer>

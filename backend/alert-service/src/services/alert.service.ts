@@ -1,6 +1,6 @@
 import { alertRepository } from '../repositories/alert.repository';
-import { CreateAlertDto, UpdateAlertStatusDto } from '../dtos/alert.dto';
-import { NotFoundError, BadRequestError, AlertStatus, EVENTS } from '@ecoalert/shared';
+import { CreateAlertDto, UpdateAlertStatusDto, UpdateAlertDto } from '../dtos/alert.dto';
+import { NotFoundError, BadRequestError, AlertStatus, Severity, EVENTS } from '@ecoalert/shared';
 import { rabbitMQService } from './rabbitmq.service';
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -81,7 +81,7 @@ export class AlertService {
     const updatedAlert = await alertRepository.update(id, {
       category: category as any,
       aiConfidence: confidence,
-      aiSuggestedPriority: priority as any,
+      aiSuggestedPriority: priority ? (priority.toLowerCase() as any) : Severity.LOW,
       status: newStatus
     });
 
@@ -97,6 +97,39 @@ export class AlertService {
     if (!success) throw new NotFoundError('Alert not found');
     return true;
   }
+
+  async updateAlert(id: string, userId: string, userRole: string, data: UpdateAlertDto) {
+    const alert = await alertRepository.findById(id);
+    if (!alert) throw new NotFoundError('Alert not found');
+
+    const statusLower = (alert.status || '').toLowerCase();
+    const userRoleUpper = (userRole || '').toUpperCase();
+
+    if (userRoleUpper === 'CITIZEN' || alert.citizenId?.toString() === userId) {
+      if (alert.citizenId?.toString() !== userId) {
+        throw new BadRequestError('You can only update your own alerts');
+      }
+      if (!['pending', 'ai_analyzing'].includes(statusLower)) {
+        throw new BadRequestError('Cannot edit alert once it is verified or processed');
+      }
+    }
+
+    const updatedAlert = await alertRepository.update(id, {
+      ...data,
+      updatedBy: userId
+    });
+
+    if (!updatedAlert) throw new NotFoundError('Alert not found during update');
+
+    try {
+      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert);
+    } catch (err) {
+      // Ignore RabbitMQ publish error during HTTP response
+    }
+
+    return updatedAlert;
+  }
 }
 
 export const alertService = new AlertService();
+

@@ -26,7 +26,12 @@ const alertSchema = new Schema<IAlert>({
   description: { type: String, required: true, trim: true },
   status: { type: String, enum: Object.values(AlertStatus), default: AlertStatus.PENDING },
   category: { type: String, default: 'UNCLASSIFIED' },
-  severity: { type: String, enum: Object.values(Severity), default: Severity.LOW },
+  severity: { 
+    type: String, 
+    enum: [...Object.values(Severity), 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'], 
+    default: Severity.LOW,
+    set: (v: string) => v ? (v.toLowerCase() as any) : v
+  },
   mediaUrls: [{ type: String }],
   location: {
     type: { type: String, enum: ['Point'], required: true },
@@ -36,7 +41,11 @@ const alertSchema = new Schema<IAlert>({
   citizenId: { type: String, required: true, index: true },
   assignedOfficerId: { type: String, index: true },
   aiConfidence: { type: Number },
-  aiSuggestedPriority: { type: String, enum: Object.values(Severity) }
+  aiSuggestedPriority: { 
+    type: String, 
+    enum: [...Object.values(Severity), 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+    set: (v: string) => v ? (v.toLowerCase() as any) : v
+  }
 }, { timestamps: true });
 
 alertSchema.plugin(baseSchemaPlugin);

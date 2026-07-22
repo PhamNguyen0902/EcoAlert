@@ -24,7 +24,9 @@ export class UserController {
   async listUsers(req: Request, res: Response) {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const { items, total } = await userService.getUsers(page, limit);
+    const role = req.query.role as string;
+    const search = req.query.search as string;
+    const { items, total } = await userService.getUsers(page, limit, role, search);
     res.status(200).json(paginatedResponse(items, total, page, limit));
   }
 

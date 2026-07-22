@@ -6,6 +6,7 @@ import {
   userService,
   gisService,
 } from "../services/services";
+import { CreateAlertData } from "@/types";
 
 // ========================
 // AUTH
@@ -30,7 +31,7 @@ export const useRegister = () => {
 export const useAlerts = (
   page = 1,
   limit = 10,
-  filters: Record<string, string> = {}
+  filters: Record<string, string> = {},
 ) => {
   return useQuery({
     queryKey: ["alerts", page, limit, filters],
@@ -63,13 +64,8 @@ export const useUpdateAlertStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      id,
-      status,
-    }: {
-      id: string;
-      status: string;
-    }) => alertService.updateStatus(id, status),
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      alertService.updateStatus(id, status),
 
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -93,6 +89,22 @@ export const useDeleteAlert = () => {
       queryClient.invalidateQueries({
         queryKey: ["alerts"],
       });
+    },
+  });
+};
+export const useUpdateAlert = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<CreateAlertData>;
+    }) => alertService.updateAlert(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
     },
   });
 };
@@ -170,10 +182,16 @@ export const useUpdateProfile = () => {
   });
 };
 
-export const useUsers = (page = 1, limit = 10) => {
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: userService.changePassword,
+  });
+};
+
+export const useUsers = (page = 1, limit = 10, role?: string, search?: string) => {
   return useQuery({
-    queryKey: ["users", page, limit],
-    queryFn: () => userService.getUsers(page, limit),
+    queryKey: ["users", page, limit, role, search],
+    queryFn: () => userService.getUsers(page, limit, role, search),
   });
 };
 
@@ -181,13 +199,8 @@ export const useChangeRole = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      id,
-      role,
-    }: {
-      id: string;
-      role: string;
-    }) => userService.changeRole(id, role),
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
+      userService.changeRole(id, role),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -201,13 +214,8 @@ export const useToggleUserStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      id,
-      isActive,
-    }: {
-      id: string;
-      isActive: boolean;
-    }) => userService.toggleStatus(id, isActive),
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      userService.toggleStatus(id, isActive),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -238,7 +246,7 @@ export const useDeleteUser = () => {
 export const useNearbyIncidents = (
   lng: number,
   lat: number,
-  maxDistance = 5000
+  maxDistance = 5000,
 ) => {
   return useQuery({
     queryKey: ["gis", "nearby", lng, lat, maxDistance],

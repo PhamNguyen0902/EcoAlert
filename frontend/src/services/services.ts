@@ -1,24 +1,37 @@
-import { api } from './api';
-import type { User, Alert, PaginatedResult, CreateAlertData } from '@/types';
+import { api } from "./api";
+import type { User, Alert, PaginatedResult, CreateAlertData } from "@/types";
 
 export const authService = {
   login: async (data: { email: string; password: string }) => {
-    const res = await api.post('/v1/auth/login', data);
+    const res = await api.post("/v1/auth/login", data);
     return res.data;
   },
-  register: async (data: { email: string; password: string; fullName: string; phone?: string }) => {
-    const res = await api.post('/v1/auth/register', data);
+  register: async (data: {
+    email: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+  }) => {
+    const res = await api.post("/v1/auth/register", data);
     return res.data;
   },
   logout: async (refreshToken?: string) => {
-    const res = await api.post('/v1/auth/logout', { refreshToken });
+    const res = await api.post("/v1/auth/logout", { refreshToken });
     return res.data;
   },
 };
 
 export const alertService = {
-  getAlerts: async (page = 1, limit = 10, filters: Record<string, string> = {}): Promise<PaginatedResult<Alert>> => {
-    const params = new URLSearchParams({ page: String(page), limit: String(limit), ...filters });
+  getAlerts: async (
+    page = 1,
+    limit = 10,
+    filters: Record<string, string> = {},
+  ): Promise<PaginatedResult<Alert>> => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      ...filters,
+    });
     const res = await api.get(`/v1/alerts?${params}`);
     return res.data.data;
   },
@@ -27,7 +40,7 @@ export const alertService = {
     return res.data.data;
   },
   createAlert: async (data: CreateAlertData) => {
-    const res = await api.post('/v1/alerts', data);
+    const res = await api.post("/v1/alerts", data);
     return res.data.data;
   },
   updateStatus: async (id: string, status: string) => {
@@ -40,11 +53,15 @@ export const alertService = {
   },
   uploadMedia: async (file: File): Promise<string> => {
     const formData = new FormData();
-    formData.append('image', file);
-    const res = await api.post('/v1/media/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    formData.append("image", file);
+    const res = await api.post("/v1/media/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data.data.url;
+  },
+  updateAlert: async (id: string, data: Partial<CreateAlertData>) => {
+    const res = await api.patch(`/v1/alerts/${id}`, data);
+    return res.data.data;
   },
 };
 
@@ -54,7 +71,7 @@ export const notificationService = {
     return res.data.data;
   },
   getUnreadCount: async (): Promise<number> => {
-    const res = await api.get('/v1/notifications/unread-count');
+    const res = await api.get("/v1/notifications/unread-count");
     return res.data.data.count;
   },
   markAsRead: async (id: string) => {
@@ -62,7 +79,7 @@ export const notificationService = {
     return res.data.data;
   },
   markAllAsRead: async () => {
-    const res = await api.patch('/v1/notifications/mark-all-read');
+    const res = await api.patch("/v1/notifications/mark-all-read");
     return res.data.data;
   },
   deleteNotification: async (id: string) => {
@@ -73,19 +90,27 @@ export const notificationService = {
 
 export const userService = {
   getProfile: async (): Promise<User> => {
-    const res = await api.get('/v1/users/profile');
+    const res = await api.get("/v1/users/profile");
     return res.data.data;
   },
-  updateProfile: async (data: Partial<Pick<User, 'fullName' | 'phone' | 'avatar'>>) => {
-    const res = await api.patch('/v1/users/profile', data);
+  updateProfile: async (
+    data: Partial<Pick<User, "fullName" | "phone" | "avatar">>,
+  ) => {
+    const res = await api.patch("/v1/users/profile", data);
     return res.data.data;
   },
-  changePassword: async (data: { oldPassword: string; newPassword: string }) => {
-    const res = await api.patch('/v1/users/change-password', data);
+  changePassword: async (data: {
+    oldPassword: string;
+    newPassword: string;
+  }) => {
+    const res = await api.patch("/v1/users/change-password", data);
     return res.data.data;
   },
-  getUsers: async (page = 1, limit = 10): Promise<PaginatedResult<User>> => {
-    const res = await api.get(`/v1/users?page=${page}&limit=${limit}`);
+  getUsers: async (page = 1, limit = 10, role?: string, search?: string): Promise<PaginatedResult<User>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (role && role !== 'all') params.append('role', role);
+    if (search) params.append('search', search);
+    const res = await api.get(`/v1/users?${params}`);
     return res.data.data;
   },
   getUserById: async (id: string): Promise<User> => {
@@ -108,11 +133,15 @@ export const userService = {
 
 export const gisService = {
   getNearby: async (lng: number, lat: number, maxDistance = 5000) => {
-    const res = await api.get(`/v1/gis/nearby?lng=${lng}&lat=${lat}&maxDistance=${maxDistance}`);
+    const res = await api.get(
+      `/v1/gis/nearby?lng=${lng}&lat=${lat}&maxDistance=${maxDistance}`,
+    );
     return res.data.data;
   },
   getRadius: async (lng: number, lat: number, radius = 5) => {
-    const res = await api.get(`/v1/gis/radius?lng=${lng}&lat=${lat}&radius=${radius}`);
+    const res = await api.get(
+      `/v1/gis/radius?lng=${lng}&lat=${lat}&radius=${radius}`,
+    );
     return res.data.data;
   },
 };

@@ -50,14 +50,14 @@ export class GeminiService {
       return {
         category: parsed.category || 'OTHER',
         confidence: parsed.confidence || 0.5,
-        suggestedPriority: parsed.suggestedPriority || 'LOW'
+        suggestedPriority: (parsed.suggestedPriority || 'low').toLowerCase()
       };
     } catch (error) {
       logger.error('Gemini API Error:', error);
       return {
         category: 'UNCLASSIFIED',
         confidence: 0,
-        suggestedPriority: 'LOW'
+        suggestedPriority: Severity.LOW
       };
     }
   }

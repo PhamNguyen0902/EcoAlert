@@ -14,7 +14,7 @@ export default function CitizenLayout() {
       </main>
 
       <CitizenFooter />
-      <Toaster position="top-right" />
+      <Toaster position="top-center" />
     </div>
   );
 }
