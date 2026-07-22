@@ -22,18 +22,14 @@ export default function UserManagement() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   
-  const { data, isLoading } = useUsers(page, 10);
+  const { data, isLoading } = useUsers(page, 10, roleFilter, search);
   const changeRole = useChangeRole();
   const toggleStatus = useToggleUserStatus();
   const deleteUser = useDeleteUser();
 
   if (isLoading) return <LoadingSpinner />;
 
-  const filteredUsers = (data?.items || []).filter((u: User) => {
-    const matchesSearch = u.fullName.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
-    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+  const filteredUsers: User[] = data?.items || [];
 
   return (
     <div className="space-y-6">
