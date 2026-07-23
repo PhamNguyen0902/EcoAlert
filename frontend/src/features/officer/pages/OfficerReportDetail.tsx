@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useAlert, useUpdateAlertStatus, useAddOfficerNote } from '@/hooks/hooks';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useAlert, useUpdateAlertStatus, useAddOfficerNote, useDeleteAlert } from '@/hooks/hooks';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { AlertStatus } from '@/types';
 import {
   MapPin, Calendar, Clock, Image as ImageIcon,
   ChevronLeft, CheckCircle2, XCircle, PlayCircle,
-  CheckSquare, AlertTriangle, StickyNote, Save, Loader2,
+  CheckSquare, AlertTriangle, StickyNote, Save, Loader2, Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
@@ -27,15 +27,17 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
-
 export default function OfficerReportDetail() {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { data: alert, isLoading } = useAlert(id || '');
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateAlertStatus();
   const { mutate: addNote, isPending: isSavingNote } = useAddOfficerNote();
+  const deleteAlert = useDeleteAlert();
 
   const [noteText, setNoteText] = useState('');
   const [noteMode, setNoteMode] = useState<'view' | 'edit'>('view');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Initialise noteText from existing officer note
   const existingNote = alert?.officerNote || '';
@@ -155,9 +157,18 @@ export default function OfficerReportDetail() {
             <ChevronLeft className="mr-2 h-4 w-4" /> Back to Reports
           </Button>
         </Link>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Badge variant="outline" className="uppercase text-xs font-semibold">{alert.severity}</Badge>
           <Badge className="uppercase text-xs font-semibold">{alert.status}</Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 px-2.5 ml-2"
+            onClick={() => setShowDeleteConfirm(true)}
+            title="Delete Report"
+          >
+            <Trash2 className="h-4 w-4 mr-1" /> Delete
+          </Button>
         </div>
       </div>
 
@@ -358,6 +369,41 @@ export default function OfficerReportDetail() {
           )}
         </div>
       </div>
+
+      {/* Confirm Delete Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-background border rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+            <h3 className="text-lg font-semibold text-destructive flex items-center gap-2">
+              <Trash2 className="h-5 w-5" /> Delete Report?
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete <span className="font-semibold text-foreground">"{alert.title}"</span>? This action will soft delete the report.
+            </p>
+            <div className="flex gap-3 justify-end pt-2">
+              <Button variant="outline" size="sm" onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={deleteAlert.isPending}
+                onClick={() => {
+                  deleteAlert.mutate(alert._id, {
+                    onSuccess: () => {
+                      toast.success('Report deleted successfully ✅');
+                      navigate('/officer/reports', { replace: true });
+                    },
+                    onError: () => toast.error('Failed to delete report'),
+                  });
+                }}
+              >
+                {deleteAlert.isPending ? 'Deleting...' : 'Yes, Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

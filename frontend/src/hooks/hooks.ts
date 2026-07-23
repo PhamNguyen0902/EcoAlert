@@ -92,6 +92,20 @@ export const useDeleteAlert = () => {
     },
   });
 };
+
+export const useRestoreAlert = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: alertService.restoreAlert,
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["alerts"],
+      });
+    },
+  });
+};
 export const useUpdateAlert = () => {
   const queryClient = useQueryClient();
   return useMutation({
