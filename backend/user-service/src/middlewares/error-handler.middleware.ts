@@ -4,7 +4,7 @@ import { AppError, ValidationError, HTTP_STATUS, errorResponse, createLogger } f
 const logger = createLogger('user-service');
 
 export const errorHandler = (
-  err: Error,
+  err: any,
   req: Request,
   res: Response,
   next: NextFunction
@@ -18,6 +18,20 @@ export const errorHandler = (
     return;
   }
 
+  // Handle Mongoose duplicate key error (E11000)
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue || {})[0] || 'Email';
+    res.status(HTTP_STATUS.CONFLICT).json(errorResponse(`${field} is already in use`));
+    return;
+  }
+
+  // Handle Mongoose ValidationError
+  if (err.name === 'ValidationError') {
+    const messages = Object.values(err.errors || {}).map((e: any) => e.message);
+    res.status(HTTP_STATUS.BAD_REQUEST).json(errorResponse(messages.join(', ') || 'Validation error'));
+    return;
+  }
+
   logger.error('Unhandled Exception:', err);
-  res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(errorResponse('Internal Server Error'));
+  res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(errorResponse(err.message || 'Internal Server Error'));
 };

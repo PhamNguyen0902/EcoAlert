@@ -11,7 +11,15 @@ export class UserService {
   }
 
   async updateProfile(userId: string, data: UpdateProfileDto) {
-    const user = await userRepository.update(userId, data);
+    const updateData: any = { ...data };
+    if ((data.firstName || data.lastName) && !data.fullName) {
+      const user = await userRepository.findById(userId);
+      const parts = (user?.fullName || '').trim().split(/\s+/);
+      const firstName = data.firstName !== undefined ? data.firstName : (parts[0] || '');
+      const lastName = data.lastName !== undefined ? data.lastName : (parts.slice(1).join(' ') || '');
+      updateData.fullName = `${firstName} ${lastName}`.trim();
+    }
+    const user = await userRepository.update(userId, updateData);
     if (!user) throw new NotFoundError('User not found');
     return user;
   }
