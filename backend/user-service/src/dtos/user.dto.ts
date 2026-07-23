@@ -2,9 +2,11 @@ import { z } from 'zod';
 import { UserRole } from '@ecoalert/shared';
 
 export const updateProfileSchema = z.object({
-  fullName: z.string().min(2).optional(),
+  fullName: z.string().min(1).optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
   phone: z.string().optional(),
-  avatar: z.string().url().optional(),
+  avatar: z.string().url().or(z.literal('')).optional(),
 });
 export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;
 
