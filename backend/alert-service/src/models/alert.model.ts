@@ -18,6 +18,8 @@ export interface IAlert extends BaseDocument {
   assignedOfficerId?: string;
   aiConfidence?: number;
   aiSuggestedPriority?: Severity;
+  officerNote?: string;   // Ghi chú xử lý của Officer
+  resolvedAt?: Date;      // Thời điểm xử lý xong
   softDelete(userId: string): Promise<this>;
 }
 
@@ -45,7 +47,9 @@ const alertSchema = new Schema<IAlert>({
     type: String, 
     enum: [...Object.values(Severity), 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
     set: (v: string) => v ? (v.toLowerCase() as any) : v
-  }
+  },
+  officerNote: { type: String, trim: true },
+  resolvedAt: { type: Date }
 }, { timestamps: true });
 
 alertSchema.plugin(baseSchemaPlugin);

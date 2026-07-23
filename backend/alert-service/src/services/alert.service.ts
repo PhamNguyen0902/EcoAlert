@@ -1,6 +1,6 @@
 import { alertRepository } from '../repositories/alert.repository';
-import { CreateAlertDto, UpdateAlertStatusDto, UpdateAlertDto } from '../dtos/alert.dto';
-import { NotFoundError, BadRequestError, AlertStatus, Severity, EVENTS } from '@ecoalert/shared';
+import { CreateAlertDto, UpdateAlertStatusDto, UpdateAlertDto, AddOfficerNoteDto } from '../dtos/alert.dto';
+import { NotFoundError, BadRequestError, ForbiddenError, AlertStatus, Severity, EVENTS } from '@ecoalert/shared';
 import { rabbitMQService } from './rabbitmq.service';
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -29,9 +29,28 @@ export class AlertService {
     return alert;
   }
 
-  async getAlerts(page: number, limit: number, citizenId?: string) {
+  async getAlerts(
+    page: number,
+    limit: number,
+    citizenId?: string,
+    filters: { status?: string; category?: string; severity?: string } = {}
+  ) {
     const skip = (page - 1) * limit;
-    const filter = citizenId ? { citizenId } : {};
+    const filter: Record<string, any> = {};
+
+    if (citizenId) filter.citizenId = citizenId;
+
+    // Case-insensitive matching to handle both "pending" and "PENDING"
+    if (filters.status) {
+      filter.status = { $regex: new RegExp(`^${filters.status}$`, 'i') };
+    }
+    if (filters.category) {
+      filter.category = { $regex: new RegExp(`^${filters.category}$`, 'i') };
+    }
+    if (filters.severity) {
+      filter.severity = { $regex: new RegExp(`^${filters.severity}$`, 'i') };
+    }
+
     return alertRepository.findPaginated(filter, skip, limit);
   }
 
@@ -129,7 +148,31 @@ export class AlertService {
 
     return updatedAlert;
   }
+
+  async addOfficerNote(id: string, officerId: string, userRole: string, data: AddOfficerNoteDto) {
+    const alert = await alertRepository.findById(id);
+    if (!alert) throw new NotFoundError('Alert not found');
+
+    const roleUpper = (userRole || '').toUpperCase();
+    if (!['OFFICER', 'ADMIN'].includes(roleUpper)) {
+      throw new ForbiddenError('Only officers and admins can add notes');
+    }
+
+    const updatedAlert = await alertRepository.update(id, {
+      officerNote: data.note,
+      updatedBy: officerId
+    });
+
+    if (!updatedAlert) throw new NotFoundError('Alert not found during update');
+
+    try {
+      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert);
+    } catch (err) {
+      // Ignore RabbitMQ publish error
+    }
+
+    return updatedAlert;
+  }
 }
 
 export const alertService = new AlertService();
-

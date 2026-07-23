@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { alertController } from '../controllers/alert.controller';
 import { validate } from '../middlewares/validate.middleware';
-import { createAlertSchema, updateAlertStatusSchema, updateAlertSchema } from '../dtos/alert.dto';
+import { createAlertSchema, updateAlertStatusSchema, updateAlertSchema, addOfficerNoteSchema } from '../dtos/alert.dto';
 import { asyncHandler } from '@ecoalert/shared';
 
 const router = Router();
@@ -19,6 +19,7 @@ router.get('/', asyncHandler(alertController.getAlerts));
 router.get('/:id', asyncHandler(alertController.getAlertById));
 router.patch('/:id', validate(updateAlertSchema), asyncHandler(alertController.updateAlert));
 router.patch('/:id/status', validate(updateAlertStatusSchema), asyncHandler(alertController.updateStatus));
+router.post('/:id/note', validate(addOfficerNoteSchema), asyncHandler(alertController.addOfficerNote));
 router.delete('/:id', asyncHandler(alertController.deleteAlert));
 
 export default router;

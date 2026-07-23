@@ -31,15 +31,25 @@ app.use(morgan('combined', {
   stream: { write: (message) => logger.info(message.trim()) }
 }));
 
-// Rate Limiting
+// Rate Limiting - Global (tăng lên cho môi trường dev)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  max: 500, // Tăng từ 100 → 500 requests per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
   message: errorResponse('Too many requests, please try again later.')
 });
 app.use(limiter);
+
+// Rate Limiter riêng cho auth (login/register) - thoải mái hơn để dev/test
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100, // 100 login attempts per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: errorResponse('Too many login attempts, please try again later.')
+});
+app.use('/api/v1/auth', authLimiter);
 
 // Request ID Injection
 app.use((req, res, next) => {

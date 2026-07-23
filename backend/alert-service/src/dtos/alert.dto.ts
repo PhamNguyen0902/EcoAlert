@@ -37,3 +37,7 @@ export const updateAlertSchema = z.object({
 });
 export type UpdateAlertDto = z.infer<typeof updateAlertSchema>;
 
+export const addOfficerNoteSchema = z.object({
+  note: z.string().min(1, 'Note cannot be empty').max(2000, 'Note too long')
+});
+export type AddOfficerNoteDto = z.infer<typeof addOfficerNoteSchema>;

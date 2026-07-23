@@ -13,11 +13,16 @@ export class AlertController {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     
-    // If citizen, only show their own. If admin/officer, show all (handled simply here, ideally would check role)
+    // If citizen, only show their own. If admin/officer, show all
     const role = req.headers['x-user-role'] as string;
     const citizenId = role === 'CITIZEN' ? req.headers['x-user-id'] as string : undefined;
 
-    const { items, total } = await alertService.getAlerts(page, limit, citizenId);
+    // Optional filters
+    const status = req.query.status as string | undefined;
+    const category = req.query.category as string | undefined;
+    const severity = req.query.severity as string | undefined;
+
+    const { items, total } = await alertService.getAlerts(page, limit, citizenId, { status, category, severity });
     res.status(200).json(paginatedResponse(items, total, page, limit));
   }
 
@@ -43,6 +48,13 @@ export class AlertController {
     const userRole = req.headers['x-user-role'] as string;
     const result = await alertService.updateAlert(req.params.id, userId, userRole, req.body);
     res.status(200).json(successResponse(result, 'Alert updated successfully'));
+  }
+
+  async addOfficerNote(req: Request, res: Response) {
+    const officerId = req.headers['x-user-id'] as string;
+    const userRole = req.headers['x-user-role'] as string;
+    const result = await alertService.addOfficerNote(req.params.id, officerId, userRole, req.body);
+    res.status(200).json(successResponse(result, 'Officer note saved successfully'));
   }
 }
 
