@@ -1,63 +1,89 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import { MoreHorizontal, Search, FileText, RefreshCw, MapPin } from 'lucide-react';
-import { useAlerts, useUpdateAlertStatus } from '@/hooks/hooks';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { EmptyState } from '@/components/ui/empty-state';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import {
+  MoreHorizontal,
+  Search,
+  FileText,
+  RefreshCw,
+  MapPin,
+  Trash2,
+  RotateCcw,
+} from "lucide-react";
+import {
+  useAlerts,
+  useUpdateAlertStatus,
+  useDeleteAlert,
+  useRestoreAlert,
+} from "@/hooks/hooks";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import toast from 'react-hot-toast';
-import { AlertStatus, Alert } from '@/types';
+} from "@/components/ui/dropdown-menu";
+import toast from "react-hot-toast";
+import { AlertStatus, Alert } from "@/types";
 
 const STATUS_OPTIONS = [
-  { value: '', label: 'All Statuses' },
-  { value: 'verified', label: 'Verified' },
-  { value: 'assigned', label: 'Assigned' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'resolved', label: 'Resolved' },
+  { value: "", label: "All Statuses" },
+  { value: "verified", label: "Verified" },
+  { value: "assigned", label: "Assigned" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "resolved", label: "Resolved" },
+  { value: "closed", label: "Closed" },
+  // { value: "deleted", label: "Trash / Deleted 🗑️" },
 ];
 
 const SEVERITY_BADGE: Record<string, string> = {
-  critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  low: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+  critical: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  high: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+  medium:
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+  low: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  pending: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-  ai_analyzing: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  verified: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  assigned: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400',
-  in_progress: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-  resolved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  closed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+  ai_analyzing:
+    "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  verified: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  assigned: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400",
+  in_progress:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+  resolved:
+    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  closed: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
 };
 
 const PAGE_LIMIT = 10;
 
 export default function AssignedReports() {
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   // Build filters for server-side filtering
   const filters: Record<string, string> = {};
   if (statusFilter) filters.status = statusFilter;
 
-  const { data, isLoading, refetch, isFetching } = useAlerts(page, PAGE_LIMIT, filters);
+  const { data, isLoading, refetch, isFetching } = useAlerts(
+    page,
+    PAGE_LIMIT,
+    filters,
+  );
   const updateStatus = useUpdateAlertStatus();
+  const deleteAlert = useDeleteAlert();
+  const restoreAlert = useRestoreAlert();
+  const [deleteTarget, setDeleteTarget] = useState<Alert | null>(null);
 
   const alerts: Alert[] = data?.items || [];
   const total: number = data?.total || 0;
@@ -69,10 +95,13 @@ export default function AssignedReports() {
     : alerts;
 
   const handleStatusUpdate = (id: string, status: AlertStatus) => {
-    updateStatus.mutate({ id, status }, {
-      onSuccess: () => toast.success(`Status updated to "${status}" ✅`),
-      onError: () => toast.error('Failed to update status'),
-    });
+    updateStatus.mutate(
+      { id, status },
+      {
+        onSuccess: () => toast.success(`Status updated to "${status}" ✅`),
+        onError: () => toast.error("Failed to update status"),
+      },
+    );
   };
 
   const handleStatusFilterChange = (value: string) => {
@@ -84,11 +113,22 @@ export default function AssignedReports() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Assigned Reports</h2>
-          <p className="text-muted-foreground">Manage and process environmental reports.</p>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Assigned Reports
+          </h2>
+          <p className="text-muted-foreground">
+            Manage and process environmental reports.
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
+          />
           Refresh
         </Button>
       </div>
@@ -116,7 +156,9 @@ export default function AssignedReports() {
               onChange={(e) => handleStatusFilterChange(e.target.value)}
             >
               {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </select>
           </div>
@@ -126,7 +168,11 @@ export default function AssignedReports() {
             <LoadingSpinner className="mx-auto my-16" />
           ) : filtered.length === 0 ? (
             <div className="py-16">
-              <EmptyState icon={FileText} title="No reports found" description="Try adjusting your search or filters." />
+              <EmptyState
+                icon={FileText}
+                title="No reports found"
+                description="Try adjusting your search or filters."
+              />
             </div>
           ) : (
             <>
@@ -134,13 +180,27 @@ export default function AssignedReports() {
                 <table className="w-full caption-bottom text-sm">
                   <thead>
                     <tr className="border-b bg-muted/30">
-                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Title</th>
-                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Category</th>
-                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Severity</th>
-                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">Address</th>
-                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">Created</th>
-                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">
+                        Title
+                      </th>
+                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">
+                        Category
+                      </th>
+                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">
+                        Severity
+                      </th>
+                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">
+                        Status
+                      </th>
+                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">
+                        Address
+                      </th>
+                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
+                        Created
+                      </th>
+                      <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -148,73 +208,156 @@ export default function AssignedReports() {
                       <tr
                         key={alert._id}
                         className={`border-b last:border-0 transition-colors hover:bg-muted/40 ${
-                          ['closed', 'rejected'].includes(alert.status?.toLowerCase?.() ?? alert.status)
-                            ? 'opacity-50 grayscale-[30%]'
-                            : ''
+                          ["closed", "rejected"].includes(
+                            alert.status?.toLowerCase?.() ?? alert.status,
+                          )
+                            ? "opacity-50 grayscale-[30%]"
+                            : ""
                         }`}
                       >
                         <td className="p-4 align-middle">
-                          <div className="font-medium line-clamp-1 max-w-[200px]">{alert.title}</div>
+                          <div className="font-medium line-clamp-1 max-w-[200px]">
+                            {alert.title}
+                          </div>
                         </td>
                         <td className="p-4 align-middle uppercase text-xs hidden md:table-cell">
-                          {alert.category.replace(/_/g, ' ')}
+                          {alert.category.replace(/_/g, " ")}
                         </td>
                         <td className="p-4 align-middle">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium uppercase ${SEVERITY_BADGE[alert.severity?.toLowerCase()] || SEVERITY_BADGE[alert.severity] || ''}`}>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium uppercase ${SEVERITY_BADGE[alert.severity?.toLowerCase()] || SEVERITY_BADGE[alert.severity] || ""}`}
+                          >
                             {alert.severity?.toUpperCase?.() ?? alert.severity}
                           </span>
                         </td>
                         <td className="p-4 align-middle">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${STATUS_BADGE[alert.status?.toLowerCase()] || STATUS_BADGE[alert.status] || ''}`}>
-                            {alert.status?.replace(/_/g, ' ')?.toUpperCase?.() ?? alert.status}
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide ${STATUS_BADGE[alert.status?.toLowerCase()] || STATUS_BADGE[alert.status] || ""}`}
+                          >
+                            {alert.status
+                              ?.replace(/_/g, " ")
+                              ?.toUpperCase?.() ?? alert.status}
                           </span>
                         </td>
                         <td className="p-4 align-middle hidden lg:table-cell">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground max-w-[160px] truncate">
                             <MapPin className="h-3 w-3 flex-shrink-0" />
-                            {alert.address || '—'}
+                            {alert.address || "—"}
                           </div>
                         </td>
                         <td className="p-4 align-middle text-muted-foreground text-xs hidden sm:table-cell">
-                          {format(new Date(alert.createdAt || Date.now()), 'MMM d, yyyy')}
+                          {format(
+                            new Date(alert.createdAt || Date.now()),
+                            "MMM d, yyyy",
+                          )}
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" asChild className="h-8 text-xs">
-                              <Link to={`/officer/reports/${alert._id}`}>View</Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              className="h-8 text-xs"
+                            >
+                              <Link to={`/officer/reports/${alert._id}`}>
+                                View
+                              </Link>
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                >
                                   <span className="sr-only">Open menu</span>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-40">
-                                {alert.status === 'verified' && (
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(alert._id, 'assigned')}>
+                                {alert.status === "verified" && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleStatusUpdate(alert._id, "assigned")
+                                    }
+                                  >
                                     Mark Assigned
                                   </DropdownMenuItem>
                                 )}
-                                {(alert.status === 'verified' || alert.status === 'assigned') && (
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(alert._id, 'in_progress')}>
+                                {(alert.status === "verified" ||
+                                  alert.status === "assigned") && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleStatusUpdate(
+                                        alert._id,
+                                        "in_progress",
+                                      )
+                                    }
+                                  >
                                     Mark In Progress
                                   </DropdownMenuItem>
                                 )}
-                                {alert.status === 'in_progress' && (
+                                {alert.status === "in_progress" && (
                                   <>
-                                    <DropdownMenuItem onClick={() => handleStatusUpdate(alert._id, 'resolved')}>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusUpdate(
+                                          alert._id,
+                                          "resolved",
+                                        )
+                                      }
+                                    >
                                       Mark Resolved
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => handleStatusUpdate(alert._id, 'assigned')}>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusUpdate(
+                                          alert._id,
+                                          "assigned",
+                                        )
+                                      }
+                                    >
                                       Revert to Assigned
                                     </DropdownMenuItem>
                                   </>
                                 )}
-                                {alert.status === 'resolved' && (
-                                  <DropdownMenuItem onClick={() => handleStatusUpdate(alert._id, 'closed')}>
+                                {alert.status === "resolved" && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleStatusUpdate(alert._id, "closed")
+                                    }
+                                  >
                                     Close Report
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                {alert.isDeleted ? (
+                                  <DropdownMenuItem
+                                    className="text-green-600 focus:text-green-600 focus:bg-green-50"
+                                    onClick={() => {
+                                      restoreAlert.mutate(alert._id, {
+                                        onSuccess: () =>
+                                          toast.success(
+                                            "Report restored successfully 🔄",
+                                          ),
+                                        onError: () =>
+                                          toast.error(
+                                            "Failed to restore report",
+                                          ),
+                                      });
+                                    }}
+                                  >
+                                    <RotateCcw className="h-4 w-4 mr-2" />
+                                    Restore Report
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                    onClick={() => setDeleteTarget(alert)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Report
                                   </DropdownMenuItem>
                                 )}
                               </DropdownMenuContent>
@@ -230,9 +373,15 @@ export default function AssignedReports() {
               {/* Pagination */}
               <div className="flex items-center justify-between px-4 py-4 border-t">
                 <p className="text-sm text-muted-foreground">
-                  Showing <span className="font-medium">{(page - 1) * PAGE_LIMIT + 1}</span>–
-                  <span className="font-medium">{Math.min(page * PAGE_LIMIT, total)}</span> of{' '}
-                  <span className="font-medium">{total}</span> reports
+                  Showing{" "}
+                  <span className="font-medium">
+                    {(page - 1) * PAGE_LIMIT + 1}
+                  </span>
+                  –
+                  <span className="font-medium">
+                    {Math.min(page * PAGE_LIMIT, total)}
+                  </span>{" "}
+                  of <span className="font-medium">{total}</span> reports
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
@@ -260,6 +409,49 @@ export default function AssignedReports() {
           )}
         </CardContent>
       </Card>
+
+      {/* Confirm Delete Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-background border rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+            <h3 className="text-lg font-semibold text-destructive flex items-center gap-2">
+              <Trash2 className="h-5 w-5" /> Delete Report?
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-foreground">
+                "{deleteTarget.title}"
+              </span>
+              ? This will soft delete the report.
+            </p>
+            <div className="flex gap-3 justify-end pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={deleteAlert.isPending}
+                onClick={() => {
+                  deleteAlert.mutate(deleteTarget._id, {
+                    onSuccess: () => {
+                      toast.success("Report deleted successfully ✅");
+                      setDeleteTarget(null);
+                    },
+                    onError: () => toast.error("Failed to delete report"),
+                  });
+                }}
+              >
+                {deleteAlert.isPending ? "Deleting..." : "Yes, Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
