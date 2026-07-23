@@ -11,8 +11,13 @@ export function AppToaster() {
   return (
     <Toaster
       position="top-right"
+      containerStyle={{
+        top: 20,
+        right: 20,
+        zIndex: 99999,
+      }}
       toastOptions={{
-        duration: 1500,
+        duration: 2000,
         className: isDark
           ? '!bg-slate-900 !text-slate-100 !border-slate-800 !border !shadow-2xl'
           : '!bg-white !text-slate-900 !border-slate-200 !border !shadow-lg',
@@ -22,7 +27,7 @@ export function AppToaster() {
           padding: '12px 16px',
         },
         success: {
-          duration: 1500,
+          duration: 2000,
           iconTheme: {
             primary: '#22c55e',
             secondary: isDark ? '#0f172a' : '#ffffff',
