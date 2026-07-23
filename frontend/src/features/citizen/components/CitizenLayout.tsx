@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { AppToaster } from '@/components/ui/app-toaster';
 import CitizenNavbar from './CitizenNavbar';
 import CitizenFooter from './CitizenFooter';
 
@@ -14,7 +14,8 @@ export default function CitizenLayout() {
       </main>
 
       <CitizenFooter />
-      <Toaster position="top-center" />
+      <AppToaster />
     </div>
   );
 }
+
