@@ -1,7 +1,6 @@
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
-import { AppToaster } from '@/components/ui/app-toaster';
 
 export default function AdminLayout() {
   return (
@@ -13,7 +12,7 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
-      <AppToaster />
     </div>
   );
 }
+

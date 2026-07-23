@@ -34,14 +34,13 @@ export default function Login() {
         onSuccess: (data) => {
           const loginData = data.data;
 
+          toast.success("Successfully logged in", { duration: 2000 });
+
           login({
             token: loginData.token || loginData.accessToken,
             refreshToken: loginData.refreshToken,
             user: loginData.user,
           });
-
-          toast.success("Successfully logged in", { duration: 1000 });
-          navigate(getRoleHome(loginData.user.role), { replace: true });
         },
       },
     );
