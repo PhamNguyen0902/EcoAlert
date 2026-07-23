@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link, Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useLogin } from "../hooks/hooks";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
@@ -13,7 +13,6 @@ import { getRoleHome } from "../lib/routes";
 import { ThemeToggle } from "../components/ui/theme-toggle";
 
 export default function Login() {
-  const navigate = useNavigate();
   const loginMutation = useLogin();
   const { login, isAuthenticated, role } = useAuth();
   const [email, setEmail] = useState("");
