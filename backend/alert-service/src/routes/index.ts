@@ -20,6 +20,7 @@ router.get('/:id', asyncHandler(alertController.getAlertById));
 router.patch('/:id', validate(updateAlertSchema), asyncHandler(alertController.updateAlert));
 router.patch('/:id/status', validate(updateAlertStatusSchema), asyncHandler(alertController.updateStatus));
 router.post('/:id/note', validate(addOfficerNoteSchema), asyncHandler(alertController.addOfficerNote));
+router.patch('/:id/restore', asyncHandler(alertController.restoreAlert));
 router.delete('/:id', asyncHandler(alertController.deleteAlert));
 
 export default router;

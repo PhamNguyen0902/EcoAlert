@@ -39,8 +39,15 @@ export class AlertController {
 
   async deleteAlert(req: Request, res: Response) {
     const userId = req.headers['x-user-id'] as string;
-    await alertService.deleteAlert(req.params.id, userId);
+    const userRole = req.headers['x-user-role'] as string;
+    await alertService.deleteAlert(req.params.id, userId, userRole);
     res.status(200).json(successResponse(null, 'Alert deleted successfully'));
+  }
+
+  async restoreAlert(req: Request, res: Response) {
+    const userId = req.headers['x-user-id'] as string;
+    const result = await alertService.restoreAlert(req.params.id, userId);
+    res.status(200).json(successResponse(result, 'Alert restored successfully'));
   }
 
   async updateAlert(req: Request, res: Response) {

@@ -21,9 +21,17 @@ export class AlertRepository implements IBaseRepository<IAlert> {
   }
 
   async findPaginated(filter: FilterQuery<IAlert>, skip: number, limit: number): Promise<{ items: IAlert[], total: number }> {
+    const includeDeleted = filter.includeDeleted;
+    const queryFilter = { ...filter };
+    delete queryFilter.includeDeleted;
+
+    if (!includeDeleted && queryFilter.isDeleted === undefined) {
+      queryFilter.isDeleted = false;
+    }
+
     const [items, total] = await Promise.all([
-      Alert.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
-      Alert.countDocuments(filter)
+      Alert.find(queryFilter).skip(skip).limit(limit).sort({ createdAt: -1 }),
+      Alert.countDocuments(queryFilter)
     ]);
     return { items, total };
   }
