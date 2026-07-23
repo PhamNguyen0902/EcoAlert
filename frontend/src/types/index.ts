@@ -37,6 +37,8 @@ export interface Alert {
   assignedOfficerId?: string;
   aiConfidence?: number;
   aiSuggestedPriority?: Severity;
+  officerNote?: string;
+  resolvedAt?: string;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;

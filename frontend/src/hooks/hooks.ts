@@ -109,6 +109,17 @@ export const useUpdateAlert = () => {
   });
 };
 
+export const useAddOfficerNote = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note: string }) =>
+      alertService.addOfficerNote(id, note),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
+    },
+  });
+};
+
 // ========================
 // NOTIFICATION
 // ========================
