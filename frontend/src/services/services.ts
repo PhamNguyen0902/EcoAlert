@@ -63,6 +63,10 @@ export const alertService = {
     const res = await api.patch(`/v1/alerts/${id}`, data);
     return res.data.data;
   },
+  addOfficerNote: async (id: string, note: string) => {
+    const res = await api.post(`/v1/alerts/${id}/note`, { note });
+    return res.data.data;
+  },
 };
 
 export const notificationService = {

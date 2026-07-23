@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
+import { AppToaster } from "@/components/ui/app-toaster";
 import OfficerSidebar from "./OfficerSidebar";
 import OfficerTopbar from "./OfficerTopbar";
 
@@ -14,7 +14,8 @@ export default function OfficerLayout() {
           <Outlet />
         </main>
       </div>
-      <Toaster position="top-center" />
+      <AppToaster />
     </div>
   );
 }
+
