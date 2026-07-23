@@ -1,7 +1,7 @@
 import { Outlet, Navigate } from "react-router-dom"
 import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
-import { Toaster } from "react-hot-toast"
+import { AppToaster } from "@/components/ui/app-toaster"
 
 export function DashboardLayout() {
   const token = localStorage.getItem('token')
@@ -19,7 +19,7 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
-      <Toaster position="top-right" />
+      <AppToaster />
     </div>
   )
 }
