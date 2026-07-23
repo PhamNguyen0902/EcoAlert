@@ -33,17 +33,20 @@ export class AlertService {
     page: number,
     limit: number,
     citizenId?: string,
-    filters: { status?: string; category?: string; severity?: string } = {}
+    filters: { status?: string; category?: string; severity?: string; isDeleted?: string } = {}
   ) {
     const skip = (page - 1) * limit;
     const filter: Record<string, any> = {};
 
     if (citizenId) filter.citizenId = citizenId;
 
-    // Case-insensitive matching to handle both "pending" and "PENDING"
-    if (filters.status) {
+    if (filters.isDeleted === 'true' || filters.status === 'deleted') {
+      filter.includeDeleted = true;
+      filter.isDeleted = true;
+    } else if (filters.status) {
       filter.status = { $regex: new RegExp(`^${filters.status}$`, 'i') };
     }
+
     if (filters.category) {
       filter.category = { $regex: new RegExp(`^${filters.category}$`, 'i') };
     }
@@ -111,10 +114,36 @@ export class AlertService {
     return updatedAlert;
   }
 
-  async deleteAlert(id: string, deletedBy: string) {
+  async deleteAlert(id: string, deletedBy: string, userRole?: string) {
+    const alert = await alertRepository.findById(id);
+    if (!alert) throw new NotFoundError('Alert not found');
+
+    const roleUpper = (userRole || '').toUpperCase();
+    if (roleUpper === 'CITIZEN' && alert.citizenId?.toString() !== deletedBy) {
+      throw new ForbiddenError('You can only delete your own alerts');
+    }
+
     const success = await alertRepository.softDelete(id, deletedBy);
     if (!success) throw new NotFoundError('Alert not found');
     return true;
+  }
+
+  async restoreAlert(id: string, restoredBy: string) {
+    const alert = await alertRepository.findOne({ _id: id, includeDeleted: true } as any);
+    if (!alert) throw new NotFoundError('Alert not found');
+
+    alert.isDeleted = false;
+    alert.deletedAt = null as any;
+    alert.updatedBy = restoredBy;
+    await alert.save();
+
+    try {
+      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, alert);
+    } catch (err) {
+      // Ignore publish error
+    }
+
+    return alert;
   }
 
   async updateAlert(id: string, userId: string, userRole: string, data: UpdateAlertDto) {
