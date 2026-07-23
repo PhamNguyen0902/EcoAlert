@@ -1,17 +1,12 @@
 import { api } from "./api";
-import type { User, Alert, PaginatedResult, CreateAlertData } from "@/types";
+import type { User, Alert, PaginatedResult, CreateAlertData, RegisterData } from "@/types";
 
 export const authService = {
   login: async (data: { email: string; password: string }) => {
     const res = await api.post("/v1/auth/login", data);
     return res.data;
   },
-  register: async (data: {
-    email: string;
-    password: string;
-    fullName: string;
-    phone?: string;
-  }) => {
+  register: async (data: RegisterData) => {
     const res = await api.post("/v1/auth/register", data);
     return res.data;
   },

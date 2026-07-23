@@ -38,19 +38,26 @@ export default function Profile() {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload: any = { fullName: fullName.trim(), phone: phone.trim() };
+    if (avatar && avatar.trim() !== '') {
+      payload.avatar = avatar.trim();
+    }
+
     updateProfileMutation.mutate(
-      { fullName, phone, avatar },
+      payload,
       {
-        onSuccess: () => {
-          toast.success("Cập nhật thông tin thành công!");
+        onSuccess: (resData: any) => {
+          toast.success("Profile updated successfully! ✅");
+          const updatedUser = resData?.data || { ...user, fullName, phone, avatar };
           const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
           localStorage.setItem(
             "user",
-            JSON.stringify({ ...storedUser, fullName, phone, avatar }),
+            JSON.stringify({ ...storedUser, ...updatedUser }),
           );
+          setTimeout(() => window.location.reload(), 800);
         },
         onError: (err: any) => {
-          toast.error(err.response?.data?.message || "Cập nhật thất bại");
+          toast.error(err.response?.data?.message || "Profile update failed");
         },
       },
     );

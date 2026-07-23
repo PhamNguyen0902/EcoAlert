@@ -14,7 +14,8 @@ export default function Register() {
   const navigate = useNavigate();
   const registerMutation = useRegister();
   const [formData, setFormData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: ''
   });
@@ -27,7 +28,8 @@ export default function Register() {
     e.preventDefault();
     registerMutation.mutate(
       {
-        fullName: formData.fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password
       },
@@ -75,24 +77,33 @@ export default function Register() {
 
           <div className="mt-10">
             <form onSubmit={handleRegister} className="space-y-6">
-              <div>
-                <Label htmlFor="fullName">Full name</Label>
-                <div className="mt-2">
-                  <Input id="fullName" name="fullName" required value={formData.fullName} onChange={handleChange} />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">First name</Label>
+                  <div className="mt-2">
+                    <Input id="firstName" name="firstName" placeholder="" required value={formData.firstName} onChange={handleChange} />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="lastName">Last name</Label>
+                  <div className="mt-2">
+                    <Input id="lastName" name="lastName" placeholder="" required value={formData.lastName} onChange={handleChange} />
+                  </div>
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="email">Email address</Label>
                 <div className="mt-2">
-                  <Input id="email" name="email" type="email" required value={formData.email} onChange={handleChange} />
+                  <Input id="email" name="email" type="email" placeholder="example@gmail.com" required value={formData.email} onChange={handleChange} />
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="password">Password</Label>
                 <div className="mt-2">
-                  <Input id="password" name="password" type="password" required value={formData.password} onChange={handleChange} />
+                  <Input id="password" name="password" type="password" placeholder="Min. 6 characters" required value={formData.password} onChange={handleChange} />
                 </div>
               </div>
 
