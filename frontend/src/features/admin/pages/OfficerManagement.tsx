@@ -1,13 +1,17 @@
+import { useState } from 'react';
 import { useUsers, useToggleUserStatus } from '@/hooks/hooks';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { UserPlus } from 'lucide-react';
 import { User } from '@/types';
 import toast from 'react-hot-toast';
+import { CreateUserModal } from '../components/CreateUserModal';
 
 export default function OfficerManagement() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { data, isLoading } = useUsers(1, 100);
   const toggleStatus = useToggleUserStatus();
 
@@ -18,8 +22,18 @@ export default function OfficerManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Officer Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Quản lý Cán bộ</h2>
+        <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" /> Thêm mới Cán bộ
+        </Button>
       </div>
+
+      <CreateUserModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        defaultRole="OFFICER"
+      />
+
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {officers.map((officer: User) => (

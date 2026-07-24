@@ -1,33 +1,31 @@
 import { useState } from 'react';
+import { useAuditLogs } from '@/hooks/hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 
-const MOCK_LOGS = [
-  { id: 1, timestamp: new Date(Date.now() - 1000 * 60 * 5), user: 'Admin User', action: 'USER_CREATED', resource: 'User: john@example.com', details: 'Created new citizen account' },
-  { id: 2, timestamp: new Date(Date.now() - 1000 * 60 * 45), user: 'System', action: 'ALERT_VERIFIED', resource: 'Alert: #12345', details: 'AI auto-verified report' },
-  { id: 3, timestamp: new Date(Date.now() - 1000 * 60 * 120), user: 'Admin User', action: 'ROLE_CHANGED', resource: 'User: jane@example.com', details: 'Changed role citizen -> officer' },
-  { id: 4, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), user: 'Officer Bob', action: 'STATUS_UPDATED', resource: 'Alert: #12340', details: 'Updated status in_progress -> resolved' },
-  { id: 5, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), user: 'Admin User', action: 'SETTINGS_UPDATED', resource: 'System Settings', details: 'Enabled maintenance mode' },
-];
-
 export default function AuditLogs() {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
-  const filteredLogs = MOCK_LOGS.filter(log => 
-    log.action.toLowerCase().includes(search.toLowerCase()) || 
-    log.user.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data, isLoading } = useAuditLogs(page, 15, search);
+
+  if (isLoading) return <LoadingSpinner />;
+
+  const logs = data?.items || [];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Audit Logs</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Nhật ký Hoạt động (Audit Logs)</h2>
       </div>
 
       <Card>
+
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>System Activity Logs</CardTitle>
           <div className="flex space-x-2">
@@ -56,19 +54,36 @@ export default function AuditLogs() {
                 </tr>
               </thead>
               <tbody>
-                {filteredLogs.map(log => (
-                  <tr key={log.id} className="border-b last:border-0 hover:bg-muted/50">
-                    <td className="p-4 whitespace-nowrap text-muted-foreground">{format(log.timestamp, 'MMM d, yyyy HH:mm:ss')}</td>
+                {logs.map((log: any) => (
+                  <tr key={log._id || log.id} className="border-b last:border-0 hover:bg-muted/50">
+                    <td className="p-4 whitespace-nowrap text-muted-foreground">
+                      {format(new Date(log.createdAt || log.timestamp), 'MMM d, yyyy HH:mm:ss')}
+                    </td>
                     <td className="p-4 font-medium">{log.user}</td>
                     <td className="p-4">
                       <Badge variant="outline" className="font-mono text-xs">{log.action}</Badge>
                     </td>
-                    <td className="p-4">{log.resource}</td>
-                    <td className="p-4 text-muted-foreground">{log.details}</td>
+                    <td className="p-4 font-medium">{log.resource}</td>
+                    <td className="p-4 text-muted-foreground">{log.details || '-'}</td>
                   </tr>
                 ))}
+                {logs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                      Chưa có nhật ký hoạt động nào
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+              Trang trước
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={logs.length < 15}>
+              Trang sau
+            </Button>
           </div>
         </CardContent>
       </Card>

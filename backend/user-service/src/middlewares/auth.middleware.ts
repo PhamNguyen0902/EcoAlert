@@ -11,8 +11,9 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 
 export const requireRoles = (roles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const userRole = req.headers['x-user-role'] as UserRole;
-    if (!userRole || !roles.includes(userRole)) {
+    const rawRole = ((req.headers['x-user-role'] as string) || '').toUpperCase();
+    const allowedRoles = roles.map(r => r.toUpperCase());
+    if (!rawRole || !allowedRoles.includes(rawRole)) {
       return next(new ForbiddenError('Insufficient permissions'));
     }
     next();

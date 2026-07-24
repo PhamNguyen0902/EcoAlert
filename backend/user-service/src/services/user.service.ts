@@ -1,9 +1,26 @@
 import { userRepository } from '../repositories/user.repository';
-import { UpdateProfileDto, ChangePasswordDto } from '../dtos/user.dto';
+import { UpdateProfileDto, ChangePasswordDto, CreateUserDto } from '../dtos/user.dto';
 import { NotFoundError, BadRequestError, UserRole } from '@ecoalert/shared';
 import { hashPassword, comparePassword } from '../utils/password.util';
 
 export class UserService {
+  async createUser(data: CreateUserDto) {
+    const existing = await userRepository.findOne({ email: data.email.toLowerCase() });
+    if (existing) throw new BadRequestError('Email already registered');
+
+    const hashedPassword = await hashPassword(data.password);
+    const user = await userRepository.create({
+      email: data.email.toLowerCase(),
+      password: hashedPassword,
+      fullName: data.fullName,
+      phone: data.phone,
+      role: data.role || UserRole.CITIZEN,
+      isActive: true,
+      isVerified: true,
+    });
+    return user;
+  }
+
   async getProfile(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) throw new NotFoundError('User not found');
@@ -50,10 +67,11 @@ export class UserService {
     return userRepository.findPaginated(filter, skip, limit);
   }
 
-  async changeRole(userId: string, targetUserId: string, role: UserRole) {
+  async changeRole(userId: string, targetUserId: string, role: string) {
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
-    return userRepository.update(targetUserId, { role, updatedBy: userId });
+    const newRole = (role || '').toUpperCase();
+    return userRepository.update(targetUserId, { role: newRole as any, updatedBy: userId });
   }
 
   async toggleStatus(userId: string, targetUserId: string, isActive: boolean) {
