@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { User, Alert, PaginatedResult, CreateAlertData, RegisterData } from "@/types";
+import type { User, Alert, PaginatedResult, CreateAlertData, RegisterData, Category } from "@/types";
 
 export const authService = {
   login: async (data: { email: string; password: string }) => {
@@ -132,6 +132,16 @@ export const userService = {
     const res = await api.delete(`/v1/users/${id}`);
     return res.data.data;
   },
+  createUser: async (data: { email: string; password?: string; fullName: string; phone?: string; role?: string }) => {
+    const res = await api.post('/v1/users', data);
+    return res.data.data;
+  },
+  getAuditLogs: async (page = 1, limit = 20, search?: string) => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (search) params.append('search', search);
+    const res = await api.get(`/v1/users/audit-logs?${params}`);
+    return res.data.data;
+  },
 };
 
 export const gisService = {
@@ -148,3 +158,23 @@ export const gisService = {
     return res.data.data;
   },
 };
+
+export const categoryService = {
+  getCategories: async (includeInactive = false) => {
+    const res = await api.get(`/v1/alerts/categories?includeInactive=${includeInactive}`);
+    return res.data.data;
+  },
+  createCategory: async (data: Partial<Category>) => {
+    const res = await api.post('/v1/alerts/categories', data);
+    return res.data.data;
+  },
+  updateCategory: async (id: string, data: Partial<Category>) => {
+    const res = await api.patch(`/v1/alerts/categories/${id}`, data);
+    return res.data.data;
+  },
+  deleteCategory: async (id: string) => {
+    const res = await api.delete(`/v1/alerts/categories/${id}`);
+    return res.data.data;
+  },
+};
+

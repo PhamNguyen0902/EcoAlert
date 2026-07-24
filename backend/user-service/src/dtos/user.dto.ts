@@ -17,6 +17,16 @@ export const changePasswordSchema = z.object({
 export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;
 
 export const changeRoleSchema = z.object({
-  role: z.nativeEnum(UserRole),
+  role: z.string().transform((val) => val.toUpperCase()),
 });
 export type ChangeRoleDto = z.infer<typeof changeRoleSchema>;
+
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  fullName: z.string().min(1),
+  phone: z.string().optional().or(z.literal('')),
+  role: z.string().optional(),
+});
+export type CreateUserDto = z.infer<typeof createUserSchema>;
+

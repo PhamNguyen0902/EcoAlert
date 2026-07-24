@@ -5,8 +5,9 @@ import {
   notificationService,
   userService,
   gisService,
+  categoryService,
 } from "../services/services";
-import { CreateAlertData } from "@/types";
+import { CreateAlertData, Category } from "@/types";
 
 // ========================
 // AUTH
@@ -264,6 +265,27 @@ export const useDeleteUser = () => {
   });
 };
 
+export const useCreateUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: userService.createUser,
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["users"],
+      });
+    },
+  });
+};
+
+export const useAuditLogs = (page = 1, limit = 20, search?: string) => {
+  return useQuery({
+    queryKey: ["audit-logs", page, limit, search],
+    queryFn: () => userService.getAuditLogs(page, limit, search),
+  });
+};
+
 // ========================
 // GIS
 // ========================
@@ -279,3 +301,46 @@ export const useNearbyIncidents = (
     enabled: Boolean(lng && lat),
   });
 };
+
+// ========================
+// CATEGORIES
+// ========================
+
+export const useCategories = (includeInactive = false) => {
+  return useQuery({
+    queryKey: ["categories", includeInactive],
+    queryFn: () => categoryService.getCategories(includeInactive),
+  });
+};
+
+export const useCreateCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<Category>) => categoryService.createCategory(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+};
+
+export const useUpdateCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Category> }) =>
+      categoryService.updateCategory(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+};
+
+export const useDeleteCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => categoryService.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+};
+

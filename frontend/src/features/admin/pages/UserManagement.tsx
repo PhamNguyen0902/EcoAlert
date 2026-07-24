@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Search } from 'lucide-react';
+import { MoreHorizontal, Search, UserPlus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +16,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { User } from '@/types';
 import toast from 'react-hot-toast';
+import { CreateUserModal } from '../components/CreateUserModal';
 
 export default function UserManagement() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const { data, isLoading } = useUsers(page, 10, roleFilter, search);
   const changeRole = useChangeRole();
@@ -34,10 +36,16 @@ export default function UserManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Quản lý Người dùng</h2>
+        <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" /> Tạo người dùng mới
+        </Button>
       </div>
 
+      <CreateUserModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+
       <Card>
+
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>Users</CardTitle>
           <div className="flex space-x-2">
@@ -95,23 +103,69 @@ export default function UserManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => { changeRole.mutate({ id: user._id, role: 'admin' }); toast.success('Role updated'); }}>
-                            Make Admin
+                          <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              try {
+                                await changeRole.mutateAsync({ id: user._id, role: 'ADMIN' });
+                                toast.success('Đã cập nhật vai trò: Quản trị viên (Admin)');
+                              } catch (err: any) {
+                                toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi đổi vai trò');
+                              }
+                            }}
+                          >
+                            Đổi thành Admin
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => { changeRole.mutate({ id: user._id, role: 'officer' }); toast.success('Role updated'); }}>
-                            Make Officer
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              try {
+                                await changeRole.mutateAsync({ id: user._id, role: 'OFFICER' });
+                                toast.success('Đã cập nhật vai trò: Cán bộ (Officer)');
+                              } catch (err: any) {
+                                toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi đổi vai trò');
+                              }
+                            }}
+                          >
+                            Đổi thành Cán bộ (Officer)
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => { changeRole.mutate({ id: user._id, role: 'citizen' }); toast.success('Role updated'); }}>
-                            Make Citizen
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              try {
+                                await changeRole.mutateAsync({ id: user._id, role: 'CITIZEN' });
+                                toast.success('Đã cập nhật vai trò: Người dân (Citizen)');
+                              } catch (err: any) {
+                                toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi đổi vai trò');
+                              }
+                            }}
+                          >
+                            Đổi thành Người dân (Citizen)
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => { toggleStatus.mutate({ id: user._id, isActive: !user.isActive }); toast.success('Status toggled'); }}>
-                            Toggle Status
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              try {
+                                await toggleStatus.mutateAsync({ id: user._id, isActive: !user.isActive });
+                                toast.success(`Đã ${!user.isActive ? 'kích hoạt' : 'khóa'} tài khoản`);
+                              } catch (err: any) {
+                                toast.error(err.response?.data?.message || 'Có lỗi xảy ra');
+                              }
+                            }}
+                          >
+                            {user.isActive ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'}
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600" onClick={() => { 
-                            if(confirm('Are you sure?')) { deleteUser.mutate(user._id); toast.success('Deleted'); }
-                          }}>
-                            Delete User
+                          <DropdownMenuItem
+                            className="text-red-600 font-medium"
+                            onClick={async () => {
+                              if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+                                try {
+                                  await deleteUser.mutateAsync(user._id);
+                                  toast.success('Đã xóa người dùng');
+                                } catch (err: any) {
+                                  toast.error(err.response?.data?.message || 'Có lỗi xảy ra');
+                                }
+                              }
+                            }}
+                          >
+                            Xóa người dùng
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
