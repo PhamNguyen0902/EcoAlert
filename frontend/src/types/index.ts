@@ -23,6 +23,18 @@ export interface GeoLocation {
   coordinates: [number, number];
 }
 
+export interface Category {
+  _id: string;
+  name: string;
+  code: string;
+  description?: string;
+  icon?: string;
+  defaultSeverity: Severity;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Alert {
   _id: string;
   title: string;
