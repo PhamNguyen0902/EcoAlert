@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Search, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useUnreadCount } from '@/hooks/hooks';
 import {
   DropdownMenu,
@@ -18,17 +19,18 @@ export default function OfficerTopbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const { data: unreadCount = 0 } = useUnreadCount();
 
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path.includes('dashboard')) return 'Officer Dashboard';
-    if (path.includes('assigned')) return 'Assigned Reports';
-    if (path.includes('pending')) return 'Pending Verification';
-    if (path.includes('map')) return 'GIS Monitoring';
-    if (path.includes('notifications')) return 'Notifications';
-    if (path.includes('stats')) return 'Statistics';
-    if (path.includes('reports/')) return 'Report Details';
+    if (path.includes('dashboard')) return t('officer.dashboard');
+    if (path.includes('assigned')) return t('officer.assigned');
+    if (path.includes('pending')) return t('officer.pending');
+    if (path.includes('map')) return t('officer.map');
+    if (path.includes('notifications')) return t('officer.notifications');
+    if (path.includes('stats')) return t('officer.stats');
+    if (path.includes('reports/')) return t('officer.details');
     return 'Officer Portal';
   };
 
@@ -41,7 +43,7 @@ export default function OfficerTopbar() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder={t('btn.search')}
             className="h-9 w-64 rounded-md border border-input bg-transparent px-9 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </div>

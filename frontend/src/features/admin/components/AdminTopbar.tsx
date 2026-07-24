@@ -1,7 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,21 +13,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
 
 export default function AdminTopbar() {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout(); // Xóa state + localStorage
-    navigate("/login", { replace: true }); // 3. Chuyển hướng sang trang Login
+    logout();
+    navigate("/login", { replace: true });
   };
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-background px-6">
-      <h1 className="text-xl font-semibold">Admin Portal</h1>
+      <h1 className="text-xl font-semibold">{t('nav.portal')}</h1>
 
       <div className="flex items-center space-x-4">
         <div className="relative">

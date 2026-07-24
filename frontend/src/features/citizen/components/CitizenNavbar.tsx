@@ -14,21 +14,23 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCount } from '@/hooks/hooks';
 import { Badge } from '@/components/ui/badge';
 
-const navLinks = [
-  { name: 'Home', path: '/home' },
-  { name: 'Report Incident', path: '/report' },
-  { name: 'My Reports', path: '/my-reports' },
-];
-
 export default function CitizenNavbar() {
   const { user, logout, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: unreadCount = 0 } = useUnreadCount();
+
+  const navLinks = [
+    { name: t('nav.home'), path: '/home' },
+    { name: t('nav.report_incident'), path: '/report' },
+    { name: t('nav.my_reports'), path: '/my-reports' },
+  ];
 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
