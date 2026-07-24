@@ -3,7 +3,10 @@ import { FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import type { Alert } from '@/types';
 
+import { useLanguage } from '@/contexts/LanguageContext';
+
 export function StatsSection({ alerts }: { alerts: Alert[] }) {
+  const { t } = useLanguage();
   const totalReports = alerts?.length || 0;
   const resolved = alerts?.filter(a => a.status === 'resolved').length || 0;
   const pending = alerts?.filter(a => a.status === 'pending' || a.status === 'in_progress').length || 0;
@@ -33,10 +36,10 @@ export function StatsSection({ alerts }: { alerts: Alert[] }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-10 text-center sm:text-left">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl mb-4">
-            Environmental Overview
+            {t('stats.environmental_overview')}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl">
-            A real-time snapshot of environmental incident reporting and resolution across the community.
+            {t('stats.community_snapshot')}
           </p>
         </div>
 
@@ -49,7 +52,7 @@ export function StatsSection({ alerts }: { alerts: Alert[] }) {
         >
           <motion.div variants={itemVariants}>
             <StatCard
-              title="Total Reports"
+              title={t('stats.total_reports')}
               value={totalReports}
               icon={FileText}
               trend={{ value: 12, isPositive: true }}
@@ -59,7 +62,7 @@ export function StatsSection({ alerts }: { alerts: Alert[] }) {
           
           <motion.div variants={itemVariants}>
             <StatCard
-              title="Resolved"
+              title={t('stats.resolved')}
               value={resolved}
               icon={CheckCircle}
               trend={{ value: 8, isPositive: true }}
@@ -69,7 +72,7 @@ export function StatsSection({ alerts }: { alerts: Alert[] }) {
 
           <motion.div variants={itemVariants}>
             <StatCard
-              title="Pending"
+              title={t('stats.pending_verification')}
               value={pending}
               icon={Clock}
               trend={{ value: 3, isPositive: false }}

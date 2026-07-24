@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils";
 
 interface StatCardProps {
   title: string;
-  value: number;
+  value: number | string;
   icon: React.ComponentType<{ className?: string }>;
+  description?: string;
   trend?: {
     value: number;
     isPositive: boolean;
@@ -23,6 +24,7 @@ export function StatCard({
   title,
   value,
   icon: Icon,
+  description,
   trend,
   gradient = "bg-gradient-to-br from-primary/20 to-primary/5",
   className,
@@ -35,9 +37,10 @@ export function StatCard({
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <div className="flex items-center gap-2">
               <span className="text-3xl font-bold">
-                <AnimatedCounter value={value} />
+                {typeof value === 'number' ? <AnimatedCounter value={value} /> : value}
               </span>
             </div>
+            {description && <p className="text-xs text-muted-foreground">{description}</p>}
             {trend && (
               <div className="flex items-center gap-1">
                 {trend.isPositive ? (
