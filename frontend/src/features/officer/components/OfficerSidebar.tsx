@@ -17,32 +17,34 @@ import {
 import { cn } from "@/lib/utils";
 import { useUnreadCount } from "@/hooks/hooks";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export default function OfficerSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { t } = useLanguage();
   const { data: unreadCount = 0 } = useUnreadCount();
 
   const navItems = [
-    { name: "Dashboard", path: "/officer/dashboard", icon: LayoutDashboard },
+    { name: t("officer.dashboard"), path: "/officer/dashboard", icon: LayoutDashboard },
     {
-      name: "Assigned Reports",
+      name: t("officer.assigned"),
       path: "/officer/assigned",
       icon: ClipboardList,
     },
     {
-      name: "Pending Verification",
+      name: t("officer.pending"),
       path: "/officer/pending",
       icon: ShieldCheck,
     },
-    // { name: 'Deleted History', path: '/officer/deleted', icon: Trash2 },
-    { name: "GIS Monitoring", path: "/officer/map", icon: MapIcon },
+    { name: t("officer.map"), path: "/officer/map", icon: MapIcon },
     {
-      name: "Notifications",
+      name: t("officer.notifications"),
       path: "/officer/notifications",
       icon: Bell,
       badge: unreadCount,
     },
-    { name: "Statistics", path: "/officer/stats", icon: BarChart3 },
+    { name: t("officer.stats"), path: "/officer/stats", icon: BarChart3 },
   ];
 
   return (
@@ -109,11 +111,11 @@ export default function OfficerSidebar() {
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )
           }
-          title={collapsed ? "Profile" : undefined}
+          title={collapsed ? t("nav.profile") : undefined}
         >
           <User className="w-5 h-5 shrink-0" />
           {!collapsed && (
-            <span className="ml-3 whitespace-nowrap">Profile</span>
+            <span className="ml-3 whitespace-nowrap">{t("nav.profile")}</span>
           )}
         </NavLink>
         <button

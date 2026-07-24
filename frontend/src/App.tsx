@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { LoadingSpinner } from "./components/ui/loading-spinner";
 import { useAuth } from "./contexts/AuthContext";
 import { getRoleHome } from "./lib/routes";
+import { FloatingLanguageToggle } from "./components/ui/language-toggle";
 
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
@@ -56,6 +57,9 @@ const OfficerManagement = lazy(
 const ReportManagement = lazy(
   () => import("./features/admin/pages/ReportManagement"),
 );
+const CategoryManagement = lazy(
+  () => import("./features/admin/pages/CategoryManagement"),
+);
 const SystemMonitoring = lazy(
   () => import("./features/admin/pages/SystemMonitoring"),
 );
@@ -93,82 +97,86 @@ function RoleRedirect() {
 
 function App() {
   return (
-    <Routes>
-      <Route
-        element={
-          <Suspense fallback={<PageLoader />}>
-            <Outlet />
-          </Suspense>
-        }
-      >
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <>
+      <Routes>
+        <Route
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
+          }
+        >
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        {/* Citizen Routes */}
-        <Route element={<ProtectedRoute allowedRoles={["CITIZEN"]} />}>
-          <Route element={<CitizenLayout />}>
-            <Route path="/home" element={<CitizenHome />} />
-            <Route path="/report" element={<CreateReport />} />
-            <Route path="/my-reports" element={<MyReports />} />
-            <Route path="/incidents/:id" element={<CitizenAlertDetail />} />
-            <Route path="/notifications" element={<CitizenNotifications />} />
-            <Route path="/profile" element={<CitizenProfile />} />
+          {/* Citizen Routes */}
+          <Route element={<ProtectedRoute allowedRoles={["CITIZEN"]} />}>
+            <Route element={<CitizenLayout />}>
+              <Route path="/home" element={<CitizenHome />} />
+              <Route path="/report" element={<CreateReport />} />
+              <Route path="/my-reports" element={<MyReports />} />
+              <Route path="/incidents/:id" element={<CitizenAlertDetail />} />
+              <Route path="/notifications" element={<CitizenNotifications />} />
+              <Route path="/profile" element={<CitizenProfile />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Officer Routes */}
-        <Route element={<ProtectedRoute allowedRoles={["OFFICER"]} />}>
-          <Route element={<OfficerLayout />}>
-            <Route path="/officer/dashboard" element={<OfficerDashboard />} />
-            <Route path="/officer/assigned" element={<AssignedReports />} />
-            <Route path="/officer/pending" element={<PendingVerification />} />
-            {/* <Route path="/officer/deleted" element={<DeletedReports />} /> */}
-            <Route path="/officer/map" element={<OfficerMap />} />
-            <Route
-              path="/officer/reports/:id"
-              element={<OfficerReportDetail />}
-            />
-            <Route
-              path="/officer/notifications"
-              element={<OfficerNotifications />}
-            />
-            <Route path="/officer/stats" element={<OfficerStats />} />
-            <Route path="/officer/profile" element={<CitizenProfile />} />
+          {/* Officer Routes */}
+          <Route element={<ProtectedRoute allowedRoles={["OFFICER"]} />}>
+            <Route element={<OfficerLayout />}>
+              <Route path="/officer/dashboard" element={<OfficerDashboard />} />
+              <Route path="/officer/assigned" element={<AssignedReports />} />
+              <Route path="/officer/pending" element={<PendingVerification />} />
+              {/* <Route path="/officer/deleted" element={<DeletedReports />} /> */}
+              <Route path="/officer/map" element={<OfficerMap />} />
+              <Route
+                path="/officer/reports/:id"
+                element={<OfficerReportDetail />}
+              />
+              <Route
+                path="/officer/notifications"
+                element={<OfficerNotifications />}
+              />
+              <Route path="/officer/stats" element={<OfficerStats />} />
+              <Route path="/officer/profile" element={<CitizenProfile />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Admin Routes */}
-        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
-          <Route element={<AdminLayout />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/officers" element={<OfficerManagement />} />
-            <Route path="/admin/reports" element={<ReportManagement />} />
-            <Route
-              path="/admin/reports/:id"
-              element={<OfficerReportDetail />}
-            />
-            <Route path="/admin/monitoring" element={<SystemMonitoring />} />
-            <Route path="/admin/analytics" element={<Analytics />} />
-            <Route path="/admin/audit" element={<AuditLogs />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
-            <Route path="/admin/profile" element={<CitizenProfile />} />
+          {/* Admin Routes */}
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<UserManagement />} />
+              <Route path="/admin/officers" element={<OfficerManagement />} />
+              <Route path="/admin/reports" element={<ReportManagement />} />
+              <Route path="/admin/categories" element={<CategoryManagement />} />
+              <Route
+                path="/admin/reports/:id"
+                element={<OfficerReportDetail />}
+              />
+              <Route path="/admin/monitoring" element={<SystemMonitoring />} />
+              <Route path="/admin/analytics" element={<Analytics />} />
+              <Route path="/admin/audit" element={<AuditLogs />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
+              <Route path="/admin/profile" element={<CitizenProfile />} />
+            </Route>
           </Route>
+
+          {/* Legacy redirects */}
+          <Route path="/dashboard" element={<RoleRedirect />} />
+          <Route path="/reports" element={<RoleRedirect />} />
+          <Route path="/map" element={<RoleRedirect />} />
+          <Route path="/alerts/:id" element={<RoleRedirect />} />
+          <Route path="/settings" element={<RoleRedirect />} />
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
-
-        {/* Legacy redirects */}
-        <Route path="/dashboard" element={<RoleRedirect />} />
-        <Route path="/reports" element={<RoleRedirect />} />
-        <Route path="/map" element={<RoleRedirect />} />
-        <Route path="/alerts/:id" element={<RoleRedirect />} />
-        <Route path="/settings" element={<RoleRedirect />} />
-
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+      </Routes>
+      <FloatingLanguageToggle />
+    </>
   );
 }
 
