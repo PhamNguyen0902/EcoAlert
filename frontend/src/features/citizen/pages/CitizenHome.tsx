@@ -25,7 +25,7 @@ export default function CitizenHome() {
         <StatsSection alerts={alerts} />
       </section>
 
-      <section className="py-8">
+      <section className="py-8" id="map-section">
         <div className="max-w-7xl mx-auto px-4 mb-8">
           <h2 className="text-3xl font-bold tracking-tight">
             Live Incident Map

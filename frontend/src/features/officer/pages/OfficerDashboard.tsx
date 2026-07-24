@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Alert } from '@/types';
 import { useNavigate } from 'react-router-dom';
@@ -10,11 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { formatDistanceToNow } from 'date-fns';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const COLORS = ['#0ea5e9', '#22c55e', '#eab308', '#f97316', '#ef4444'];
 
 export default function OfficerDashboard() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { data: alertsData, isLoading } = useAlerts(1, 100);
   const alerts = alertsData?.items || [];
   if (isLoading) return <LoadingSpinner className="mx-auto mt-20" />;
@@ -52,25 +53,25 @@ export default function OfficerDashboard() {
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
-          <p className="text-muted-foreground">Monitor and manage environmental reports.</p>
+          <h2 className="text-3xl font-bold tracking-tight">{t('officer.dashboard')}</h2>
+          <p className="text-muted-foreground">{t('officer.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate('/officer/pending')}>
-            <ShieldCheck className="mr-2 h-4 w-4" /> View Pending
+            <ShieldCheck className="mr-2 h-4 w-4" /> {t('officer.pending')}
           </Button>
           <Button onClick={() => navigate('/officer/map')}>
-            <MapIcon className="mr-2 h-4 w-4" /> Go to Map
+            <MapIcon className="mr-2 h-4 w-4" /> {t('officer.map')}
           </Button>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: 'Assigned to Me', value: assigned.length, icon: ClipboardList, color: 'text-blue-500' },
-          { title: 'Pending Verification', value: pending.length, icon: ShieldCheck, color: 'text-amber-500' },
-          { title: 'In Progress', value: inProgress.length, icon: Activity, color: 'text-orange-500' },
-          { title: 'Resolved Today', value: resolved.length, icon: CheckCircle2, color: 'text-green-500' },
+          { title: t('stats.assigned_to_me'), value: assigned.length, icon: ClipboardList, color: 'text-blue-500' },
+          { title: t('stats.pending_verification'), value: pending.length, icon: ShieldCheck, color: 'text-amber-500' },
+          { title: t('stats.in_progress'), value: inProgress.length, icon: Activity, color: 'text-orange-500' },
+          { title: t('stats.resolved'), value: resolved.length, icon: CheckCircle2, color: 'text-green-500' },
         ].map((stat, i) => (
           <motion.div key={i} variants={item}>
             <Card>
@@ -90,7 +91,7 @@ export default function OfficerDashboard() {
         <motion.div variants={item} className="lg:col-span-4">
           <Card className="h-full">
             <CardHeader>
-              <CardTitle>Reports by Status</CardTitle>
+              <CardTitle>{t('stats.reports_by_status')}</CardTitle>
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -107,7 +108,7 @@ export default function OfficerDashboard() {
         <motion.div variants={item} className="lg:col-span-3">
           <Card className="h-full">
             <CardHeader>
-              <CardTitle>Category Distribution</CardTitle>
+              <CardTitle>{t('stats.category_distribution')}</CardTitle>
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -128,8 +129,8 @@ export default function OfficerDashboard() {
       <motion.div variants={item}>
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest reports across all statuses.</CardDescription>
+            <CardTitle>{t('stats.recent_activity')}</CardTitle>
+            <CardDescription>{t('stats.latest_reports_desc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -146,7 +147,7 @@ export default function OfficerDashboard() {
                       {alert.severity}
                     </Badge>
                     <Button variant="ghost" size="sm" onClick={() => navigate(`/officer/reports/${alert._id}`)}>
-                      View <ArrowRight className="ml-2 h-4 w-4" />
+                      {t('btn.view')} <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
                 </div>
