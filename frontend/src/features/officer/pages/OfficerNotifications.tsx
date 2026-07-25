@@ -37,7 +37,7 @@ export default function OfficerNotifications() {
     );
   }
 
-  const notifications = data?.notifications || [];
+  const notifications = data?.items || data?.notifications || [];
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
   return (
@@ -99,7 +99,7 @@ export default function OfficerNotifications() {
                     variant="ghost" 
                     size="sm" 
                     className="shrink-0 sm:ml-4 self-start sm:self-center"
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => markAsRead(notification._id || notification.id)}
                   >
                     {t('notifications.mark_read')}
                   </Button>
