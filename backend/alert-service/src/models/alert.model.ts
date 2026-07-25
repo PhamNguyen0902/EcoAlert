@@ -26,7 +26,12 @@ export interface IAlert extends BaseDocument {
 const alertSchema = new Schema<IAlert>({
   title: { type: String, required: true, trim: true },
   description: { type: String, required: true, trim: true },
-  status: { type: String, enum: Object.values(AlertStatus), default: AlertStatus.PENDING },
+  status: { 
+    type: String, 
+    enum: [...Object.values(AlertStatus), 'PENDING', 'AI_ANALYZING', 'VERIFIED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED', 'pending', 'ai_analyzing', 'verified', 'assigned', 'in_progress', 'resolved', 'closed', 'rejected'], 
+    default: AlertStatus.PENDING,
+    set: (v: string) => v ? (v.toLowerCase() as any) : v
+  },
   category: { type: String, default: 'UNCLASSIFIED' },
   severity: { 
     type: String, 
