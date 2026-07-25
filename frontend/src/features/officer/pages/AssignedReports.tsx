@@ -31,45 +31,46 @@ import {
 } from "@/components/ui/dropdown-menu";
 import toast from "react-hot-toast";
 import { AlertStatus, Alert } from "@/types";
-
-const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "verified", label: "Verified" },
-  { value: "assigned", label: "Assigned" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "resolved", label: "Resolved" },
-  { value: "closed", label: "Closed" },
-  // { value: "deleted", label: "Trash / Deleted 🗑️" },
-];
-
-const SEVERITY_BADGE: Record<string, string> = {
-  critical: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  high: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-  medium:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  low: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  ai_analyzing:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  verified: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  assigned: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400",
-  in_progress:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-  resolved:
-    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  closed: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-};
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const PAGE_LIMIT = 10;
 
 export default function AssignedReports() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  const STATUS_OPTIONS = [
+    { value: "", label: t('status.all') },
+    { value: "verified", label: t('status.pending') },
+    { value: "assigned", label: t('officer.assigned') },
+    { value: "in_progress", label: t('status.in_progress') },
+    { value: "resolved", label: t('status.resolved') },
+    { value: "closed", label: t('status.rejected') },
+  ];
+
+  const SEVERITY_BADGE: Record<string, string> = {
+    critical: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+    high: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+    medium:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+    low: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  };
+
+  const STATUS_BADGE: Record<string, string> = {
+    pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+    ai_analyzing:
+      "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+    verified: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    assigned: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400",
+    in_progress:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+    resolved:
+      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+    closed: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  };
 
   // Build filters for server-side filtering
   const filters: Record<string, string> = {};
@@ -98,7 +99,7 @@ export default function AssignedReports() {
     updateStatus.mutate(
       { id, status },
       {
-        onSuccess: () => toast.success(`Status updated to "${status}" ✅`),
+        onSuccess: () => toast.success("Status updated"),
         onError: () => toast.error("Failed to update status"),
       },
     );
@@ -111,13 +112,11 @@ export default function AssignedReports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            Assigned Reports
-          </h2>
-          <p className="text-muted-foreground">
-            Manage and process environmental reports.
+          <h1 className="text-3xl font-bold tracking-tight">{t('officer.assigned')}</h1>
+          <p className="text-muted-foreground mt-1">
+            {t('officer.subtitle')}
           </p>
         </div>
         <Button
@@ -129,14 +128,14 @@ export default function AssignedReports() {
           <RefreshCw
             className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
           />
-          Refresh
+          {t('btn.filter')}
         </Button>
       </div>
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pb-4">
           <CardTitle className="flex items-center gap-2">
-            Reports
+            {t('officer.assigned')}
             <Badge variant="secondary">{total}</Badge>
           </CardTitle>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -144,7 +143,7 @@ export default function AssignedReports() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search titles..."
+                placeholder={t('officer_reports.search_placeholder')}
                 className="pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -181,25 +180,25 @@ export default function AssignedReports() {
                   <thead>
                     <tr className="border-b bg-muted/30">
                       <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">
-                        Title
+                        {t('officer_reports.table_title')}
                       </th>
                       <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">
                         Category
                       </th>
                       <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">
-                        Severity
+                        {t('officer_reports.table_priority')}
                       </th>
                       <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">
-                        Status
+                        {t('officer_reports.table_status')}
                       </th>
                       <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">
-                        Address
+                        {t('officer_reports.table_location')}
                       </th>
                       <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
-                        Created
+                        {t('officer_reports.table_date')}
                       </th>
                       <th className="h-11 px-4 text-left align-middle font-medium text-muted-foreground">
-                        Actions
+                        {t('officer_reports.table_action')}
                       </th>
                     </tr>
                   </thead>

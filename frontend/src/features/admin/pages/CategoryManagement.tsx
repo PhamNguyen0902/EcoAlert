@@ -28,8 +28,10 @@ import {
 import { Plus, Edit2, Trash2, Tag, Search } from 'lucide-react';
 import { Category } from '@/types';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function CategoryManagement() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -103,19 +105,19 @@ export default function CategoryManagement() {
         id: cat._id,
         data: { isActive: !cat.isActive },
       });
-      toast.success(`Đã ${!cat.isActive ? 'kích hoạt' : 'ẩn'} danh mục`);
+      toast.success(`Updated status`);
     } catch {
-      toast.error('Có lỗi xảy ra khi thay đổi trạng thái');
+      toast.error('Error changing status');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
+    if (confirm('Delete category?')) {
       try {
         await deleteCategory.mutateAsync(id);
-        toast.success('Đã xóa danh mục');
+        toast.success('Category deleted');
       } catch {
-        toast.error('Không thể xóa danh mục này');
+        toast.error('Failed to delete category');
       }
     }
   };
@@ -130,9 +132,9 @@ export default function CategoryManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Quản lý Danh mục Sự cố</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('admin_categories.title')}</h2>
         <Button onClick={handleOpenCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm danh mục mới
+          <Plus className="h-4 w-4" /> {t('btn.add_category')}
         </Button>
       </div>
 
@@ -141,18 +143,18 @@ export default function CategoryManagement() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
-              {editingCategory ? 'Chỉnh sửa Danh mục' : 'Thêm mới Danh mục Sự cố'}
+              {editingCategory ? t('admin_categories.edit_modal_title') : t('admin_categories.create_modal_title')}
             </DialogTitle>
             <DialogDescription>
-              Thiết lập các loại sự cố môi trường để người dân và cán bộ dễ dàng phân loại.
+              {t('admin_categories.modal_desc')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4 py-2">
             <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase text-muted-foreground">Tên danh mục *</label>
+              <label className="text-xs font-semibold uppercase text-muted-foreground">{t('admin_categories.col_name')} *</label>
               <Input
-                placeholder="Ví dụ: Ô nhiễm nguồn nước"
+                placeholder="Water Pollution"
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
@@ -165,7 +167,7 @@ export default function CategoryManagement() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase text-muted-foreground">Mã Code *</label>
+              <label className="text-xs font-semibold uppercase text-muted-foreground">{t('admin_categories.code_col')} *</label>
               <Input
                 placeholder="WATER_POLLUTION"
                 value={code}
@@ -175,35 +177,35 @@ export default function CategoryManagement() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase text-muted-foreground">Mô tả</label>
+              <label className="text-xs font-semibold uppercase text-muted-foreground">{t('admin_categories.desc_col')}</label>
               <Input
-                placeholder="Mô tả chi tiết loại sự cố..."
+                placeholder="..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold uppercase text-muted-foreground">Mức độ mặc định</label>
+              <label className="text-xs font-semibold uppercase text-muted-foreground">{t('admin_categories.default_severity')}</label>
               <Select value={defaultSeverity} onValueChange={setDefaultSeverity}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn mức độ" />
+                  <SelectValue placeholder="Severity" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Thấp (Low)</SelectItem>
-                  <SelectItem value="medium">Trung bình (Medium)</SelectItem>
-                  <SelectItem value="high">Cao (High)</SelectItem>
-                  <SelectItem value="critical">Nghiêm trọng (Critical)</SelectItem>
+                  <SelectItem value="low">{t('priority.low')}</SelectItem>
+                  <SelectItem value="medium">{t('priority.medium')}</SelectItem>
+                  <SelectItem value="high">{t('priority.high')}</SelectItem>
+                  <SelectItem value="critical">{t('priority.urgent')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                Hủy
+                {t('btn.cancel')}
               </Button>
               <Button type="submit" disabled={createCategory.isPending || updateCategory.isPending}>
-                {editingCategory ? 'Lưu thay đổi' : 'Tạo mới'}
+                {editingCategory ? t('btn.save_changes') : t('btn.add_category')}
               </Button>
             </DialogFooter>
           </form>
@@ -213,13 +215,13 @@ export default function CategoryManagement() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
-            <Tag className="h-5 w-5 text-primary" /> Danh sách Danh mục Sự cố ({filteredCategories.length})
+            <Tag className="h-5 w-5 text-primary" /> {t('admin_categories.title')} ({filteredCategories.length})
           </CardTitle>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Tìm danh mục..."
+              placeholder={t('btn.search')}
               className="w-[250px] pl-8"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -231,12 +233,12 @@ export default function CategoryManagement() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left">
-                  <th className="p-4 font-medium">Tên Danh mục</th>
-                  <th className="p-4 font-medium">Mã Code</th>
-                  <th className="p-4 font-medium">Mức độ mặc định</th>
-                  <th className="p-4 font-medium">Mô tả</th>
-                  <th className="p-4 font-medium">Trạng thái</th>
-                  <th className="p-4 font-medium text-right">Thao tác</th>
+                  <th className="p-4 font-medium">{t('admin_categories.col_name')}</th>
+                  <th className="p-4 font-medium">{t('admin_categories.code_col')}</th>
+                  <th className="p-4 font-medium">{t('admin_categories.default_severity')}</th>
+                  <th className="p-4 font-medium">{t('admin_categories.desc_col')}</th>
+                  <th className="p-4 font-medium">{t('admin_categories.status_col')}</th>
+                  <th className="p-4 font-medium text-right">{t('admin_categories.action_col')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -262,7 +264,7 @@ export default function CategoryManagement() {
                         onClick={() => handleToggleActive(cat)}
                       >
                         <Badge variant={cat.isActive ? 'default' : 'secondary'}>
-                          {cat.isActive ? 'Đang sử dụng' : 'Đã ẩn'}
+                          {cat.isActive ? t('admin_categories.active') : t('admin_categories.hidden')}
                         </Badge>
                       </Button>
                     </td>
@@ -272,7 +274,7 @@ export default function CategoryManagement() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenEdit(cat)}
-                          title="Chỉnh sửa"
+                          title={t('btn.edit')}
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -281,7 +283,7 @@ export default function CategoryManagement() {
                           size="icon"
                           className="text-red-500"
                           onClick={() => handleDelete(cat._id)}
-                          title="Xóa"
+                          title={t('btn.delete')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -292,7 +294,7 @@ export default function CategoryManagement() {
                 {filteredCategories.length === 0 && (
                   <tr>
                     <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Chưa có danh mục nào phù hợp
+                      -
                     </td>
                   </tr>
                 )}

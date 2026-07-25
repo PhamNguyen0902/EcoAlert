@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Leaf,
   User,
-  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnreadCount } from "@/hooks/hooks";
@@ -21,7 +20,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function OfficerSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const location = useLocation();
   const { t } = useLanguage();
   const { data: unreadCount = 0 } = useUnreadCount();
 

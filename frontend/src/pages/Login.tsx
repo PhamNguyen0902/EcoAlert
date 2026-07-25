@@ -11,8 +11,10 @@ import toast from "react-hot-toast";
 import { getRoleHome } from "../lib/routes";
 
 import { ThemeToggle } from "../components/ui/theme-toggle";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export default function Login() {
+  const { t } = useLanguage();
   const loginMutation = useLogin();
   const { login, isAuthenticated, role } = useAuth();
   const [email, setEmail] = useState("");
@@ -60,15 +62,15 @@ export default function Login() {
               <ThemeToggle />
             </div>
             <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-foreground">
-              Sign in to your account
+              {t('auth.login_title')}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Not a member?{" "}
+              {t('auth.no_account')}{" "}
               <Link
                 to="/register"
                 className="font-semibold text-primary hover:text-primary/80"
               >
-                Register now
+                {t('nav.signin')}
               </Link>
             </p>
           </div>
@@ -76,14 +78,14 @@ export default function Login() {
           <div className="mt-10">
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <Label htmlFor="email">Email address</Label>
+                <Label htmlFor="email">{t('auth.email')}</Label>
                 <div className="mt-2">
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     autoComplete="email"
-                    placeholder="exmaple@gmail.com"
+                    placeholder="example@gmail.com"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -92,7 +94,7 @@ export default function Login() {
               </div>
 
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t('auth.password')}</Label>
                 <div className="mt-2">
                   <Input
                     id="password"
@@ -102,7 +104,7 @@ export default function Login() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder="••••••••"
                   />
                 </div>
               </div>
@@ -113,7 +115,7 @@ export default function Login() {
                   className="w-full"
                   disabled={loginMutation.isPending}
                 >
-                  {loginMutation.isPending ? "Signing in..." : "Sign in"}
+                  {loginMutation.isPending ? "..." : t('nav.signin')}
                 </Button>
               </div>
             </form>
@@ -133,7 +135,7 @@ export default function Login() {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="text-5xl font-bold max-w-2xl"
           >
-            Protecting our environment, together.
+            {t('hero.protecting')} {t('hero.our_environment')}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, x: 20 }}
@@ -141,8 +143,7 @@ export default function Login() {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="mt-6 text-xl max-w-xl text-green-50"
           >
-            EcoAlert leverages AI and real-time GIS to instantly classify and
-            route environmental incidents to the right authorities.
+            {t('hero.subtitle')}
           </motion.p>
         </div>
       </div>

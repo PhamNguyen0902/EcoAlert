@@ -10,8 +10,10 @@ import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Alert } from '@/types';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ReportManagement() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   
@@ -27,17 +29,17 @@ export default function ReportManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Report Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('reports.management_title')}</h2>
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Environmental Reports</CardTitle>
+          <CardTitle>{t('reports.env_reports')}</CardTitle>
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search reports..."
+              placeholder={t('reports.search_placeholder')}
               className="w-[300px] pl-8"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -49,12 +51,12 @@ export default function ReportManagement() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left">
-                  <th className="p-4 font-medium">Title</th>
-                  <th className="p-4 font-medium">Category</th>
-                  <th className="p-4 font-medium">Severity</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Date</th>
-                  <th className="p-4 font-medium">Actions</th>
+                  <th className="p-4 font-medium">{t('reports.col_title')}</th>
+                  <th className="p-4 font-medium">{t('reports.col_category')}</th>
+                  <th className="p-4 font-medium">{t('reports.col_severity')}</th>
+                  <th className="p-4 font-medium">{t('reports.col_status')}</th>
+                  <th className="p-4 font-medium">{t('reports.col_date')}</th>
+                  <th className="p-4 font-medium">{t('reports.col_actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -99,8 +101,8 @@ export default function ReportManagement() {
             </table>
           </div>
           <div className="flex items-center justify-end space-x-2 py-4">
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-            <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)}>Next</Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>{t('reports.prev')}</Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)}>{t('reports.next')}</Button>
           </div>
         </CardContent>
       </Card>

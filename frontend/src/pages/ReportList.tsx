@@ -6,19 +6,20 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { Search, Eye, Filter, Trash2, Edit2, MoreVertical, CheckCircle } from 'lucide-react';
+import { Search, Eye, Filter, MoreVertical, CheckCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function ReportList() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   
-  // In a real app we'd debounce search, but for MVP this is fine
   const { data: alertsData, isLoading } = useAlerts(page, 10, search ? { title: search } : {});
   const updateStatusMutation = useUpdateAlertStatus();
 
@@ -34,10 +35,10 @@ export default function ReportList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Report Management</h2>
-          <p className="text-muted-foreground mt-1">View, search, and manage all environmental reports.</p>
+          <h2 className="text-3xl font-bold tracking-tight">{t('reports.management_title')}</h2>
+          <p className="text-muted-foreground mt-1">{t('reports.management_subtitle')}</p>
         </div>
-        <Button asChild><Link to="/report">Create Report</Link></Button>
+        <Button asChild><Link to="/report">{t('my_reports.btn_create')}</Link></Button>
       </div>
 
       <Card>
@@ -46,14 +47,14 @@ export default function ReportList() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search reports by title..."
+                placeholder={t('reports.search_placeholder')}
                 className="pl-9 bg-muted/50 w-full sm:max-w-md"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" /> Filter
+              <Filter className="h-4 w-4" /> {t('btn.filter')}
             </Button>
           </div>
           
@@ -61,12 +62,12 @@ export default function ReportList() {
             <table className="w-full text-sm text-left">
               <thead className="bg-muted/50 border-b">
                 <tr>
-                  <th className="px-6 py-4 font-medium text-slate-500">ID / Title</th>
-                  <th className="px-6 py-4 font-medium text-slate-500">Date</th>
-                  <th className="px-6 py-4 font-medium text-slate-500">Category</th>
-                  <th className="px-6 py-4 font-medium text-slate-500">Severity</th>
-                  <th className="px-6 py-4 font-medium text-slate-500">Status</th>
-                  <th className="px-6 py-4 font-medium text-slate-500 text-right">Actions</th>
+                  <th className="px-6 py-4 font-medium text-slate-500">{t('reports.col_title')}</th>
+                  <th className="px-6 py-4 font-medium text-slate-500">{t('reports.col_date')}</th>
+                  <th className="px-6 py-4 font-medium text-slate-500">{t('reports.col_category')}</th>
+                  <th className="px-6 py-4 font-medium text-slate-500">{t('reports.col_severity')}</th>
+                  <th className="px-6 py-4 font-medium text-slate-500">{t('reports.col_status')}</th>
+                  <th className="px-6 py-4 font-medium text-slate-500 text-right">{t('reports.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -94,7 +95,7 @@ export default function ReportList() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" asChild title="View Details">
+                        <Button variant="ghost" size="icon" asChild title={t('btn.view')}>
                           <Link to={`/alerts/${alert._id}`}><Eye className="h-4 w-4" /></Link>
                         </Button>
                         <DropdownMenu>
@@ -106,23 +107,17 @@ export default function ReportList() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                               <Link to={`/alerts/${alert._id}`} className="cursor-pointer flex items-center">
-                                <Eye className="mr-2 h-4 w-4" /> View
+                                <Eye className="mr-2 h-4 w-4" /> {t('btn.view')}
                               </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem disabled className="cursor-pointer flex items-center">
-                              <Edit2 className="mr-2 h-4 w-4" /> Edit (Coming soon)
                             </DropdownMenuItem>
                             {alert.status !== 'CLOSED' && (
                               <DropdownMenuItem 
                                 className="cursor-pointer flex items-center text-green-600 focus:text-green-600"
                                 onClick={() => updateStatusMutation.mutate({ id: alert._id, status: 'CLOSED' })}
                               >
-                                <CheckCircle className="mr-2 h-4 w-4" /> Mark as Closed
+                                <CheckCircle className="mr-2 h-4 w-4" /> {t('alert_detail.btn_resolve')}
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem className="cursor-pointer flex items-center text-red-600 focus:text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -132,7 +127,7 @@ export default function ReportList() {
                 {alerts.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                      No reports found matching your criteria.
+                      -
                     </td>
                   </tr>
                 )}
@@ -143,7 +138,7 @@ export default function ReportList() {
           {totalPages > 1 && (
             <div className="p-4 border-t flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, total)} of {total} entries
+                {page} / {totalPages}
               </span>
               <div className="flex gap-2">
                 <Button 
@@ -152,7 +147,7 @@ export default function ReportList() {
                   disabled={page === 1}
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                 >
-                  Previous
+                  {t('reports.prev')}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -160,7 +155,7 @@ export default function ReportList() {
                   disabled={page === totalPages}
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 >
-                  Next
+                  {t('reports.next')}
                 </Button>
               </div>
             </div>

@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AuditLogs() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
@@ -21,19 +23,18 @@ export default function AuditLogs() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Nhật ký Hoạt động (Audit Logs)</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('audit.title')}</h2>
       </div>
 
       <Card>
-
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>System Activity Logs</CardTitle>
+          <CardTitle>{t('audit.title')}</CardTitle>
           <div className="flex space-x-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search logs..."
+                placeholder={t('audit.search_placeholder')}
                 className="w-[300px] pl-8"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -46,11 +47,11 @@ export default function AuditLogs() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left">
-                  <th className="p-4 font-medium">Timestamp</th>
-                  <th className="p-4 font-medium">User</th>
-                  <th className="p-4 font-medium">Action</th>
-                  <th className="p-4 font-medium">Resource</th>
-                  <th className="p-4 font-medium">Details</th>
+                  <th className="p-4 font-medium">{t('audit.col_timestamp')}</th>
+                  <th className="p-4 font-medium">{t('audit.col_user')}</th>
+                  <th className="p-4 font-medium">{t('audit.col_action')}</th>
+                  <th className="p-4 font-medium">{t('audit.col_resource')}</th>
+                  <th className="p-4 font-medium">{t('audit.col_details')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -70,7 +71,7 @@ export default function AuditLogs() {
                 {logs.length === 0 && (
                   <tr>
                     <td colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Chưa có nhật ký hoạt động nào
+                      -
                     </td>
                   </tr>
                 )}
@@ -79,10 +80,10 @@ export default function AuditLogs() {
           </div>
           <div className="flex items-center justify-end space-x-2 py-4">
             <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
-              Trang trước
+              {t('reports.prev')}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={logs.length < 15}>
-              Trang sau
+              {t('reports.next')}
             </Button>
           </div>
         </CardContent>

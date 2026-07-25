@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Server, Database, Cloud } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const SERVICES = [
   { name: 'API Gateway', port: 3000, status: 'healthy', uptime: '99.9%', mem: '145MB', icon: Cloud },
@@ -16,13 +17,14 @@ const SERVICES = [
 ];
 
 export default function SystemMonitoring() {
+  const { t } = useLanguage();
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">System Monitoring</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('monitoring.title')}</h2>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Activity className="h-4 w-4 animate-pulse text-green-500" />
-          Auto-refreshing every 30s
+          {t('monitoring.auto_refresh')}
         </div>
       </div>
 
@@ -39,16 +41,16 @@ export default function SystemMonitoring() {
                   "h-2.5 w-2.5 rounded-full",
                   service.status === 'healthy' ? "bg-green-500" : "bg-red-500"
                 )} />
-                <span className="text-2xl font-bold capitalize">{service.status}</span>
+                <span className="text-2xl font-bold capitalize">{t('monitoring.healthy')}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">Port: {service.port}</p>
               <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Uptime</p>
+                  <p className="text-muted-foreground">{t('monitoring.uptime')}</p>
                   <p className="font-medium">{service.uptime}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Memory</p>
+                  <p className="text-muted-foreground">{t('monitoring.memory')}</p>
                   <p className="font-medium">{service.mem}</p>
                 </div>
               </div>

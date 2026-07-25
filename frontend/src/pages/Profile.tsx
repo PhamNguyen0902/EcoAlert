@@ -4,7 +4,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -15,8 +14,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useUpdateProfile, useChangePassword } from "../hooks/hooks";
 import toast from "react-hot-toast";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export default function Profile() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const updateProfileMutation = useUpdateProfile();
@@ -95,9 +96,9 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Account Profile</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('profile.title')}</h2>
         <p className="text-muted-foreground mt-1">
-          Manage your personal information and preferences.
+          {t('nav.profile')}
         </p>
       </div>
 
@@ -121,7 +122,7 @@ export default function Profile() {
               <Mail className="h-3 w-3" /> {user.email}
             </p>
             <div className="mt-4 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5" /> {user.role} ACCOUNT
+              <Shield className="h-3.5 w-3.5" /> {user.role}
             </div>
 
             <div className="w-full mt-8 pt-6 border-t border-primary/10">
@@ -130,7 +131,7 @@ export default function Profile() {
                 className="w-full"
                 onClick={handleLogout}
               >
-                <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                <LogOut className="mr-2 h-4 w-4" /> {t('nav.logout')}
               </Button>
             </div>
           </CardContent>
@@ -140,15 +141,12 @@ export default function Profile() {
           {/* Personal Info Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>
-                Update your contact details and basic info.
-              </CardDescription>
+              <CardTitle>{t('profile.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSaveProfile} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName">{t('auth.full_name')}</Label>
                   <Input
                     id="fullName"
                     value={fullName}
@@ -158,7 +156,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">{t('auth.phone')}</Label>
                   <Input
                     id="phone"
                     value={phone}
@@ -168,7 +166,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="avatar">Avatar Image URL</Label>
+                  <Label htmlFor="avatar">Avatar URL</Label>
                   <Input
                     id="avatar"
                     value={avatar}
@@ -178,7 +176,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">{t('auth.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -186,9 +184,6 @@ export default function Profile() {
                     disabled
                     className="bg-muted"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Email cannot be changed.
-                  </p>
                 </div>
 
                 <div className="pt-2 flex justify-end">
@@ -199,7 +194,7 @@ export default function Profile() {
                     {updateProfileMutation.isPending && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    Save Changes
+                    {t('btn.save_changes')}
                   </Button>
                 </div>
               </form>
@@ -211,16 +206,13 @@ export default function Profile() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="h-5 w-5 text-primary" />
-                Change Password
+                {t('profile.change_password')}
               </CardTitle>
-              <CardDescription>
-                Ensure your account is using a long, random password to stay secure.
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="oldPassword">Current Password</Label>
+                  <Label htmlFor="oldPassword">{t('profile.old_password')}</Label>
                   <Input
                     id="oldPassword"
                     type="password"
@@ -231,7 +223,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
+                  <Label htmlFor="newPassword">{t('profile.new_password')}</Label>
                   <Input
                     id="newPassword"
                     type="password"
@@ -242,7 +234,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword">{t('auth.confirm_password')}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -261,7 +253,7 @@ export default function Profile() {
                     {changePasswordMutation.isPending && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    Update Password
+                    {t('profile.change_password')}
                   </Button>
                 </div>
               </form>

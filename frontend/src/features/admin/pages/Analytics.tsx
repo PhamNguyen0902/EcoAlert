@@ -3,6 +3,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area, XAxis, 
 import { useAlerts } from '@/hooks/hooks';
 import { useTheme } from '@/contexts/ThemeContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const trendData = [
   { name: 'Jan', value: 400 }, { name: 'Feb', value: 300 }, { name: 'Mar', value: 550 },
@@ -19,6 +20,7 @@ const severityData = [
 const COLORS = ['#ef4444', '#f97316', '#3b82f6'];
 
 export default function Analytics() {
+  const { t } = useLanguage();
   const { isLoading } = useAlerts(1, 1000);
   const { isDark } = useTheme();
 
@@ -35,18 +37,18 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('analytics.title')}</h2>
         <select className="border rounded-md px-3 py-1 bg-background text-foreground text-sm border-input">
-          <option>Last 6 Months</option>
-          <option>Last Year</option>
-          <option>All Time</option>
+          <option>{t('analytics.last_6_months')}</option>
+          <option>{t('analytics.last_year')}</option>
+          <option>{t('analytics.all_time')}</option>
         </select>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Reports Over Time</CardTitle>
+            <CardTitle>{t('analytics.reports_over_time')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -62,7 +64,7 @@ export default function Analytics() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Reports by Category</CardTitle>
+            <CardTitle>{t('analytics.reports_by_category')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -78,7 +80,7 @@ export default function Analytics() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Severity Distribution</CardTitle>
+            <CardTitle>{t('analytics.severity_distribution')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -96,7 +98,7 @@ export default function Analytics() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Resolution Rate Trend</CardTitle>
+            <CardTitle>{t('analytics.resolution_rate_trend')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">

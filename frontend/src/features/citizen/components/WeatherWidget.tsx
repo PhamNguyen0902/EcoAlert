@@ -6,6 +6,7 @@ import { Droplets, Wind, Activity, Sun, Sunrise, Sunset, AlertCircle } from 'luc
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WeatherWidgetProps {
   latitude: number | null;
@@ -13,6 +14,7 @@ interface WeatherWidgetProps {
 }
 
 export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitude }) => {
+  const { t } = useLanguage();
   const { data: weather, isLoading, isError, refetch } = useWeather(latitude, longitude);
 
   if (isLoading || (!weather && !isError)) {
@@ -37,11 +39,11 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
       <div className="w-full p-6 rounded-xl glass-card flex flex-col items-center justify-center text-center gap-4 h-[300px]">
         <AlertCircle className="w-10 h-10 text-destructive" />
         <div>
-          <h3 className="font-semibold">Weather Unavailable</h3>
-          <p className="text-sm text-muted-foreground mt-1">Unable to fetch current weather data.</p>
+          <h3 className="font-semibold">{t('weather.unavailable')}</h3>
+          <p className="text-sm text-muted-foreground mt-1">{t('weather.unavailable_desc')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
-          Retry
+          {t('weather.retry')}
         </Button>
       </div>
     );
@@ -76,13 +78,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               {weather.description}
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Feels like {Math.round(weather.feelsLike)}°
+              {t('weather.feels_like')} {Math.round(weather.feelsLike)}°
             </p>
           </div>
           
           <div className="text-right">
              <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">
-               Last updated
+               {t('weather.last_updated')}
              </div>
              <div className="text-sm font-medium">
                {format(new Date(weather.lastUpdated), 'HH:mm')}
@@ -96,7 +98,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               <Droplets className="w-4 h-4 text-blue-500" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Humidity</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('weather.humidity')}</p>
               <p className="font-semibold text-sm">{weather.humidity}%</p>
             </div>
           </div>
@@ -106,7 +108,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               <Wind className="w-4 h-4 text-teal-500" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Wind</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('weather.wind')}</p>
               <p className="font-semibold text-sm">{weather.windSpeed} km/h</p>
             </div>
           </div>
@@ -116,7 +118,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               <Activity className="w-4 h-4 text-purple-500" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">Air Quality</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">{t('weather.air_quality')}</p>
               <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 border leading-none', getAqiColor(weather.aqi || 0))}>
                 {weather.aqiLabel}
               </Badge>
@@ -128,7 +130,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               <Sun className="w-4 h-4 text-yellow-500" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">UV Index</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('weather.uv_index')}</p>
               <p className="font-semibold text-sm">--</p> {/* OpenWeatherMap free doesn't include UV in current weather */}
             </div>
           </div>
@@ -138,7 +140,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               <Sunrise className="w-4 h-4 text-orange-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Sunrise</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('weather.sunrise')}</p>
               <p className="font-semibold text-sm">{weather.sunrise}</p>
             </div>
           </div>
@@ -148,7 +150,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               <Sunset className="w-4 h-4 text-indigo-400" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Sunset</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('weather.sunset')}</p>
               <p className="font-semibold text-sm">{weather.sunset}</p>
             </div>
           </div>

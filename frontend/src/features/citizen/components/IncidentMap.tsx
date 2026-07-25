@@ -5,7 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { Alert, AlertCategory, Severity } from '@/types';
+import { Alert, Severity } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -22,7 +22,7 @@ L.Icon.Default.mergeOptions({
 interface IncidentMapProps {
   alerts: Alert[];
   selectedCategory: string | null;
-  onSelectCategory: (cat: string | null) => void;
+  onSelectCategory?: (cat: string | null) => void;
 }
 
 const severityColors: Record<Severity, string> = {
@@ -56,7 +56,6 @@ const DEFAULT_CENTER: [number, number] = [10.8231, 106.6297];
 export const IncidentMap: React.FC<IncidentMapProps> = ({
   alerts,
   selectedCategory,
-  onSelectCategory,
 }) => {
   const { latitude, longitude } = useGeolocation();
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');

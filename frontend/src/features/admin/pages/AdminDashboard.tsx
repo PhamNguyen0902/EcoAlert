@@ -28,9 +28,9 @@ export default function AdminDashboard() {
   const adminsCount = usersList.filter(u => u.role?.toUpperCase() === 'ADMIN').length;
 
   const pieData = [
-    { name: 'Citizens', value: citizensCount || 1 },
-    { name: 'Officers', value: officers.length || 0 },
-    { name: 'Admins', value: adminsCount || 0 },
+    { name: t('admin_users.role_citizen'), value: citizensCount || 1 },
+    { name: t('admin_users.role_officer'), value: officers.length || 0 },
+    { name: t('admin_users.role_admin'), value: adminsCount || 0 },
   ];
 
   // Group alerts by status
@@ -41,12 +41,10 @@ export default function AdminDashboard() {
   }, {} as Record<string, number>);
 
   const reportsStatusData = [
-    { name: 'Pending', reports: statusCounts['PENDING'] || 0 },
-    { name: 'Verified', reports: statusCounts['VERIFIED'] || 0 },
-    { name: 'Assigned', reports: statusCounts['ASSIGNED'] || 0 },
-    { name: 'In Progress', reports: statusCounts['IN_PROGRESS'] || 0 },
-    { name: 'Resolved', reports: statusCounts['RESOLVED'] || 0 },
-    { name: 'Closed', reports: statusCounts['CLOSED'] || 0 },
+    { name: t('status.pending'), reports: statusCounts['PENDING'] || 0 },
+    { name: t('officer.assigned'), reports: (statusCounts['VERIFIED'] || 0) + (statusCounts['ASSIGNED'] || 0) },
+    { name: t('status.in_progress'), reports: statusCounts['IN_PROGRESS'] || 0 },
+    { name: t('status.resolved'), reports: (statusCounts['RESOLVED'] || 0) + (statusCounts['CLOSED'] || 0) },
   ];
 
   const recentAlerts = alertsList.slice(0, 5);

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const MOCK_NEWS = [
   {
@@ -51,20 +52,22 @@ const itemVariants = {
 };
 
 export function NewsSection() {
+  const { t } = useLanguage();
+
   return (
     <section className="py-16 bg-gray-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-end mb-10">
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-2">
-              Environmental News
+              {t('news.title')}
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Stay updated on the latest environmental initiatives and alerts
+              {t('news.subtitle')}
             </p>
           </div>
           <button className="hidden sm:flex items-center text-primary hover:text-primary/80 font-medium transition-colors">
-            View All News <ArrowRight className="ml-2 w-4 h-4" />
+            {t('news.view_all')} <ArrowRight className="ml-2 w-4 h-4" />
           </button>
         </div>
 
@@ -104,7 +107,7 @@ export function NewsSection() {
                   {news.description}
                 </p>
                 <button className="flex items-center text-sm font-medium text-primary hover:text-primary/80 transition-colors mt-auto">
-                  Read More <ArrowRight className="ml-1 w-4 h-4" />
+                  {t('news.read_more')} <ArrowRight className="ml-1 w-4 h-4" />
                 </button>
               </div>
             </motion.article>
@@ -113,7 +116,7 @@ export function NewsSection() {
         
         <div className="mt-8 text-center sm:hidden">
           <button className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 w-full transition-colors">
-            View All News
+            {t('news.view_all')}
           </button>
         </div>
       </div>

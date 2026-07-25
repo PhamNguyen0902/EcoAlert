@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCreateUser } from '@/hooks/hooks';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CreateUserModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface CreateUserModalProps {
 }
 
 export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }: CreateUserModalProps) {
+  const { t } = useLanguage();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,7 +45,7 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
         phone: phone || undefined,
         role: role.toUpperCase(),
       });
-      toast.success(`Đã tạo thành công tài khoản ${role}`);
+      toast.success(`Created account ${role}`);
       onOpenChange(false);
       setFullName('');
       setEmail('');
@@ -55,7 +57,7 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
       const validationErrors = Array.isArray(err.response?.data?.errors) && err.response?.data?.errors.length > 0
         ? err.response?.data?.errors.join(', ')
         : null;
-      const errorText = validationErrors || serverMessage || err.message || 'Có lỗi xảy ra khi tạo tài khoản';
+      const errorText = validationErrors || serverMessage || err.message || 'Error creating account';
       toast.error(errorText);
     }
   };
@@ -64,17 +66,17 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Tạo tài khoản người dùng mới</DialogTitle>
+          <DialogTitle>{t('admin_users.create_title')}</DialogTitle>
           <DialogDescription>
-            Khởi tạo thông tin người dùng hoặc cán bộ mới cho hệ thống EcoAlert.
+            {t('admin_users.subtitle')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase text-muted-foreground">Họ và tên *</label>
+            <label className="text-xs font-semibold uppercase text-muted-foreground">{t('auth.full_name')} *</label>
             <Input
-              placeholder="Nguyễn Văn A"
+              placeholder="Full Name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
@@ -82,7 +84,7 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase text-muted-foreground">Email *</label>
+            <label className="text-xs font-semibold uppercase text-muted-foreground">{t('auth.email')} *</label>
             <Input
               type="email"
               placeholder="email@example.com"
@@ -93,10 +95,10 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase text-muted-foreground">Mật khẩu *</label>
+            <label className="text-xs font-semibold uppercase text-muted-foreground">{t('auth.password')} *</label>
             <Input
               type="password"
-              placeholder="Mật khẩu tối thiểu 6 ký tự"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -105,7 +107,7 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase text-muted-foreground">Số điện thoại</label>
+            <label className="text-xs font-semibold uppercase text-muted-foreground">{t('auth.phone')}</label>
             <Input
               placeholder="0987654321"
               value={phone}
@@ -114,25 +116,25 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold uppercase text-muted-foreground">Vai trò</label>
+            <label className="text-xs font-semibold uppercase text-muted-foreground">{t('admin_users.col_role')}</label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger>
-                <SelectValue placeholder="Chọn vai trò" />
+                <SelectValue placeholder="Role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="CITIZEN">Người dân (Citizen)</SelectItem>
-                <SelectItem value="OFFICER">Cán bộ (Officer)</SelectItem>
-                <SelectItem value="ADMIN">Quản trị viên (Admin)</SelectItem>
+                <SelectItem value="CITIZEN">{t('admin_users.role_citizen')}</SelectItem>
+                <SelectItem value="OFFICER">{t('admin_users.role_officer')}</SelectItem>
+                <SelectItem value="ADMIN">{t('admin_users.role_admin')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
+              {t('btn.cancel')}
             </Button>
             <Button type="submit" disabled={createUser.isPending}>
-              {createUser.isPending ? 'Đang khởi tạo...' : 'Tạo tài khoản'}
+              {createUser.isPending ? '...' : t('btn.create_user')}
             </Button>
           </DialogFooter>
         </form>
