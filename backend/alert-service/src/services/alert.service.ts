@@ -67,8 +67,8 @@ export class AlertService {
     const alert = await alertRepository.findById(id);
     if (!alert) throw new NotFoundError('Alert not found');
 
-    const currentStatus = alert.status;
-    const newStatus = data.status;
+    const currentStatus = (alert.status || '').toLowerCase();
+    const newStatus = (data.status || '').toLowerCase() as AlertStatus;
 
     if (currentStatus === newStatus) {
       return alert; // No change
@@ -76,7 +76,7 @@ export class AlertService {
 
     const allowedNext = ALLOWED_TRANSITIONS[currentStatus] || [];
     if (!allowedNext.includes(newStatus)) {
-      throw new BadRequestError(`Invalid status transition from ${currentStatus} to ${newStatus}`);
+      throw new BadRequestError(`Invalid status transition from ${alert.status} to ${data.status}`);
     }
 
     const updatedAlert = await alertRepository.update(id, { 
