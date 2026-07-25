@@ -17,8 +17,10 @@ import {
 import { User } from '@/types';
 import toast from 'react-hot-toast';
 import { CreateUserModal } from '../components/CreateUserModal';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function UserManagement() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -36,24 +38,26 @@ export default function UserManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Quản lý Người dùng</h2>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{t('admin_users.title')}</h2>
+          <p className="text-muted-foreground mt-1">{t('admin_users.subtitle')}</p>
+        </div>
         <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-          <UserPlus className="h-4 w-4" /> Tạo người dùng mới
+          <UserPlus className="h-4 w-4" /> {t('btn.create_user')}
         </Button>
       </div>
 
       <CreateUserModal open={isModalOpen} onOpenChange={setIsModalOpen} />
 
       <Card>
-
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Users</CardTitle>
+          <CardTitle>{t('nav.users')}</CardTitle>
           <div className="flex space-x-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search users..."
+                placeholder={t('btn.search')}
                 className="w-[250px] pl-8"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -64,10 +68,10 @@ export default function UserManagement() {
                 <SelectValue placeholder="Role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="citizen">Citizen</SelectItem>
-                <SelectItem value="officer">Officer</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="all">{t('status.all')}</SelectItem>
+                <SelectItem value="citizen">{t('admin_users.role_citizen')}</SelectItem>
+                <SelectItem value="officer">{t('admin_users.role_officer')}</SelectItem>
+                <SelectItem value="admin">{t('admin_users.role_admin')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -77,11 +81,11 @@ export default function UserManagement() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left">
-                  <th className="p-4 font-medium">Name</th>
-                  <th className="p-4 font-medium">Email</th>
-                  <th className="p-4 font-medium">Role</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Actions</th>
+                  <th className="p-4 font-medium">{t('admin_users.col_name')}</th>
+                  <th className="p-4 font-medium">{t('admin_users.col_email')}</th>
+                  <th className="p-4 font-medium">{t('admin_users.col_role')}</th>
+                  <th className="p-4 font-medium">{t('admin_users.col_status')}</th>
+                  <th className="p-4 font-medium">{t('officer_reports.table_action')}</th>
                 </tr>
               </thead>
               <tbody>

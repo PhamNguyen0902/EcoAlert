@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Search, MapPin, Loader2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Fix Leaflet icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -40,6 +41,7 @@ const createCustomIcon = (severity: string) => {
 };
 
 export default function OfficerMap() {
+  const { t } = useLanguage();
   const { data, isLoading } = useAlerts(1, 1000);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSeverity, setFilterSeverity] = useState<string | null>(null);
@@ -61,12 +63,12 @@ export default function OfficerMap() {
     <div className="flex h-[calc(100vh-8rem)] flex-col md:flex-row gap-4">
       {/* Sidebar */}
       <div className="w-full md:w-80 flex flex-col gap-4 overflow-y-auto pr-2">
-        <h2 className="text-2xl font-bold tracking-tight">Incident Map</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t('officer.map')}</h2>
         
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search alerts..."
+            placeholder={t('btn.search')}
             className="pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

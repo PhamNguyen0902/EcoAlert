@@ -10,10 +10,12 @@ import {
 import { CheckCircle2, AlertTriangle, Clock, Activity } from 'lucide-react';
 import { format, parseISO, startOfMonth } from 'date-fns';
 import { Alert } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function OfficerStats() {
+  const { t } = useLanguage();
   const { data, isLoading } = useAlerts(1, 1000);
   const { isDark } = useTheme();
 
@@ -40,9 +42,9 @@ export default function OfficerStats() {
 
     // Status distribution
     const statusData = [
-      { name: 'Pending', value: pending },
-      { name: 'In Progress', value: inProgress },
-      { name: 'Resolved', value: resolved },
+      { name: t('status.pending'), value: pending },
+      { name: t('status.in_progress'), value: inProgress },
+      { name: t('status.resolved'), value: resolved },
     ].filter(d => d.value > 0);
 
     // Category distribution
@@ -69,49 +71,49 @@ export default function OfficerStats() {
       .reverse();
 
     return { total, resolved, resolutionRate, statusData, categoryData, timelineData, pending, inProgress };
-  }, [data]);
+  }, [data, t]);
 
   if (isLoading || !stats) {
-    return <div className="p-8 text-center">Loading statistics...</div>;
+    return <div className="p-8 text-center">...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Performance Statistics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('officer_stats.page_title')}</h1>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Reports Handled"
+          title={t('officer_stats.total_handled')}
           value={stats.total.toString()}
           icon={Activity}
-          description="All time"
+          description={t('officer_stats.all_time')}
         />
         <StatCard
-          title="Resolution Rate"
+          title={t('admin_officers.resolution_rate')}
           value={`${stats.resolutionRate}%`}
           icon={CheckCircle2}
-          description="Reports marked as resolved"
+          description={t('officer_stats.completion_rate')}
         />
         <StatCard
-          title="Currently Pending"
+          title={t('officer_stats.currently_pending')}
           value={stats.pending.toString()}
           icon={Clock}
-          description="Awaiting verification"
+          description={t('officer_stats.awaiting_verification')}
         />
         <StatCard
-          title="In Progress"
+          title={t('status.in_progress')}
           value={stats.inProgress.toString()}
           icon={AlertTriangle}
-          description="Actively being worked on"
+          description={t('officer_stats.in_progress_desc')}
         />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Reports Over Time</CardTitle>
+            <CardTitle>{t('analytics.reports_over_time')}</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             <div className="h-[300px] w-full mt-4">
@@ -130,7 +132,7 @@ export default function OfficerStats() {
 
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Status Distribution</CardTitle>
+            <CardTitle>{t('analytics.severity_distribution')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
@@ -161,7 +163,7 @@ export default function OfficerStats() {
       <div className="grid gap-4 md:grid-cols-1">
         <Card>
           <CardHeader>
-            <CardTitle>Reports by Category</CardTitle>
+            <CardTitle>{t('analytics.reports_by_category')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[350px] w-full">

@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion';
-import { AlertTriangle, MapPin } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { motion } from "framer-motion";
+import { AlertTriangle, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -19,17 +20,18 @@ const itemVariants = {
     y: 0,
     transition: {
       duration: 0.6,
-      ease: 'easeOut',
+      ease: "easeOut" as const,
     },
   },
 };
 
 export function HeroSection() {
+  const { t } = useLanguage();
   const handleScrollToMap = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    const mapSection = document.getElementById('map-section');
+    const mapSection = document.getElementById("map-section");
     if (mapSection) {
-      mapSection.scrollIntoView({ behavior: 'smooth' });
+      mapSection.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -51,7 +53,12 @@ export function HeroSection() {
             x: [0, -20, 0],
             opacity: [0.4, 0.7, 0.4],
           }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          transition={{
+            duration: 5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1,
+          }}
           className="absolute bottom-1/4 right-20 w-32 h-32 bg-blue-300/30 rounded-full blur-xl"
         />
         <motion.div
@@ -59,7 +66,12 @@ export function HeroSection() {
             scale: [1, 1.2, 1],
             opacity: [0.3, 0.6, 0.3],
           }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2,
+          }}
           className="absolute top-1/3 right-1/3 w-16 h-16 bg-purple-300/30 rounded-full blur-lg"
         />
       </div>
@@ -73,18 +85,21 @@ export function HeroSection() {
         >
           <motion.h1
             variants={itemVariants}
-            className="text-4xl sm:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6 leading-tight"
+            className="text-4xl sm:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6 leading-tight whitespace-nowrap"
           >
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-teal-500">Protecting</span> Our Environment
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-teal-500 ">
+              {t("hero.protecting")}
+            </span>
+            {t("hero.our_environment")}
           </motion.h1>
-          
+
           <motion.p
             variants={itemVariants}
             className="mt-4 text-xl sm:text-2xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed"
           >
-            Report environmental incidents instantly. AI-powered classification. Real-time GIS tracking.
+            {t("hero.subtitle")}
           </motion.p>
-          
+
           <motion.div
             variants={itemVariants}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
@@ -94,7 +109,7 @@ export function HeroSection() {
               className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-200 bg-gradient-to-r from-green-500 to-teal-500 rounded-full hover:from-green-600 hover:to-teal-600 hover:shadow-lg hover:shadow-green-500/30 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 w-full sm:w-auto"
             >
               <AlertTriangle className="w-5 h-5 mr-2" />
-              Report an Incident
+              {t("hero.btn_report")}
             </Link>
             <a
               href="#map-section"
@@ -102,7 +117,7 @@ export function HeroSection() {
               className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-gray-700 bg-white border-2 border-gray-200 rounded-full hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 transition-all duration-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 dark:hover:text-white w-full sm:w-auto"
             >
               <MapPin className="w-5 h-5 mr-2" />
-              Explore Nearby
+              {t("hero.btn_explore")}
             </a>
           </motion.div>
         </motion.div>

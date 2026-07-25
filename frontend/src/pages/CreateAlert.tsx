@@ -16,6 +16,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Image as ImageIcon, FileText, CheckCircle, UploadCloud, Search, Loader2, LocateFixed } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Fix leaflet icon
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -49,14 +50,8 @@ function LocationPicker({ position, setPosition, onLocationSelect }: {
   return <Marker position={position} />;
 }
 
-const steps = [
-  { id: 1, name: 'Information', icon: FileText },
-  { id: 2, name: 'Location', icon: MapPin },
-  { id: 3, name: 'Media', icon: ImageIcon },
-  { id: 4, name: 'Review', icon: CheckCircle },
-];
-
 export default function CreateAlert() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [position, setPosition] = useState<[number, number]>([10.8494, 106.7537]); // Mặc định ở khu vực Thủ Đức
@@ -69,6 +64,13 @@ export default function CreateAlert() {
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const mapRef = useRef<any>(null);
+
+  const steps = [
+    { id: 1, name: t('report_create.step1'), icon: FileText },
+    { id: 2, name: t('report_create.step2'), icon: MapPin },
+    { id: 3, name: t('report_create.step3'), icon: ImageIcon },
+    { id: 4, name: t('report_create.step4'), icon: CheckCircle },
+  ];
 
   const createAlertMutation = useCreateAlert();
   
@@ -145,7 +147,7 @@ export default function CreateAlert() {
           await fetchAddressFromCoords(latitude, longitude);
           toast.success('Đã cập nhật vị trí hiện tại!', { id: 'geo' });
         },
-        (err) => {
+        () => {
           toast.error('Không thể định vị. Vui lòng kiểm tra quyền truy cập vị trí.', { id: 'geo' });
         }
       );
@@ -193,7 +195,7 @@ export default function CreateAlert() {
         const url = await alertService.uploadMedia(file);
         mediaUrls = [url];
       }
-      toast.loading('Đang gửi báo cáo...', { id: 'submit' });
+      toast.loading(t('report_create.submitting'), { id: 'submit' });
       
       await createAlertMutation.mutateAsync({
         title: formData.title,
@@ -216,8 +218,8 @@ export default function CreateAlert() {
   return (
     <div className="max-w-3xl mx-auto py-8">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight">Báo Cáo Sự Cố</h2>
-        <p className="text-muted-foreground mt-1">Cung cấp thông tin chi tiết để chúng tôi xử lý kịp thời.</p>
+        <h2 className="text-3xl font-bold tracking-tight">{t('report_create.title')}</h2>
+        <p className="text-muted-foreground mt-1">{t('report_create.subtitle')}</p>
       </div>
 
       {/* Stepper */}
@@ -261,16 +263,16 @@ export default function CreateAlert() {
               {currentStep === 1 && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-semibold mb-4">Thông tin cơ bản</h3>
+                    <h3 className="text-xl font-semibold mb-4">{t('report_create.step1')}</h3>
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="title">Tiêu đề sự cố</Label>
-                        <Input id="title" placeholder="Ví dụ: Rác thải đổ trộm bờ sông..." className="mt-1.5" {...register('title')} />
+                        <Label htmlFor="title">{t('report_create.field_title')}</Label>
+                        <Input id="title" placeholder={t('report_create.field_title_placeholder')} className="mt-1.5" {...register('title')} />
                         {errors.title && <p className="text-red-500 text-xs mt-1">{String(errors.title.message)}</p>}
                       </div>
                       <div>
-                        <Label htmlFor="description">Mô tả chi tiết</Label>
-                        <Textarea id="description" placeholder="Mô tả chi tiết những gì bạn quan sát được..." className="mt-1.5 h-32" {...register('description')} />
+                        <Label htmlFor="description">{t('report_create.field_description')}</Label>
+                        <Textarea id="description" placeholder={t('report_create.field_description_placeholder')} className="mt-1.5 h-32" {...register('description')} />
                         {errors.description && <p className="text-red-500 text-xs mt-1">{String(errors.description.message)}</p>}
                       </div>
                     </div>
@@ -282,15 +284,15 @@ export default function CreateAlert() {
               {currentStep === 2 && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-xl font-semibold mb-1">Xác nhận vị trí</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Tìm kiếm địa chỉ, chọn vị trí hiện tại hoặc ghim trực tiếp trên bản đồ.</p>
+                    <h3 className="text-xl font-semibold mb-1">{t('report_create.step2')}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{t('report_create.map_instruction')}</p>
                     
                     <div className="flex flex-col sm:flex-row gap-3 mb-4 relative z-[1000]">
                       {/* Search Input */}
                       <div className="relative flex-1">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input 
-                          placeholder="Nhập địa chỉ để tìm kiếm..." 
+                          placeholder={t('report_create.field_address_placeholder')} 
                           className="pl-10 h-10" 
                           value={addressQuery}
                           onChange={(e) => {
@@ -301,7 +303,7 @@ export default function CreateAlert() {
                         />
                         {isSearching && <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />}
                         
-                        {/* Dropdown Gợi Ý (Fix UI trong Light/Dark Mode) */}
+                        {/* Dropdown Gợi Ý */}
                         {showSuggestions && suggestions.length > 0 && (
                           <ul className="absolute top-full left-0 w-full mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
                             {suggestions.map((item, index) => (
@@ -343,15 +345,15 @@ export default function CreateAlert() {
               {currentStep === 3 && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-semibold mb-1">Tải lên minh chứng</h3>
-                    <p className="text-sm text-muted-foreground mb-4">Hệ thống AI sẽ tự động phân loại sự cố dựa trên hình ảnh này.</p>
+                    <h3 className="text-xl font-semibold mb-1">{t('report_create.step3')}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{t('report_create.ai_classification')}</p>
                     
                     {!previewUrl ? (
                       <label className="flex flex-col items-center justify-center w-full h-[300px] border-2 border-dashed rounded-xl cursor-pointer hover:bg-muted/50 transition-colors border-muted-foreground/30 bg-muted/10">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <UploadCloud className="w-12 h-12 text-muted-foreground mb-4" />
-                          <p className="mb-2 text-sm text-muted-foreground font-semibold">Bấm để tải lên hoặc kéo thả vào đây</p>
-                          <p className="text-xs text-muted-foreground">PNG, JPG, JPEG (Tối đa 10MB)</p>
+                          <p className="mb-2 text-sm text-muted-foreground font-semibold">{t('report_create.dropzone_text')}</p>
+                          <p className="text-xs text-muted-foreground">{t('report_create.dropzone_subtext')}</p>
                         </div>
                         <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                       </label>
@@ -364,7 +366,7 @@ export default function CreateAlert() {
                           className="absolute top-2 right-2 shadow-md"
                           onClick={() => { setFile(null); setPreviewUrl(null); }}
                         >
-                          Xóa ảnh
+                          {t('btn.delete')}
                         </Button>
                       </div>
                     )}
@@ -376,16 +378,16 @@ export default function CreateAlert() {
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-semibold mb-4">Xem lại & Xác nhận</h3>
+                    <h3 className="text-xl font-semibold mb-4">{t('report_create.step4')}</h3>
                     
                     <div className="bg-muted/30 p-6 rounded-xl space-y-6 border">
                       <div className="grid sm:grid-cols-2 gap-6">
                         <div>
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tiêu đề</h4>
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{t('report_create.field_title')}</h4>
                           <p className="font-medium">{getValues('title')}</p>
                         </div>
                         <div>
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Địa điểm</h4>
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{t('report_create.field_address')}</h4>
                           <p className="font-medium text-sm line-clamp-2">{getValues('address')}</p>
                           <p className="text-xs font-mono mt-1 text-muted-foreground bg-background inline-block px-2 py-1 rounded">
                             {position[0].toFixed(5)}, {position[1].toFixed(5)}
@@ -394,13 +396,13 @@ export default function CreateAlert() {
                       </div>
                       
                       <div>
-                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Mô tả</h4>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">{t('report_create.field_description')}</h4>
                         <p className="text-sm whitespace-pre-wrap">{getValues('description')}</p>
                       </div>
 
                       {previewUrl && (
                         <div>
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Ảnh minh chứng</h4>
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t('report_create.step3')}</h4>
                           <div className="w-32 h-32 rounded-lg overflow-hidden border shadow-sm">
                             <img src={previewUrl} alt="Thumb" className="w-full h-full object-cover" />
                           </div>
@@ -420,11 +422,11 @@ export default function CreateAlert() {
               onClick={handlePrev}
               disabled={currentStep === 1 || createAlertMutation.isPending}
             >
-              Quay lại
+              {t('btn.back')}
             </Button>
             
             {currentStep < 4 ? (
-              <Button onClick={handleNext} className="min-w-[100px]">Tiếp tục</Button>
+              <Button onClick={handleNext} className="min-w-[100px]">{t('btn.next')}</Button>
             ) : (
               <Button 
                 onClick={handleSubmit} 
@@ -432,7 +434,7 @@ export default function CreateAlert() {
                 className="min-w-[140px]"
               >
                 {createAlertMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                {createAlertMutation.isPending ? 'Đang gửi...' : 'Gửi Báo Cáo'}
+                {createAlertMutation.isPending ? t('report_create.submitting') : t('report_create.submit_confirm')}
               </Button>
             )}
           </div>

@@ -11,6 +11,7 @@ import { Search, Filter, Layers } from 'lucide-react';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Fix leaflet icon
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -27,7 +28,6 @@ L.Marker.prototype.options.icon = DefaultIcon;
 const getMarkerIcon = (severity: string) => {
   const color = severity === 'CRITICAL' ? 'red' : severity === 'HIGH' ? 'orange' : 'blue';
   
-  // Create a custom div icon
   return L.divIcon({
     className: 'custom-div-icon',
     html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
@@ -37,6 +37,7 @@ const getMarkerIcon = (severity: string) => {
 };
 
 export default function InteractiveMap() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('ALL'); // ALL, CRITICAL, HIGH, NORMAL
   const { data: alertsData, isLoading } = useAlerts(1, 1000); // Fetch up to 1000 for map
@@ -62,8 +63,8 @@ export default function InteractiveMap() {
     <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Interactive Map</h2>
-          <p className="text-muted-foreground mt-1">Geospatial view of all reported environmental incidents.</p>
+          <h2 className="text-3xl font-bold tracking-tight">{t('map.title')}</h2>
+          <p className="text-muted-foreground mt-1">{t('map.subtitle')}</p>
         </div>
       </div>
 
@@ -73,7 +74,7 @@ export default function InteractiveMap() {
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search locations..."
+                placeholder={t('map.search_location')}
                 className="pl-9 bg-muted/50"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -82,7 +83,7 @@ export default function InteractiveMap() {
 
             <div>
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <Filter className="h-4 w-4" /> Filter by Severity
+                <Filter className="h-4 w-4" /> {t('map.filter_severity')}
               </h3>
               <div className="flex flex-col gap-2">
                 <Button 
@@ -91,7 +92,7 @@ export default function InteractiveMap() {
                   className="justify-start"
                   onClick={() => setActiveFilter('ALL')}
                 >
-                  All Incidents
+                  {t('map.all_incidents')}
                   <Badge variant="secondary" className="ml-auto">{alerts.length}</Badge>
                 </Button>
                 <Button 
@@ -100,7 +101,7 @@ export default function InteractiveMap() {
                   className="justify-start"
                   onClick={() => setActiveFilter('CRITICAL')}
                 >
-                  <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span> Critical
+                  <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span> {t('map.critical')}
                   <Badge variant="secondary" className="ml-auto">
                     {alerts.filter((a: any) => a.severity === 'CRITICAL').length}
                   </Badge>
@@ -111,7 +112,7 @@ export default function InteractiveMap() {
                   className="justify-start"
                   onClick={() => setActiveFilter('HIGH')}
                 >
-                  <span className="w-2 h-2 rounded-full bg-orange-500 mr-2"></span> High
+                  <span className="w-2 h-2 rounded-full bg-orange-500 mr-2"></span> {t('map.high')}
                   <Badge variant="secondary" className="ml-auto">
                     {alerts.filter((a: any) => a.severity === 'HIGH').length}
                   </Badge>
@@ -122,7 +123,7 @@ export default function InteractiveMap() {
                   className="justify-start"
                   onClick={() => setActiveFilter('NORMAL')}
                 >
-                  <span className="w-2 h-2 rounded-full bg-blue-500 mr-2"></span> Normal
+                  <span className="w-2 h-2 rounded-full bg-blue-500 mr-2"></span> {t('map.normal')}
                   <Badge variant="secondary" className="ml-auto">
                     {alerts.filter((a: any) => a.severity === 'NORMAL').length}
                   </Badge>
@@ -132,12 +133,8 @@ export default function InteractiveMap() {
 
             <div className="mt-auto border-t pt-4">
               <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                <Layers className="h-4 w-4" /> Map Layers
+                <Layers className="h-4 w-4" /> {t('map.layers')}
               </h3>
-              <p className="text-xs text-muted-foreground">
-                Currently displaying incident clusters using Leaflet GIS integration. 
-                Radius filtering can be implemented via backend GIS service queries.
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -145,13 +142,13 @@ export default function InteractiveMap() {
         <Card className="flex-1 min-h-0 overflow-hidden relative">
           <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2 bg-white/90 backdrop-blur p-2 rounded-lg shadow-md border">
             <div className="flex items-center gap-2 text-xs font-medium">
-              <div className="w-3 h-3 bg-red-500 rounded-full border border-white"></div> Critical
+              <div className="w-3 h-3 bg-red-500 rounded-full border border-white"></div> {t('map.critical')}
             </div>
             <div className="flex items-center gap-2 text-xs font-medium">
-              <div className="w-3 h-3 bg-orange-500 rounded-full border border-white"></div> High
+              <div className="w-3 h-3 bg-orange-500 rounded-full border border-white"></div> {t('map.high')}
             </div>
             <div className="flex items-center gap-2 text-xs font-medium">
-              <div className="w-3 h-3 bg-blue-500 rounded-full border border-white"></div> Normal
+              <div className="w-3 h-3 bg-blue-500 rounded-full border border-white"></div> {t('map.normal')}
             </div>
           </div>
           

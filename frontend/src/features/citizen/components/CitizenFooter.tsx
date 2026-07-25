@@ -1,8 +1,9 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Leaf, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Github } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function CitizenFooter() {
+  const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -24,32 +25,32 @@ export default function CitizenFooter() {
               </span>
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-              A smart city platform empowering citizens to report, track, and resolve urban issues for a cleaner, safer community.
+              {t('footer.about_desc')}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">Quick Links</h3>
+            <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">{t('footer.quick_links')}</h3>
             <ul className="space-y-4 text-sm">
               <li>
-                <Link to="/home" className="hover:text-green-400 transition-colors inline-block">Home</Link>
+                <Link to="/home" className="hover:text-green-400 transition-colors inline-block">{t('nav.home')}</Link>
               </li>
               <li>
-                <Link to="/report" className="hover:text-green-400 transition-colors inline-block">Report Incident</Link>
+                <Link to="/report" className="hover:text-green-400 transition-colors inline-block">{t('nav.report_incident')}</Link>
               </li>
               <li>
-                <Link to="/my-reports" className="hover:text-green-400 transition-colors inline-block">My Reports</Link>
+                <Link to="/my-reports" className="hover:text-green-400 transition-colors inline-block">{t('nav.my_reports')}</Link>
               </li>
               <li>
-                <Link to="/map" className="hover:text-green-400 transition-colors inline-block">City Map</Link>
+                <Link to="/map" className="hover:text-green-400 transition-colors inline-block">{t('citizen.live_map')}</Link>
               </li>
             </ul>
           </div>
 
           {/* Support */}
           <div>
-            <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">Support</h3>
+            <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">{t('footer.contact')}</h3>
             <ul className="space-y-4 text-sm">
               <li>
                 <div className="flex items-start gap-3">
@@ -69,7 +70,7 @@ export default function CitizenFooter() {
               <li>
                 <div className="flex items-start gap-3 text-slate-400">
                   <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>123 Smart City Blvd<br/>Eco District, EC 90210</span>
+                  <span>{t('footer.address')}</span>
                 </div>
               </li>
             </ul>
@@ -77,19 +78,13 @@ export default function CitizenFooter() {
 
           {/* Legal */}
           <div>
-            <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">Legal</h3>
+            <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">EcoAlert</h3>
             <ul className="space-y-4 text-sm">
               <li>
                 <Link to="/privacy" className="hover:text-green-400 transition-colors inline-block">Privacy Policy</Link>
               </li>
               <li>
                 <Link to="/terms" className="hover:text-green-400 transition-colors inline-block">Terms of Service</Link>
-              </li>
-              <li>
-                <Link to="/about" className="hover:text-green-400 transition-colors inline-block">About Us</Link>
-              </li>
-              <li>
-                <Link to="/faq" className="hover:text-green-400 transition-colors inline-block">FAQ</Link>
               </li>
             </ul>
           </div>
@@ -98,7 +93,7 @@ export default function CitizenFooter() {
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-sm text-slate-500">
-            &copy; {currentYear} EcoAlert City Services. All rights reserved.
+            &copy; {currentYear} EcoAlert City Services. {t('footer.rights')}
           </p>
           <div className="flex items-center gap-5">
             <a href="#" className="text-slate-500 hover:text-white transition-colors">

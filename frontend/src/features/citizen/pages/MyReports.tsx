@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import type { Alert } from "@/types";
 import EditReportModal from "../components/EditReportModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const severityColor: Record<string, string> = {
   critical: "destructive",
@@ -27,6 +28,7 @@ const statusColor = (status: string) =>
     : ("outline" as const);
 
 export default function MyReports() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -41,7 +43,7 @@ export default function MyReports() {
   const deleteAlertMutation = useDeleteAlert();
 
   if (isLoading)
-    return <LoadingSpinner size="lg" label="Loading your reports..." />;
+    return <LoadingSpinner size="lg" label="Loading..." />;
 
   const alerts: Alert[] = alertsData?.items || [];
   const total = alertsData?.total || 0;
@@ -55,7 +57,7 @@ export default function MyReports() {
     }
 
     if (
-      window.confirm("Bạn có chắc chắn muốn hủy / xóa bài báo cáo này không?")
+      window.confirm(t('my_reports.delete_confirm_desc'))
     ) {
       deleteAlertMutation.mutate(id, {
         onSuccess: () => {
@@ -72,15 +74,15 @@ export default function MyReports() {
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Reports</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('my_reports.title')}</h1>
           <p className="text-muted-foreground mt-1">
-            Track and manage your environmental incident reports
+            {t('my_reports.subtitle')}
           </p>
         </div>
         <Button asChild>
           <Link to="/report" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            New Report
+            {t('my_reports.btn_create')}
           </Link>
         </Button>
       </div>
@@ -88,7 +90,7 @@ export default function MyReports() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search your reports..."
+          placeholder={t('btn.search')}
           className="pl-9 bg-muted/50"
           value={search}
           onChange={(e) => {
@@ -101,10 +103,10 @@ export default function MyReports() {
       {alerts.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No reports yet"
-          description="You haven't submitted any environmental incident reports."
+          title={t('my_reports.empty')}
+          description={t('my_reports.empty_desc')}
           action={{
-            label: "Create Your First Report",
+            label: t('my_reports.btn_create'),
             onClick: () => navigate("/report"),
           }}
         />
@@ -148,7 +150,9 @@ export default function MyReports() {
                               {alert.severity?.toUpperCase()}
                             </Badge>
                             <Badge variant={statusColor(alert.status)}>
-                              {alert.status?.replace(/_/g, " ").toUpperCase()}
+                              {t(`status.${alert.status}`) !== `status.${alert.status}`
+                                ? t(`status.${alert.status}`)
+                                : alert.status?.replace(/_/g, " ").toUpperCase()}
                             </Badge>
                           </div>
                         </div>
@@ -175,7 +179,7 @@ export default function MyReports() {
                           variant="ghost"
                           size="icon"
                           asChild
-                          title="View Details"
+                          title={t('btn.view')}
                         >
                           <Link to={`/incidents/${alert._id}`}>
                             <Eye className="h-4 w-4" />
@@ -189,7 +193,7 @@ export default function MyReports() {
                               size="icon"
                               className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
                               onClick={() => setEditingAlert(alert)}
-                              title="Edit Report"
+                              title={t('btn.edit')}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -202,7 +206,7 @@ export default function MyReports() {
                                 handleDelete(alert._id, alert.status)
                               }
                               disabled={deleteAlertMutation.isPending}
-                              title="Delete / Cancel Report"
+                              title={t('btn.delete')}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -221,7 +225,7 @@ export default function MyReports() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-4">
           <span className="text-sm text-muted-foreground">
-            Page {page} of {totalPages} ({total} reports)
+            Page {page} / {totalPages} ({total})
           </span>
           <div className="flex gap-2">
             <Button
@@ -230,7 +234,7 @@ export default function MyReports() {
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
             >
-              Previous
+              {t('btn.back')}
             </Button>
             <Button
               variant="outline"
@@ -238,7 +242,7 @@ export default function MyReports() {
               disabled={page === totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next
+              {t('btn.next')}
             </Button>
           </div>
         </div>

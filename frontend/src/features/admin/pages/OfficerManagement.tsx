@@ -9,8 +9,10 @@ import { UserPlus } from 'lucide-react';
 import { User } from '@/types';
 import toast from 'react-hot-toast';
 import { CreateUserModal } from '../components/CreateUserModal';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function OfficerManagement() {
+  const { t } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { data, isLoading } = useUsers(1, 100);
   const toggleStatus = useToggleUserStatus();
@@ -22,9 +24,9 @@ export default function OfficerManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Quản lý Cán bộ</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{t('admin_officers.title')}</h2>
         <Button onClick={() => setIsModalOpen(true)} className="gap-2">
-          <UserPlus className="h-4 w-4" /> Thêm mới Cán bộ
+          <UserPlus className="h-4 w-4" /> {t('btn.add_officer')}
         </Button>
       </div>
 
@@ -33,7 +35,6 @@ export default function OfficerManagement() {
         onOpenChange={setIsModalOpen}
         defaultRole="OFFICER"
       />
-
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {officers.map((officer: User) => (
@@ -51,17 +52,17 @@ export default function OfficerManagement() {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Status</span>
+                  <span className="text-muted-foreground">{t('admin_users.col_status')}</span>
                   <Badge variant={officer.isActive ? 'default' : 'secondary'}>
-                    {officer.isActive ? 'Active' : 'Inactive'}
+                    {officer.isActive ? t('admin_categories.active') : t('admin_categories.hidden')}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Assigned Reports</span>
+                  <span className="text-muted-foreground">{t('admin_officers.assigned_reports')}</span>
                   <span className="font-medium">{Math.floor(Math.random() * 20)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Resolution Rate</span>
+                  <span className="text-muted-foreground">{t('admin_officers.resolution_rate')}</span>
                   <span className="font-medium">{Math.floor(Math.random() * 40 + 60)}%</span>
                 </div>
                 <div className="pt-4 flex gap-2">
@@ -70,9 +71,9 @@ export default function OfficerManagement() {
                     className="w-full"
                     onClick={() => { toggleStatus.mutate({ id: officer._id, isActive: !officer.isActive }); toast.success('Status updated'); }}
                   >
-                    {officer.isActive ? 'Deactivate' : 'Activate'}
+                    {officer.isActive ? t('admin_officers.deactivate') : t('admin_officers.activate')}
                   </Button>
-                  <Button className="w-full">View Details</Button>
+                  <Button className="w-full">{t('admin_officers.view_details')}</Button>
                 </div>
               </div>
             </CardContent>

@@ -4,8 +4,10 @@ import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Bell, CheckCircle2, Circle, Clock, MailOpen, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function NotificationCenter() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const { data: notificationsData, isLoading } = useNotifications(page, 20);
   const markAsReadMutation = useMarkAsRead();
@@ -27,9 +29,9 @@ export default function NotificationCenter() {
   };
 
   const getIcon = (title: string) => {
-    const t = title.toLowerCase();
-    if (t.includes('status') || t.includes('resolved') || t.includes('verified')) return <ShieldCheck className="h-5 w-5 text-green-500" />;
-    if (t.includes('new alert') || t.includes('critical') || t.includes('high')) return <AlertTriangle className="h-5 w-5 text-red-500" />;
+    const tStr = title.toLowerCase();
+    if (tStr.includes('status') || tStr.includes('resolved') || tStr.includes('verified')) return <ShieldCheck className="h-5 w-5 text-green-500" />;
+    if (tStr.includes('new alert') || tStr.includes('critical') || tStr.includes('high')) return <AlertTriangle className="h-5 w-5 text-red-500" />;
     return <Bell className="h-5 w-5 text-primary" />;
   };
 
@@ -37,8 +39,8 @@ export default function NotificationCenter() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Notifications</h2>
-          <p className="text-muted-foreground mt-1">Stay updated on your reports and system alerts.</p>
+          <h2 className="text-3xl font-bold tracking-tight">{t('notifications.title')}</h2>
+          <p className="text-muted-foreground mt-1">{t('notifications.empty_desc')}</p>
         </div>
         {unreadCount > 0 && (
           <Button 
@@ -47,7 +49,7 @@ export default function NotificationCenter() {
             disabled={markAllAsReadMutation.isPending}
             className="flex items-center gap-2"
           >
-            <MailOpen className="h-4 w-4" /> Mark all as read
+            <MailOpen className="h-4 w-4" /> {t('notifications.mark_all_read')}
           </Button>
         )}
       </div>
@@ -61,8 +63,6 @@ export default function NotificationCenter() {
                 className={`p-6 flex gap-4 transition-colors hover:bg-muted/30 cursor-pointer ${!notification.isRead ? 'bg-primary/5' : ''}`}
                 onClick={() => {
                   handleMarkAsRead(notification._id, notification.isRead);
-                  // Optional: navigate based on notification content if it contains an alert ID.
-                  // For now, just mark read.
                 }}
               >
                 <div className="mt-1 shrink-0">
@@ -96,9 +96,9 @@ export default function NotificationCenter() {
             {notifications.length === 0 && (
               <div className="p-12 text-center flex flex-col items-center justify-center">
                 <Bell className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 mb-1">No notifications yet</h3>
+                <h3 className="text-lg font-medium text-slate-900 mb-1">{t('notifications.empty_title')}</h3>
                 <p className="text-muted-foreground text-sm max-w-sm">
-                  When there are updates to your reports or system alerts, they will appear here.
+                  {t('notifications.empty_desc')}
                 </p>
               </div>
             )}
@@ -107,14 +107,14 @@ export default function NotificationCenter() {
           {totalPages > 1 && (
             <div className="p-4 border-t flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, total)} of {total}
+                {page} / {totalPages}
               </span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                  Previous
+                  {t('reports.prev')}
                 </Button>
                 <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
-                  Next
+                  {t('reports.next')}
                 </Button>
               </div>
             </div>

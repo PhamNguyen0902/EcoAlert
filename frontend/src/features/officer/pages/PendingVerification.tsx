@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { EmptyState } from '@/components/ui/empty-state';
 import toast from 'react-hot-toast';
 import { AlertStatus, Alert } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Confirm Dialog Component
 function ConfirmDialog({
@@ -102,32 +103,31 @@ function QuickViewModal({ alert, onClose }: { alert: Alert | null; onClose: () =
             </div>
           )}
         </div>
-        <div className="p-4 border-t flex-shrink-0">
-          <Button variant="outline" className="w-full" onClick={onClose}>Close</Button>
+        <div className="p-4 border-t flex justify-end">
+          <Button variant="outline" onClick={onClose}>Close</Button>
         </div>
       </motion.div>
     </div>
   );
 }
 
-const ITEMS_PER_PAGE = 9;
+const ITEMS_PER_PAGE = 6;
 
 export default function PendingVerification() {
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [confirm, setConfirm] = useState<{ id: string; status: AlertStatus } | null>(null);
-  const [quickView, setQuickView] = useState<Alert | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
-  const { data, isLoading } = useAlerts(1, 200); // Fetch more, then filter client-side for search
+  const { data, isLoading } = useAlerts(1, 100, { status: 'pending' });
   const updateStatus = useUpdateAlertStatus();
 
-  const allPending = data?.items?.filter((a: Alert) =>
-    a.status === 'pending' || a.status === 'ai_analyzing'
-  ) || [];
-
-  const filtered = allPending.filter((a: Alert) =>
-    a.title.toLowerCase().includes(search.toLowerCase()) ||
-    (a.address ?? '').toLowerCase().includes(search.toLowerCase())
+  const alerts: Alert[] = data?.items || [];
+  const filtered = alerts.filter(
+    (a) =>
+      a.title.toLowerCase().includes(search.toLowerCase()) ||
+      (a.address ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
@@ -175,12 +175,12 @@ export default function PendingVerification() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Pending Verification</h2>
-          <p className="text-muted-foreground">Review and verify new citizen reports.</p>
+          <h2 className="text-3xl font-bold tracking-tight">{t('officer.pending')}</h2>
+          <p className="text-muted-foreground">{t('officer.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="secondary" className="text-base px-3 py-1">
-            {filtered.length} Pending
+            {filtered.length} {t('officer.pending')}
           </Badge>
         </div>
       </div>
@@ -189,7 +189,7 @@ export default function PendingVerification() {
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search by title or address..."
+          placeholder={t('officer_reports.search_placeholder')}
           className="pl-9"
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
@@ -223,7 +223,7 @@ export default function PendingVerification() {
                         </Badge>
                       </div>
                       <button
-                        onClick={() => setQuickView(alert)}
+                        onClick={() => setSelectedAlert(alert)}
                         className="bg-background/90 backdrop-blur-sm rounded-md p-1 hover:bg-background transition-colors"
                         title="Quick view"
                       >
@@ -319,7 +319,7 @@ export default function PendingVerification() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {quickView && <QuickViewModal alert={quickView} onClose={() => setQuickView(null)} />}
+        {selectedAlert && <QuickViewModal alert={selectedAlert} onClose={() => setSelectedAlert(null)} />}
       </AnimatePresence>
     </div>
   );

@@ -6,9 +6,10 @@ import { Button } from '../components/ui/button';
 import { format } from 'date-fns';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Clock, MapPin, Tag, CheckCircle, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Tag, CheckCircle, ShieldAlert, FileText } from 'lucide-react';
 import L from 'leaflet';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Fix leaflet icon
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -22,6 +23,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function AlertDetail() {
+  const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: alert, isLoading } = useAlert(id || '');
@@ -35,7 +37,7 @@ export default function AlertDetail() {
   }
 
   if (!alert) {
-    return <div className="text-center p-12 text-muted-foreground">Report not found.</div>;
+    return <div className="text-center p-12 text-muted-foreground">{t('report_not_found')}</div>;
   }
 
   const handleUpdateStatus = (status: string) => {
@@ -74,13 +76,13 @@ export default function AlertDetail() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle>Report Details</CardTitle>
+              <CardTitle>{t('alert_detail.details_title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <div>
                   <h3 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
-                    <FileText className="h-4 w-4" /> Description
+                    <FileText className="h-4 w-4" /> {t('alert_detail.description')}
                   </h3>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{alert.description}</p>
                 </div>
@@ -88,13 +90,13 @@ export default function AlertDetail() {
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                   <div>
                     <h3 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2">
-                      <Clock className="h-4 w-4" /> Reported On
+                      <Clock className="h-4 w-4" /> {t('alert_detail.reported_on')}
                     </h3>
                     <p className="text-sm font-medium">{format(new Date(alert.createdAt), 'MMM dd, yyyy HH:mm')}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2">
-                      <MapPin className="h-4 w-4" /> Address
+                      <MapPin className="h-4 w-4" /> {t('alert_detail.address')}
                     </h3>
                     <p className="text-sm font-medium">{alert.address}</p>
                   </div>
@@ -105,7 +107,7 @@ export default function AlertDetail() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle>Evidence & Media</CardTitle>
+              <CardTitle>{t('alert_detail.evidence')}</CardTitle>
             </CardHeader>
             <CardContent>
               {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
@@ -114,14 +116,14 @@ export default function AlertDetail() {
                     <div key={i} className="aspect-square rounded-xl overflow-hidden border bg-muted group relative">
                       <img src={url} alt={`Evidence ${i+1}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Button variant="secondary" size="sm">View</Button>
+                        <Button variant="secondary" size="sm">{t('btn.view')}</Button>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center p-8 bg-muted/30 rounded-xl border border-dashed">
-                  <p className="text-muted-foreground">No media attached to this report.</p>
+                  <p className="text-muted-foreground">{t('alert_detail.no_media')}</p>
                 </div>
               )}
             </CardContent>
@@ -132,20 +134,20 @@ export default function AlertDetail() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5 text-primary" /> AI Analysis
+                <Tag className="h-5 w-5 text-primary" /> {t('alert_detail.ai_analysis')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Detected Category</div>
-                  <div className="font-semibold text-lg">{alert.category || 'Pending Analysis'}</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('alert_detail.detected_category')}</div>
+                  <div className="font-semibold text-lg">{alert.category || '-'}</div>
                 </div>
                 
                 {alert.aiConfidence && (
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-muted-foreground">Confidence Score</span>
+                      <span className="text-muted-foreground">{t('alert_detail.confidence')}</span>
                       <span className="font-medium">{Math.round(alert.aiConfidence * 100)}%</span>
                     </div>
                     <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
@@ -162,7 +164,7 @@ export default function AlertDetail() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle>Location</CardTitle>
+              <CardTitle>{t('alert_detail.location')}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="h-[250px] w-full rounded-b-xl overflow-hidden relative z-0">
@@ -178,7 +180,7 @@ export default function AlertDetail() {
             <Card className="border-primary/50 shadow-sm">
               <CardHeader className="pb-3 bg-primary/5 border-b">
                 <CardTitle className="text-primary flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5" /> Officer Actions
+                  <ShieldAlert className="h-5 w-5" /> {t('alert_detail.officer_actions')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-3">
@@ -188,7 +190,7 @@ export default function AlertDetail() {
                     onClick={() => handleUpdateStatus('verified')}
                     disabled={updateStatusMutation.isPending}
                   >
-                    Verify & Accept Report
+                    {t('alert_detail.btn_verify')}
                   </Button>
                 )}
                 
@@ -198,7 +200,7 @@ export default function AlertDetail() {
                     onClick={() => handleUpdateStatus('IN_PROGRESS')}
                     disabled={updateStatusMutation.isPending}
                   >
-                    Mark In Progress
+                    {t('alert_detail.btn_in_progress')}
                   </Button>
                 )}
 
@@ -208,7 +210,7 @@ export default function AlertDetail() {
                     onClick={() => handleUpdateStatus('RESOLVED')}
                     disabled={updateStatusMutation.isPending}
                   >
-                    <CheckCircle className="mr-2 h-4 w-4" /> Mark Resolved
+                    <CheckCircle className="mr-2 h-4 w-4" /> {t('alert_detail.btn_resolve')}
                   </Button>
                 )}
                 
@@ -219,7 +221,7 @@ export default function AlertDetail() {
                     onClick={() => handleUpdateStatus('REJECTED')}
                     disabled={updateStatusMutation.isPending}
                   >
-                    Reject Report (Invalid/Spam)
+                    {t('alert_detail.btn_reject')}
                   </Button>
                 )}
               </CardContent>
@@ -230,6 +232,3 @@ export default function AlertDetail() {
     </div>
   );
 }
-
-// Add FileText import
-import { FileText } from 'lucide-react';
