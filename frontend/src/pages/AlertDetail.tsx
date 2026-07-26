@@ -6,10 +6,12 @@ import { Button } from '../components/ui/button';
 import { format } from 'date-fns';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Clock, MapPin, Tag, CheckCircle, ShieldAlert, FileText } from 'lucide-react';
+import { ArrowLeft, Clock, Tag, CheckCircle, ShieldAlert, FileText } from 'lucide-react';
 import L from 'leaflet';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../contexts/LanguageContext';
+import { IncidentLocationDetails } from '@/components/location/IncidentLocationDetails';
+import { hasValidCoordinates } from '@/lib/maps';
 
 // Fix leaflet icon
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -50,10 +52,12 @@ export default function AlertDetail() {
     );
   };
 
-  const position: [number, number] = [
-    alert.location?.coordinates[1] || 10.8231, // lat
-    alert.location?.coordinates[0] || 106.6297  // lng
-  ];
+  const latitude = alert.location?.coordinates[1];
+  const longitude = alert.location?.coordinates[0];
+  const hasCoordinates = hasValidCoordinates(latitude, longitude);
+  const position: [number, number] = hasCoordinates && latitude !== undefined && longitude !== undefined
+    ? [latitude, longitude]
+    : [10.8231, 106.6297];
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -87,18 +91,12 @@ export default function AlertDetail() {
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{alert.description}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="pt-4 border-t">
                   <div>
                     <h3 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2">
                       <Clock className="h-4 w-4" /> {t('alert_detail.reported_on')}
                     </h3>
                     <p className="text-sm font-medium">{format(new Date(alert.createdAt), 'MMM dd, yyyy HH:mm')}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2">
-                      <MapPin className="h-4 w-4" /> {t('alert_detail.address')}
-                    </h3>
-                    <p className="text-sm font-medium">{alert.address}</p>
                   </div>
                 </div>
               </div>
@@ -163,16 +161,26 @@ export default function AlertDetail() {
           </Card>
 
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle>{t('alert_detail.location')}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="h-[250px] w-full rounded-b-xl overflow-hidden relative z-0">
-                <MapContainer center={position} zoom={15} style={{ height: '100%', width: '100%' }}>
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <Marker position={position} />
-                </MapContainer>
-              </div>
+            <CardContent className="p-5">
+              <IncidentLocationDetails
+                address={alert.address}
+                latitude={latitude}
+                longitude={longitude}
+              />
+            </CardContent>
+            <CardContent className="p-0 border-t">
+              {hasCoordinates ? (
+                <div className="h-[250px] w-full rounded-b-xl overflow-hidden relative z-0">
+                  <MapContainer center={position} zoom={15} style={{ height: '100%', width: '100%' }}>
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker position={position} />
+                  </MapContainer>
+                </div>
+              ) : (
+                <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+                  Location coordinates are unavailable
+                </div>
+              )}
             </CardContent>
           </Card>
 

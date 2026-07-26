@@ -5,34 +5,54 @@ import { notificationService } from './notification.service';
 
 const logger = createLogger('notification-service');
 
+interface AlertEventData {
+  _id?: string;
+  alertId?: string;
+  title?: string;
+  citizenId?: string;
+  assignedOfficerId?: string;
+  status?: string;
+  category?: string;
+  suggestedPriority?: string;
+  workflowNotificationHandled?: boolean;
+}
+
 class RabbitMQService {
-  private connection: any;
-  private channel: any;
+  private connection: unknown;
+  private channel: amqp.Channel | undefined;
 
   async connect() {
     try {
       this.connection = await amqp.connect(envConfig.rabbitMqUrl);
-      this.channel = await this.connection.createChannel();
-      
+      this.channel = await (this.connection as amqp.ChannelModel).createChannel();
       await this.channel.assertExchange('ecoalert_exchange', 'topic', { durable: true });
-      
-      const q = await this.channel.assertQueue('notification_service_queue', { durable: true });
-      await this.channel.bindQueue(q.queue, 'ecoalert_exchange', EVENTS.IMAGE_ANALYZED);
-      await this.channel.bindQueue(q.queue, 'ecoalert_exchange', EVENTS.ALERT_UPDATED);
-      
-      this.channel.consume(q.queue, async (msg: any) => {
-        if (msg) {
-          try {
-            const event: IEventMessage<any> = JSON.parse(msg.content.toString());
-            await this.handleEvent(event);
-            this.channel.ack(msg);
-          } catch (error) {
-            logger.error('Error processing Notification msg', error);
-            this.channel.nack(msg, false, false);
-          }
+
+      const queue = await this.channel.assertQueue('notification_service_queue', { durable: true });
+      const eventNames = [
+        EVENTS.IMAGE_ANALYZED,
+        EVENTS.ALERT_UPDATED,
+        EVENTS.OFFICER_ASSIGNED,
+        EVENTS.ALERT_STARTED,
+        EVENTS.ALERT_ARRIVED,
+        EVENTS.ALERT_RESOLVED,
+        EVENTS.ALERT_CLOSED,
+      ];
+      await Promise.all(eventNames.map((eventName) =>
+        this.channel?.bindQueue(queue.queue, 'ecoalert_exchange', eventName),
+      ));
+
+      this.channel.consume(queue.queue, async (message) => {
+        if (!message || !this.channel) return;
+        try {
+          const event: IEventMessage<AlertEventData> = JSON.parse(message.content.toString());
+          await this.handleEvent(event);
+          this.channel.ack(message);
+        } catch (error) {
+          logger.error('Error processing notification message', error);
+          this.channel.nack(message, false, false);
         }
       });
-      
+
       logger.info('Connected to RabbitMQ and listening to notification_service_queue');
     } catch (error) {
       logger.error('RabbitMQ Connection Error:', error);
@@ -40,25 +60,100 @@ class RabbitMQService {
     }
   }
 
-  async handleEvent(event: IEventMessage<any>) {
+  async handleEvent(event: IEventMessage<AlertEventData>) {
     const data = event.data;
-    
-    if (event.eventType === EVENTS.IMAGE_ANALYZED) {
-      await notificationService.notifyCitizen(
-        'System', 
-        'Alert Analyzed', 
-        `Alert ${data.alertId} has been analyzed. Category: ${data.category}, Priority: ${data.suggestedPriority}`
-      );
-      await notificationService.notifyOfficers(
-        data.category,
-        `New ${data.suggestedPriority} priority alert ${data.alertId} needs verification.`
-      );
-    } else if (event.eventType === EVENTS.ALERT_UPDATED) {
-      await notificationService.notifyCitizen(
-        data.citizenId,
-        'Alert Status Update',
-        `Your alert ${data._id} is now ${data.status}`
-      );
+    const incidentId = data.alertId || data._id || 'incident';
+    const incidentLabel = data.title ? `“${data.title}”` : incidentId;
+
+    switch (event.eventType) {
+      case EVENTS.IMAGE_ANALYZED:
+        await notificationService.notifyCitizen(
+          'System',
+          'Alert Analyzed',
+          `Alert ${incidentId} has been analyzed. Category: ${data.category}, Priority: ${data.suggestedPriority}`,
+          event.eventId,
+        );
+        await notificationService.notifyOfficers(
+          data.category || 'unclassified',
+          `New ${data.suggestedPriority || ''} priority alert ${incidentId} needs verification.`,
+          event.eventId,
+        );
+        break;
+      case EVENTS.OFFICER_ASSIGNED:
+        if (data.assignedOfficerId) {
+          await notificationService.notifyOfficer(
+            data.assignedOfficerId,
+            'New incident assigned',
+            `Incident ${incidentLabel} has been assigned to you.`,
+            event.eventId,
+          );
+        }
+        break;
+      case EVENTS.ALERT_STARTED:
+        if (data.citizenId) {
+          await notificationService.notifyCitizen(
+            data.citizenId,
+            'Officer started handling your report',
+            `An Officer has started handling incident ${incidentLabel}.`,
+            event.eventId,
+          );
+        }
+        break;
+      case EVENTS.ALERT_ARRIVED:
+        if (data.citizenId) {
+          await notificationService.notifyCitizen(
+            data.citizenId,
+            'Officer arrived at the scene',
+            `The assigned Officer has arrived for incident ${incidentLabel}.`,
+            event.eventId,
+          );
+        }
+        break;
+      case EVENTS.ALERT_RESOLVED:
+        if (data.citizenId) {
+          await notificationService.notifyCitizen(
+            data.citizenId,
+            'Incident resolved',
+            `Incident ${incidentLabel} has been marked as resolved and is awaiting Admin review.`,
+            event.eventId,
+          );
+        }
+        await notificationService.notifyAdmins(
+          'Incident ready for review',
+          `Resolved incident ${incidentLabel} is ready to be reviewed and closed.`,
+          event.eventId,
+        );
+        break;
+      case EVENTS.ALERT_CLOSED:
+        if (data.citizenId) {
+          await notificationService.notifyCitizen(
+            data.citizenId,
+            'Incident closed',
+            `Incident ${incidentLabel} was reviewed and closed by an Admin.`,
+            event.eventId,
+          );
+        }
+        if (data.assignedOfficerId) {
+          await notificationService.notifyOfficer(
+            data.assignedOfficerId,
+            'Incident closed',
+            `Incident ${incidentLabel} was reviewed and closed by an Admin.`,
+            event.eventId,
+          );
+        }
+        break;
+      case EVENTS.ALERT_UPDATED:
+        if (!data.workflowNotificationHandled && data.citizenId) {
+          await notificationService.notifyCitizen(
+            data.citizenId,
+            'Alert Status Update',
+            `Your alert ${incidentId} is now ${data.status}`,
+            event.eventId,
+          );
+        }
+        break;
+      default:
+        break;
     }
   }
 }

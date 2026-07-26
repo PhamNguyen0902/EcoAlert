@@ -1,14 +1,23 @@
-import { Router } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 import { alertController } from '../controllers/alert.controller';
 import { categoryController } from '../controllers/category.controller';
 import { validate } from '../middlewares/validate.middleware';
-import { createAlertSchema, updateAlertStatusSchema, updateAlertSchema, addOfficerNoteSchema } from '../dtos/alert.dto';
+import {
+  addOfficerNoteSchema,
+  assignOfficerSchema,
+  closeAlertSchema,
+  confirmArrivalSchema,
+  createAlertSchema,
+  resolveAlertSchema,
+  updateAlertSchema,
+  updateAlertStatusSchema,
+} from '../dtos/alert.dto';
 import { asyncHandler } from '@ecoalert/shared';
 
 const router = Router();
 
 // Middleware to check authentication (x-user-id)
-const requireAuth = (req: any, res: any, next: any) => {
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!req.headers['x-user-id']) return res.status(401).json({ success: false, message: 'Unauthorized' });
   next();
 };
@@ -25,9 +34,15 @@ router.delete('/categories/:id', asyncHandler(categoryController.deleteCategory)
 // Alert Routes
 router.post('/', validate(createAlertSchema), asyncHandler(alertController.createAlert));
 router.get('/', asyncHandler(alertController.getAlerts));
+router.get('/officer/tasks', asyncHandler(alertController.getOfficerTasks));
 router.get('/:id', asyncHandler(alertController.getAlertById));
 router.patch('/:id', validate(updateAlertSchema), asyncHandler(alertController.updateAlert));
 router.patch('/:id/status', validate(updateAlertStatusSchema), asyncHandler(alertController.updateStatus));
+router.post('/:id/assign', validate(assignOfficerSchema), asyncHandler(alertController.assignOfficer));
+router.post('/:id/start', asyncHandler(alertController.startHandling));
+router.post('/:id/arrival', validate(confirmArrivalSchema), asyncHandler(alertController.confirmArrival));
+router.post('/:id/resolution', validate(resolveAlertSchema), asyncHandler(alertController.resolveIncident));
+router.post('/:id/close', validate(closeAlertSchema), asyncHandler(alertController.closeIncident));
 router.post('/:id/note', validate(addOfficerNoteSchema), asyncHandler(alertController.addOfficerNote));
 router.patch('/:id/restore', asyncHandler(alertController.restoreAlert));
 router.delete('/:id', asyncHandler(alertController.deleteAlert));

@@ -1,6 +1,6 @@
 import { Alert, IAlert } from '../models/alert.model';
 import { IBaseRepository } from '@ecoalert/shared';
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, UpdateQuery } from 'mongoose';
 
 export class AlertRepository implements IBaseRepository<IAlert> {
   async create(data: Partial<IAlert>): Promise<IAlert> {
@@ -37,7 +37,14 @@ export class AlertRepository implements IBaseRepository<IAlert> {
   }
 
   async update(id: string, data: Partial<IAlert>): Promise<IAlert | null> {
-    return Alert.findByIdAndUpdate(id, { $set: data }, { new: true });
+    return Alert.findByIdAndUpdate(id, { $set: data }, { returnDocument: 'after' });
+  }
+
+  async findOneAndUpdate(
+    filter: FilterQuery<IAlert>,
+    update: UpdateQuery<IAlert>
+  ): Promise<IAlert | null> {
+    return Alert.findOneAndUpdate(filter, update, { returnDocument: 'after', runValidators: true });
   }
 
   async delete(id: string): Promise<boolean> {

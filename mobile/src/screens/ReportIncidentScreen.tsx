@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
+import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MapPin, Navigation, Send, AlertCircle } from "lucide-react-native";
 import { useCreateAlert } from "../hooks/useAlerts";
 import { useLocation } from "../hooks/useLocation";
@@ -21,6 +23,7 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { COLORS, SEVERITY_COLORS } from "../utils/constants";
 import { AlertCategory, Severity } from "../types";
+import type { AppTabParamList, RootStackParamList } from "../navigation/types";
 
 const CATEGORIES: { label: string; value: AlertCategory; icon: string }[] = [
   { label: "Illegal Dumping", value: "illegal_dumping", icon: "🗑️" },
@@ -40,7 +43,9 @@ const SEVERITIES: { label: string; value: Severity }[] = [
   { label: "Critical", value: "critical" },
 ];
 
-export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigation }) => {
+type Props = BottomTabScreenProps<AppTabParamList, "ReportTab">;
+
+export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const createAlertMutation = useCreateAlert();
   const { coords, address, loading: locLoading, error: locError, fetchLocation, setManualLocation } = useLocation();
@@ -54,6 +59,20 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
   useEffect(() => {
     fetchLocation();
   }, [fetchLocation]);
+
+  useEffect(() => {
+    const selectedLocation = route.params?.selectedLocation;
+    if (!selectedLocation) {
+      return;
+    }
+
+    setManualLocation(
+      selectedLocation.latitude,
+      selectedLocation.longitude,
+      selectedLocation.address,
+    );
+    navigation.setParams({ selectedLocation: undefined });
+  }, [navigation, route.params?.selectedLocation, setManualLocation]);
 
   const validate = () => {
     const errs: { title?: string; description?: string; location?: string } = {};
@@ -109,6 +128,19 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
     longitude: coords ? coords.coordinates[0] : 106.660172,
     latitudeDelta: 0.015,
     longitudeDelta: 0.015,
+  };
+
+  const openLocationPicker = () => {
+    const rootNavigation = navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
+    rootNavigation?.navigate("LocationPicker", {
+      initialLocation: coords
+        ? {
+            latitude: coords.coordinates[1],
+            longitude: coords.coordinates[0],
+            address: address || `${coords.coordinates[1].toFixed(5)}, ${coords.coordinates[0].toFixed(5)}`,
+          }
+        : undefined,
+    });
   };
 
   return (
@@ -197,7 +229,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
           />
         </GlassCard>
 
-        {/* Geolocation Section with React Native Maps */}
+        {/* Geolocation preview; selection happens in the dedicated full-screen picker. */}
         <View style={styles.mapHeader}>
           <Text style={styles.sectionLabel}>Incident Location (GPS)</Text>
           <TouchableOpacity style={styles.gpsButton} onPress={fetchLocation} disabled={locLoading}>
@@ -213,42 +245,31 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
         </View>
 
         <Card style={styles.mapCard}>
-          <View style={styles.mapContainer}>
-            <MapView
-              style={styles.map}
-              initialRegion={initialRegion}
-              region={
-                coords
-                  ? {
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={openLocationPicker}
+            accessibilityRole="button"
+            accessibilityLabel="Select incident location on full-screen map"
+          >
+            <View style={styles.mapContainer}>
+              <MapView style={styles.map} region={initialRegion} pointerEvents="none">
+                {coords ? (
+                  <Marker
+                    coordinate={{
                       latitude: coords.coordinates[1],
                       longitude: coords.coordinates[0],
-                      latitudeDelta: 0.01,
-                      longitudeDelta: 0.01,
-                    }
-                  : undefined
-              }
-              onPress={(e) => {
-                const { latitude, longitude } = e.nativeEvent.coordinate;
-                setManualLocation(latitude, longitude);
-              }}
-            >
-              {coords ? (
-                <Marker
-                  coordinate={{
-                    latitude: coords.coordinates[1],
-                    longitude: coords.coordinates[0],
-                  }}
-                  title="Incident Location"
-                  description={address || "Selected coordinates"}
-                  draggable
-                  onDragEnd={(e) => {
-                    const { latitude, longitude } = e.nativeEvent.coordinate;
-                    setManualLocation(latitude, longitude);
-                  }}
-                />
-              ) : null}
-            </MapView>
-          </View>
+                    }}
+                    title="Incident Location"
+                    description={address || "Selected coordinates"}
+                    pinColor={COLORS.primary}
+                  />
+                ) : null}
+              </MapView>
+              <View pointerEvents="none" style={styles.mapOverlay}>
+                <Text style={styles.mapOverlayText}>Tap to select location</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
 
           <View style={styles.addressBox}>
             <MapPin size={18} color={COLORS.primary} />
@@ -256,6 +277,10 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
               {address || "Tap map or click 'Locate Me' to set position"}
             </Text>
           </View>
+          <TouchableOpacity style={styles.selectLocationButton} onPress={openLocationPicker}>
+            <MapPin size={17} color={COLORS.primary} />
+            <Text style={styles.selectLocationText}>Select Location</Text>
+          </TouchableOpacity>
           {locError ? <Text style={styles.errorText}>{locError}</Text> : null}
           {errors.location ? <Text style={styles.errorText}>{errors.location}</Text> : null}
         </Card>
@@ -402,6 +427,20 @@ const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject,
   },
+  mapOverlay: {
+    position: "absolute",
+    bottom: 12,
+    alignSelf: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.82)",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
+  },
+  mapOverlayText: {
+    color: "#FFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
   addressBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -416,6 +455,21 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     flex: 1,
     fontWeight: "500",
+  },
+  selectLocationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.primaryLight,
+  },
+  selectLocationText: {
+    color: COLORS.primaryDark,
+    fontSize: 14,
+    fontWeight: "800",
   },
   errorText: {
     fontSize: 12,

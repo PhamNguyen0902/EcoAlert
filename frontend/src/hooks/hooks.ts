@@ -7,7 +7,7 @@ import {
   gisService,
   categoryService,
 } from "../services/services";
-import { CreateAlertData, Category } from "@/types";
+import { CreateAlertData, Category, ResolutionInput } from "@/types";
 
 // ========================
 // AUTH
@@ -45,6 +45,72 @@ export const useAlert = (id: string) => {
     queryKey: ["alert", id],
     queryFn: () => alertService.getAlert(id),
     enabled: !!id,
+  });
+};
+
+export const useOfficerTasks = (page = 1, limit = 10, status?: string) => {
+  return useQuery({
+    queryKey: ['officer-tasks', page, limit, status || 'all'],
+    queryFn: () => alertService.getOfficerTasks(page, limit, status),
+  });
+};
+
+const invalidateAlertWorkflow = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  id: string,
+) => {
+  queryClient.invalidateQueries({ queryKey: ['alert', id] });
+  queryClient.invalidateQueries({ queryKey: ['alerts'] });
+  queryClient.invalidateQueries({ queryKey: ['officer-tasks'] });
+  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+};
+
+export const useAssignOfficer = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, officerId }: { id: string; officerId: string }) =>
+      alertService.assignOfficer(id, officerId),
+    onSuccess: (_, variables) => invalidateAlertWorkflow(queryClient, variables.id),
+  });
+};
+
+export const useStartHandling = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: alertService.startHandling,
+    onSuccess: (_, id) => invalidateAlertWorkflow(queryClient, id),
+  });
+};
+
+export const useConfirmArrival = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      location,
+    }: {
+      id: string;
+      location?: { latitude?: number; longitude?: number; accuracy?: number };
+    }) => alertService.confirmArrival(id, location),
+    onSuccess: (_, variables) => invalidateAlertWorkflow(queryClient, variables.id),
+  });
+};
+
+export const useResolveIncident = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ResolutionInput }) =>
+      alertService.resolveIncident(id, data),
+    onSuccess: (_, variables) => invalidateAlertWorkflow(queryClient, variables.id),
+  });
+};
+
+export const useCloseIncident = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reviewNote }: { id: string; reviewNote?: string }) =>
+      alertService.closeIncident(id, reviewNote),
+    onSuccess: (_, variables) => invalidateAlertWorkflow(queryClient, variables.id),
   });
 };
 
@@ -214,10 +280,11 @@ export const useChangePassword = () => {
   });
 };
 
-export const useUsers = (page = 1, limit = 10, role?: string, search?: string) => {
+export const useUsers = (page = 1, limit = 10, role?: string, search?: string, enabled = true) => {
   return useQuery({
     queryKey: ["users", page, limit, role, search],
     queryFn: () => userService.getUsers(page, limit, role, search),
+    enabled,
   });
 };
 

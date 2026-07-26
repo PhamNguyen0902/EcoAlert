@@ -1,7 +1,6 @@
-export type UserRole =
-  | "ADMIN"
-  | "OFFICER"
-  | "CITIZEN"; export type AlertStatus = 'pending' | 'ai_analyzing' | 'verified' | 'assigned' | 'in_progress' | 'resolved' | 'closed' | 'rejected';
+export type UserRole = 'ADMIN' | 'OFFICER' | 'CITIZEN';
+export type WorkflowActorRole = UserRole | 'SYSTEM';
+export type AlertStatus = 'pending' | 'ai_analyzing' | 'verified' | 'assigned' | 'in_progress' | 'resolved' | 'closed' | 'rejected';
 export type AlertCategory = 'illegal_dumping' | 'water_pollution' | 'air_pollution' | 'illegal_burning' | 'flooding' | 'fallen_tree' | 'illegal_construction_waste' | 'noise_pollution' | 'soil_contamination' | 'wildlife_threat' | 'other';
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
 
@@ -47,13 +46,83 @@ export interface Alert {
   address: string;
   citizenId: string;
   assignedOfficerId?: string;
+  assignedAt?: string;
+  assignedBy?: string;
+  startedAt?: string;
+  startedBy?: string;
+  arrivedAt?: string;
+  arrivedBy?: string;
+  arrivalLocation?: ArrivalLocation;
   aiConfidence?: number;
   aiSuggestedPriority?: Severity;
   officerNote?: string;
   resolvedAt?: string;
+  resolvedBy?: string;
+  resolutionSummary?: string;
+  treatmentMethod?: string;
+  materialsUsed?: string;
+  resolutionNotes?: string;
+  resolutionEvidence: ResolutionEvidence[];
+  closedAt?: string;
+  closedBy?: string;
+  adminReviewNote?: string;
+  statusHistory: StatusHistoryEntry[];
+  timeline: TimelineEntry[];
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ArrivalLocation {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
+export interface ResolutionEvidence {
+  _id?: string;
+  mediaId?: string;
+  url: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  type: 'AFTER_TREATMENT';
+}
+
+export interface ResolutionEvidenceInput {
+  mediaId?: string;
+  url: string;
+}
+
+export interface ResolutionInput {
+  resolutionSummary: string;
+  treatmentMethod: string;
+  materialsUsed?: string;
+  additionalNotes?: string;
+  evidence: ResolutionEvidenceInput[];
+}
+
+export interface StatusHistoryEntry {
+  _id?: string;
+  fromStatus?: AlertStatus;
+  toStatus: AlertStatus;
+  changedBy: string;
+  changedByRole: WorkflowActorRole;
+  changedAt: string;
+  note?: string;
+  correlationId?: string;
+}
+
+export interface TimelineEntry {
+  _id?: string;
+  eventType: string;
+  label: string;
+  timestamp: string;
+  actorId: string;
+  actorRole: WorkflowActorRole;
+  note?: string;
+  status?: AlertStatus;
+  evidenceUrls?: string[];
+  correlationId?: string;
 }
 
 export interface Notification {
@@ -78,7 +147,7 @@ export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
-  errors?: any;
+  errors?: unknown;
 }
 
 export interface GISLocation {

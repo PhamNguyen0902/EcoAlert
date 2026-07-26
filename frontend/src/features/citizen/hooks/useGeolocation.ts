@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface GeolocationState {
   latitude: number | null;
   longitude: number | null;
+  accuracy: number | null;
   error: string | null;
   loading: boolean;
 }
@@ -14,25 +15,34 @@ export function useGeolocation() {
   const [state, setState] = useState<GeolocationState>({
     latitude: null,
     longitude: null,
+    accuracy: null,
     error: null,
     loading: true,
   });
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     if (!navigator.geolocation) {
       setState({
         latitude: FALLBACK_LAT,
         longitude: FALLBACK_LNG,
+        accuracy: null,
         error: 'Geolocation is not supported by your browser.',
         loading: false,
       });
       return;
     }
 
+    setState((currentState) => ({
+      ...currentState,
+      error: null,
+      loading: true,
+    }));
+
     const handleSuccess = (position: GeolocationPosition) => {
       setState({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
+        accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
         error: null,
         loading: false,
       });
@@ -55,6 +65,7 @@ export function useGeolocation() {
       setState({
         latitude: FALLBACK_LAT,
         longitude: FALLBACK_LNG,
+        accuracy: null,
         error: errorMessage,
         loading: false,
       });
@@ -67,5 +78,9 @@ export function useGeolocation() {
     });
   }, []);
 
-  return state;
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { ...state, refresh };
 }

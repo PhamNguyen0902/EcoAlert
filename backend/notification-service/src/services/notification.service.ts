@@ -4,22 +4,35 @@ import { notificationRepository } from '../repositories/notification.repository'
 const logger = createLogger('notification-service');
 
 export class NotificationService {
-  async notifyCitizen(userId: string, title: string, message: string) {
-    await notificationRepository.create({
-      recipientId: userId,
-      title,
-      message,
-    });
-    logger.info(`[NOTIFICATION_SAVED] To: Citizen ${userId} | Title: ${title} | Msg: ${message}`);
+  private async notifyRecipient(
+    recipientId: string,
+    title: string,
+    message: string,
+    eventId?: string,
+  ) {
+    if (!recipientId) return;
+    if (eventId) {
+      await notificationRepository.createOnce({ recipientId, title, message, eventId });
+    } else {
+      await notificationRepository.create({ recipientId, title, message });
+    }
+    logger.info(`[NOTIFICATION_SAVED] To: ${recipientId} | Title: ${title}`);
   }
 
-  async notifyOfficers(category: string, message: string) {
-    await notificationRepository.create({
-      recipientId: 'officers',
-      title: `Officer Alert: ${category}`,
-      message,
-    });
-    logger.info(`[NOTIFICATION_SAVED] To: Officers handling ${category} | Msg: ${message}`);
+  async notifyCitizen(userId: string, title: string, message: string, eventId?: string) {
+    await this.notifyRecipient(userId, title, message, eventId);
+  }
+
+  async notifyOfficer(userId: string, title: string, message: string, eventId?: string) {
+    await this.notifyRecipient(userId, title, message, eventId);
+  }
+
+  async notifyOfficers(category: string, message: string, eventId?: string) {
+    await this.notifyRecipient('officers', `Officer Alert: ${category}`, message, eventId);
+  }
+
+  async notifyAdmins(title: string, message: string, eventId?: string) {
+    await this.notifyRecipient('admins', title, message, eventId);
   }
 }
 

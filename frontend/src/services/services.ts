@@ -1,5 +1,13 @@
 import { api } from "./api";
-import type { User, Alert, PaginatedResult, CreateAlertData, RegisterData, Category } from "@/types";
+import type {
+  Alert,
+  Category,
+  CreateAlertData,
+  PaginatedResult,
+  RegisterData,
+  ResolutionInput,
+  User,
+} from "@/types";
 
 export const authService = {
   login: async (data: { email: string; password: string }) => {
@@ -34,6 +42,39 @@ export const alertService = {
     const res = await api.get(`/v1/alerts/${id}`);
     return res.data.data;
   },
+  getOfficerTasks: async (
+    page = 1,
+    limit = 10,
+    status?: string,
+  ): Promise<PaginatedResult<Alert>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (status) params.set('status', status);
+    const res = await api.get(`/v1/alerts/officer/tasks?${params}`);
+    return res.data.data;
+  },
+  assignOfficer: async (id: string, officerId: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/assign`, { officerId });
+    return res.data.data;
+  },
+  startHandling: async (id: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/start`);
+    return res.data.data;
+  },
+  confirmArrival: async (
+    id: string,
+    location: { latitude?: number; longitude?: number; accuracy?: number } = {},
+  ): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/arrival`, location);
+    return res.data.data;
+  },
+  resolveIncident: async (id: string, data: ResolutionInput): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/resolution`, data);
+    return res.data.data;
+  },
+  closeIncident: async (id: string, reviewNote?: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/close`, { reviewNote });
+    return res.data.data;
+  },
   createAlert: async (data: CreateAlertData) => {
     const res = await api.post("/v1/alerts", data);
     return res.data.data;
@@ -46,11 +87,14 @@ export const alertService = {
     const res = await api.delete(`/v1/alerts/${id}`);
     return res.data.data;
   },
-  uploadMedia: async (file: File): Promise<string> => {
+  uploadMedia: async (file: File, onProgress?: (percentage: number) => void): Promise<string> => {
     const formData = new FormData();
     formData.append("image", file);
     const res = await api.post("/v1/media/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (event) => {
+        if (event.total && onProgress) onProgress(Math.round((event.loaded / event.total) * 100));
+      },
     });
     return res.data.data.url;
   },

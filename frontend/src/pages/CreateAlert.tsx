@@ -1,13 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCreateAlert } from '../hooks/hooks';
 import { alertService } from '../services/services';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -17,38 +14,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Image as ImageIcon, FileText, CheckCircle, UploadCloud, Search, Loader2, LocateFixed } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-
-// Fix leaflet icon
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+import type { PickedLocation } from '@/components/location/LocationPickerModal';
+import { reverseGeocoder } from '@/services/reverseGeocoder';
+const LocationPickerModal = lazy(() =>
+  import('@/components/location/LocationPickerModal').then(({ LocationPickerModal: Picker }) => ({ default: Picker })),
+);
 
 const schema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   address: z.string().min(5, 'Address must be at least 5 characters'),
 });
-
-function LocationPicker({ position, setPosition, onLocationSelect }: { 
-  position: [number, number], 
-  setPosition: (pos: [number, number]) => void,
-  onLocationSelect: (lat: number, lng: number) => void
-}) {
-  useMapEvents({
-    click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
-      onLocationSelect(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return <Marker position={position} />;
-}
 
 export default function CreateAlert() {
   const { t } = useLanguage();
@@ -63,7 +39,7 @@ export default function CreateAlert() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const mapRef = useRef<any>(null);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
 
   const steps = [
     { id: 1, name: t('report_create.step1'), icon: FileText },
@@ -106,17 +82,21 @@ export default function CreateAlert() {
 
   // Reverse Geocoding: Tọa độ -> Text
   const fetchAddressFromCoords = async (lat: number, lng: number) => {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-      const data = await res.json();
-      if (data && data.display_name) {
-        setValue('address', data.display_name, { shouldValidate: true });
-        setAddressQuery(data.display_name);
-        setShowSuggestions(false);
-      }
-    } catch (error) {
-      console.error("Reverse geocode error", error);
+    const address = await reverseGeocoder.reverseGeocode(lat, lng);
+    if (address) {
+      setValue('address', address, { shouldValidate: true });
+      setAddressQuery(address);
+      setShowSuggestions(false);
     }
+  };
+
+  const handleLocationConfirmed = (location: PickedLocation) => {
+    const nextPosition: [number, number] = [location.latitude, location.longitude];
+    setPosition(nextPosition);
+    setValue('address', location.address, { shouldValidate: true });
+    setAddressQuery(location.address);
+    setShowSuggestions(false);
+    setIsLocationPickerOpen(false);
   };
 
   // Lựa chọn địa chỉ từ gợi ý
@@ -128,9 +108,6 @@ export default function CreateAlert() {
     setAddressQuery(item.display_name);
     setShowSuggestions(false);
     
-    if (mapRef.current) {
-      mapRef.current.flyTo([lat, lon], 16);
-    }
   };
 
   // Lấy vị trí hiện tại của thiết bị
@@ -141,9 +118,6 @@ export default function CreateAlert() {
         async (pos) => {
           const { latitude, longitude } = pos.coords;
           setPosition([latitude, longitude]);
-          if (mapRef.current) {
-            mapRef.current.flyTo([latitude, longitude], 16);
-          }
           await fetchAddressFromCoords(latitude, longitude);
           toast.success('Đã cập nhật vị trí hiện tại!', { id: 'geo' });
         },
@@ -327,16 +301,33 @@ export default function CreateAlert() {
                     {errors.address && <p className="text-red-500 text-xs mt-1 mb-2">{String(errors.address.message)}</p>}
 
                     {/* Bản Đồ */}
-                    <div className="h-[350px] sm:h-[400px] w-full rounded-xl overflow-hidden border shadow-sm relative z-0">
-                      <MapContainer center={position} zoom={15} style={{ height: '100%', width: '100%' }} ref={mapRef}>
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <LocationPicker 
-                          position={position} 
-                          setPosition={setPosition} 
-                          onLocationSelect={fetchAddressFromCoords}
-                        />
-                      </MapContainer>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsLocationPickerOpen(true)}
+                      className="group relative w-full overflow-hidden rounded-2xl border bg-gradient-to-br from-emerald-500/20 via-sky-500/10 to-background p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <div className="absolute -right-10 -top-12 h-44 w-44 rounded-full bg-primary/15 blur-2xl transition group-hover:scale-110" />
+                      <div className="absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-sky-500/10 blur-2xl" />
+                      <div className="relative flex min-h-40 flex-col justify-between">
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                            <MapPin className="h-6 w-6" />
+                          </span>
+                          <span className="rounded-full border bg-background/75 px-3 py-1.5 font-mono text-xs font-medium tabular-nums backdrop-blur">
+                            {position[0].toFixed(6)}, {position[1].toFixed(6)}
+                          </span>
+                        </div>
+                        <div className="mt-8">
+                          <p className="text-sm font-semibold">Choose an incident location on the map</p>
+                          <p className="mt-1 max-w-xl text-sm leading-5 text-muted-foreground">
+                            Open the full-screen picker to drop a pin, use GPS, preview Google Maps, and confirm the exact coordinates.
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                    <Button type="button" className="mt-3 w-full" onClick={() => setIsLocationPickerOpen(true)}>
+                      <MapPin className="mr-2 h-4 w-4" /> Choose Location
+                    </Button>
                   </div>
                 </div>
               )}
@@ -440,6 +431,24 @@ export default function CreateAlert() {
           </div>
         </CardContent>
       </Card>
+
+      {isLocationPickerOpen ? (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm">
+              <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+          }
+        >
+          <LocationPickerModal
+            open={isLocationPickerOpen}
+            initialPosition={position}
+            initialAddress={addressQuery || getValues('address')}
+            onOpenChange={setIsLocationPickerOpen}
+            onConfirm={handleLocationConfirmed}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

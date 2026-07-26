@@ -4,12 +4,15 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
 import { TabNavigator } from "./TabNavigator";
+import { LocationPickerScreen } from "../screens/LocationPickerScreen";
+import { AlertDetailScreen } from "../screens/AlertDetailScreen";
 import { storage } from "../utils/storage";
 import { setUnauthorizedCallback } from "../api/client";
 import { COLORS } from "../utils/constants";
 import { useProfile } from "../hooks/useAuth";
+import type { RootStackParamList } from "./types";
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
   const [isReady, setIsReady] = useState(false);
@@ -52,12 +55,16 @@ export const RootNavigator = () => {
       {hasToken ? (
         <>
           <Stack.Screen name="AppTabs" component={TabNavigator} />
+          <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
+          <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
         </>
       ) : (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="AppTabsGuest" component={TabNavigator} />
+          <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
+          <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
         </>
       )}
     </Stack.Navigator>

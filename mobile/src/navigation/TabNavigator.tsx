@@ -8,8 +8,9 @@ import { useProfile, useLogout } from "../hooks/useAuth";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { COLORS } from "../utils/constants";
+import type { AppTabParamList } from "./types";
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<AppTabParamList>();
 
 const ProfileScreen: React.FC<{ navigation?: any }> = () => {
   const { data: profile, isLoading } = useProfile();

@@ -3,7 +3,7 @@ import { Alert } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ClipboardList, ShieldCheck, Activity, CheckCircle2, Map as MapIcon, ArrowRight } from 'lucide-react';
-import { useAlerts } from '@/hooks/hooks';
+import { useOfficerTasks } from '@/hooks/hooks';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,20 +16,20 @@ const COLORS = ['#0ea5e9', '#22c55e', '#eab308', '#f97316', '#ef4444'];
 export default function OfficerDashboard() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { data: alertsData, isLoading } = useAlerts(1, 100);
+  const { data: alertsData, isLoading } = useOfficerTasks(1, 100);
   const alerts = alertsData?.items || [];
   if (isLoading) return <LoadingSpinner className="mx-auto mt-20" />;
 
   const assigned = alerts.filter((a: Alert) => a.status === 'assigned');
-  const pending = alerts.filter((a: Alert) => a.status === 'pending' || a.status === 'ai_analyzing');
   const inProgress = alerts.filter((a: Alert) => a.status === 'in_progress');
   const resolved = alerts.filter((a: Alert) => a.status === 'resolved');
+  const closed = alerts.filter((a: Alert) => a.status === 'closed');
 
   const statusData = [
-    { name: 'Pending', value: pending.length },
     { name: 'Assigned', value: assigned.length },
     { name: 'In Progress', value: inProgress.length },
     { name: 'Resolved', value: resolved.length },
+    { name: 'Closed', value: closed.length },
   ];
 
   const categoryCount = alerts.reduce((acc: Record<string, number>, curr: Alert) => {
@@ -69,7 +69,7 @@ export default function OfficerDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
           { title: t('stats.assigned_to_me'), value: assigned.length, icon: ClipboardList, color: 'text-blue-500' },
-          { title: t('stats.pending_verification'), value: pending.length, icon: ShieldCheck, color: 'text-amber-500' },
+          { title: 'Closed Tasks', value: closed.length, icon: ShieldCheck, color: 'text-slate-500' },
           { title: t('stats.in_progress'), value: inProgress.length, icon: Activity, color: 'text-orange-500' },
           { title: t('stats.resolved'), value: resolved.length, icon: CheckCircle2, color: 'text-green-500' },
         ].map((stat, i) => (

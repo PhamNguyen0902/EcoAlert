@@ -1,6 +1,10 @@
 import { useState, useCallback } from "react";
 import * as Location from "expo-location";
 import { GeoLocation } from "../types";
+import {
+  defaultReverseGeocoder,
+  ReverseGeocoder,
+} from "../services/reverseGeocoder";
 
 export interface LocationState {
   coords: GeoLocation | null;
@@ -9,7 +13,9 @@ export interface LocationState {
   error: string | null;
 }
 
-export const useLocation = () => {
+export const useLocation = (
+  reverseGeocoder: ReverseGeocoder = defaultReverseGeocoder,
+) => {
   const [state, setState] = useState<LocationState>({
     coords: null,
     address: "",
@@ -39,19 +45,15 @@ export const useLocation = () => {
         coordinates: [location.coords.longitude, location.coords.latitude],
       };
 
-      // Try reverse geocoding to get human-readable address
+      // Reverse geocoding failures leave the already-available coordinates as the address.
       let addressStr = `${location.coords.latitude.toFixed(5)}, ${location.coords.longitude.toFixed(5)}`;
       try {
-        const reverse = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-        if (reverse && reverse.length > 0) {
-          const item = reverse[0];
-          const parts = [item.streetNumber, item.street, item.city, item.region].filter(Boolean);
-          if (parts.length > 0) {
-            addressStr = parts.join(", ");
-          }
+        const resolvedAddress = await reverseGeocoder.reverseGeocode(
+          location.coords.latitude,
+          location.coords.longitude,
+        );
+        if (resolvedAddress) {
+          addressStr = resolvedAddress;
         }
       } catch (e) {
         // Fallback to coordinates string
@@ -73,7 +75,7 @@ export const useLocation = () => {
       }));
       return null;
     }
-  }, []);
+  }, [reverseGeocoder]);
 
   const setManualLocation = useCallback((latitude: number, longitude: number, address?: string) => {
     const coords: GeoLocation = {
