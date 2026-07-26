@@ -9,7 +9,9 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => authService.login(credentials),
     onSuccess: (data) => {
-      queryClient.setQueryData(["profile"], data.user);
+      if (data.user) {
+        queryClient.setQueryData(["profile"], data.user);
+      }
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
     },
   });
@@ -21,7 +23,9 @@ export const useRegister = () => {
   return useMutation({
     mutationFn: (data: RegisterData) => authService.register(data),
     onSuccess: (data) => {
-      queryClient.setQueryData(["profile"], data.user);
+      if (data.user) {
+        queryClient.setQueryData(["profile"], data.user);
+      }
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
     },
   });
@@ -33,6 +37,8 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: () => authService.logout(),
     onSuccess: () => {
+      queryClient.setQueryData(["profile"], null);
+      queryClient.removeQueries({ queryKey: ["profile"] });
       queryClient.clear();
     },
   });
@@ -45,8 +51,12 @@ export const useProfile = () => {
       const token = await storage.getToken();
       if (!token) return null;
       try {
-        return await authService.getProfile();
+        const remoteUser = await authService.getProfile();
+        return remoteUser;
       } catch (e) {
+        // Fallback to locally saved user in storage if API call fails
+        const localUser = await storage.getUser();
+        if (localUser) return localUser;
         return null;
       }
     },

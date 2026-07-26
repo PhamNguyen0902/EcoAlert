@@ -46,4 +46,15 @@ export const alertService = {
     const res = await api.get(`/v1/alerts/categories?includeInactive=${includeInactive}`);
     return res.data?.data || res.data || [];
   },
+
+  updateAlertStatus: async (id: string, status: string, officerNote?: string): Promise<Alert> => {
+    const res = await api.patch(`/v1/alerts/${id}/status`, { status, officerNote });
+    return res.data?.data || res.data;
+  },
+
+  addOfficerNote: async (id: string, note: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/note`, { note });
+    return res.data?.data || res.data;
+  },
 };
+

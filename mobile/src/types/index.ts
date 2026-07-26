@@ -112,6 +112,8 @@ export interface RegisterData {
   email: string;
   password?: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
 }
 
