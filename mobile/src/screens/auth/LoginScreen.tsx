@@ -10,13 +10,13 @@ import {
   TextInput,
 } from "react-native";
 import { Mail, Lock, ShieldAlert, ArrowRight } from "lucide-react-native";
-import { useLogin } from "../hooks/useAuth";
-import { useFormValidation } from "../hooks/useFormValidation";
-import { GlassCard } from "../components/ui/GlassCard";
-import { Input } from "../components/ui/Input";
-import { Button } from "../components/ui/Button";
-import { InlineBanner } from "../components/ui/InlineBanner";
-import { COLORS } from "../utils/constants";
+import { useLogin } from "../../hooks/useAuth";
+import { useFormValidation } from "../../hooks/useFormValidation";
+import { GlassCard } from "../../components/ui/GlassCard";
+import { Input } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
+import { InlineBanner } from "../../components/ui/InlineBanner";
+import { COLORS } from "../../utils/constants";
 
 interface LoginValues {
   email: string;
@@ -41,23 +41,31 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const { values, errors, setField, validate } = useFormValidation<LoginValues>(
     { email: "", password: "" },
-    validateLogin
+    validateLogin,
   );
 
   const handleLogin = async () => {
     setSubmitError(null);
     if (!validate()) return;
     try {
-      await loginMutation.mutateAsync({ email: values.email.trim(), password: values.password });
-      // Navigation is handled by the auth listener / root router.
+      await loginMutation.mutateAsync({
+        email: values.email.trim(),
+        password: values.password,
+      });
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Login failed. Please check your credentials.";
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Login failed. Please check your credentials.";
       setSubmitError(msg);
     }
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -70,7 +78,8 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>
-            Log in to EcoAlert to report and monitor environmental incidents in your area.
+            Log in to EcoAlert to report and monitor environmental incidents in
+            your area.
           </Text>
         </View>
 
@@ -79,14 +88,14 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
           <Input
             label="Email Address"
-            placeholder="citizen@ecoalert.org"
+            placeholder="example@gmail.com"
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
             returnKeyType="next"
             onSubmitEditing={() => passwordRef.current?.focus()}
             value={values.email}
-            onChangeText={(v) => setField("email", v)}
+            onChangeText={(v: string) => setField("email", v)}
             error={errors.email}
             leftIcon={<Mail size={20} color={COLORS.textMuted} />}
           />
@@ -100,7 +109,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             returnKeyType="go"
             onSubmitEditing={handleLogin}
             value={values.password}
-            onChangeText={(v) => setField("password", v)}
+            onChangeText={(v: string) => setField("password", v)}
             error={errors.password}
             leftIcon={<Lock size={20} color={COLORS.textMuted} />}
           />
@@ -119,13 +128,18 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             loading={loginMutation.isPending}
             disabled={loginMutation.isPending}
             style={styles.loginBtn}
-            icon={<ArrowRight size={18} color="#FFF" style={{ marginRight: 6 }} />}
+            // icon={
+            //   <ArrowRight size={18} color="#FFF" style={{ marginRight: 6 }} />
+            // }
           />
         </GlassCard>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Register")} accessibilityRole="button">
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Register")}
+            accessibilityRole="button"
+          >
             <Text style={styles.registerLink}>Sign Up Now</Text>
           </TouchableOpacity>
         </View>
@@ -152,7 +166,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 16,
   },
-  title: { fontSize: 28, fontWeight: "800", color: COLORS.text, marginBottom: 8 },
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginBottom: 8,
+  },
   subtitle: {
     fontSize: 14,
     color: COLORS.textMuted,
