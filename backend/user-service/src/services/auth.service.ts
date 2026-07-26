@@ -16,8 +16,8 @@ export class AuthService {
       throw new ConflictError("Email already in use");
     }
 
-    const { firstName, lastName, ...rest } = data;
-    const fullName = `${firstName} ${lastName}`.trim();
+    const { firstName, lastName, fullName: inputFullName, ...rest } = data;
+    const fullName = inputFullName || `${firstName || ''} ${lastName || ''}`.trim() || data.email.split('@')[0];
 
     const hashedPassword = await hashPassword(data.password);
     const user = await userRepository.create({
