@@ -9,17 +9,16 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { COLORS } from "../../utils/constants";
 
-interface ButtonProps extends TouchableOpacityProps {
+export interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: "primary" | "secondary" | "outline" | "destructive" | "ghost";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "destructive";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
+  icon?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
-  icon?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -27,134 +26,96 @@ export const Button: React.FC<ButtonProps> = ({
   variant = "primary",
   size = "md",
   loading = false,
-  style,
-  textStyle,
   icon,
   disabled,
+  style,
+  textStyle,
   ...props
 }) => {
-  const isPrimary = variant === "primary";
-  const isDisabled = disabled || loading;
-
-  const getContainerStyle = () => {
+  const getVariantStyle = () => {
     switch (variant) {
       case "secondary":
-        return [styles.container, styles.secondary, sizeStyles[size], style];
+        return styles.secondaryBg;
       case "outline":
-        return [styles.container, styles.outline, sizeStyles[size], style];
-      case "destructive":
-        return [styles.container, styles.destructive, sizeStyles[size], style];
+        return styles.outlineBg;
       case "ghost":
-        return [styles.container, styles.ghost, sizeStyles[size], style];
+        return styles.ghostBg;
+      case "destructive":
+        return styles.destructiveBg;
       default:
-        return [styles.container, sizeStyles[size], style];
+        return styles.primaryBg;
     }
   };
 
-  const getTextStyle = () => {
+  const getVariantTextStyle = () => {
     switch (variant) {
       case "outline":
+        return styles.outlineText;
       case "ghost":
-        return [styles.text, styles.textDark, textStyles[size], textStyle];
+        return styles.ghostText;
       default:
-        return [styles.text, textStyles[size], textStyle];
+        return styles.defaultText;
     }
   };
 
-  const renderContent = () => (
-    <>
-      {loading ? (
-        <ActivityIndicator color={variant === "outline" || variant === "ghost" ? COLORS.primary : "#FFF"} style={styles.loader} />
-      ) : icon ? (
-        <>{icon}</>
-      ) : null}
-      <Text style={getTextStyle()}>{title}</Text>
-    </>
-  );
-
-  if (isPrimary && !isDisabled) {
-    return (
-      <TouchableOpacity activeOpacity={0.85} disabled={isDisabled} style={[style, { borderRadius: 14 }]} {...props}>
-        <LinearGradient
-          colors={[COLORS.primary, COLORS.primaryDark]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.container, sizeStyles[size]]}
-        >
-          {renderContent()}
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  }
+  const getSizeStyle = () => {
+    switch (size) {
+      case "sm":
+        return styles.smSize;
+      case "lg":
+        return styles.lgSize;
+      default:
+        return styles.mdSize;
+    }
+  };
 
   return (
     <TouchableOpacity
-      activeOpacity={0.75}
-      disabled={isDisabled}
-      style={[getContainerStyle(), isDisabled && styles.disabled]}
+      activeOpacity={0.8}
+      disabled={disabled || loading}
+      style={[
+        styles.button,
+        getVariantStyle(),
+        getSizeStyle(),
+        disabled && styles.disabled,
+        style,
+      ]}
+      accessibilityRole="button"
       {...props}
     >
-      {renderContent()}
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color={variant === "outline" || variant === "ghost" ? COLORS.primary : "#FFFFFF"}
+        />
+      ) : (
+        <>
+          {icon ? icon : null}
+          <Text style={[styles.text, getVariantTextStyle(), textStyle]}>{title}</Text>
+        </>
+      )}
     </TouchableOpacity>
   );
 };
 
-const sizeStyles = StyleSheet.create({
-  sm: { paddingVertical: 8, paddingHorizontal: 16 },
-  md: { paddingVertical: 14, paddingHorizontal: 20 },
-  lg: { paddingVertical: 18, paddingHorizontal: 28 },
-});
-
-const textStyles = StyleSheet.create({
-  sm: { fontSize: 13 },
-  md: { fontSize: 15 },
-  lg: { fontSize: 17 },
-});
-
 const styles = StyleSheet.create({
-  container: {
+  button: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
   },
-  secondary: {
-    backgroundColor: COLORS.secondary,
-    shadowColor: COLORS.secondary,
-  },
-  outline: {
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  destructive: {
-    backgroundColor: COLORS.destructive,
-    shadowColor: COLORS.destructive,
-  },
-  ghost: {
-    backgroundColor: "transparent",
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  text: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  textDark: {
-    color: COLORS.text,
-  },
-  disabled: {
-    opacity: 0.6,
-  },
-  loader: {
-    marginRight: 8,
-  },
+  primaryBg: { backgroundColor: COLORS.primary },
+  secondaryBg: { backgroundColor: COLORS.secondary },
+  outlineBg: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: COLORS.border },
+  ghostBg: { backgroundColor: "transparent" },
+  destructiveBg: { backgroundColor: COLORS.destructive },
+  disabled: { opacity: 0.5 },
+  smSize: { height: 40, paddingHorizontal: 14 },
+  mdSize: { height: 50, paddingHorizontal: 20 },
+  lgSize: { height: 56, paddingHorizontal: 24 },
+  text: { fontSize: 15, fontWeight: "700", textAlign: "center" },
+  defaultText: { color: "#FFFFFF" },
+  outlineText: { color: COLORS.text },
+  ghostText: { color: COLORS.primary },
 });
