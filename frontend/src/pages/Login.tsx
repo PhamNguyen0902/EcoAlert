@@ -62,15 +62,15 @@ export default function Login() {
               <ThemeToggle />
             </div>
             <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-foreground">
-              {t('auth.login_title')}
+              {t("auth.login_title")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {t('auth.no_account')}{" "}
+              {t("auth.no_account")}{" "}
               <Link
                 to="/register"
-                className="font-semibold text-primary hover:text-primary/80"
+                className="font-semibold text-primary hover:text-primary/80 nav.signup"
               >
-                {t('nav.signin')}
+                {t("nav.signin")}
               </Link>
             </p>
           </div>
@@ -78,7 +78,7 @@ export default function Login() {
           <div className="mt-10">
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <Label htmlFor="email">{t('auth.email')}</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <div className="mt-2">
                   <Input
                     id="email"
@@ -94,7 +94,7 @@ export default function Login() {
               </div>
 
               <div>
-                <Label htmlFor="password">{t('auth.password')}</Label>
+                <Label htmlFor="password">{t("auth.password")}</Label>
                 <div className="mt-2">
                   <Input
                     id="password"
@@ -115,7 +115,7 @@ export default function Login() {
                   className="w-full"
                   disabled={loginMutation.isPending}
                 >
-                  {loginMutation.isPending ? "..." : t('nav.signin')}
+                  {loginMutation.isPending ? "..." : t("nav.signin")}
                 </Button>
               </div>
             </form>
@@ -135,7 +135,7 @@ export default function Login() {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="text-5xl font-bold max-w-2xl"
           >
-            {t('hero.protecting')} {t('hero.our_environment')}
+            {t("hero.protecting")} {t("hero.our_environment")}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, x: 20 }}
@@ -143,7 +143,7 @@ export default function Login() {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="mt-6 text-xl max-w-xl text-green-50"
           >
-            {t('hero.subtitle')}
+            {t("hero.subtitle")}
           </motion.p>
         </div>
       </div>

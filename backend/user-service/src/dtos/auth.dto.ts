@@ -3,8 +3,9 @@ import { z } from "zod";
 export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  fullName: z.string().optional(),
   phone: z.string().optional(),
 });
 export type RegisterDto = z.infer<typeof registerSchema>;

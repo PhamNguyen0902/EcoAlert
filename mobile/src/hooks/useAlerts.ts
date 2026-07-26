@@ -54,3 +54,28 @@ export const useCategories = (includeInactive = false) => {
     staleTime: 10 * 60 * 1000, // 10 mins
   });
 };
+
+export const useUpdateAlertStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status, officerNote }: { id: string; status: string; officerNote?: string }) =>
+      alertService.updateAlertStatus(id, status, officerNote),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
+    },
+  });
+};
+
+export const useAddOfficerNote = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note: string }) => alertService.addOfficerNote(id, note),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
+    },
+  });
+};
+

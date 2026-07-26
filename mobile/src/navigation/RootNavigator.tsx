@@ -1,48 +1,37 @@
 import React, { useState, useEffect } from "react";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { LoginScreen } from "../screens/LoginScreen";
-import { RegisterScreen } from "../screens/RegisterScreen";
-import { TabNavigator } from "./TabNavigator";
-import { LocationPickerScreen } from "../screens/LocationPickerScreen";
-import { AlertDetailScreen } from "../screens/AlertDetailScreen";
+
+import { LoginScreen, RegisterScreen } from "../screens";
+import { CitizenTabNavigator } from "./CitizenTabNavigator";
+import { OfficerTabNavigator } from "./OfficerTabNavigator";
+import { AdminTabNavigator } from "./AdminTabNavigator";
 import { storage } from "../utils/storage";
 import { setUnauthorizedCallback } from "../api/client";
 import { COLORS } from "../utils/constants";
 import { useProfile } from "../hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import type { RootStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
   const [isReady, setIsReady] = useState(false);
-  const [hasToken, setHasToken] = useState<boolean>(false);
-  const { data: profile, isLoading, isError } = useProfile();
+  const { data: profile, isLoading } = useProfile();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = await storage.getToken();
-      setHasToken(Boolean(token));
-      setIsReady(true);
-    };
-    checkAuth();
+    setIsReady(true);
 
     // Register callback when 401 occurs in Axios client
     setUnauthorizedCallback(() => {
-      setHasToken(false);
+      queryClient.setQueryData(["profile"], null);
+      queryClient.clear();
+      storage.clearAll();
     });
-  }, []);
+  }, [queryClient]);
 
-  // Update hasToken whenever profile query succeeds or fails
-  useEffect(() => {
-    if (profile) {
-      setHasToken(true);
-    } else if (isError && !isLoading) {
-      setHasToken(false);
-    }
-  }, [profile, isError, isLoading]);
-
-  if (!isReady || isLoading) {
+  if (!isReady || (isLoading && !profile)) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -50,21 +39,23 @@ export const RootNavigator = () => {
     );
   }
 
+  const role = profile?.role?.toUpperCase();
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {hasToken ? (
-        <>
-          <Stack.Screen name="AppTabs" component={TabNavigator} />
-          <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
-          <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
-        </>
+      {profile ? (
+        role === "ADMIN" ? (
+          <Stack.Screen name="AdminApp" component={AdminTabNavigator} />
+        ) : role === "OFFICER" ? (
+          <Stack.Screen name="OfficerApp" component={OfficerTabNavigator} />
+        ) : (
+          <Stack.Screen name="CitizenApp" component={CitizenTabNavigator} />
+        )
       ) : (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="AppTabsGuest" component={TabNavigator} />
-          <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
-          <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
+          <Stack.Screen name="CitizenAppGuest" component={CitizenTabNavigator} />
         </>
       )}
     </Stack.Navigator>

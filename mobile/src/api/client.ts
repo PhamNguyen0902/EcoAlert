@@ -50,8 +50,13 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const isAuthRoute =
+      originalRequest?.url?.includes("/v1/auth/login") ||
+      originalRequest?.url?.includes("/v1/auth/register") ||
+      originalRequest?.url?.includes("/v1/auth/refresh-token");
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Do NOT attempt refresh token logic if 401 comes from login/register requests
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           refreshQueue.push({
