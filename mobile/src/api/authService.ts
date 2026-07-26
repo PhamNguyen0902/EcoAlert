@@ -24,9 +24,11 @@ export const authService = {
   logout: async () => {
     try {
       const refreshToken = await storage.getRefreshToken();
-      await api.post("/v1/auth/logout", { refreshToken });
+      if (refreshToken) {
+        await api.post("/v1/auth/logout", { refreshToken });
+      }
     } catch (e) {
-      console.warn("Logout API error:", e);
+      // Silently ignore network / backend logout errors during logout flow
     } finally {
       await storage.clearAll();
     }
