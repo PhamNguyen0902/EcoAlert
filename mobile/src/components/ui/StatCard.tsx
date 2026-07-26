@@ -1,99 +1,72 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  withDelay,
-} from "react-native-reanimated";
-import { LucideIcon } from "lucide-react-native";
 import { GlassCard } from "./GlassCard";
 import { COLORS } from "../../utils/constants";
 
 interface StatCardProps {
   title: string;
-  value: number;
-  icon: LucideIcon;
+  value: number | string;
+  icon: React.ElementType;
   iconColor?: string;
   iconBgColor?: string;
-  style?: StyleProp<ViewStyle>;
   delay?: number;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
-  icon: Icon,
+  icon: IconComp,
   iconColor = COLORS.primary,
   iconBgColor = COLORS.primaryLight,
   style,
-  delay = 0,
 }) => {
-  const scale = useSharedValue(0.9);
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    scale.value = withDelay(delay, withSpring(1, { damping: 15 }));
-    opacity.value = withDelay(delay, withTiming(1, { duration: 400 }));
-  }, [value, delay]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
   return (
-    <Animated.View style={[styles.wrapper, style, animatedStyle]}>
-      <GlassCard
-        style={styles.card}
-        gradientColors={["rgba(255, 255, 255, 0.9)", "rgba(255, 255, 255, 0.7)"]}
-      >
-        <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
-            <Icon color={iconColor} size={22} />
-          </View>
-          <Text style={styles.value}>{value}</Text>
+    <GlassCard style={[styles.card, style]}>
+      <View style={styles.content}>
+        <View style={[styles.iconBox, { backgroundColor: iconBgColor }]}>
+          <IconComp size={22} color={iconColor} />
         </View>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-      </GlassCard>
-    </Animated.View>
+        <View style={styles.textContainer}>
+          <Text style={styles.value}>{value}</Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+        </View>
+      </View>
+    </GlassCard>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    minWidth: 140,
-  },
   card: {
-    padding: 16,
     borderRadius: 20,
   },
-  header: {
+  content: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    padding: 14,
+    gap: 12,
   },
-  iconContainer: {
+  iconBox: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
+  textContainer: {
+    flex: 1,
+  },
   value: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: "800",
     color: COLORS.text,
   },
   title: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: COLORS.textMuted,
-    letterSpacing: 0.2,
+    marginTop: 2,
   },
 });
