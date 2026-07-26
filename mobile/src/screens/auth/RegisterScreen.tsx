@@ -9,26 +9,26 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Mail, Lock, User as UserIcon, Phone, ShieldCheck } from "lucide-react-native";
-import { useRegister } from "../hooks/useAuth";
-import { useFormValidation } from "../hooks/useFormValidation";
-import { GlassCard } from "../components/ui/GlassCard";
-import { Input } from "../components/ui/Input";
-import { Button } from "../components/ui/Button";
-import { InlineBanner } from "../components/ui/InlineBanner";
-import { COLORS } from "../utils/constants";
+import { Mail, Lock, User as UserIcon, Phone, UserPlus, ArrowLeft } from "lucide-react-native";
+import { useRegister } from "../../hooks/useAuth";
+import { useFormValidation } from "../../hooks/useFormValidation";
+import { GlassCard } from "../../components/ui/GlassCard";
+import { Input } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
+import { InlineBanner } from "../../components/ui/InlineBanner";
+import { COLORS } from "../../utils/constants";
 
 interface RegisterValues {
   fullName: string;
   email: string;
   phone: string;
   password: string;
+  confirmPassword: string;
 }
 
 function validateRegister(values: RegisterValues) {
   const errs: Partial<Record<keyof RegisterValues, string>> = {};
-  if (!values.fullName.trim() || values.fullName.trim().length < 2) {
+  if (!values.fullName || values.fullName.trim().length < 2) {
     errs.fullName = "Please enter your full name.";
   }
   if (!values.email || !values.email.includes("@")) {
@@ -37,20 +37,30 @@ function validateRegister(values: RegisterValues) {
   if (!values.password || values.password.length < 6) {
     errs.password = "Password must be at least 6 characters.";
   }
+  if (values.confirmPassword !== values.password) {
+    errs.confirmPassword = "Passwords do not match.";
+  }
   return errs;
 }
 
 export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
   const registerMutation = useRegister();
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const emailRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
+
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { values, errors, setField, validate } = useFormValidation<RegisterValues>(
-    { fullName: "", email: "", phone: "", password: "" },
+    {
+      fullName: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+    },
     validateRegister
   );
 
@@ -58,8 +68,14 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     setSubmitError(null);
     if (!validate()) return;
     try {
+      const parts = values.fullName.trim().split(" ").filter(Boolean);
+      const firstName = parts[0] || values.fullName.trim();
+      const lastName = parts.length > 1 ? parts.slice(1).join(" ") : undefined;
+
       await registerMutation.mutateAsync({
         fullName: values.fullName.trim(),
+        firstName,
+        lastName,
         email: values.email.trim(),
         phone: values.phone.trim() || undefined,
         password: values.password,
@@ -73,17 +89,22 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16 }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        bounces={false}
       >
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityRole="button">
+          <ArrowLeft size={20} color={COLORS.text} />
+        </TouchableOpacity>
+
         <View style={styles.header}>
           <View style={styles.iconBox}>
-            <ShieldCheck size={36} color={COLORS.primary} />
+            <UserPlus size={40} color={COLORS.primary} />
           </View>
-          <Text style={styles.title}>Join EcoAlert</Text>
+          <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>
-            Empowering citizens to protect our environment. Register to submit verified incident alerts.
+            Join EcoAlert to protect your environment and report municipal hazards.
           </Text>
         </View>
 
@@ -92,12 +113,12 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
           <Input
             label="Full Name"
-            placeholder="Jane Doe"
+            placeholder="Nguyen Van A"
             autoCapitalize="words"
             returnKeyType="next"
             onSubmitEditing={() => emailRef.current?.focus()}
             value={values.fullName}
-            onChangeText={(v) => setField("fullName", v)}
+            onChangeText={(v: string) => setField("fullName", v)}
             error={errors.fullName}
             leftIcon={<UserIcon size={20} color={COLORS.textMuted} />}
           />
@@ -105,14 +126,13 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <Input
             ref={emailRef}
             label="Email Address"
-            placeholder="jane@ecoalert.org"
+            placeholder="citizen@ecoalert.org"
             keyboardType="email-address"
             autoCapitalize="none"
-            autoComplete="email"
             returnKeyType="next"
             onSubmitEditing={() => phoneRef.current?.focus()}
             value={values.email}
-            onChangeText={(v) => setField("email", v)}
+            onChangeText={(v: string) => setField("email", v)}
             error={errors.email}
             leftIcon={<Mail size={20} color={COLORS.textMuted} />}
           />
@@ -120,12 +140,13 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <Input
             ref={phoneRef}
             label="Phone Number (Optional)"
-            placeholder="+1 234 567 8900"
+            placeholder="0912345678"
             keyboardType="phone-pad"
             returnKeyType="next"
             onSubmitEditing={() => passwordRef.current?.focus()}
             value={values.phone}
-            onChangeText={(v) => setField("phone", v)}
+            onChangeText={(v: string) => setField("phone", v)}
+            error={errors.phone}
             leftIcon={<Phone size={20} color={COLORS.textMuted} />}
           />
 
@@ -134,18 +155,29 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             label="Password"
             placeholder="••••••••"
             secureTextEntry
-            autoComplete="password-new"
-            returnKeyType="go"
-            onSubmitEditing={handleRegister}
+            returnKeyType="next"
+            onSubmitEditing={() => confirmPasswordRef.current?.focus()}
             value={values.password}
-            onChangeText={(v) => setField("password", v)}
+            onChangeText={(v: string) => setField("password", v)}
             error={errors.password}
             leftIcon={<Lock size={20} color={COLORS.textMuted} />}
-            hint={!errors.password && values.password.length > 0 ? "Minimum 6 characters" : undefined}
+          />
+
+          <Input
+            ref={confirmPasswordRef}
+            label="Confirm Password"
+            placeholder="••••••••"
+            secureTextEntry
+            returnKeyType="go"
+            onSubmitEditing={handleRegister}
+            value={values.confirmPassword}
+            onChangeText={(v: string) => setField("confirmPassword", v)}
+            error={errors.confirmPassword}
+            leftIcon={<Lock size={20} color={COLORS.textMuted} />}
           />
 
           <Button
-            title="Create Account"
+            title="Register Account"
             onPress={handleRegister}
             loading={registerMutation.isPending}
             disabled={registerMutation.isPending}
@@ -169,28 +201,39 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    justifyContent: "center",
+    paddingTop: 48,
     paddingBottom: 40,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   header: { alignItems: "center", marginBottom: 24 },
   iconBox: {
-    width: 68,
-    height: 68,
+    width: 72,
+    height: 72,
     borderRadius: 20,
     backgroundColor: COLORS.primaryLight,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
+    marginBottom: 12,
   },
   title: { fontSize: 26, fontWeight: "800", color: COLORS.text, marginBottom: 6 },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.textMuted,
     textAlign: "center",
-    lineHeight: 18,
-    paddingHorizontal: 10,
+    lineHeight: 20,
+    paddingHorizontal: 16,
   },
-  card: { padding: 24, borderRadius: 24 },
+  card: { padding: 20, borderRadius: 24 },
   registerBtn: { marginTop: 12 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 24 },
   footerText: { fontSize: 14, color: COLORS.textMuted },
