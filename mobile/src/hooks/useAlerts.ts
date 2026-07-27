@@ -79,3 +79,17 @@ export const useAddOfficerNote = () => {
   });
 };
 
+export const useAssignOfficer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, officerId }: { id: string; officerId: string }) =>
+      alertService.assignOfficer(id, officerId),
+    onSuccess: (updatedAlert, variables) => {
+      queryClient.setQueryData(["alert", variables.id], updatedAlert);
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
+    },
+  });
+};
+

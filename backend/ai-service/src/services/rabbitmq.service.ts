@@ -1,7 +1,7 @@
 import amqp from 'amqplib';
 import { envConfig } from '../config/env.config';
 import { createLogger, IEventMessage, EVENTS } from '@ecoalert/shared';
-import { geminiService } from './gemini.service';
+import { analyzeIncidentWithOpenRouter } from './openrouter.service';
 
 const logger = createLogger('ai-service');
 
@@ -28,7 +28,8 @@ class RabbitMQService {
             this.channel.ack(msg);
           } catch (error) {
             logger.error('Error processing message', error);
-            this.channel.nack(msg, false, false);
+            // nack(msg, allUpTo, requeue) -> Để false, false để tránh loop vô hạn nếu lỗi logic AI
+            this.channel.nack(msg, false, false); 
           }
         }
       });
@@ -41,15 +42,22 @@ class RabbitMQService {
   }
   
   async handleAlertCreated(alertData: any) {
-    if (alertData.mediaUrls && alertData.mediaUrls.length > 0) {
-      logger.info(`Analyzing image for alert ${alertData._id}`);
-      const analysis = await geminiService.analyzeImage(alertData.mediaUrls[0]);
+    try {
+      logger.info(`Analyzing alert ${alertData._id} via OpenRouter...`);
       
-      // Publish the result
-      this.publishEvent(EVENTS.IMAGE_ANALYZED, {
+      // Gọi OpenRouter để phân tích dựa trên mô tả của sự cố
+      const analysis = await analyzeIncidentWithOpenRouter(alertData.description || '');
+      
+      // Publish kết quả trả về cho Alert Service cập nhật DB
+      await this.publishEvent(EVENTS.IMAGE_ANALYZED, {
         alertId: alertData._id,
         ...analysis
       });
+
+      logger.info(`Analysis completed and published for alert ${alertData._id}`);
+    } catch (error) {
+      logger.error(`Failed to analyze alert ${alertData._id}`, error);
+      throw error; // Quăng lỗi ra ngoài để block catch bên consume xử lý nack
     }
   }
 
