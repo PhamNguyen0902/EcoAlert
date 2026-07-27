@@ -487,14 +487,18 @@ export class AlertService {
     if (!alert) return null;
 
     const currentStatus = normalizeStatus(alert.status);
-    const newStatus = confidence > 0.85 ? AlertStatus.VERIFIED : AlertStatus.AI_ANALYZING;
+    // Tính năng an toàn: Đòi hỏi độ tự tin > 85% mới duyệt tự động
+    const newStatus = confidence > 0.85 ? AlertStatus.VERIFIED : AlertStatus.AI_ANALYZING; 
     const analyzedAt = new Date();
     const actor: WorkflowActor = { id: 'ai-service', role: 'SYSTEM' };
+    
     const update: Record<string, unknown> = {
       $set: {
         category,
         aiConfidence: confidence,
         aiSuggestedPriority: priority ? priority.toLowerCase() : Severity.LOW,
+        // 👇 THÊM DÒNG NÀY ĐỂ GHI NHẬN MỨC ĐỘ NGHIÊM TRỌNG TỪ AI 👇
+        severity: priority ? priority.toLowerCase() : Severity.LOW, 
         status: newStatus,
       },
       $push: {

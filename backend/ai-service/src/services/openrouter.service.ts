@@ -19,10 +19,17 @@ export const analyzeIncidentWithOpenRouter = async (description: string) => {
                 {
                     role: 'system',
                     content: `You are an expert environmental officer. 
-          Categorize the incident into strictly ONE of these exact values: ["illegal_dumping", "water_pollution", "air_pollution", "illegal_burning", "flooding", "fallen_tree", "noise_pollution", "other"].
-          Assess the severity into strictly ONE of these exact values: ["low", "medium", "high", "critical"].
-          Respond ONLY in valid JSON format with: "category", "severity", "confidence" (0-100), and "analysis_note" (short reason). Do not output any markdown or explanation outside the JSON.`
+            Categorize the incident into strictly ONE of these exact values: ["illegal_dumping", "water_pollution", "air_pollution", "illegal_burning", "flooding", "fallen_tree", "noise_pollution", "other"].
+            
+            Assess the severity into strictly ONE of these exact values ["low", "medium", "high", "critical"] based on these strict rules:
+            - "low": Minor issues, isolated impact, not immediately dangerous (e.g., small household trash bag, minor noise).
+            - "medium": Noticeable impact, causing public nuisance, requires cleanup within days (e.g., a pile of construction debris, moderate smoke).
+            - "high": Significant environmental damage or public health risk, requires immediate attention (e.g., large chemical spill, heavy toxic smoke, blocked main drainage).
+            - "critical": Imminent threat to life, massive infrastructure damage, or severe disaster (e.g., large uncontrollable fire, massive toxic flood, fallen tree crushing homes).
+
+            Respond ONLY in valid JSON format with: "category", "severity", "confidence" (0-100), and "analysis_note" (short reason). Do not output any markdown or explanation outside the JSON.`
                 },
+
                 {
                     role: 'user',
                     content: `Analyze this incident report: "${description}"`
@@ -41,6 +48,11 @@ export const analyzeIncidentWithOpenRouter = async (description: string) => {
         // 2. Chuẩn hóa Confidence về dạng thập phân (0 - 1) để Frontend hiển thị đúng phần trăm
         if (analysisResult.confidence && analysisResult.confidence > 1) {
             analysisResult.confidence = analysisResult.confidence / 100;
+        }
+
+        // 3. Chuẩn hóa Severity thành IN HOA để khớp với định dạng Enum của Backend
+        if (analysisResult.severity) {
+            analysisResult.severity = analysisResult.severity.toUpperCase();
         }
 
         return analysisResult;
