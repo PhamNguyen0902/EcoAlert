@@ -207,13 +207,14 @@ export class AlertService {
   async assignOfficer(id: string, actor: WorkflowActor, data: AssignOfficerDto) {
     this.requireRole(actor, ['ADMIN']);
     const alert = await this.requireAlert(id);
-    if (normalizeStatus(alert.status) !== AlertStatus.VERIFIED) {
-      throw new ConflictError('Only a verified incident can be assigned');
+    const currentStatus = normalizeStatus(alert.status);
+    if (![AlertStatus.PENDING, AlertStatus.VERIFIED, AlertStatus.AI_ANALYZING].includes(currentStatus)) {
+      throw new ConflictError('Only a pending, AI-analyzing, or verified incident can be assigned');
     }
 
     const assignedAt = new Date();
     const updatedAlert = await alertRepository.findOneAndUpdate(
-      { _id: id, status: statusFilter(AlertStatus.VERIFIED) },
+      { _id: id, status: statusFilter(currentStatus) },
       {
         $set: {
           status: AlertStatus.ASSIGNED,
@@ -223,7 +224,7 @@ export class AlertService {
           updatedBy: actor.id,
         },
         $push: {
-          statusHistory: this.historyEntry(AlertStatus.VERIFIED, AlertStatus.ASSIGNED, actor, assignedAt),
+          statusHistory: this.historyEntry(currentStatus, AlertStatus.ASSIGNED, actor, assignedAt),
           timeline: this.timelineEntry(
             'OFFICER_ASSIGNED',
             'Incident assigned to Officer',

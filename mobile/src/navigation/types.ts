@@ -13,6 +13,10 @@ export type AppTabParamList = {
 };
 
 export type RootStackParamList = {
+  AdminApp: undefined;
+  OfficerApp: undefined;
+  CitizenApp: undefined;
+  CitizenAppGuest: undefined;
   AppTabs: NavigatorScreenParams<AppTabParamList> | undefined;
   AppTabsGuest: NavigatorScreenParams<AppTabParamList> | undefined;
   Login: undefined;

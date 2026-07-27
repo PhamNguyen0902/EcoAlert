@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import {
+  Alert as ReactNativeAlert,
   View,
   Text,
   StyleSheet,
@@ -10,13 +11,26 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
-import { ArrowLeft, MapPin, Calendar, ShieldCheck, AlertTriangle, Clock } from "lucide-react-native";
-import { useAlert } from "../../hooks/useAlerts";
+import { ArrowLeft, MapPin, Calendar, ShieldCheck, AlertTriangle, Clock, UserCheck } from "lucide-react-native";
+import { useAlert, useAssignOfficer } from "../../hooks/useAlerts";
+import { useProfile } from "../../hooks/useAuth";
+import { useOfficers } from "../../hooks/useUsers";
+import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
 import { COLORS, SEVERITY_COLORS } from "../../utils/constants";
+import type { User } from "../../types";
 import { format } from "date-fns";
+
+const getRequestErrorMessage = (error: unknown, fallback: string): string => {
+  const requestError = error as {
+    response?: { data?: { message?: string } };
+    message?: string;
+  };
+  return requestError.response?.data?.message || requestError.message || fallback;
+};
 
 export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
@@ -25,6 +39,46 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const insets = useSafeAreaInsets();
   const alertId = route.params?.id;
   const { data: alert, isLoading, error } = useAlert(alertId);
+  const { data: profile } = useProfile();
+  const assignOfficer = useAssignOfficer();
+  const [isOfficerPickerOpen, setOfficerPickerOpen] = useState(false);
+  const normalizedStatus = alert?.status?.toUpperCase();
+  const isAdmin = profile?.role?.toUpperCase() === "ADMIN";
+  const canAssign = isAdmin && (normalizedStatus === "PENDING" || normalizedStatus === "VERIFIED");
+  const {
+    data: officerData,
+    isLoading: isLoadingOfficers,
+    isFetching: isFetchingOfficers,
+    error: officersError,
+    refetch: refetchOfficers,
+  } = useOfficers(isOfficerPickerOpen && canAssign);
+
+  const officers = (officerData ?? []).filter(
+    (user) => user.role?.toUpperCase() === "OFFICER",
+  );
+
+  const handleAssignOfficer = (officer: User) => {
+    if (!alert || !canAssign) return;
+
+    assignOfficer.mutate(
+      { id: alert._id, officerId: officer._id },
+      {
+        onSuccess: () => {
+          setOfficerPickerOpen(false);
+          ReactNativeAlert.alert(
+            "Officer assigned",
+            `${officer.fullName} has been assigned to this incident.`,
+          );
+        },
+        onError: (mutationError) => {
+          ReactNativeAlert.alert(
+            "Unable to assign Officer",
+            getRequestErrorMessage(mutationError, "Please refresh the incident and try again."),
+          );
+        },
+      },
+    );
+  };
 
   if (isLoading) {
     return (
@@ -92,6 +146,28 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <Text style={styles.sectionHeading}>Description</Text>
           <Text style={styles.descriptionText}>{alert.description}</Text>
         </GlassCard>
+
+        {canAssign ? (
+          <Card style={styles.assignmentCard}>
+            <View style={styles.assignmentHeader}>
+              <View style={styles.assignmentIcon}>
+                <UserCheck size={22} color="#7C3AED" />
+              </View>
+              <View style={styles.assignmentCopy}>
+                <Text style={styles.assignmentTitle}>Assign to Officer</Text>
+                <Text style={styles.assignmentDescription}>
+                  Choose an Officer to take ownership of this incident.
+                </Text>
+              </View>
+            </View>
+            <Button
+              title="Select Officer"
+              onPress={() => setOfficerPickerOpen(true)}
+              style={styles.assignmentButton}
+              icon={<UserCheck size={18} color="#FFFFFF" />}
+            />
+          </Card>
+        ) : null}
 
         {/* Photos Gallery */}
         {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
@@ -161,6 +237,22 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           </View>
         </Card>
       </ScrollView>
+
+      <OfficerPickerModal
+        visible={isOfficerPickerOpen && canAssign}
+        officers={officers}
+        isLoading={isLoadingOfficers}
+        isRefreshing={isFetchingOfficers && !isLoadingOfficers}
+        isAssigning={assignOfficer.isPending}
+        errorMessage={
+          officersError
+            ? getRequestErrorMessage(officersError, "Please check your connection and try again.")
+            : undefined
+        }
+        onClose={() => setOfficerPickerOpen(false)}
+        onRetry={() => refetchOfficers()}
+        onAssign={handleAssignOfficer}
+      />
     </View>
   );
 };
@@ -200,6 +292,20 @@ const styles = StyleSheet.create({
   mainCard: { padding: 18, marginBottom: 20, borderRadius: 20 },
   sectionHeading: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
   descriptionText: { fontSize: 14, color: COLORS.text, lineHeight: 22 },
+  assignmentCard: { padding: 16, marginBottom: 20, borderColor: "#DDD6FE", backgroundColor: "#FAF5FF" },
+  assignmentHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  assignmentIcon: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    backgroundColor: "#F3E8FF",
+  },
+  assignmentCopy: { flex: 1 },
+  assignmentTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
+  assignmentDescription: { marginTop: 3, fontSize: 12, lineHeight: 17, color: COLORS.textMuted },
+  assignmentButton: { marginTop: 14, backgroundColor: "#7C3AED" },
   sectionBox: { marginBottom: 20 },
   photoScroll: { marginTop: 4 },
   evidenceImage: { width: 140, height: 100, borderRadius: 14, marginRight: 10 },

@@ -54,6 +54,7 @@ L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2x, iconUrl: markerIcon, 
 
 const MAX_EVIDENCE_SIZE = 10 * 1024 * 1024;
 const MAX_EVIDENCE_COUNT = 20;
+const ADMIN_ASSIGNABLE_STATUSES = new Set(['pending', 'verified', 'ai_analyzing']);
 
 type ConfirmAction = 'assign' | 'start' | 'arrival' | 'resolve' | 'close' | null;
 type UploadState = 'ready' | 'uploading' | 'uploaded' | 'failed';
@@ -124,6 +125,8 @@ export default function OfficerReportDetail() {
   const hasCoordinates = hasValidCoordinates(latitude, longitude);
   const isOfficer = role === 'OFFICER';
   const isAdmin = role === 'ADMIN';
+  const normalizedAlertStatus = alert.status.toLowerCase();
+  const canAdminAssign = isAdmin && ADMIN_ASSIGNABLE_STATUSES.has(normalizedAlertStatus);
   const isAssignedToCurrentOfficer = isOfficer && alert.assignedOfficerId === user?._id;
   const officers = officerData?.items ?? [];
   const assignedOfficer = officers.find((officer) => officer._id === alert.assignedOfficerId);
@@ -416,7 +419,7 @@ export default function OfficerReportDetail() {
           <Card>
             <CardHeader><CardTitle className="text-lg">{isAdmin ? 'Admin Review' : 'Officer Action'}</CardTitle><CardDescription>The next valid workflow action is shown here.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
-              {isAdmin && alert.status === 'verified' ? (
+              {canAdminAssign ? (
                 <div className="space-y-3">
                   <label htmlFor="assigned-officer" className="text-sm font-medium">Assign to Officer</label>
                   <select id="assigned-officer" value={selectedOfficerId} onChange={(event) => setSelectedOfficerId(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
@@ -474,7 +477,7 @@ export default function OfficerReportDetail() {
               ) : null}
 
               {['resolved', 'closed'].includes(alert.status) && !isAdmin ? <p className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">Officer workflow is complete. Admin review is {alert.status === 'resolved' ? 'pending' : 'complete'}.</p> : null}
-              {isAdmin && !['verified', 'resolved'].includes(alert.status) ? <p className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">No Admin action is available for the current status.</p> : null}
+              {isAdmin && !ADMIN_ASSIGNABLE_STATUSES.has(normalizedAlertStatus) && normalizedAlertStatus !== 'resolved' ? <p className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">No Admin action is available for the current status.</p> : null}
               {isOfficer && !isAssignedToCurrentOfficer ? <p className="text-sm text-destructive">This incident is not assigned to your account.</p> : null}
             </CardContent>
           </Card>

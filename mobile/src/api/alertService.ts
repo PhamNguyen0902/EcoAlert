@@ -56,5 +56,10 @@ export const alertService = {
     const res = await api.post(`/v1/alerts/${id}/note`, { note });
     return res.data?.data || res.data;
   },
+
+  assignOfficer: async (id: string, officerId: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/assign`, { officerId });
+    return res.data?.data || res.data;
+  },
 };
 
