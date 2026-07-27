@@ -13,13 +13,13 @@ class RabbitMQService {
     try {
       this.connection = await amqp.connect(envConfig.rabbitMqUrl);
       this.channel = await this.connection.createChannel();
-      
+
       await this.channel.assertExchange('ecoalert_exchange', 'topic', { durable: true });
-      
+
       // Consume alert.analyzed
       const q = await this.channel.assertQueue('alert_service_queue', { durable: true });
       await this.channel.bindQueue(q.queue, 'ecoalert_exchange', EVENTS.IMAGE_ANALYZED);
-      
+
       this.channel.consume(q.queue, async (msg) => {
         if (msg) {
           try {
@@ -29,18 +29,25 @@ class RabbitMQService {
               confidence: number;
               suggestedPriority: string;
             }> = JSON.parse(msg.content.toString());
+
             const data = event.data;
             const { alertService } = require('./alert.service');
-            await alertService.internalUpdateAiResult(data.alertId, data.category, data.confidence, data.suggestedPriority);
+
+            // Sửa data.severity thành data.suggestedPriority (hoặc dự phòng lấy data.severity nếu AI gửi thẳng)
+            const priorityLevel = data.suggestedPriority || (data as any).severity || 'low';
+
+            await alertService.internalUpdateAiResult(data.alertId, data.category, data.confidence, priorityLevel);
+
             logger.info(`Alert ${data.alertId} updated with AI results`);
             this.channel?.ack(msg);
           } catch (error) {
+            // ...
             logger.error('Error processing alert.analyzed', error);
             this.channel?.nack(msg, false, false);
           }
         }
       });
-      
+
       logger.info('Connected to RabbitMQ');
     } catch (error) {
       logger.error('RabbitMQ Connection Error:', error);
@@ -58,7 +65,7 @@ class RabbitMQService {
       correlationId: correlationId || randomUUID(),
       data
     };
-    
+
     this.channel.publish(
       'ecoalert_exchange',
       routingKey,
