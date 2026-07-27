@@ -16,12 +16,13 @@ import {
   Leaf
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAlerts } from '@/hooks/hooks';
 
 const NAV_ITEMS = [
   { to: '/admin/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/admin/users', key: 'nav.users', icon: Users },
   { to: '/admin/officers', key: 'nav.officers', icon: ShieldCheck },
-  { to: '/admin/reports', key: 'nav.reports', icon: FileText },
+  { to: '/admin/reports', key: 'nav.reports', icon: FileText, showBadge: true },
   { to: '/admin/categories', key: 'nav.categories', icon: Tag },
   { to: '/admin/monitoring', key: 'nav.monitoring', icon: Activity },
   { to: '/admin/analytics', key: 'nav.analytics', icon: BarChart3 },
@@ -32,6 +33,8 @@ const NAV_ITEMS = [
 export default function AdminSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { t } = useLanguage();
+  const { data: pendingData } = useAlerts(1, 100, { status: 'pending,ai_analyzing' });
+  const pendingCount = pendingData?.total ?? pendingData?.items?.length ?? 0;
 
   return (
     <div
@@ -53,7 +56,7 @@ export default function AdminSidebar() {
             title={isCollapsed ? t(item.key) : undefined}
             className={({ isActive }) =>
               cn(
-                "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors relative group",
                 isActive
                   ? "bg-primary text-primary-foreground dark:bg-white/10 dark:text-white"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-white/5 dark:hover:text-white",
@@ -62,7 +65,17 @@ export default function AdminSidebar() {
             }
           >
             <item.icon className={cn("h-5 w-5 shrink-0", isCollapsed ? "mr-0" : "mr-3")} />
-            {!isCollapsed && <span className="whitespace-nowrap">{t(item.key)}</span>}
+            {!isCollapsed && <span className="whitespace-nowrap flex-1">{t(item.key)}</span>}
+            {item.showBadge && pendingCount > 0 && (
+              <span
+                className={cn(
+                  "flex items-center justify-center bg-destructive text-destructive-foreground text-xs font-bold rounded-full px-1.5 py-0.5",
+                  isCollapsed ? "absolute top-1 right-1 h-4 min-w-[16px]" : "ml-auto"
+                )}
+              >
+                {pendingCount > 99 ? "99+" : pendingCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

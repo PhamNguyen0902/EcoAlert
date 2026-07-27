@@ -134,6 +134,18 @@ export class AlertService {
   async createAlert(citizenId: string, data: CreateAlertDto) {
     const createdAt = new Date();
     const actor: WorkflowActor = { id: citizenId, role: 'CITIZEN' };
+
+    // Prevent duplicate report creation within 10 seconds for the same citizen
+    const recentDuplicate = await alertRepository.findOne({
+      citizenId,
+      title: data.title,
+      description: data.description,
+      createdAt: { $gte: new Date(createdAt.getTime() - 10000) },
+    });
+    if (recentDuplicate) {
+      return recentDuplicate;
+    }
+
     const alert = await alertRepository.create({
       ...data,
       citizenId,
@@ -167,7 +179,17 @@ export class AlertService {
       filter.includeDeleted = true;
       filter.isDeleted = true;
     } else if (filters.status) {
-      filter.status = { $regex: new RegExp(`^${filters.status}$`, 'i') };
+      const statusList = filters.status
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (statusList.length > 1) {
+        filter.status = { $in: statusList.map((s) => new RegExp(`^${s}$`, 'i')) };
+      } else if (filters.status.toLowerCase() === 'pending') {
+        filter.status = { $in: [new RegExp('^pending$', 'i'), new RegExp('^ai_analyzing$', 'i')] };
+      } else {
+        filter.status = { $regex: new RegExp(`^${filters.status}$`, 'i') };
+      }
     }
     if (filters.category) filter.category = { $regex: new RegExp(`^${filters.category}$`, 'i') };
     if (filters.severity) filter.severity = { $regex: new RegExp(`^${filters.severity}$`, 'i') };
