@@ -14,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useUnreadCount } from "@/hooks/hooks";
+import { useUnreadCount, useAlerts } from "@/hooks/hooks";
 
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -22,6 +22,8 @@ export default function OfficerSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { t } = useLanguage();
   const { data: unreadCount = 0 } = useUnreadCount();
+  const { data: pendingAlertsData } = useAlerts(1, 100, { status: "pending,ai_analyzing" });
+  const pendingCount = pendingAlertsData?.total ?? pendingAlertsData?.items?.length ?? 0;
 
   const navItems = [
     { name: t("officer.dashboard"), path: "/officer/dashboard", icon: LayoutDashboard },
@@ -34,6 +36,7 @@ export default function OfficerSidebar() {
       name: t("officer.pending"),
       path: "/officer/pending",
       icon: ShieldCheck,
+      badge: pendingCount,
     },
     { name: t("officer.map"), path: "/officer/map", icon: MapIcon },
     {

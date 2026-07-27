@@ -120,7 +120,7 @@ export default function PendingVerification() {
   const [confirm, setConfirm] = useState<{ id: string; status: AlertStatus } | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
-  const { data, isLoading } = useAlerts(1, 100, { status: 'pending' });
+  const { data, isLoading } = useAlerts(1, 100, { status: 'pending,ai_analyzing' });
   const updateStatus = useUpdateAlertStatus();
 
   const alerts: Alert[] = data?.items || [];

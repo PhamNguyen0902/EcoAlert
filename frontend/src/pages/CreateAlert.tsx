@@ -159,7 +159,11 @@ export default function CreateAlert() {
     }
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async () => {
+    if (isSubmitting || createAlertMutation.isPending) return;
+    setIsSubmitting(true);
     try {
       const formData = getValues();
       toast.loading('Đang tải lên dữ liệu...', { id: 'submit' });
@@ -186,6 +190,8 @@ export default function CreateAlert() {
       navigate('/dashboard');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Gửi báo cáo thất bại', { id: 'submit' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -421,11 +427,11 @@ export default function CreateAlert() {
             ) : (
               <Button 
                 onClick={handleSubmit} 
-                disabled={createAlertMutation.isPending}
+                disabled={isSubmitting || createAlertMutation.isPending}
                 className="min-w-[140px]"
               >
-                {createAlertMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                {createAlertMutation.isPending ? t('report_create.submitting') : t('report_create.submit_confirm')}
+                {isSubmitting || createAlertMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {isSubmitting || createAlertMutation.isPending ? t('report_create.submitting') : t('report_create.submit_confirm')}
               </Button>
             )}
           </div>
