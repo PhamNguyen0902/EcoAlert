@@ -1,14 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { LayoutDashboard, ShieldAlert, MapPin, User as UserIcon, CheckSquare } from "lucide-react-native";
+import { LayoutDashboard, ShieldAlert, MapPin, User as UserIcon, CheckSquare, Edit2, KeyRound } from "lucide-react-native";
 import { OfficerDashboardScreen } from "../screens/officer/OfficerDashboardScreen";
+import { OfficerTasksScreen } from "../screens/officer/OfficerTasksScreen";
 import { OfficerAlertDetailScreen } from "../screens/officer/OfficerAlertDetailScreen";
 import { OfficerMapScreen } from "../screens/officer/OfficerMapScreen";
-import { CitizenDashboardScreen } from "../screens/citizen/CitizenDashboardScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { useProfile, useLogout } from "../hooks/useAuth";
+import { EditProfileModal } from "../components/modals/EditProfileModal";
+import { ChangePasswordModal } from "../components/modals/ChangePasswordModal";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { COLORS } from "../utils/constants";
@@ -29,6 +31,8 @@ function formatProfileName(fullName?: string): string {
 const OfficerProfileScreen: React.FC = () => {
   const { data: profile } = useProfile();
   const logoutMutation = useLogout();
+  const [isEditProfileOpen, setEditProfileOpen] = useState(false);
+  const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
 
   return (
     <View style={styles.profileContainer}>
@@ -43,6 +47,23 @@ const OfficerProfileScreen: React.FC = () => {
             <Text style={styles.roleText}>ENVIRONMENTAL OFFICER</Text>
           </View>
 
+          <View style={styles.profileActions}>
+            <Button
+              title="Edit Profile"
+              variant="outline"
+              onPress={() => setEditProfileOpen(true)}
+              style={styles.profileActionBtn}
+              icon={<Edit2 size={16} color={COLORS.secondary} style={{ marginRight: 6 }} />}
+            />
+            <Button
+              title="Change Password"
+              variant="outline"
+              onPress={() => setChangePasswordOpen(true)}
+              style={styles.profileActionBtn}
+              icon={<KeyRound size={16} color={COLORS.secondary} style={{ marginRight: 6 }} />}
+            />
+          </View>
+
           <Button
             title="Sign Out"
             variant="destructive"
@@ -52,6 +73,16 @@ const OfficerProfileScreen: React.FC = () => {
           />
         </View>
       </GlassCard>
+
+      <EditProfileModal
+        visible={isEditProfileOpen}
+        user={profile || null}
+        onClose={() => setEditProfileOpen(false)}
+      />
+      <ChangePasswordModal
+        visible={isChangePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </View>
   );
 };
@@ -86,8 +117,8 @@ const OfficerTabs = () => {
       />
       <Tab.Screen
         name="OfficerTasksTab"
-        component={CitizenDashboardScreen}
-        options={{ tabBarLabel: "All Alerts" }}
+        component={OfficerTasksScreen}
+        options={{ tabBarLabel: "Assigned Tasks" }}
       />
       <Tab.Screen
         name="OfficerMapTab"
@@ -122,10 +153,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     paddingTop: 8,
     elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
   },
   tabLabel: {
     fontSize: 12,
@@ -163,14 +190,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.text,
     textAlign: "center",
-    alignSelf: "center",
   },
   profileEmail: {
     fontSize: 14,
     color: COLORS.textMuted,
     marginTop: 4,
     textAlign: "center",
-    alignSelf: "center",
   },
   roleTag: {
     marginTop: 14,
@@ -179,18 +204,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#DBEAFE",
     borderRadius: 20,
     alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
   },
   roleText: {
     fontSize: 12,
     fontWeight: "800",
     color: COLORS.secondary,
-    textAlign: "center",
     letterSpacing: 0.5,
   },
+  profileActions: {
+    width: "100%",
+    marginTop: 20,
+    gap: 10,
+  },
+  profileActionBtn: {
+    width: "100%",
+    borderRadius: 14,
+  },
   logoutBtn: {
-    marginTop: 28,
+    marginTop: 16,
     paddingHorizontal: 36,
     minWidth: 180,
     alignSelf: "center",
