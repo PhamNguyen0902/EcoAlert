@@ -1,5 +1,5 @@
 import { api } from "./client";
-import { Alert, PaginatedResult, CreateAlertData, Category } from "../types";
+import { Alert, PaginatedResult, CreateAlertData, Category, ResolutionInput } from "../types";
 
 export const alertService = {
   getAlerts: async (
@@ -21,8 +21,57 @@ export const alertService = {
     return res.data?.data || res.data;
   },
 
+  getOfficerTasks: async (
+    page = 1,
+    limit = 20,
+    status?: string
+  ): Promise<PaginatedResult<Alert>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (status) params.set("status", status);
+    const res = await api.get(`/v1/alerts/officer/tasks?${params.toString()}`);
+    return res.data?.data || res.data;
+  },
+
   createAlert: async (data: CreateAlertData): Promise<Alert> => {
     const res = await api.post("/v1/alerts", data);
+    return res.data?.data || res.data;
+  },
+
+  updateAlert: async (id: string, data: Partial<CreateAlertData>): Promise<Alert> => {
+    const res = await api.patch(`/v1/alerts/${id}`, data);
+    return res.data?.data || res.data;
+  },
+
+  deleteAlert: async (id: string): Promise<Alert> => {
+    const res = await api.delete(`/v1/alerts/${id}`);
+    return res.data?.data || res.data;
+  },
+
+  restoreAlert: async (id: string): Promise<Alert> => {
+    const res = await api.patch(`/v1/alerts/${id}/restore`);
+    return res.data?.data || res.data;
+  },
+
+  startHandling: async (id: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/start`);
+    return res.data?.data || res.data;
+  },
+
+  confirmArrival: async (
+    id: string,
+    location: { latitude?: number; longitude?: number; accuracy?: number } = {}
+  ): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/arrival`, location);
+    return res.data?.data || res.data;
+  },
+
+  resolveIncident: async (id: string, data: ResolutionInput): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/resolution`, data);
+    return res.data?.data || res.data;
+  },
+
+  closeIncident: async (id: string, reviewNote?: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/close`, { reviewNote });
     return res.data?.data || res.data;
   },
 
@@ -62,4 +111,5 @@ export const alertService = {
     return res.data?.data || res.data;
   },
 };
+
 

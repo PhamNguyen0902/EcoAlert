@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Alert as RNAlert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FileText, MapPin, ChevronRight, PlusCircle } from "lucide-react-native";
-import { useAlerts } from "../../hooks/useAlerts";
+import { FileText, MapPin, ChevronRight, PlusCircle, Edit2, Trash2 } from "lucide-react-native";
+import { useAlerts, useDeleteAlert } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
+import { EditAlertModal } from "../../components/modals/EditAlertModal";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
@@ -21,58 +23,104 @@ import type { Alert as AlertItem } from "../../types";
 export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { data: profile } = useProfile();
-  
+  const [editingAlert, setEditingAlert] = useState<AlertItem | null>(null);
+
+  const deleteAlertMutation = useDeleteAlert();
+
   const { data: alertsData, isLoading, refetch, isRefetching } = useAlerts(1, 50, {
     reporterId: profile?._id || "",
   });
 
   const alerts = alertsData?.items ?? [];
 
-  const onRefresh = async () => {
-    await refetch();
+  const handleDelete = (item: AlertItem) => {
+    RNAlert.alert(
+      "Delete Report",
+      `Are you sure you want to delete report "${item.title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAlertMutation.mutateAsync(item._id);
+              RNAlert.alert("Deleted", "Your report has been deleted.");
+            } catch (err: any) {
+              const msg = err.response?.data?.message || err.message || "Failed to delete report.";
+              RNAlert.alert("Error", msg);
+            }
+          },
+        },
+      ]
+    );
   };
 
-  const renderItem = ({ item }: { item: AlertItem }) => (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => navigation.navigate("AlertDetail", { id: item._id })}
-      accessibilityRole="button"
-    >
-      <GlassCard style={styles.card}>
-        <View style={styles.header}>
-          <Badge
-            label={item.category?.toUpperCase().replace("_", " ") || "GENERAL"}
-            type="custom"
-            bgColor="#F1F5F9"
-            textColor="#475569"
-          />
-          <Badge label={item.status || "PENDING"} type="status" />
-        </View>
+  const renderItem = ({ item }: { item: AlertItem }) => {
+    const isPending = item.status?.toUpperCase() === "PENDING";
 
-        <Text style={styles.title} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <Text style={styles.desc} numberOfLines={2}>
-          {item.description}
-        </Text>
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate("AlertDetail", { id: item._id })}
+        accessibilityRole="button"
+      >
+        <GlassCard style={styles.card}>
+          <View style={styles.header}>
+            <Badge
+              label={item.category?.toUpperCase().replace("_", " ") || "GENERAL"}
+              type="custom"
+              bgColor="#F1F5F9"
+              textColor="#475569"
+            />
+            <Badge label={item.status || "PENDING"} type="status" />
+          </View>
 
-        <View style={styles.footer}>
-          <View style={styles.locationBox}>
-            <MapPin size={14} color={COLORS.textMuted} />
-            <Text style={styles.locationText} numberOfLines={1}>
-              {item.address || "Unknown location"}
-            </Text>
+          <Text style={styles.title} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.desc} numberOfLines={2}>
+            {item.description}
+          </Text>
+
+          <View style={styles.footer}>
+            <View style={styles.locationBox}>
+              <MapPin size={14} color={COLORS.textMuted} />
+              <Text style={styles.locationText} numberOfLines={1}>
+                {item.address || "Unknown location"}
+              </Text>
+            </View>
+            <View style={styles.timeBox}>
+              <Text style={styles.timeText}>
+                {item.createdAt ? format(new Date(item.createdAt), "MMM d, HH:mm") : "Just now"}
+              </Text>
+              <ChevronRight size={16} color={COLORS.textMuted} />
+            </View>
           </View>
-          <View style={styles.timeBox}>
-            <Text style={styles.timeText}>
-              {item.createdAt ? format(new Date(item.createdAt), "MMM d, HH:mm") : "Just now"}
-            </Text>
-            <ChevronRight size={16} color={COLORS.textMuted} />
-          </View>
-        </View>
-      </GlassCard>
-    </TouchableOpacity>
-  );
+
+          {isPending ? (
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => setEditingAlert(item)}
+              >
+                <Edit2 size={15} color={COLORS.primary} />
+                <Text style={[styles.actionBtnText, { color: COLORS.primary }]}>Edit</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => handleDelete(item)}
+              >
+                <Trash2 size={15} color="#DC2626" />
+                <Text style={[styles.actionBtnText, { color: "#DC2626" }]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </GlassCard>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -90,7 +138,7 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={isLoading || isRefetching} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          <RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={COLORS.primary} />
         }
         ListEmptyComponent={
           !isLoading ? (
@@ -112,6 +160,12 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           ) : null
         }
       />
+
+      <EditAlertModal
+        visible={Boolean(editingAlert)}
+        alert={editingAlert}
+        onClose={() => setEditingAlert(null)}
+      />
     </View>
   );
 };
@@ -125,11 +179,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     zIndex: 10,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
   },
   headerTitle: { fontSize: 24, fontWeight: "800", color: COLORS.text },
   headerSubtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
@@ -150,6 +199,16 @@ const styles = StyleSheet.create({
   locationText: { fontSize: 12, color: COLORS.textMuted, marginLeft: 4 },
   timeBox: { flexDirection: "row", alignItems: "center" },
   timeText: { fontSize: 12, color: COLORS.textMuted, marginRight: 2, fontWeight: "500" },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  actionBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
+  actionBtnText: { fontSize: 12, fontWeight: "700" },
   emptyCard: { alignItems: "center", paddingVertical: 40, marginTop: 20 },
   emptyTitle: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
   emptySub: { fontSize: 13, color: COLORS.textMuted, textAlign: "center", paddingHorizontal: 20, lineHeight: 18 },
