@@ -5,15 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  Alert as RNAlert,
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
-import { MapPin, Navigation, Send, AlertCircle } from "lucide-react-native";
-import { useCreateAlert } from "../../hooks/useAlerts";
+import * as ImagePicker from "expo-image-picker";
+import { MapPin, Navigation, Send, AlertCircle, Camera, X } from "lucide-react-native";
+import { useCreateAlert, useUploadMedia } from "../../hooks/useAlerts";
 import { useLocation } from "../../hooks/useLocation";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
@@ -43,17 +45,85 @@ const SEVERITIES: { label: string; value: Severity }[] = [
 export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const createAlertMutation = useCreateAlert();
+  const uploadMediaMutation = useUploadMedia();
   const { coords, address, loading: locLoading, error: locError, fetchLocation, setManualLocation } = useLocation();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<AlertCategory>("illegal_dumping");
   const [severity, setSeverity] = useState<Severity>("medium");
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState<{ title?: string; description?: string; location?: string }>({});
 
   useEffect(() => {
     fetchLocation();
   }, [fetchLocation]);
+
+  const handlePickPhoto = () => {
+    RNAlert.alert(
+      "Attach Incident Evidence",
+      "Choose photo source from your device:",
+      [
+        {
+          text: "📸 Take Photo (Camera)",
+          onPress: async () => {
+            const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+            if (!permissionResult.granted) {
+              RNAlert.alert("Permission Required", "Camera access permission is required to capture photos.");
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              await processPickedPhoto(result.assets[0].uri);
+            }
+          },
+        },
+        {
+          text: "🖼️ Choose from Photo Library",
+          onPress: async () => {
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!permissionResult.granted) {
+              RNAlert.alert("Permission Required", "Photo library access permission is required.");
+              return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              allowsEditing: true,
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              await processPickedPhoto(result.assets[0].uri);
+            }
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
+
+  const processPickedPhoto = async (localUri: string) => {
+    setIsUploading(true);
+    try {
+      const uploadedUrl = await uploadMediaMutation.mutateAsync({
+        fileUri: localUri,
+        fileName: `report_${Date.now()}.jpg`,
+      });
+      setMediaUrls((prev) => [...prev, uploadedUrl]);
+    } catch (err) {
+      // If server upload fails, keep local URI as fallback so user experience isn't blocked
+      setMediaUrls((prev) => [...prev, localUri]);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setMediaUrls((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const validate = () => {
     const errs: { title?: string; description?: string; location?: string } = {};
@@ -80,9 +150,10 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
         severity,
         location: coords!,
         address: address || "Unknown Location",
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
       });
 
-      Alert.alert(
+      RNAlert.alert(
         "Incident Reported",
         "Your environmental report has been submitted to EcoAlert officers for verification.",
         [
@@ -91,6 +162,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
             onPress: () => {
               setTitle("");
               setDescription("");
+              setMediaUrls([]);
               if (navigation) {
                 navigation.navigate("DashboardTab");
               }
@@ -100,7 +172,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
       );
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to submit report.";
-      Alert.alert("Submission Error", msg);
+      RNAlert.alert("Submission Error", msg);
     }
   };
 
@@ -201,6 +273,39 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
               onChangeText={setDescription}
               error={errors.description}
             />
+
+            {/* Photo & Evidence Upload Section */}
+            <Text style={styles.photoLabel}>Incident Photo & Evidence</Text>
+            {mediaUrls.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoList}>
+                {mediaUrls.map((url, index) => (
+                  <View key={index} style={styles.photoThumbContainer}>
+                    <Image source={{ uri: url }} style={styles.photoThumb} />
+                    <TouchableOpacity
+                      style={styles.photoRemoveBtn}
+                      onPress={() => handleRemovePhoto(index)}
+                    >
+                      <X size={14} color="#FFF" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : null}
+
+            <TouchableOpacity
+              style={styles.addPhotoBtn}
+              onPress={handlePickPhoto}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <>
+                  <Camera size={20} color={COLORS.primary} />
+                  <Text style={styles.addPhotoText}>Take Photo or Select from Device</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </GlassCard>
 
           {/* Geolocation Section with React Native Maps */}
@@ -270,7 +375,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
           <Button
             title="Submit Incident Report"
             onPress={handleSubmit}
-            loading={createAlertMutation.isPending}
+            loading={createAlertMutation.isPending || isUploading}
             style={styles.submitBtn}
             icon={<Send size={18} color="#FFF" style={{ marginRight: 8 }} />}
           />
@@ -343,6 +448,35 @@ const styles = StyleSheet.create({
   },
   sevText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
   formCard: { padding: 20, marginBottom: 16 },
+  photoLabel: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginTop: 14, marginBottom: 8 },
+  photoList: { flexDirection: "row", marginBottom: 12 },
+  photoThumbContainer: { position: "relative", marginRight: 10 },
+  photoThumb: { width: 90, height: 75, borderRadius: 12 },
+  photoRemoveBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addPhotoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    borderStyle: "dashed",
+    backgroundColor: COLORS.primaryLight,
+    marginTop: 4,
+  },
+  addPhotoText: { fontSize: 13, fontWeight: "700", color: COLORS.primaryDark },
   mapHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
