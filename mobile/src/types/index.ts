@@ -82,6 +82,8 @@ export interface Alert {
   aiConfidence?: number;
   aiSuggestedPriority?: Severity;
   officerNote?: string;
+  arrivedAt?: string;
+  assignedAt?: string;
   resolvedAt?: string;
   isDeleted: boolean;
   createdAt: string;
@@ -126,3 +128,47 @@ export interface CreateAlertData {
   address?: string;
   mediaUrls?: string[];
 }
+
+export interface ResolutionEvidenceInput {
+  mediaId?: string;
+  url: string;
+}
+
+export interface ResolutionInput {
+  resolutionSummary: string;
+  treatmentMethod: string;
+  materialsUsed?: string;
+  additionalNotes?: string;
+  evidence: ResolutionEvidenceInput[];
+}
+
+
+export interface AuditLog {
+  _id: string;
+  userId?: string | User;
+  action: string;
+  entity?: string;
+  entityId?: string;
+  details?: any;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+export interface CreateUserData {
+  email: string;
+  fullName: string;
+  password?: string;
+  phone?: string;
+  role?: UserRole;
+}
+
+export interface CreateCategoryData {
+  name: string;
+  code: string;
+  description?: string;
+  icon?: string;
+  defaultSeverity?: Severity;
+  isActive?: boolean;
+}
+
