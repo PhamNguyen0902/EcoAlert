@@ -11,11 +11,25 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
-import { ArrowLeft, MapPin, Calendar, ShieldCheck, AlertTriangle, Clock, UserCheck } from "lucide-react-native";
-import { useAlert, useAssignOfficer } from "../../hooks/useAlerts";
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  ShieldCheck,
+  AlertTriangle,
+  Clock,
+  UserCheck,
+  CheckSquare,
+  Edit2,
+  Trash2,
+  RotateCcw,
+} from "lucide-react-native";
+import { useAlert, useAssignOfficer, useDeleteAlert, useRestoreAlert } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
 import { useOfficers } from "../../hooks/useUsers";
 import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
+import { CloseIncidentModal } from "../../components/modals/CloseIncidentModal";
+import { EditAlertModal } from "../../components/modals/EditAlertModal";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
@@ -41,10 +55,27 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const { data: alert, isLoading, error } = useAlert(alertId);
   const { data: profile } = useProfile();
   const assignOfficer = useAssignOfficer();
+  const deleteAlertMutation = useDeleteAlert();
+  const restoreAlertMutation = useRestoreAlert();
+
   const [isOfficerPickerOpen, setOfficerPickerOpen] = useState(false);
+  const [isCloseModalOpen, setCloseModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+
   const normalizedStatus = alert?.status?.toUpperCase();
   const isAdmin = profile?.role?.toUpperCase() === "ADMIN";
-  const canAssign = isAdmin && (normalizedStatus === "PENDING" || normalizedStatus === "VERIFIED");
+  const citizenIdStr = typeof alert?.citizenId === "object" ? alert.citizenId._id : alert?.citizenId;
+  const isOwnReport = profile?._id && citizenIdStr === profile._id;
+
+  const canAssign =
+    isAdmin &&
+    normalizedStatus !== "RESOLVED" &&
+    normalizedStatus !== "CLOSED" &&
+    normalizedStatus !== "REJECTED";
+  const canClose = (isOwnReport || isAdmin) && normalizedStatus === "RESOLVED";
+  const canEdit = (isOwnReport || isAdmin) && normalizedStatus === "PENDING";
+  const canDelete = isOwnReport || isAdmin;
+
   const {
     data: officerData,
     isLoading: isLoadingOfficers,
@@ -78,6 +109,40 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         },
       },
     );
+  };
+
+  const handleDeleteAlert = () => {
+    if (!alert) return;
+    ReactNativeAlert.alert(
+      "Delete Incident Report",
+      `Are you sure you want to delete report "${alert.title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAlertMutation.mutateAsync(alert._id);
+              ReactNativeAlert.alert("Deleted", "Incident report has been removed.");
+              navigation.goBack();
+            } catch (err: any) {
+              ReactNativeAlert.alert("Delete Error", getRequestErrorMessage(err, "Failed to delete report."));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRestoreAlert = async () => {
+    if (!alert) return;
+    try {
+      await restoreAlertMutation.mutateAsync(alert._id);
+      ReactNativeAlert.alert("Restored", "Incident report restored successfully.");
+    } catch (err: any) {
+      ReactNativeAlert.alert("Restore Error", getRequestErrorMessage(err, "Failed to restore report."));
+    }
   };
 
   if (isLoading) {
@@ -119,7 +184,18 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         <Text style={styles.topBarTitle} numberOfLines={1}>
           Incident Details
         </Text>
-        <View style={{ width: 40 }} />
+        <View style={styles.topRightActions}>
+          {canEdit ? (
+            <TouchableOpacity style={styles.iconActionBtn} onPress={() => setEditModalOpen(true)}>
+              <Edit2 size={18} color={COLORS.primary} />
+            </TouchableOpacity>
+          ) : null}
+          {canDelete ? (
+            <TouchableOpacity style={styles.iconActionBtn} onPress={handleDeleteAlert}>
+              <Trash2 size={18} color="#DC2626" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -137,10 +213,47 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             </Text>
           </View>
           <Badge label={alert.status || "PENDING"} type="status" />
+          {alert.isDeleted ? (
+            <Badge label="DELETED" type="custom" bgColor="#FEE2E2" textColor="#DC2626" />
+          ) : null}
         </View>
 
         {/* Title & Description */}
         <Text style={styles.title}>{alert.title}</Text>
+
+        {/* Close Incident Action Banner for Citizen */}
+        {canClose ? (
+          <GlassCard style={styles.closeCard}>
+            <View style={styles.closeHeader}>
+              <CheckSquare size={22} color="#16A34A" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.closeTitle}>Incident Marked Resolved</Text>
+                <Text style={styles.closeSub}>
+                  Officers have resolved this issue. Click below to verify and close the report.
+                </Text>
+              </View>
+            </View>
+            <Button
+              title="Close Incident & Review"
+              onPress={() => setCloseModalOpen(true)}
+              style={styles.closeBtnAction}
+            />
+          </GlassCard>
+        ) : null}
+
+        {/* Restore Banner if soft-deleted (Admin) */}
+        {alert.isDeleted && isAdmin ? (
+          <View style={styles.restoreCard}>
+            <Text style={styles.restoreText}>This incident report is soft-deleted.</Text>
+            <Button
+              title="Restore Report"
+              onPress={handleRestoreAlert}
+              loading={restoreAlertMutation.isPending}
+              variant="outline"
+              icon={<RotateCcw size={16} color={COLORS.primary} style={{ marginRight: 6 }} />}
+            />
+          </View>
+        ) : null}
 
         <GlassCard style={styles.mainCard}>
           <Text style={styles.sectionHeading}>Description</Text>
@@ -253,6 +366,18 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         onRetry={() => refetchOfficers()}
         onAssign={handleAssignOfficer}
       />
+
+      <CloseIncidentModal
+        visible={isCloseModalOpen}
+        alertId={alert._id}
+        onClose={() => setCloseModalOpen(false)}
+      />
+
+      <EditAlertModal
+        visible={isEditModalOpen}
+        alert={alert}
+        onClose={() => setEditModalOpen(false)}
+      />
     </View>
   );
 };
@@ -276,32 +401,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     zIndex: 10,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
   },
+  topRightActions: { flexDirection: "row", gap: 8 },
   circleBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.background, alignItems: "center", justifyContent: "center" },
+  iconActionBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.background, alignItems: "center", justifyContent: "center" },
   topBarTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text },
   scrollContent: { padding: 20, paddingBottom: 40 },
   badgesRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 },
   sevBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   sevBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
   title: { fontSize: 22, fontWeight: "800", color: COLORS.text, marginBottom: 16, lineHeight: 28 },
+  closeCard: { padding: 18, marginBottom: 20, borderRadius: 20, backgroundColor: "#DCFCE7" },
+  closeHeader: { flexDirection: "row", gap: 12, marginBottom: 12 },
+  closeTitle: { fontSize: 16, fontWeight: "800", color: "#15803D" },
+  closeSub: { fontSize: 13, color: "#166534", marginTop: 2, lineHeight: 18 },
+  closeBtnAction: { backgroundColor: "#16A34A" },
+  restoreCard: { padding: 16, marginBottom: 20, borderRadius: 16, backgroundColor: "#FEE2E2", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  restoreText: { fontSize: 13, fontWeight: "600", color: "#DC2626" },
   mainCard: { padding: 18, marginBottom: 20, borderRadius: 20 },
   sectionHeading: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
   descriptionText: { fontSize: 14, color: COLORS.text, lineHeight: 22 },
   assignmentCard: { padding: 16, marginBottom: 20, borderColor: "#DDD6FE", backgroundColor: "#FAF5FF" },
   assignmentHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
-  assignmentIcon: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 14,
-    backgroundColor: "#F3E8FF",
-  },
+  assignmentIcon: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: "#F3E8FF" },
   assignmentCopy: { flex: 1 },
   assignmentTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text },
   assignmentDescription: { marginTop: 3, fontSize: 12, lineHeight: 17, color: COLORS.textMuted },
