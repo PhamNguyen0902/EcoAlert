@@ -72,10 +72,19 @@ export interface IAlert extends BaseDocument {
   closedAt?: Date;
   closedBy?: string;
   adminReviewNote?: string;
+  isAnonymous?: boolean;
+  confirmationsCount?: number;
+  confirmations?: Array<{ citizenId: string; confirmedAt: Date }>;
+  voiceNoteUrl?: string;
   statusHistory: IStatusHistoryEntry[];
   timeline: ITimelineEntry[];
   softDelete(userId: string): Promise<this>;
 }
+
+const confirmationSchema = new Schema({
+  citizenId: { type: String, required: true },
+  confirmedAt: { type: Date, default: Date.now }
+}, { _id: false });
 
 const resolutionEvidenceSchema = new Schema<IResolutionEvidence>({
   mediaId: { type: String },
@@ -159,6 +168,10 @@ const alertSchema = new Schema<IAlert>({
   closedAt: { type: Date },
   closedBy: { type: String },
   adminReviewNote: { type: String, trim: true },
+  isAnonymous: { type: Boolean, default: false },
+  confirmationsCount: { type: Number, default: 1 },
+  confirmations: { type: [confirmationSchema], default: [] },
+  voiceNoteUrl: { type: String },
   statusHistory: { type: [statusHistorySchema], default: [] },
   timeline: { type: [timelineEntrySchema], default: [] },
 }, { timestamps: true });

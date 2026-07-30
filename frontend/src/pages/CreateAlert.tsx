@@ -210,9 +210,13 @@ export default function CreateAlert() {
     setCurrentStep((step) => Math.min(step + 1, steps.length));
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async () => {
     if (isSubmitting || submissionInProgressRef.current || !file || !selectedLocation) return;
 
+    if (isSubmitting || createAlertMutation.isPending) return;
+    setIsSubmitting(true);
     try {
       submissionInProgressRef.current = true;
       const formData = getValues();
@@ -239,6 +243,10 @@ export default function CreateAlert() {
     } finally {
       submissionInProgressRef.current = false;
       setIsUploadingEvidence(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gửi báo cáo thất bại', { id: 'submit' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -413,6 +421,32 @@ export default function CreateAlert() {
             <div className="mt-8 flex items-center justify-between gap-3 border-t pt-5">
               <Button type="button" variant="outline" onClick={() => setCurrentStep((step) => Math.max(1, step - 1))} disabled={currentStep === 1 || isSubmitting}>
                 {t('btn.back')}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Điều hướng */}
+          <div className="flex items-center justify-between mt-8 pt-6 border-t">
+            <Button 
+              variant="outline" 
+              onClick={handlePrev}
+              disabled={currentStep === 1 || createAlertMutation.isPending}
+            >
+              {t('btn.back')}
+            </Button>
+            
+            {currentStep < 4 ? (
+              <Button onClick={handleNext} className="min-w-[100px]">{t('btn.next')}</Button>
+            ) : (
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isSubmitting || createAlertMutation.isPending}
+                className="min-w-[140px]"
+              >
+                {isSubmitting || createAlertMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {isSubmitting || createAlertMutation.isPending ? t('report_create.submitting') : t('report_create.submit_confirm')}
               </Button>
               {currentStep < steps.length ? (
                 <Button type="button" onClick={() => void handleNext()} disabled={isSubmitting}>{nextActionLabel}</Button>

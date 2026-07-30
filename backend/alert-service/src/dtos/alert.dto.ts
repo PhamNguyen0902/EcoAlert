@@ -4,12 +4,16 @@ import { AlertStatus, AlertCategory, Severity } from '@ecoalert/shared';
 export const createAlertSchema = z.object({
   title: z.string().min(5),
   description: z.string().min(10),
+  category: z.nativeEnum(AlertCategory).or(z.string()).optional(),
+  severity: z.nativeEnum(Severity).or(z.string()).optional(),
   mediaUrls: z.array(z.string().url()).optional(),
   location: z.object({
     type: z.literal('Point'),
     coordinates: z.tuple([z.number(), z.number()]) // [longitude, latitude]
   }),
-  address: z.string().optional()
+  address: z.string().optional(),
+  isAnonymous: z.boolean().optional(),
+  voiceNoteUrl: z.string().url().optional().or(z.string().optional()),
 });
 export type CreateAlertDto = z.infer<typeof createAlertSchema>;
 

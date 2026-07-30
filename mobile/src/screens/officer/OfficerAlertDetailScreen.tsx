@@ -16,25 +16,25 @@ import {
   MapPin,
   ShieldCheck,
   CheckCircle,
-  XCircle,
   PlayCircle,
   MessageSquare,
   AlertTriangle,
+  Navigation,
 } from "lucide-react-native";
-import { useAlert, useUpdateAlertStatus, useAddOfficerNote } from "../../hooks/useAlerts";
+import {
+  useAlert,
+  useUpdateAlertStatus,
+  useAddOfficerNote,
+  useStartHandling,
+  useConfirmArrival,
+} from "../../hooks/useAlerts";
+import { ResolutionModal } from "../../components/modals/ResolutionModal";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { COLORS, SEVERITY_COLORS } from "../../utils/constants";
-
-const STATUS_ACTIONS = [
-  { label: "Verify Report", status: "VERIFIED", icon: ShieldCheck, color: "#2563EB", bg: "#DBEAFE" },
-  { label: "In Progress", status: "IN_PROGRESS", icon: PlayCircle, color: "#0284C7", bg: "#E0F2FE" },
-  { label: "Mark Resolved", status: "RESOLVED", icon: CheckCircle, color: "#16A34A", bg: "#DCFCE7" },
-  { label: "Reject Report", status: "REJECTED", icon: XCircle, color: "#DC2626", bg: "#FEE2E2" },
-];
 
 export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
@@ -46,8 +46,11 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
   const updateStatusMutation = useUpdateAlertStatus();
   const addNoteMutation = useAddOfficerNote();
+  const startHandlingMutation = useStartHandling();
+  const confirmArrivalMutation = useConfirmArrival();
 
   const [note, setNote] = useState("");
+  const [isResolutionModalOpen, setResolutionModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -62,7 +65,10 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
     return (
       <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
         <AlertTriangle size={48} color={COLORS.destructive} />
-        <Text style={styles.errorTitle}>Report Not Found</Text>
+        <Text style={styles.errorTitle}>Report Not Available</Text>
+        <Text style={styles.errorSub}>
+          This incident is not assigned to your Officer account or is no longer available.
+        </Text>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backBtnText}>Go Back</Text>
         </TouchableOpacity>
@@ -75,31 +81,29 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
   const longitude = coords ? coords[0] : 106.660172;
 
   const sevColor = SEVERITY_COLORS[alert.severity] || { bg: "#F1F5F9", text: "#475569" };
+  const currentStatus = alert.status?.toUpperCase();
 
-  const handleUpdateStatus = async (newStatus: string) => {
-    RNAlert.alert(
-      "Confirm Status Update",
-      `Are you sure you want to set status to "${newStatus.replace("_", " ")}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Confirm",
-          onPress: async () => {
-            try {
-              await updateStatusMutation.mutateAsync({
-                id: alert._id,
-                status: newStatus,
-                officerNote: note.trim() || undefined,
-              });
-              RNAlert.alert("Success", "Incident status has been updated successfully.");
-            } catch (err: any) {
-              const msg = err.response?.data?.message || err.message || "Failed to update status.";
-              RNAlert.alert("Update Error", msg);
-            }
-          },
-        },
-      ]
-    );
+  const handleStartHandling = async () => {
+    try {
+      await startHandlingMutation.mutateAsync(alert._id);
+      RNAlert.alert("Workflow Started", "Incident status set to IN_PROGRESS.");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Failed to start handling.";
+      RNAlert.alert("Error", msg);
+    }
+  };
+
+  const handleConfirmArrival = async () => {
+    try {
+      await confirmArrivalMutation.mutateAsync({
+        id: alert._id,
+        location: { latitude, longitude },
+      });
+      RNAlert.alert("Arrival Confirmed", "Your GPS location arrival has been logged.");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Failed to confirm arrival.";
+      RNAlert.alert("Error", msg);
+    }
   };
 
   const handleAddNote = async () => {
@@ -125,7 +129,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         <TouchableOpacity style={styles.circleBtn} onPress={() => navigation.goBack()}>
           <ArrowLeft size={20} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Officer Verification</Text>
+        <Text style={styles.topBarTitle}>Officer Task & Verification</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -148,36 +152,52 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         <Text style={styles.title}>{alert.title}</Text>
 
-        {/* Officer Action Bar */}
-        <Text style={styles.sectionHeading}>Update Incident Status</Text>
-        <View style={styles.actionsGrid}>
-          {STATUS_ACTIONS.map((act) => {
-            const IconComp = act.icon;
-            const isCurrent = alert.status?.toUpperCase() === act.status;
-            return (
-              <TouchableOpacity
-                key={act.status}
-                activeOpacity={0.8}
-                style={[
-                  styles.actionChip,
-                  { backgroundColor: act.bg, borderColor: act.color },
-                  isCurrent && styles.actionChipActive,
-                ]}
-                onPress={() => handleUpdateStatus(act.status)}
-                disabled={updateStatusMutation.isPending}
-              >
-                <IconComp size={18} color={act.color} />
-                <Text style={[styles.actionChipText, { color: act.color }]}>{act.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* Workflow Quick Action Buttons */}
+        <Text style={styles.sectionHeading}>Officer Incident Actions</Text>
+        <View style={styles.workflowGrid}>
+          {currentStatus === "ASSIGNED" || currentStatus === "VERIFIED" || currentStatus === "PENDING" ? (
+            <Button
+              title="Step 1: Start Handling"
+              onPress={handleStartHandling}
+              loading={startHandlingMutation.isPending}
+              style={styles.workflowBtn}
+              icon={<PlayCircle size={18} color="#FFF" style={{ marginRight: 6 }} />}
+            />
+          ) : null}
+
+          {currentStatus !== "RESOLVED" && currentStatus !== "CLOSED" ? (
+            alert.arrivedAt ? (
+              <View style={styles.arrivedBadge}>
+                <CheckCircle size={16} color="#16A34A" />
+                <Text style={styles.arrivedBadgeText}>Arrived at Scene</Text>
+              </View>
+            ) : (
+              <Button
+                title="Step 2: Confirm GPS Arrival"
+                onPress={handleConfirmArrival}
+                loading={confirmArrivalMutation.isPending}
+                variant="outline"
+                style={styles.workflowBtn}
+                icon={<Navigation size={18} color={COLORS.secondary} style={{ marginRight: 6 }} />}
+              />
+            )
+          ) : null}
+
+          {currentStatus !== "RESOLVED" && currentStatus !== "CLOSED" ? (
+            <Button
+              title="Step 3: Mark Incident Resolved"
+              onPress={() => setResolutionModalOpen(true)}
+              style={[styles.workflowBtn, { backgroundColor: "#16A34A" }]}
+              icon={<CheckCircle size={18} color="#FFF" style={{ marginRight: 6 }} />}
+            />
+          ) : null}
         </View>
 
         {/* Officer Note Input */}
         <GlassCard style={styles.noteFormCard}>
           <Text style={styles.sectionHeading}>Officer Inspection Note / Remarks</Text>
           <Input
-            placeholder="Enter verification result, dispatched team details, or resolution remarks..."
+            placeholder="Enter verification result, dispatched team details, or inspection note..."
             multiline
             numberOfLines={3}
             style={styles.textArea}
@@ -249,6 +269,12 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           </GlassCard>
         ) : null}
       </ScrollView>
+
+      <ResolutionModal
+        visible={isResolutionModalOpen}
+        alertId={alert._id}
+        onClose={() => setResolutionModalOpen(false)}
+      />
     </View>
   );
 };
@@ -259,6 +285,7 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 14, color: COLORS.textMuted },
   errorContainer: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   errorTitle: { fontSize: 20, fontWeight: "800", color: COLORS.text, marginTop: 16 },
+  errorSub: { fontSize: 13, color: COLORS.textMuted, textAlign: "center", marginTop: 8, lineHeight: 18 },
   backBtn: { marginTop: 20, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: COLORS.primaryLight },
   backBtnText: { fontSize: 14, fontWeight: "700", color: COLORS.primaryDark },
   topBar: {
@@ -271,11 +298,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     zIndex: 10,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
   },
   circleBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.background, alignItems: "center", justifyContent: "center" },
   topBarTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text },
@@ -285,18 +307,20 @@ const styles = StyleSheet.create({
   sevBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
   title: { fontSize: 22, fontWeight: "800", color: COLORS.text, marginBottom: 16, lineHeight: 28 },
   sectionHeading: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 10 },
-  actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
-  actionChip: {
+  workflowGrid: { gap: 10, marginBottom: 20 },
+  workflowBtn: { borderRadius: 14 },
+  arrivedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
+    justifyContent: "center",
+    gap: 6,
     paddingVertical: 10,
     borderRadius: 14,
-    borderWidth: 1.5,
-    gap: 6,
+    backgroundColor: "#DCFCE7",
+    borderWidth: 1,
+    borderColor: "#86EFAC",
   },
-  actionChipActive: { opacity: 0.9 },
-  actionChipText: { fontSize: 13, fontWeight: "700" },
+  arrivedBadgeText: { fontSize: 13, fontWeight: "700", color: "#15803D" },
   noteFormCard: { padding: 18, marginBottom: 20, borderRadius: 20 },
   textArea: {},
   mainCard: { padding: 18, marginBottom: 20, borderRadius: 20 },

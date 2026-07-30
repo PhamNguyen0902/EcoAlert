@@ -12,6 +12,7 @@ import {
 import { IAlert, ITimelineEntry, IStatusHistoryEntry, WorkflowActorRole } from '../models/alert.model';
 import { alertRepository } from '../repositories/alert.repository';
 import {
+  AlertCategory,
   AlertStatus,
   BadRequestError,
   ConflictError,
@@ -134,10 +135,27 @@ export class AlertService {
   async createAlert(citizenId: string, data: CreateAlertDto) {
     const createdAt = new Date();
     const actor: WorkflowActor = { id: citizenId, role: 'CITIZEN' };
+
+    // Prevent duplicate report creation within 10 seconds for the same citizen
+    const recentDuplicate = await alertRepository.findOne({
+      citizenId,
+      title: data.title,
+      description: data.description,
+      createdAt: { $gte: new Date(createdAt.getTime() - 10000) },
+    });
+    if (recentDuplicate) {
+      return recentDuplicate;
+    }
+
     const alert = await alertRepository.create({
       ...data,
+      category: (data.category as AlertCategory) || 'UNCLASSIFIED',
+      severity: (data.severity as Severity) || Severity.LOW,
       citizenId,
       status: AlertStatus.PENDING,
+      isAnonymous: data.isAnonymous || false,
+      confirmationsCount: 1,
+      confirmations: [{ citizenId, confirmedAt: createdAt }],
       createdBy: citizenId,
       statusHistory: [this.historyEntry(undefined, AlertStatus.PENDING, actor, createdAt)],
       timeline: [this.timelineEntry(
@@ -167,7 +185,17 @@ export class AlertService {
       filter.includeDeleted = true;
       filter.isDeleted = true;
     } else if (filters.status) {
-      filter.status = { $regex: new RegExp(`^${filters.status}$`, 'i') };
+      const statusList = filters.status
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (statusList.length > 1) {
+        filter.status = { $in: statusList.map((s) => new RegExp(`^${s}$`, 'i')) };
+      } else if (filters.status.toLowerCase() === 'pending') {
+        filter.status = { $in: [new RegExp('^pending$', 'i'), new RegExp('^ai_analyzing$', 'i')] };
+      } else {
+        filter.status = { $regex: new RegExp(`^${filters.status}$`, 'i') };
+      }
     }
     if (filters.category) filter.category = { $regex: new RegExp(`^${filters.category}$`, 'i') };
     if (filters.severity) filter.severity = { $regex: new RegExp(`^${filters.severity}$`, 'i') };
@@ -587,6 +615,31 @@ export class AlertService {
     if (!updatedAlert) throw new NotFoundError('Alert not found during update');
     await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor.correlationId);
     return updatedAlert;
+  }
+
+  async checkNearbyAlerts(longitude: number, latitude: number, radiusMeters: number = 200) {
+    return alertRepository.findNearby(longitude, latitude, radiusMeters);
+  }
+
+  async confirmAlert(id: string, citizenId: string) {
+    const alert = await this.requireAlert(id);
+    const hasAlreadyConfirmed = alert.confirmations?.some((c) => c.citizenId === citizenId);
+    if (hasAlreadyConfirmed) {
+      return alert;
+    }
+
+    const updatedAlert = await alertRepository.findOneAndUpdate(
+      { _id: id },
+      {
+        $inc: { confirmationsCount: 1 },
+        $push: { confirmations: { citizenId, confirmedAt: new Date() } },
+      }
+    );
+
+    if (updatedAlert) {
+      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert);
+    }
+    return updatedAlert || alert;
   }
 }
 

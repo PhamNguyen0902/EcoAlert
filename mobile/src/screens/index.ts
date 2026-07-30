@@ -10,8 +10,13 @@ export * from "./citizen/AlertDetailScreen";
 
 // Officer Screens
 export * from "./officer/OfficerDashboardScreen";
+export * from "./officer/OfficerTasksScreen";
 export * from "./officer/OfficerAlertDetailScreen";
 export * from "./officer/OfficerMapScreen";
 
 // Admin Screens
 export * from "./admin/AdminDashboardScreen";
+export * from "./admin/UserManagementScreen";
+export * from "./admin/CategoryManagementScreen";
+export * from "./admin/AuditLogsScreen";
+

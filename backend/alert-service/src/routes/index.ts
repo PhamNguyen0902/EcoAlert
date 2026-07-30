@@ -32,10 +32,12 @@ router.patch('/categories/:id', asyncHandler(categoryController.updateCategory))
 router.delete('/categories/:id', asyncHandler(categoryController.deleteCategory));
 
 // Alert Routes
+router.get('/nearby-check', asyncHandler(alertController.checkNearbyAlerts));
 router.post('/', validate(createAlertSchema), asyncHandler(alertController.createAlert));
 router.get('/', asyncHandler(alertController.getAlerts));
 router.get('/officer/tasks', asyncHandler(alertController.getOfficerTasks));
 router.get('/:id', asyncHandler(alertController.getAlertById));
+router.post('/:id/confirm', asyncHandler(alertController.confirmAlert));
 router.patch('/:id', validate(updateAlertSchema), asyncHandler(alertController.updateAlert));
 router.patch('/:id/status', validate(updateAlertStatusSchema), asyncHandler(alertController.updateStatus));
 router.post('/:id/assign', validate(assignOfficerSchema), asyncHandler(alertController.assignOfficer));

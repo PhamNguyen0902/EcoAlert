@@ -1,13 +1,25 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { LayoutDashboard, ShieldCheck, MapPin, User as UserIcon, FileText } from "lucide-react-native";
+import {
+  LayoutDashboard,
+  ShieldCheck,
+  User as UserIcon,
+  Users,
+  Tag,
+  Activity,
+  Edit2,
+  KeyRound,
+} from "lucide-react-native";
 import { AdminDashboardScreen } from "../screens/admin/AdminDashboardScreen";
-import { CitizenDashboardScreen } from "../screens/citizen/CitizenDashboardScreen";
-import { OfficerMapScreen } from "../screens/officer/OfficerMapScreen";
+import { UserManagementScreen } from "../screens/admin/UserManagementScreen";
+import { CategoryManagementScreen } from "../screens/admin/CategoryManagementScreen";
+import { AuditLogsScreen } from "../screens/admin/AuditLogsScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { useProfile, useLogout } from "../hooks/useAuth";
+import { EditProfileModal } from "../components/modals/EditProfileModal";
+import { ChangePasswordModal } from "../components/modals/ChangePasswordModal";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
 import { COLORS } from "../utils/constants";
@@ -28,6 +40,8 @@ function formatProfileName(fullName?: string): string {
 const AdminProfileScreen: React.FC = () => {
   const { data: profile } = useProfile();
   const logoutMutation = useLogout();
+  const [isEditProfileOpen, setEditProfileOpen] = useState(false);
+  const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
 
   return (
     <View style={styles.profileContainer}>
@@ -42,6 +56,23 @@ const AdminProfileScreen: React.FC = () => {
             <Text style={styles.roleText}>SUPER ADMIN</Text>
           </View>
 
+          <View style={styles.profileActions}>
+            <Button
+              title="Edit Profile"
+              variant="outline"
+              onPress={() => setEditProfileOpen(true)}
+              style={styles.profileActionBtn}
+              icon={<Edit2 size={16} color="#7C3AED" style={{ marginRight: 6 }} />}
+            />
+            <Button
+              title="Change Password"
+              variant="outline"
+              onPress={() => setChangePasswordOpen(true)}
+              style={styles.profileActionBtn}
+              icon={<KeyRound size={16} color="#7C3AED" style={{ marginRight: 6 }} />}
+            />
+          </View>
+
           <Button
             title="Sign Out"
             variant="destructive"
@@ -51,6 +82,16 @@ const AdminProfileScreen: React.FC = () => {
           />
         </View>
       </GlassCard>
+
+      <EditProfileModal
+        visible={isEditProfileOpen}
+        user={profile || null}
+        onClose={() => setEditProfileOpen(false)}
+      />
+      <ChangePasswordModal
+        visible={isChangePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </View>
   );
 };
@@ -67,10 +108,12 @@ const AdminTabs = () => {
         tabBarIcon: ({ color, size }) => {
           if (route.name === "AdminDashboardTab") {
             return <LayoutDashboard color={color} size={size} />;
-          } else if (route.name === "AdminAlertsTab") {
-            return <FileText color={color} size={size} />;
-          } else if (route.name === "AdminMapTab") {
-            return <MapPin color={color} size={size} />;
+          } else if (route.name === "AdminUsersTab") {
+            return <Users color={color} size={size} />;
+          } else if (route.name === "AdminCategoriesTab") {
+            return <Tag color={color} size={size} />;
+          } else if (route.name === "AdminAuditTab") {
+            return <Activity color={color} size={size} />;
           } else if (route.name === "AdminProfileTab") {
             return <UserIcon color={color} size={size} />;
           }
@@ -84,14 +127,19 @@ const AdminTabs = () => {
         options={{ tabBarLabel: "Dashboard" }}
       />
       <Tab.Screen
-        name="AdminAlertsTab"
-        component={CitizenDashboardScreen}
-        options={{ tabBarLabel: "System Alerts" }}
+        name="AdminUsersTab"
+        component={UserManagementScreen}
+        options={{ tabBarLabel: "Users" }}
       />
       <Tab.Screen
-        name="AdminMapTab"
-        component={OfficerMapScreen}
-        options={{ tabBarLabel: "City Map" }}
+        name="AdminCategoriesTab"
+        component={CategoryManagementScreen}
+        options={{ tabBarLabel: "Categories" }}
+      />
+      <Tab.Screen
+        name="AdminAuditTab"
+        component={AuditLogsScreen}
+        options={{ tabBarLabel: "Audit" }}
       />
       <Tab.Screen
         name="AdminProfileTab"
@@ -120,13 +168,9 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     paddingTop: 8,
     elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
   },
   profileContainer: {
@@ -161,14 +205,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.text,
     textAlign: "center",
-    alignSelf: "center",
   },
   profileEmail: {
     fontSize: 14,
     color: COLORS.textMuted,
     marginTop: 4,
     textAlign: "center",
-    alignSelf: "center",
   },
   roleTag: {
     marginTop: 14,
@@ -177,18 +219,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3E8FF",
     borderRadius: 20,
     alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
   },
   roleText: {
     fontSize: 12,
     fontWeight: "800",
     color: "#7C3AED",
-    textAlign: "center",
     letterSpacing: 0.5,
   },
+  profileActions: {
+    width: "100%",
+    marginTop: 20,
+    gap: 10,
+  },
+  profileActionBtn: {
+    width: "100%",
+    borderRadius: 14,
+  },
   logoutBtn: {
-    marginTop: 28,
+    marginTop: 16,
     paddingHorizontal: 36,
     minWidth: 180,
     alignSelf: "center",
