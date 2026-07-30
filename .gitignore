@@ -8,6 +8,7 @@
 # Environment
 **/.env
 **/.env.*
+!backend/ai-service/.env.example
 
 # IDE
 .vscode/

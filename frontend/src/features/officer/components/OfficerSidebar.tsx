@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Leaf,
   User,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnreadCount } from "@/hooks/hooks";
@@ -43,6 +44,7 @@ export default function OfficerSidebar() {
       badge: unreadCount,
     },
     { name: t("officer.stats"), path: "/officer/stats", icon: BarChart3 },
+    { name: "AI Assistant", path: "/assistant", icon: Bot },
   ];
 
   return (

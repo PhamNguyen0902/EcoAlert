@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import CitizenNavbar from './CitizenNavbar';
 import CitizenFooter from './CitizenFooter';
+import { AssistantLauncher } from '@/features/assistant/components/AssistantLauncher';
 
 export default function CitizenLayout() {
   return (
@@ -12,6 +13,7 @@ export default function CitizenLayout() {
       </main>
 
       <CitizenFooter />
+      <AssistantLauncher />
     </div>
   );
 }
