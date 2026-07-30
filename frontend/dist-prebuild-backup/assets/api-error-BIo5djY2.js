@@ -1,0 +1,1 @@
+import{y as r}from"./hooks-Ccw6a6gq.js";const o=(s,a)=>{var t,i;if(r.isAxiosError(s)){const e=(i=(t=s.response)==null?void 0:t.data)==null?void 0:i.message;if(typeof e=="string"&&e.trim())return e}return s instanceof Error&&s.message.trim()?s.message:a};export{o as g};

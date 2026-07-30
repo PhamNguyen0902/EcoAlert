@@ -17,6 +17,10 @@ const MyReports = lazy(() => import("./features/citizen/pages/MyReports"));
 const CitizenAlertDetail = lazy(() => import("./pages/AlertDetail"));
 const CitizenNotifications = lazy(() => import("./pages/Notifications"));
 const CitizenProfile = lazy(() => import("./pages/Profile"));
+const AssistantPage = lazy(() => import("./features/assistant/pages/AssistantPage"));
+const RoleAwareAssistantLayout = lazy(
+  () => import("./features/assistant/components/RoleAwareAssistantLayout"),
+);
 
 const OfficerLayout = lazy(
   () => import("./features/officer/components/OfficerLayout"),
@@ -161,6 +165,13 @@ function App() {
               <Route path="/admin/audit" element={<AuditLogs />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
               <Route path="/admin/profile" element={<CitizenProfile />} />
+            </Route>
+          </Route>
+
+          {/* Shared assistant route, rendered in the signed-in role's existing shell. */}
+          <Route element={<ProtectedRoute allowedRoles={["CITIZEN", "OFFICER", "ADMIN"]} />}>
+            <Route element={<RoleAwareAssistantLayout />}>
+              <Route path="/assistant" element={<AssistantPage />} />
             </Route>
           </Route>
 

@@ -150,6 +150,34 @@ export interface ApiResponse<T> {
   errors?: unknown;
 }
 
+export interface AssistantSource {
+  id: string;
+  title: string;
+  href?: string;
+  type: 'knowledge' | 'dynamic';
+}
+
+export interface AssistantMessage {
+  id: string;
+  role: 'USER' | 'ASSISTANT';
+  content: string;
+  sources: AssistantSource[];
+  createdAt: string;
+}
+
+export interface AssistantConversation {
+  id: string;
+  title: string;
+  role: UserRole;
+  lastMessageAt: string;
+  createdAt: string;
+}
+
+export interface AssistantReply {
+  conversation: AssistantConversation;
+  message: AssistantMessage;
+}
+
 export interface GISLocation {
   _id: string;
   alertId: string;

@@ -15,8 +15,12 @@ dotenv.config();
 const app = express();
 const logger = createLogger('api-gateway');
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
+const JWT_SECRET = process.env.JWT_SECRET;
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured before starting the API Gateway');
+}
 
 const redisClient = new Redis(REDIS_URL);
 
@@ -79,8 +83,6 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   const token = authHeader.split(' ')[1];
-  logger.info(`Received token of length ${token?.length}: "${token?.substring(0, 30)}..."`);
-  
   // Check blacklist
   try {
     const isBlacklisted = await redisClient.get(`blacklist:${token}`);
@@ -109,14 +111,22 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 app.use('/api', verifyToken);
 
 // Proxy configuration
-const setupProxy = (path: string, target: string, rewrite: boolean = false) => {
+const setupProxy = (path: string, target: string, rewrite: boolean = false, internalAssistant = false) => {
   app.use(
     path,
     createProxyMiddleware({
       target,
       changeOrigin: true,
       pathRewrite: rewrite ? { [`^${path}`]: '' } : undefined,
-      onProxyReq: fixRequestBody,
+      onProxyReq: (proxyReq, req) => {
+        fixRequestBody(proxyReq, req);
+        if (internalAssistant && process.env.INTERNAL_GATEWAY_SHARED_SECRET) {
+          proxyReq.setHeader(
+            'x-internal-gateway-secret',
+            process.env.INTERNAL_GATEWAY_SHARED_SECRET,
+          );
+        }
+      },
       onError: (err, req, res) => {
         logger.error(`Proxy error for ${path}`, err);
         res.status(502).json(errorResponse('Bad Gateway'));
@@ -137,6 +147,7 @@ setupProxy('/api/v1/alerts', process.env.ALERT_SERVICE_URL || 'http://localhost:
 setupProxy('/api/v1/media', process.env.MEDIA_SERVICE_URL || 'http://localhost:3003', true);
 setupProxy('/api/v1/gis', process.env.GIS_SERVICE_URL || 'http://localhost:3004', true);
 setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', true);
+setupProxy('/api/v1/assistant', process.env.AI_SERVICE_URL || 'http://localhost:3005', true, true);
 setupProxy('/api/v1/ai', process.env.AI_SERVICE_URL || 'http://localhost:3005', true);
 
 // Global Error Handler

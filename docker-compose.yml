@@ -45,11 +45,14 @@ services:
       - MEDIA_SERVICE_URL=http://media-service:3003
       - GIS_SERVICE_URL=http://gis-service:3004
       - NOTIFICATION_SERVICE_URL=http://notification-service:3006
+      - AI_SERVICE_URL=http://ai-service:3005
+      - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}
     depends_on:
       - user-service
       - alert-service
       - media-service
       - gis-service
+      - ai-service
       - notification-service
     networks:
       - ecoalert_network
@@ -131,7 +134,20 @@ services:
       - PORT=3005
       - RABBITMQ_URL=${RABBITMQ_URL}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MONGO_URI=${MONGO_URI_AI}
+      - ALERT_MONGO_URI=${MONGO_URI_ALERT}
+      - REDIS_URL=${REDIS_URL}
+      - AI_CHAT_PROVIDER=${AI_CHAT_PROVIDER}
+      - AI_CHAT_MODEL=${AI_CHAT_MODEL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - ASSISTANT_RATE_LIMIT=${ASSISTANT_RATE_LIMIT}
+      - ASSISTANT_RATE_WINDOW_SECONDS=${ASSISTANT_RATE_WINDOW_SECONDS}
+      - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}
     depends_on:
+      - mongodb
+      - redis
       - rabbitmq
     networks:
       - ecoalert_network

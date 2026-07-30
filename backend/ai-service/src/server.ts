@@ -2,6 +2,7 @@ import { app } from './app';
 import dotenv from 'dotenv';
 import { createLogger } from '@ecoalert/shared';
 import { rabbitMQService } from './services/rabbitmq.service';
+import { connectDatabases, disconnectDatabases } from './config/database.config';
 
 dotenv.config();
 const logger = createLogger('ai-service');
@@ -9,6 +10,7 @@ const PORT = process.env.PORT || 3005;
 
 const startServer = async () => {
   try {
+    await connectDatabases();
     await rabbitMQService.connect();
     
     app.listen(PORT, () => {
@@ -21,3 +23,11 @@ const startServer = async () => {
 };
 
 startServer();
+
+const shutdown = async () => {
+  await disconnectDatabases();
+  process.exit(0);
+};
+
+process.once('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);

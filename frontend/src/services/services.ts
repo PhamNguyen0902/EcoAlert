@@ -1,6 +1,9 @@
 import { api } from "./api";
 import type {
   Alert,
+  AssistantConversation,
+  AssistantMessage,
+  AssistantReply,
   Category,
   CreateAlertData,
   PaginatedResult,
@@ -21,6 +24,28 @@ export const authService = {
   logout: async (refreshToken?: string) => {
     const res = await api.post("/v1/auth/logout", { refreshToken });
     return res.data;
+  },
+};
+
+export const assistantService = {
+  getConversations: async (): Promise<AssistantConversation[]> => {
+    const res = await api.get('/v1/assistant/conversations');
+    return res.data.data;
+  },
+  getMessages: async (conversationId: string): Promise<AssistantMessage[]> => {
+    const res = await api.get(`/v1/assistant/conversations/${conversationId}/messages`);
+    return res.data.data;
+  },
+  createConversation: async (title?: string): Promise<AssistantConversation> => {
+    const res = await api.post('/v1/assistant/conversations', { title });
+    return res.data.data;
+  },
+  sendMessage: async (
+    message: string,
+    conversationId?: string,
+  ): Promise<AssistantReply> => {
+    const res = await api.post('/v1/assistant/messages', { message, conversationId });
+    return res.data.data;
   },
 };
 

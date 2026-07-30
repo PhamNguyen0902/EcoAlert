@@ -13,7 +13,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Leaf
+  Leaf,
+  Bot
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAlerts } from '@/hooks/hooks';
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { to: '/admin/analytics', key: 'nav.analytics', icon: BarChart3 },
   { to: '/admin/audit', key: 'nav.audit', icon: ScrollText },
   { to: '/admin/settings', key: 'nav.settings', icon: Settings },
+  { to: '/assistant', key: 'assistant', label: 'AI Assistant', icon: Bot },
 ];
 
 export default function AdminSidebar() {
@@ -53,7 +55,7 @@ export default function AdminSidebar() {
           <NavLink
             key={item.to}
             to={item.to}
-            title={isCollapsed ? t(item.key) : undefined}
+            title={isCollapsed ? (item.label || t(item.key)) : undefined}
             className={({ isActive }) =>
               cn(
                 "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors relative group",
@@ -65,6 +67,7 @@ export default function AdminSidebar() {
             }
           >
             <item.icon className={cn("h-5 w-5 shrink-0", isCollapsed ? "mr-0" : "mr-3")} />
+            {!isCollapsed && <span className="whitespace-nowrap">{item.label || t(item.key)}</span>}
             {!isCollapsed && <span className="whitespace-nowrap flex-1">{t(item.key)}</span>}
             {item.showBadge && pendingCount > 0 && (
               <span

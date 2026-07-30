@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Leaf, Bell, Menu, X, User, LogOut } from 'lucide-react';
+import { Leaf, Bell, Menu, X, User, LogOut, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ export default function CitizenNavbar() {
     { name: t('nav.home'), path: '/home' },
     { name: t('nav.report_incident'), path: '/report' },
     { name: t('nav.my_reports'), path: '/my-reports' },
+    { name: 'AI Assistant', path: '/assistant' },
   ];
 
   const getInitials = (name?: string) => {
@@ -89,6 +90,11 @@ export default function CitizenNavbar() {
                   </Badge>
                 )}
                 <span className="sr-only">Notifications</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/assistant" aria-label="Open EcoAlert AI Assistant">
+                <Bot className="h-5 w-5" />
               </Link>
             </Button>
             
