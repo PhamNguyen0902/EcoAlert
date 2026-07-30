@@ -110,6 +110,21 @@ export const alertService = {
     const res = await api.post(`/v1/alerts/${id}/assign`, { officerId });
     return res.data?.data || res.data;
   },
+
+  checkNearbyAlerts: async (lat: number, lng: number, radius = 200): Promise<Alert[]> => {
+    const res = await api.get(`/v1/alerts/nearby-check?lat=${lat}&lng=${lng}&radius=${radius}`);
+    return res.data?.data || res.data || [];
+  },
+
+  confirmAlert: async (id: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/confirm`);
+    return res.data?.data || res.data;
+  },
+
+  analyzeMediaWithAI: async (description?: string, imageUrl?: string) => {
+    const res = await api.post(`/v1/ai/analyze`, { description, imageUrl });
+    return res.data?.data || res.data;
+  },
 };
 
 
