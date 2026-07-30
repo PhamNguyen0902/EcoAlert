@@ -101,6 +101,26 @@ export class AlertController {
     const result = await alertService.addOfficerNote(req.params.id, workflowActor(req), req.body);
     res.status(200).json(successResponse(result, 'Officer note saved successfully'));
   }
+
+  async checkNearbyAlerts(req: Request, res: Response) {
+    const lng = Number.parseFloat(req.query.lng as string || req.query.longitude as string);
+    const lat = Number.parseFloat(req.query.lat as string || req.query.latitude as string);
+    const radius = Number.parseInt(req.query.radius as string, 10) || 200;
+
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      res.status(400).json({ success: false, message: 'Valid latitude and longitude query parameters are required' });
+      return;
+    }
+
+    const nearbyAlerts = await alertService.checkNearbyAlerts(lng, lat, radius);
+    res.status(200).json(successResponse(nearbyAlerts, 'Nearby alerts retrieved successfully'));
+  }
+
+  async confirmAlert(req: Request, res: Response) {
+    const citizenId = req.headers['x-user-id'] as string;
+    const result = await alertService.confirmAlert(req.params.id, citizenId);
+    res.status(200).json(successResponse(result, 'Alert confirmed successfully'));
+  }
 }
 
 export const alertController = new AlertController();

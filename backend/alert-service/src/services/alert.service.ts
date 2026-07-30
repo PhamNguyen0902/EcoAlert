@@ -12,6 +12,7 @@ import {
 import { IAlert, ITimelineEntry, IStatusHistoryEntry, WorkflowActorRole } from '../models/alert.model';
 import { alertRepository } from '../repositories/alert.repository';
 import {
+  AlertCategory,
   AlertStatus,
   BadRequestError,
   ConflictError,
@@ -148,8 +149,13 @@ export class AlertService {
 
     const alert = await alertRepository.create({
       ...data,
+      category: (data.category as AlertCategory) || 'UNCLASSIFIED',
+      severity: (data.severity as Severity) || Severity.LOW,
       citizenId,
       status: AlertStatus.PENDING,
+      isAnonymous: data.isAnonymous || false,
+      confirmationsCount: 1,
+      confirmations: [{ citizenId, confirmedAt: createdAt }],
       createdBy: citizenId,
       statusHistory: [this.historyEntry(undefined, AlertStatus.PENDING, actor, createdAt)],
       timeline: [this.timelineEntry(
@@ -609,6 +615,31 @@ export class AlertService {
     if (!updatedAlert) throw new NotFoundError('Alert not found during update');
     await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor.correlationId);
     return updatedAlert;
+  }
+
+  async checkNearbyAlerts(longitude: number, latitude: number, radiusMeters: number = 200) {
+    return alertRepository.findNearby(longitude, latitude, radiusMeters);
+  }
+
+  async confirmAlert(id: string, citizenId: string) {
+    const alert = await this.requireAlert(id);
+    const hasAlreadyConfirmed = alert.confirmations?.some((c) => c.citizenId === citizenId);
+    if (hasAlreadyConfirmed) {
+      return alert;
+    }
+
+    const updatedAlert = await alertRepository.findOneAndUpdate(
+      { _id: id },
+      {
+        $inc: { confirmationsCount: 1 },
+        $push: { confirmations: { citizenId, confirmedAt: new Date() } },
+      }
+    );
+
+    if (updatedAlert) {
+      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert);
+    }
+    return updatedAlert || alert;
   }
 }
 
