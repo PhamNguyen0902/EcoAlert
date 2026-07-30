@@ -30,13 +30,30 @@ interface ResolutionModalProps {
 
 const DEFAULT_PROOF_PHOTO = "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=600&q=80";
 
+const TREATMENT_OPTIONS = [
+  { label: "🗑️ Thu gom rác thải", value: "Thu gom & vận chuyển phế thải đến nơi xử lý" },
+  { label: "🧪 Xử lý hóa chất", value: "Xử lý hóa chất trung hòa & phun khử trùng" },
+  { label: "🌊 Nạo vét dòng chảy", value: "Nạo vét bùn đất & khai thông dòng chảy" },
+  { label: "🌳 Cắt tỉa cây gãy", value: "Cắt tỉa cây xanh & giải phóng chướng ngại vật" },
+  { label: "🔥 Dập tắt đám cháy", value: "Dập tắt đám cháy & xử lý tàn dư khói độc" },
+  { label: "🔊 Xử lý tiếng ồn", value: "Nhắc nhở & xử lý vi phạm tiếng ồn" },
+];
+
+const MATERIAL_OPTIONS = [
+  "Xe gom rác & Bao tải",
+  "Máy xúc / Xe cẩu",
+  "Hóa chất & Máy phun",
+  "Cưa máy & Đồ bảo hộ",
+  "Máy bơm hút xả",
+];
+
 export const ResolutionModal: React.FC<ResolutionModalProps> = ({
   visible,
   alertId,
   onClose,
 }) => {
   const [resolutionSummary, setResolutionSummary] = useState("");
-  const [treatmentMethod, setTreatmentMethod] = useState("Mechanical cleanup and waste disposal");
+  const [treatmentMethod, setTreatmentMethod] = useState("Thu gom & vận chuyển phế thải đến nơi xử lý");
   const [materialsUsed, setMaterialsUsed] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [evidenceUri, setEvidenceUri] = useState<string | null>(DEFAULT_PROOF_PHOTO);
@@ -46,6 +63,20 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
   const uploadMutation = useUploadMedia();
   const startHandlingMutation = useStartHandling();
   const confirmArrivalMutation = useConfirmArrival();
+
+  const handleSelectTreatment = (val: string) => {
+    setTreatmentMethod(val);
+  };
+
+  const handleSelectMaterial = (val: string) => {
+    if (!materialsUsed) {
+      setMaterialsUsed(val);
+    } else if (materialsUsed.includes(val)) {
+      setMaterialsUsed((prev) => prev.replace(val, "").replace(/,\s*,/g, ",").trim());
+    } else {
+      setMaterialsUsed((prev) => `${prev}, ${val}`);
+    }
+  };
 
   const handlePickPhoto = () => {
     RNAlert.alert(
@@ -153,7 +184,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
 
       RNAlert.alert("Incident Resolved", "The incident status has been set to RESOLVED.");
       setResolutionSummary("");
-      setTreatmentMethod("Mechanical cleanup and waste disposal");
+      setTreatmentMethod("Thu gom & vận chuyển phế thải đến nơi xử lý");
       setMaterialsUsed("");
       setAdditionalNotes("");
       onClose();
@@ -192,16 +223,54 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
               onChangeText={setResolutionSummary}
             />
 
+            {/* Quick Select Treatment Method Chips */}
+            <Text style={styles.label}>Treatment Method (Select Option) *</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+              {TREATMENT_OPTIONS.map((opt) => {
+                const isSelected = treatmentMethod === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.chip, isSelected && styles.chipSelected]}
+                    onPress={() => handleSelectTreatment(opt.value)}
+                  >
+                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
             <Input
-              label="Treatment Method *"
-              placeholder="e.g. Chemical neutralization, manual cleanup, waste haulage"
+              label=""
+              placeholder="Or custom edit treatment method..."
               value={treatmentMethod}
               onChangeText={setTreatmentMethod}
             />
 
+            {/* Quick Select Materials Chips */}
+            <Text style={styles.label}>Materials & Equipment Used</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+              {MATERIAL_OPTIONS.map((mat) => {
+                const isSelected = materialsUsed.includes(mat);
+                return (
+                  <TouchableOpacity
+                    key={mat}
+                    style={[styles.chip, isSelected && styles.chipSelected]}
+                    onPress={() => handleSelectMaterial(mat)}
+                  >
+                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                      {isSelected ? `✓ ${mat}` : mat}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
             <Input
-              label="Materials & Equipment Used"
-              placeholder="e.g. Excavator, protective gear, disinfectant solution"
+              label=""
+              placeholder="Or custom edit materials used..."
               value={materialsUsed}
               onChangeText={setMaterialsUsed}
             />
@@ -350,5 +419,30 @@ const styles = StyleSheet.create({
   submitBtn: {
     backgroundColor: "#16A34A",
     marginTop: 10,
+  },
+  chipScroll: {
+    marginBottom: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    marginRight: 8,
+  },
+  chipSelected: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#16A34A",
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: COLORS.text,
+  },
+  chipTextSelected: {
+    color: "#15803D",
+    fontWeight: "700",
   },
 });

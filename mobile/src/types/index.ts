@@ -85,6 +85,10 @@ export interface Alert {
   arrivedAt?: string;
   assignedAt?: string;
   resolvedAt?: string;
+  isAnonymous?: boolean;
+  confirmationsCount?: number;
+  confirmations?: Array<{ citizenId: string; confirmedAt: string }>;
+  voiceNoteUrl?: string;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -127,6 +131,17 @@ export interface CreateAlertData {
   location: GeoLocation;
   address?: string;
   mediaUrls?: string[];
+  isAnonymous?: boolean;
+  voiceNoteUrl?: string;
+}
+
+export interface AIAnalysisResult {
+  category: AlertCategory;
+  severity: Severity;
+  suggested_title?: string;
+  suggested_description?: string;
+  confidence?: number;
+  analysis_note?: string;
 }
 
 export interface ResolutionEvidenceInput {

@@ -197,4 +197,32 @@ export const useAssignOfficer = () => {
   });
 };
 
+export const useCheckNearbyAlerts = (lat?: number, lng?: number, radius = 200) => {
+  return useQuery({
+    queryKey: ["nearby-alerts", lat, lng, radius],
+    queryFn: () => (lat && lng ? alertService.checkNearbyAlerts(lat, lng, radius) : Promise.resolve([])),
+    enabled: Boolean(lat && lng),
+  });
+};
+
+export const useConfirmAlert = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => alertService.confirmAlert(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["alert", id] });
+      queryClient.invalidateQueries({ queryKey: ["nearby-alerts"] });
+    },
+  });
+};
+
+export const useAnalyzeMedia = () => {
+  return useMutation({
+    mutationFn: ({ description, imageUrl }: { description?: string; imageUrl?: string }) =>
+      alertService.analyzeMediaWithAI(description, imageUrl),
+  });
+};
+
 

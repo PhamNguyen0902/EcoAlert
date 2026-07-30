@@ -82,7 +82,14 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     isFetching: isFetchingOfficers,
     error: officersError,
     refetch: refetchOfficers,
-  } = useOfficers(isOfficerPickerOpen && canAssign);
+  } = useOfficers(Boolean(canAssign || alert?.assignedOfficerId));
+
+  const assignedOfficerObj = typeof alert?.assignedOfficerId === "object"
+    ? alert.assignedOfficerId
+    : officerData?.find((u) => u._id === alert?.assignedOfficerId);
+
+  const officerDisplayName = assignedOfficerObj?.fullName ||
+    (typeof alert?.assignedOfficerId === "string" ? `Cán bộ (${alert.assignedOfficerId.slice(-6)})` : undefined);
 
   const officers = (officerData ?? []).filter(
     (user) => user.role?.toUpperCase() === "OFFICER",
@@ -213,6 +220,12 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             </Text>
           </View>
           <Badge label={alert.status || "PENDING"} type="status" />
+          {alert.isAnonymous ? (
+            <Badge label="ẨN DANH 👤" type="custom" bgColor="#F1F5F9" textColor="#475569" />
+          ) : null}
+          {alert.confirmationsCount && alert.confirmationsCount > 1 ? (
+            <Badge label={`${alert.confirmationsCount} XÁC NHẬN 👍`} type="custom" bgColor="#DCFCE7" textColor="#166534" />
+          ) : null}
           {alert.isDeleted ? (
             <Badge label="DELETED" type="custom" bgColor="#FEE2E2" textColor="#DC2626" />
           ) : null}
@@ -260,7 +273,32 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <Text style={styles.descriptionText}>{alert.description}</Text>
         </GlassCard>
 
-        {canAssign ? (
+        {alert.assignedOfficerId ? (
+          <Card style={styles.assignedOfficerCard}>
+            <View style={styles.assignmentHeader}>
+              <View style={[styles.assignmentIcon, { backgroundColor: "#EEF2FF" }]}>
+                <UserCheck size={22} color="#4F46E5" />
+              </View>
+              <View style={styles.assignmentCopy}>
+                <Text style={styles.assignedOfficerLabel}>Cán bộ chịu trách nhiệm</Text>
+                <Text style={styles.assignedOfficerName}>
+                  {officerDisplayName || "Đã phân công Cán bộ"}
+                </Text>
+                {assignedOfficerObj?.email ? (
+                  <Text style={styles.assignedOfficerEmail}>{assignedOfficerObj.email}</Text>
+                ) : null}
+              </View>
+              {isAdmin && normalizedStatus !== "RESOLVED" && normalizedStatus !== "CLOSED" ? (
+                <TouchableOpacity
+                  style={styles.reassignBtn}
+                  onPress={() => setOfficerPickerOpen(true)}
+                >
+                  <Text style={styles.reassignBtnText}>Thay đổi</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </Card>
+        ) : canAssign ? (
           <Card style={styles.assignmentCard}>
             <View style={styles.assignmentHeader}>
               <View style={styles.assignmentIcon}>
@@ -422,6 +460,12 @@ const styles = StyleSheet.create({
   sectionHeading: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 8 },
   descriptionText: { fontSize: 14, color: COLORS.text, lineHeight: 22 },
   assignmentCard: { padding: 16, marginBottom: 20, borderColor: "#DDD6FE", backgroundColor: "#FAF5FF" },
+  assignedOfficerCard: { padding: 16, marginBottom: 20, borderColor: "#C7D2FE", backgroundColor: "#EEF2FF" },
+  assignedOfficerLabel: { fontSize: 12, fontWeight: "700", color: "#4F46E5", textTransform: "uppercase", letterSpacing: 0.5 },
+  assignedOfficerName: { fontSize: 16, fontWeight: "800", color: COLORS.text, marginTop: 2 },
+  assignedOfficerEmail: { fontSize: 12, color: COLORS.textMuted, marginTop: 1 },
+  reassignBtn: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: COLORS.surface, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border },
+  reassignBtnText: { fontSize: 12, fontWeight: "700", color: COLORS.textMuted },
   assignmentHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   assignmentIcon: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: "#F3E8FF" },
   assignmentCopy: { flex: 1 },
