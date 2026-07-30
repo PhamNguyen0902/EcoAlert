@@ -52,6 +52,22 @@ export class AlertRepository implements IBaseRepository<IAlert> {
     return !!result;
   }
 
+  async findNearby(longitude: number, latitude: number, radiusMeters: number = 200, statuses: string[] = ['pending', 'ai_analyzing', 'assigned', 'in_progress']): Promise<IAlert[]> {
+    return Alert.find({
+      isDeleted: false,
+      status: { $in: statuses.map((s) => new RegExp(`^${s}$`, 'i')) },
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [longitude, latitude],
+          },
+          $maxDistance: radiusMeters,
+        },
+      },
+    }).limit(10);
+  }
+
   async softDelete(id: string, deletedBy: string): Promise<boolean> {
     const alert = await Alert.findById(id);
     if (!alert) return false;

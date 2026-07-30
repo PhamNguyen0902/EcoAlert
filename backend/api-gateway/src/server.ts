@@ -137,8 +137,7 @@ setupProxy('/api/v1/alerts', process.env.ALERT_SERVICE_URL || 'http://localhost:
 setupProxy('/api/v1/media', process.env.MEDIA_SERVICE_URL || 'http://localhost:3003', true);
 setupProxy('/api/v1/gis', process.env.GIS_SERVICE_URL || 'http://localhost:3004', true);
 setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', true);
-
-// Note: AI service is event-driven, it doesn't expose public REST APIs to the frontend.
+setupProxy('/api/v1/ai', process.env.AI_SERVICE_URL || 'http://localhost:3005', true);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
