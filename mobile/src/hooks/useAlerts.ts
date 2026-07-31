@@ -2,15 +2,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { alertService } from "../api/alertService";
 import { CreateAlertData, ResolutionInput } from "../types";
 
+const EMPTY_FILTERS: Record<string, string> = {};
+
 export const useAlerts = (
   page = 1,
   limit = 20,
-  filters: Record<string, string> = {}
+  filters: Record<string, string> = EMPTY_FILTERS
 ) => {
   return useQuery({
     queryKey: ["alerts", page, limit, filters],
     queryFn: () => alertService.getAlerts(page, limit, filters),
-    refetchInterval: 15000, // standard refetching for live updates
+    staleTime: 1000 * 60 * 2, // 2 mins cache to avoid constant re-fetching
   });
 };
 
@@ -26,9 +28,10 @@ export const useOfficerTasks = (page = 1, limit = 20, status?: string) => {
   return useQuery({
     queryKey: ["officer-tasks", page, limit, status],
     queryFn: () => alertService.getOfficerTasks(page, limit, status),
-    refetchInterval: 15000,
+    staleTime: 1000 * 60 * 2,
   });
 };
+
 
 export const useCreateAlert = () => {
   const queryClient = useQueryClient();

@@ -94,13 +94,14 @@ export const CitizenDashboardScreen: React.FC<{ navigation?: any }> = ({ navigat
     }
   };
 
-  if (isLoading && !isRefetching) {
+  if (isLoading && !alertsData) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <DashboardSkeleton />
       </View>
     );
   }
+
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
