@@ -9,14 +9,15 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
-import { Mail, Lock, User as UserIcon, Phone, UserPlus, ArrowLeft } from "lucide-react-native";
+import { Mail, Lock, User as UserIcon, Phone, UserPlus, ArrowLeft, Sun, Moon, Globe } from "lucide-react-native";
 import { useRegister } from "../../hooks/useAuth";
 import { useFormValidation } from "../../hooks/useFormValidation";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { InlineBanner } from "../../components/ui/InlineBanner";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface RegisterValues {
   fullName: string;
@@ -26,25 +27,10 @@ interface RegisterValues {
   confirmPassword: string;
 }
 
-function validateRegister(values: RegisterValues) {
-  const errs: Partial<Record<keyof RegisterValues, string>> = {};
-  if (!values.fullName || values.fullName.trim().length < 2) {
-    errs.fullName = "Please enter your full name.";
-  }
-  if (!values.email || !values.email.includes("@")) {
-    errs.email = "Please enter a valid email address.";
-  }
-  if (!values.password || values.password.length < 6) {
-    errs.password = "Password must be at least 6 characters.";
-  }
-  if (values.confirmPassword !== values.password) {
-    errs.confirmPassword = "Passwords do not match.";
-  }
-  return errs;
-}
-
 export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const registerMutation = useRegister();
+  const { colors, isDark, setThemeMode } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
 
   const emailRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
@@ -52,6 +38,23 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const confirmPasswordRef = useRef<TextInput>(null);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const validateRegister = (values: RegisterValues) => {
+    const errs: Partial<Record<keyof RegisterValues, string>> = {};
+    if (!values.fullName || values.fullName.trim().length < 2) {
+      errs.fullName = t("auth.nameError", "Please enter your full name.");
+    }
+    if (!values.email || !values.email.includes("@")) {
+      errs.email = t("auth.emailError", "Please enter a valid email address.");
+    }
+    if (!values.password || values.password.length < 6) {
+      errs.password = t("auth.passwordError", "Password must be at least 6 characters.");
+    }
+    if (values.confirmPassword !== values.password) {
+      errs.confirmPassword = t("auth.confirmPasswordError", "Passwords do not match.");
+    }
+    return errs;
+  };
 
   const { values, errors, setField, validate } = useFormValidation<RegisterValues>(
     {
@@ -86,25 +89,69 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     }
   };
 
+  const toggleTheme = () => {
+    setThemeMode(isDark ? "light" : "dark");
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === "vi" ? "en" : "vi");
+  };
+
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityRole="button">
-          <ArrowLeft size={20} color={COLORS.text} />
-        </TouchableOpacity>
+        <View style={styles.topNavRow}>
+          <TouchableOpacity
+            style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+          >
+            <ArrowLeft size={20} color={colors.text} />
+          </TouchableOpacity>
+
+          <View style={styles.topRightBtns}>
+            <TouchableOpacity
+              onPress={toggleLanguage}
+              style={[styles.topBarBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              activeOpacity={0.7}
+            >
+              <Globe size={16} color={colors.primary} style={{ marginRight: 6 }} />
+              <Text style={[styles.topBarText, { color: colors.text }]}>
+                {language === "vi" ? "VN 🇻🇳" : "EN 🇺🇸"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={toggleTheme}
+              style={[styles.topBarBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              activeOpacity={0.7}
+            >
+              {isDark ? (
+                <Sun size={16} color="#F59E0B" />
+              ) : (
+                <Moon size={16} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={styles.header}>
-          <View style={styles.iconBox}>
-            <UserPlus size={40} color={COLORS.primary} />
+          <View style={[styles.iconBox, { backgroundColor: colors.primaryLight }]}>
+            <UserPlus size={40} color={colors.primary} />
           </View>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>
-            Join EcoAlert to protect your environment and report municipal hazards.
+          <Text style={[styles.title, { color: colors.text }]}>
+            {t("auth.createAccount", "Create Account")}
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {t("auth.registerSubtitle", "Join EcoAlert to contribute to protecting your surrounding environment.")}
           </Text>
         </View>
 
@@ -112,21 +159,21 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <InlineBanner message={submitError} type="error" />
 
           <Input
-            label="Full Name"
-            placeholder="Nguyen Van A"
+            label={t("auth.fullNameLabel", "Full Name")}
+            placeholder={t("auth.fullNamePlaceholder", "Nguyen Van A")}
             autoCapitalize="words"
             returnKeyType="next"
             onSubmitEditing={() => emailRef.current?.focus()}
             value={values.fullName}
             onChangeText={(v: string) => setField("fullName", v)}
             error={errors.fullName}
-            leftIcon={<UserIcon size={20} color={COLORS.textMuted} />}
+            leftIcon={<UserIcon size={20} color={colors.textMuted} />}
           />
 
           <Input
             ref={emailRef}
-            label="Email Address"
-            placeholder="citizen@ecoalert.org"
+            label={t("auth.emailLabel", "Email Address")}
+            placeholder={t("auth.emailPlaceholder", "citizen@ecoalert.org")}
             keyboardType="email-address"
             autoCapitalize="none"
             returnKeyType="next"
@@ -134,12 +181,12 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             value={values.email}
             onChangeText={(v: string) => setField("email", v)}
             error={errors.email}
-            leftIcon={<Mail size={20} color={COLORS.textMuted} />}
+            leftIcon={<Mail size={20} color={colors.textMuted} />}
           />
 
           <Input
             ref={phoneRef}
-            label="Phone Number (Optional)"
+            label={t("modals.phoneNumber", "Phone Number")}
             placeholder="0912345678"
             keyboardType="phone-pad"
             returnKeyType="next"
@@ -147,37 +194,37 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             value={values.phone}
             onChangeText={(v: string) => setField("phone", v)}
             error={errors.phone}
-            leftIcon={<Phone size={20} color={COLORS.textMuted} />}
+            leftIcon={<Phone size={20} color={colors.textMuted} />}
           />
 
           <Input
             ref={passwordRef}
-            label="Password"
-            placeholder="••••••••"
+            label={t("auth.passwordLabel", "Password")}
+            placeholder={t("auth.passwordPlaceholder", "••••••••")}
             secureTextEntry
             returnKeyType="next"
             onSubmitEditing={() => confirmPasswordRef.current?.focus()}
             value={values.password}
             onChangeText={(v: string) => setField("password", v)}
             error={errors.password}
-            leftIcon={<Lock size={20} color={COLORS.textMuted} />}
+            leftIcon={<Lock size={20} color={colors.textMuted} />}
           />
 
           <Input
             ref={confirmPasswordRef}
-            label="Confirm Password"
-            placeholder="••••••••"
+            label={t("auth.confirmPasswordLabel", "Confirm Password")}
+            placeholder={t("auth.confirmPasswordPlaceholder", "••••••••")}
             secureTextEntry
             returnKeyType="go"
             onSubmitEditing={handleRegister}
             value={values.confirmPassword}
             onChangeText={(v: string) => setField("confirmPassword", v)}
             error={errors.confirmPassword}
-            leftIcon={<Lock size={20} color={COLORS.textMuted} />}
+            leftIcon={<Lock size={20} color={colors.textMuted} />}
           />
 
           <Button
-            title="Register Account"
+            title={t("auth.signUpBtn", "Sign Up Now")}
             onPress={handleRegister}
             loading={registerMutation.isPending}
             disabled={registerMutation.isPending}
@@ -186,9 +233,13 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         </GlassCard>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>
+            {t("auth.alreadyHaveAccount", "Already have an account?")}{" "}
+          </Text>
           <TouchableOpacity onPress={() => navigation.navigate("Login")} accessibilityRole="button">
-            <Text style={styles.loginLink}>Sign In</Text>
+            <Text style={[styles.loginLink, { color: colors.primary }]}>
+              {t("auth.signInLink", "Sign In")}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -197,38 +248,55 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 48,
     paddingBottom: 40,
   },
+  topNavRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.surface,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+  },
+  topRightBtns: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  topBarBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  topBarText: {
+    fontSize: 13,
+    fontWeight: "700",
   },
   header: { alignItems: "center", marginBottom: 24 },
   iconBox: {
     width: 72,
     height: 72,
     borderRadius: 20,
-    backgroundColor: COLORS.primaryLight,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
-  title: { fontSize: 26, fontWeight: "800", color: COLORS.text, marginBottom: 6 },
+  title: { fontSize: 26, fontWeight: "800", marginBottom: 6 },
   subtitle: {
     fontSize: 14,
-    color: COLORS.textMuted,
     textAlign: "center",
     lineHeight: 20,
     paddingHorizontal: 16,
@@ -236,6 +304,6 @@ const styles = StyleSheet.create({
   card: { padding: 20, borderRadius: 24 },
   registerBtn: { marginTop: 12 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 24 },
-  footerText: { fontSize: 14, color: COLORS.textMuted },
-  loginLink: { fontSize: 14, color: COLORS.primary, fontWeight: "700" },
+  footerText: { fontSize: 14 },
+  loginLink: { fontSize: 14, fontWeight: "700" },
 });

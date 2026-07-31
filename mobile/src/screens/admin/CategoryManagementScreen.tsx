@@ -15,11 +15,12 @@ import { useCategories, useDeleteCategory, useUpdateCategory } from "../../hooks
 import { CategoryFormModal } from "../../components/modals/CategoryFormModal";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Badge } from "../../components/ui/Badge";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 import { Category } from "../../types";
 
 export const CategoryManagementScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
   const [includeInactive, setIncludeInactive] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -69,25 +70,25 @@ export const CategoryManagementScreen: React.FC = () => {
         <View style={styles.cardTitleRow}>
           <Text style={styles.icon}>{item.icon || "🏷️"}</Text>
           <View>
-            <Text style={styles.categoryName}>{item.name}</Text>
-            <Text style={styles.categoryCode}>code: {item.code}</Text>
+            <Text style={[styles.categoryName, { color: colors.text }]}>{item.name}</Text>
+            <Text style={[styles.categoryCode, { color: colors.textMuted }]}>code: {item.code}</Text>
           </View>
         </View>
         <View style={styles.badgeBox}>
           <Badge
             label={(item.defaultSeverity || "MEDIUM").toUpperCase()}
             type="custom"
-            bgColor="#F3E8FF"
-            textColor="#7C3AED"
+            bgColor={isDark ? "rgba(124, 58, 237, 0.3)" : "#F3E8FF"}
+            textColor={isDark ? "#C4B5FD" : "#7C3AED"}
           />
         </View>
       </View>
 
-      {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+      {item.description ? <Text style={[styles.description, { color: colors.textMuted }]}>{item.description}</Text> : null}
 
-      <View style={styles.cardFooter}>
+      <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
         <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>Active</Text>
+          <Text style={[styles.switchLabel, { color: colors.textMuted }]}>Active</Text>
           <Switch
             value={item.isActive}
             onValueChange={() => handleToggleActive(item)}
@@ -103,13 +104,13 @@ export const CategoryManagementScreen: React.FC = () => {
               setIsModalOpen(true);
             }}
           >
-            <Edit2 size={16} color="#7C3AED" />
-            <Text style={[styles.actionText, { color: "#7C3AED" }]}>Edit</Text>
+            <Edit2 size={16} color={isDark ? "#A78BFA" : "#7C3AED"} />
+            <Text style={[styles.actionText, { color: isDark ? "#A78BFA" : "#7C3AED" }]}>Edit</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeleteCategory(item)}>
-            <Trash2 size={16} color="#DC2626" />
-            <Text style={[styles.actionText, { color: "#DC2626" }]}>Delete</Text>
+            <Trash2 size={16} color={isDark ? "#FCA5A5" : "#DC2626"} />
+            <Text style={[styles.actionText, { color: isDark ? "#FCA5A5" : "#DC2626" }]}>Delete</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -117,12 +118,12 @@ export const CategoryManagementScreen: React.FC = () => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerTitleRow}>
-          <Tag size={24} color="#7C3AED" />
-          <Text style={styles.headerTitle}>Category Management</Text>
+          <Tag size={24} color={isDark ? "#A78BFA" : "#7C3AED"} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Category Management</Text>
         </View>
         <TouchableOpacity
           style={styles.addBtn}
@@ -137,8 +138,8 @@ export const CategoryManagementScreen: React.FC = () => {
       </View>
 
       {/* Filter Row */}
-      <View style={styles.filterBar}>
-        <Text style={styles.filterLabel}>Show Inactive Categories</Text>
+      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text style={[styles.filterLabel, { color: colors.text }]}>Show Inactive Categories</Text>
         <Switch
           value={includeInactive}
           onValueChange={setIncludeInactive}
@@ -158,8 +159,8 @@ export const CategoryManagementScreen: React.FC = () => {
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyContainer}>
-              <Folder size={48} color={COLORS.textMuted} />
-              <Text style={styles.emptyText}>No categories found.</Text>
+              <Folder size={48} color={colors.textMuted} />
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No categories found.</Text>
             </View>
           ) : null
         }
@@ -178,19 +179,17 @@ export const CategoryManagementScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerTitleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.text },
+  headerTitle: { fontSize: 20, fontWeight: "800" },
   addBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -208,19 +207,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.surface,
   },
-  filterLabel: { fontSize: 13, fontWeight: "600", color: COLORS.text },
+  filterLabel: { fontSize: 13, fontWeight: "600" },
   listContent: { padding: 20, paddingBottom: 40 },
   card: { marginBottom: 14, padding: 16, borderRadius: 20 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   cardTitleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   icon: { fontSize: 22 },
-  categoryName: { fontSize: 16, fontWeight: "800", color: COLORS.text },
-  categoryCode: { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+  categoryName: { fontSize: 16, fontWeight: "800" },
+  categoryCode: { fontSize: 12, marginTop: 2 },
   badgeBox: { alignItems: "flex-end" },
-  description: { fontSize: 13, color: COLORS.textMuted, marginTop: 10, lineHeight: 18 },
+  description: { fontSize: 13, marginTop: 10, lineHeight: 18 },
   cardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -228,13 +225,13 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
   },
   switchRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  switchLabel: { fontSize: 12, fontWeight: "700", color: COLORS.textMuted },
+  switchLabel: { fontSize: 12, fontWeight: "700" },
   actions: { flexDirection: "row", gap: 12 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
   actionText: { fontSize: 12, fontWeight: "700" },
   emptyContainer: { alignItems: "center", justifyContent: "center", paddingVertical: 60 },
-  emptyText: { marginTop: 12, fontSize: 14, color: COLORS.textMuted },
+  emptyText: { marginTop: 12, fontSize: 14 },
 });
+

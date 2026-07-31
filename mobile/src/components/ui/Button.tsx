@@ -10,6 +10,7 @@ import {
   TextStyle,
 } from "react-native";
 import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 
 export interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -32,12 +33,14 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   ...props
 }) => {
+  const { colors } = useTheme();
+
   const getVariantStyle = () => {
     switch (variant) {
       case "secondary":
-        return styles.secondaryBg;
+        return { backgroundColor: colors.surface };
       case "outline":
-        return styles.outlineBg;
+        return { backgroundColor: "transparent", borderWidth: 1.5, borderColor: colors.border };
       case "ghost":
         return styles.ghostBg;
       case "destructive":
@@ -50,9 +53,9 @@ export const Button: React.FC<ButtonProps> = ({
   const getVariantTextStyle = () => {
     switch (variant) {
       case "outline":
-        return styles.outlineText;
+        return { color: colors.text };
       case "ghost":
-        return styles.ghostText;
+        return { color: colors.primary };
       default:
         return styles.defaultText;
     }
@@ -86,7 +89,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === "outline" || variant === "ghost" ? COLORS.primary : "#FFFFFF"}
+          color={variant === "outline" || variant === "ghost" ? colors.primary : "#FFFFFF"}
         />
       ) : (
         <>
@@ -106,8 +109,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   primaryBg: { backgroundColor: COLORS.primary },
-  secondaryBg: { backgroundColor: COLORS.secondary },
-  outlineBg: { backgroundColor: "transparent", borderWidth: 1.5, borderColor: COLORS.border },
   ghostBg: { backgroundColor: "transparent" },
   destructiveBg: { backgroundColor: COLORS.destructive },
   disabled: { opacity: 0.5 },
@@ -116,6 +117,5 @@ const styles = StyleSheet.create({
   lgSize: { height: 56, paddingHorizontal: 24 },
   text: { fontSize: 15, fontWeight: "700", textAlign: "center" },
   defaultText: { color: "#FFFFFF" },
-  outlineText: { color: COLORS.text },
-  ghostText: { color: COLORS.primary },
 });
+

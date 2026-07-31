@@ -34,13 +34,15 @@ import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
-import { COLORS, SEVERITY_COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { SEVERITY_COLORS } from "../../utils/constants";
 
 export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
   const alertId = route.params?.id;
   const { data: alert, isLoading, error } = useAlert(alertId);
 
@@ -54,23 +56,23 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={COLORS.secondary} />
-        <Text style={styles.loadingText}>Loading report for officer verification...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={colors.secondary} />
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Loading report for officer verification...</Text>
       </View>
     );
   }
 
   if (error || !alert) {
     return (
-      <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
-        <AlertTriangle size={48} color={COLORS.destructive} />
-        <Text style={styles.errorTitle}>Report Not Available</Text>
-        <Text style={styles.errorSub}>
+      <View style={[styles.errorContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+        <AlertTriangle size={48} color={colors.destructive} />
+        <Text style={[styles.errorTitle, { color: colors.text }]}>Report Not Available</Text>
+        <Text style={[styles.errorSub, { color: colors.textMuted }]}>
           This incident is not assigned to your Officer account or is no longer available.
         </Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>Go Back</Text>
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : colors.primaryLight }]} onPress={() => navigation.goBack()}>
+          <Text style={[styles.backBtnText, { color: isDark ? "#60A5FA" : colors.primaryDark }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -123,13 +125,13 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Top Navigation */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={styles.circleBtn} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={20} color={COLORS.text} />
+      <View style={[styles.topBar, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity style={[styles.circleBtn, { backgroundColor: colors.background }]} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Officer Task & Verification</Text>
+        <Text style={[styles.topBarTitle, { color: colors.text }]}>Officer Task & Verification</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -139,8 +141,8 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           <Badge
             label={alert.category?.toUpperCase().replace("_", " ") || "GENERAL"}
             type="custom"
-            bgColor="#F1F5F9"
-            textColor="#334155"
+            bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
+            textColor={isDark ? colors.text : "#334155"}
           />
           <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
             <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
@@ -150,10 +152,10 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           <Badge label={alert.status || "PENDING"} type="status" />
         </View>
 
-        <Text style={styles.title}>{alert.title}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
 
         {/* Workflow Quick Action Buttons */}
-        <Text style={styles.sectionHeading}>Officer Incident Actions</Text>
+        <Text style={[styles.sectionHeading, { color: colors.text }]}>Officer Incident Actions</Text>
         <View style={styles.workflowGrid}>
           {currentStatus === "ASSIGNED" || currentStatus === "VERIFIED" || currentStatus === "PENDING" ? (
             <Button
@@ -167,9 +169,9 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
           {currentStatus !== "RESOLVED" && currentStatus !== "CLOSED" ? (
             alert.arrivedAt ? (
-              <View style={styles.arrivedBadge}>
-                <CheckCircle size={16} color="#16A34A" />
-                <Text style={styles.arrivedBadgeText}>Arrived at Scene</Text>
+              <View style={[styles.arrivedBadge, { backgroundColor: isDark ? "rgba(22,163,74,0.25)" : "#DCFCE7", borderColor: isDark ? "rgba(22,163,74,0.4)" : "#86EFAC" }]}>
+                <CheckCircle size={16} color={isDark ? "#86EFAC" : "#16A34A"} />
+                <Text style={[styles.arrivedBadgeText, { color: isDark ? "#86EFAC" : "#15803D" }]}>Arrived at Scene</Text>
               </View>
             ) : (
               <Button
@@ -178,7 +180,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
                 loading={confirmArrivalMutation.isPending}
                 variant="outline"
                 style={styles.workflowBtn}
-                icon={<Navigation size={18} color={COLORS.secondary} style={{ marginRight: 6 }} />}
+                icon={<Navigation size={18} color={isDark ? "#60A5FA" : colors.secondary} style={{ marginRight: 6 }} />}
               />
             )
           ) : null}
@@ -195,7 +197,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         {/* Officer Note Input */}
         <GlassCard style={styles.noteFormCard}>
-          <Text style={styles.sectionHeading}>Officer Inspection Note / Remarks</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>Officer Inspection Note / Remarks</Text>
           <Input
             placeholder="Enter verification result, dispatched team details, or inspection note..."
             multiline
@@ -210,20 +212,20 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             loading={addNoteMutation.isPending}
             variant="outline"
             style={{ marginTop: 8 }}
-            icon={<MessageSquare size={16} color={COLORS.secondary} style={{ marginRight: 6 }} />}
+            icon={<MessageSquare size={16} color={colors.secondary} style={{ marginRight: 6 }} />}
           />
         </GlassCard>
 
         {/* Incident Details Card */}
         <GlassCard style={styles.mainCard}>
-          <Text style={styles.sectionHeading}>Citizen Incident Description</Text>
-          <Text style={styles.descriptionText}>{alert.description}</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>Citizen Incident Description</Text>
+          <Text style={[styles.descriptionText, { color: colors.text }]}>{alert.description}</Text>
         </GlassCard>
 
         {/* Evidence Photos */}
         {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
           <View style={styles.sectionBox}>
-            <Text style={styles.sectionHeading}>Photos & Evidence</Text>
+            <Text style={[styles.sectionHeading, { color: colors.text }]}>Photos & Evidence</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
               {alert.mediaUrls.map((url, idx) => (
                 <Image key={idx} source={{ uri: url }} style={styles.evidenceImage} />
@@ -234,7 +236,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         {/* Map View */}
         <View style={styles.sectionBox}>
-          <Text style={styles.sectionHeading}>Incident Geotag Location</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>Incident Geotag Location</Text>
           <Card style={styles.mapCard}>
             <MapView
               style={styles.map}
@@ -249,9 +251,9 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             >
               <Marker coordinate={{ latitude, longitude }} title={alert.title} description={alert.address} />
             </MapView>
-            <View style={styles.addressBox}>
-              <MapPin size={16} color={COLORS.secondary} />
-              <Text style={styles.addressText} numberOfLines={2}>
+            <View style={[styles.addressBox, { backgroundColor: colors.surface }]}>
+              <MapPin size={16} color={colors.secondary} />
+              <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={2}>
                 {alert.address || "Coordinates: " + latitude.toFixed(4) + ", " + longitude.toFixed(4)}
               </Text>
             </View>
@@ -260,12 +262,12 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         {/* Response log history */}
         {alert.officerNote ? (
-          <GlassCard style={styles.savedNoteCard}>
+          <GlassCard style={[styles.savedNoteCard, { backgroundColor: isDark ? "rgba(2, 132, 199, 0.25)" : "#E0F2FE" }]}>
             <View style={styles.savedNoteHeader}>
-              <ShieldCheck size={18} color={COLORS.secondary} />
-              <Text style={styles.savedNoteTitle}>Logged Officer Note</Text>
+              <ShieldCheck size={18} color={isDark ? "#38BDF8" : colors.secondary} />
+              <Text style={[styles.savedNoteTitle, { color: isDark ? "#38BDF8" : colors.secondary }]}>Logged Officer Note</Text>
             </View>
-            <Text style={styles.savedNoteText}>{alert.officerNote}</Text>
+            <Text style={[styles.savedNoteText, { color: colors.text }]}>{alert.officerNote}</Text>
           </GlassCard>
         ) : null}
       </ScrollView>
@@ -280,33 +282,31 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.background },
-  loadingText: { marginTop: 12, fontSize: 14, color: COLORS.textMuted },
+  container: { flex: 1 },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
+  loadingText: { marginTop: 12, fontSize: 14 },
   errorContainer: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  errorTitle: { fontSize: 20, fontWeight: "800", color: COLORS.text, marginTop: 16 },
-  errorSub: { fontSize: 13, color: COLORS.textMuted, textAlign: "center", marginTop: 8, lineHeight: 18 },
-  backBtn: { marginTop: 20, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: COLORS.primaryLight },
-  backBtnText: { fontSize: 14, fontWeight: "700", color: COLORS.primaryDark },
+  errorTitle: { fontSize: 20, fontWeight: "800", marginTop: 16 },
+  errorSub: { fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 18 },
+  backBtn: { marginTop: 20, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
+  backBtnText: { fontSize: 14, fontWeight: "700" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 12,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     zIndex: 10,
   },
-  circleBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.background, alignItems: "center", justifyContent: "center" },
-  topBarTitle: { fontSize: 17, fontWeight: "700", color: COLORS.text },
+  circleBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  topBarTitle: { fontSize: 17, fontWeight: "700" },
   scrollContent: { padding: 20, paddingBottom: 50 },
   badgesRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 },
   sevBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   sevBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
-  title: { fontSize: 22, fontWeight: "800", color: COLORS.text, marginBottom: 16, lineHeight: 28 },
-  sectionHeading: { fontSize: 15, fontWeight: "700", color: COLORS.text, marginBottom: 10 },
+  title: { fontSize: 22, fontWeight: "800", marginBottom: 16, lineHeight: 28 },
+  sectionHeading: { fontSize: 15, fontWeight: "700", marginBottom: 10 },
   workflowGrid: { gap: 10, marginBottom: 20 },
   workflowBtn: { borderRadius: 14 },
   arrivedBadge: {
@@ -316,23 +316,22 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 14,
-    backgroundColor: "#DCFCE7",
     borderWidth: 1,
-    borderColor: "#86EFAC",
   },
-  arrivedBadgeText: { fontSize: 13, fontWeight: "700", color: "#15803D" },
+  arrivedBadgeText: { fontSize: 13, fontWeight: "700" },
   noteFormCard: { padding: 18, marginBottom: 20, borderRadius: 20 },
   textArea: {},
   mainCard: { padding: 18, marginBottom: 20, borderRadius: 20 },
-  descriptionText: { fontSize: 14, color: COLORS.text, lineHeight: 22 },
+  descriptionText: { fontSize: 14, lineHeight: 22 },
   sectionBox: { marginBottom: 20 },
   evidenceImage: { width: 140, height: 100, borderRadius: 14, marginRight: 10 },
   mapCard: { padding: 0, overflow: "hidden", marginTop: 4 },
   map: { width: "100%", height: 180 },
-  addressBox: { flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: COLORS.surface, gap: 8 },
-  addressText: { fontSize: 13, color: COLORS.text, flex: 1, fontWeight: "500" },
-  savedNoteCard: { padding: 16, marginBottom: 20, borderRadius: 18, backgroundColor: "#E0F2FE" },
+  addressBox: { flexDirection: "row", alignItems: "center", padding: 12, gap: 8 },
+  addressText: { fontSize: 13, flex: 1, fontWeight: "500" },
+  savedNoteCard: { padding: 16, marginBottom: 20, borderRadius: 18 },
   savedNoteHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
-  savedNoteTitle: { fontSize: 14, fontWeight: "700", color: COLORS.secondary },
-  savedNoteText: { fontSize: 13, color: COLORS.text, lineHeight: 20 },
+  savedNoteTitle: { fontSize: 14, fontWeight: "700" },
+  savedNoteText: { fontSize: 13, lineHeight: 20 },
 });
+

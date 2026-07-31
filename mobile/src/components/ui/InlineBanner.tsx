@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { AlertCircle, CheckCircle } from "lucide-react-native";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 
 interface InlineBannerProps {
   message?: string | null;
@@ -9,11 +9,16 @@ interface InlineBannerProps {
 }
 
 export const InlineBanner: React.FC<InlineBannerProps> = ({ message, type = "error" }) => {
+  const { colors, isDark } = useTheme();
   if (!message) return null;
 
   const isError = type === "error";
-  const bg = isError ? "#FEE2E2" : "#DCFCE7";
-  const textClr = isError ? COLORS.destructive : "#16A34A";
+  const bg = isError
+    ? isDark ? "rgba(220, 38, 38, 0.25)" : "#FEE2E2"
+    : isDark ? "rgba(22, 163, 74, 0.25)" : "#DCFCE7";
+  const textClr = isError
+    ? isDark ? "#FCA5A5" : colors.destructive
+    : isDark ? "#86EFAC" : "#16A34A";
   const IconComp = isError ? AlertCircle : CheckCircle;
 
   return (
@@ -38,3 +43,4 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+

@@ -5,10 +5,12 @@ import MapView, { Marker, Callout } from "react-native-maps";
 import { MapPin, RefreshCw, AlertTriangle } from "lucide-react-native";
 import { useAlerts } from "../../hooks/useAlerts";
 import { Badge } from "../../components/ui/Badge";
-import { COLORS, SEVERITY_COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { SEVERITY_COLORS } from "../../utils/constants";
 
 export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
   const { data: alertsData, isLoading, refetch, isRefetching } = useAlerts(1, 100);
 
   const alerts = alertsData?.items ?? [];
@@ -21,20 +23,20 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Sticky Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Incident Map View</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Incident Map View</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
             Geotagged environmental alerts ({alerts.length} reports)
           </Text>
         </View>
-        <TouchableOpacity style={styles.refreshBtn} onPress={() => refetch()} disabled={isRefetching}>
+        <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE" }]} onPress={() => refetch()} disabled={isRefetching}>
           {isRefetching ? (
-            <ActivityIndicator size="small" color={COLORS.secondary} />
+            <ActivityIndicator size="small" color={isDark ? "#60A5FA" : colors.secondary} />
           ) : (
-            <RefreshCw size={18} color={COLORS.secondary} />
+            <RefreshCw size={18} color={isDark ? "#60A5FA" : colors.secondary} />
           )}
         </TouchableOpacity>
       </View>
@@ -45,7 +47,7 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
           if (!coords || coords.length < 2) return null;
           const lat = coords[1];
           const lng = coords[0];
-          const sevColor = SEVERITY_COLORS[alert.severity]?.text || COLORS.primary;
+          const sevColor = SEVERITY_COLORS[alert.severity]?.text || colors.primary;
 
           return (
             <Marker
@@ -55,12 +57,12 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
             >
               <Callout onPress={() => navigation.navigate("OfficerAlertDetail", { id: alert._id })}>
                 <View style={styles.calloutBox}>
-                  <Text style={styles.calloutTitle} numberOfLines={1}>
+                  <Text style={[styles.calloutTitle, { color: colors.text }]} numberOfLines={1}>
                     {alert.title}
                   </Text>
-                  <Text style={styles.calloutCategory}>{alert.category?.toUpperCase()}</Text>
-                  <Text style={styles.calloutStatus}>Status: {alert.status}</Text>
-                  <Text style={styles.calloutCta}>Tap to view & verify ›</Text>
+                  <Text style={[styles.calloutCategory, { color: colors.textMuted }]}>{alert.category?.toUpperCase()}</Text>
+                  <Text style={[styles.calloutStatus, { color: colors.secondary }]}>Status: {alert.status}</Text>
+                  <Text style={[styles.calloutCta, { color: colors.primaryDark }]}>Tap to view & verify ›</Text>
                 </View>
               </Callout>
             </Marker>
@@ -72,33 +74,31 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     zIndex: 10,
     elevation: 4,
   },
-  headerTitle: { fontSize: 22, fontWeight: "800", color: COLORS.text },
-  headerSubtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  headerTitle: { fontSize: 22, fontWeight: "800" },
+  headerSubtitle: { fontSize: 13, marginTop: 2 },
   refreshBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#DBEAFE",
     alignItems: "center",
     justifyContent: "center",
   },
   map: { flex: 1 },
   calloutBox: { width: 180, padding: 4 },
-  calloutTitle: { fontSize: 13, fontWeight: "700", color: COLORS.text },
-  calloutCategory: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
-  calloutStatus: { fontSize: 11, color: COLORS.secondary, fontWeight: "600", marginTop: 2 },
-  calloutCta: { fontSize: 11, color: COLORS.primaryDark, fontWeight: "700", marginTop: 4 },
+  calloutTitle: { fontSize: 13, fontWeight: "700" },
+  calloutCategory: { fontSize: 11, marginTop: 2 },
+  calloutStatus: { fontSize: 11, fontWeight: "600", marginTop: 2 },
+  calloutCta: { fontSize: 11, fontWeight: "700", marginTop: 4 },
 });
+

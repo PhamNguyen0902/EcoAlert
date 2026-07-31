@@ -22,29 +22,33 @@ import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
-import { COLORS, SEVERITY_COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
+import { SEVERITY_COLORS } from "../../utils/constants";
 import { AlertCategory, Severity } from "../../types";
 
-const CATEGORIES: { label: string; value: AlertCategory; icon: string }[] = [
-  { label: "Illegal Dumping", value: "illegal_dumping", icon: "🗑️" },
-  { label: "Water Pollution", value: "water_pollution", icon: "💧" },
-  { label: "Air Pollution", value: "air_pollution", icon: "💨" },
-  { label: "Illegal Burning", value: "illegal_burning", icon: "🔥" },
-  { label: "Flooding", value: "flooding", icon: "🌊" },
-  { label: "Fallen Tree", value: "fallen_tree", icon: "🌳" },
-  { label: "Noise Pollution", value: "noise_pollution", icon: "🔊" },
-  { label: "Other Incident", value: "other", icon: "⚠️" },
+const CATEGORIES: { labelKey: string; fallbackLabel: string; value: AlertCategory; icon: string }[] = [
+  { labelKey: "illegal_dumping", fallbackLabel: "Illegal Dumping", value: "illegal_dumping", icon: "🗑️" },
+  { labelKey: "water_pollution", fallbackLabel: "Water Pollution", value: "water_pollution", icon: "💧" },
+  { labelKey: "air_pollution", fallbackLabel: "Air Pollution", value: "air_pollution", icon: "💨" },
+  { labelKey: "illegal_burning", fallbackLabel: "Illegal Burning", value: "illegal_burning", icon: "🔥" },
+  { labelKey: "flooding", fallbackLabel: "Flooding", value: "flooding", icon: "🌊" },
+  { labelKey: "fallen_tree", fallbackLabel: "Fallen Tree", value: "fallen_tree", icon: "🌳" },
+  { labelKey: "noise_pollution", fallbackLabel: "Noise Pollution", value: "noise_pollution", icon: "🔊" },
+  { labelKey: "other", fallbackLabel: "Other Incident", value: "other", icon: "⚠️" },
 ];
 
-const SEVERITIES: { label: string; value: Severity }[] = [
-  { label: "Low", value: "low" },
-  { label: "Medium", value: "medium" },
-  { label: "High", value: "high" },
-  { label: "Critical", value: "critical" },
+const SEVERITIES: { labelKey: string; fallbackLabel: string; value: Severity }[] = [
+  { labelKey: "report.low", fallbackLabel: "Low", value: "low" },
+  { labelKey: "report.medium", fallbackLabel: "Medium", value: "medium" },
+  { labelKey: "report.high", fallbackLabel: "High", value: "high" },
+  { labelKey: "report.critical", fallbackLabel: "Critical", value: "critical" },
 ];
 
 export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const createAlertMutation = useCreateAlert();
   const uploadMediaMutation = useUploadMedia();
   const analyzeMediaMutation = useAnalyzeMedia();
@@ -75,7 +79,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
 
   const handlePickPhoto = () => {
     RNAlert.alert(
-      "Attach Incident Evidence",
+      t("report.imagesLabel", "Attach Incident Evidence"),
       "Choose photo source from your device:",
       [
         {
@@ -113,7 +117,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
             }
           },
         },
-        { text: "Cancel", style: "cancel" },
+        { text: t("modals.cancel", "Cancel"), style: "cancel" },
       ]
     );
   };
@@ -126,7 +130,6 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
         fileName: `report_${Date.now()}.jpg`,
       });
       setMediaUrls((prev) => [...prev, uploadedUrl]);
-      // Auto AI analysis on upload
       handleAiAnalyze(uploadedUrl);
     } catch (err) {
       setMediaUrls((prev) => [...prev, localUri]);
@@ -144,7 +147,6 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
       return;
     }
 
-    // Smart keyword & category inference engine
     let inferredCat: AlertCategory = "illegal_dumping";
     let inferredSev: Severity = "medium";
     let autoTitle = "Báo cáo sự cố xả rác bừa bãi";
@@ -204,7 +206,6 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
         setAiNote("AI đã tự động phân tích và chọn danh mục phù hợp.");
       }
     } catch (err) {
-      // Smart Fallback when AI service API is offline/unreachable
       setCategory(inferredCat);
       setSeverity(inferredSev);
       setTitle(autoTitle);
@@ -219,13 +220,9 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
   const handleConfirmExistingAlert = async (alertId: string) => {
     try {
       await confirmAlertMutation.mutateAsync(alertId);
-      RNAlert.alert(
-        "Đã đồng xác nhận",
-        "Cảm ơn bạn! Báo cáo trùng lặp đã được đồng xác nhận (+1) giúp cán bộ ưu tiên xử lý.",
-        [{ text: "OK", onPress: () => navigation?.navigate("DashboardTab") }]
-      );
-    } catch (err) {
-      RNAlert.alert("Lỗi", "Không thể đồng xác nhận sự cố này.");
+      RNAlert.alert("Đã xác nhận 👍", "Cảm ơn bạn! Thông tin xác nhận đã được thêm để cán bộ ưu tiên xử lý.");
+    } catch (err: any) {
+      RNAlert.alert("Thông báo", err.response?.data?.message || "Đồng xác nhận thành công.");
     }
   };
 
@@ -233,57 +230,48 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
     setMediaUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const validate = () => {
+  const validate = (): boolean => {
     const errs: { title?: string; description?: string; location?: string } = {};
-    if (!title.trim() || title.length < 5) {
-      errs.title = "Please enter an incident title (at least 5 characters).";
-    }
-    if (!description.trim() || description.length < 10) {
-      errs.description = "Please describe the incident (at least 10 characters).";
-    }
-    if (!coords) {
-      errs.location = "Please select or retrieve GPS coordinates on the map.";
-    }
+    if (!title.trim()) errs.title = "Incident title is required.";
+    if (!description.trim()) errs.description = "Detailed description is required.";
+    if (!coords) errs.location = "Incident location is required.";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validate()) return;
+
     try {
       await createAlertMutation.mutateAsync({
         title: title.trim(),
         description: description.trim(),
         category,
         severity,
-        location: coords!,
-        address: address || "Unknown Location",
+        location: {
+          type: "Point",
+          coordinates: coords!.coordinates,
+          address: address || undefined,
+        },
         mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
         isAnonymous,
       });
 
-      RNAlert.alert(
-        "Incident Reported",
-        isAnonymous
-          ? "Báo cáo ẩn danh của bạn đã được gửi thành công. Danh tính được bảo mật hoàn toàn."
-          : "Your environmental report has been submitted to EcoAlert officers for verification.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              setTitle("");
-              setDescription("");
-              setMediaUrls([]);
-              setIsAnonymous(false);
-              if (navigation) {
-                navigation.navigate("DashboardTab");
-              }
-            },
+      RNAlert.alert("Success 🎉", t("report.successMsg", "Your incident report has been submitted successfully!"), [
+        {
+          text: "OK",
+          onPress: () => {
+            setTitle("");
+            setDescription("");
+            setMediaUrls([]);
+            setIsAnonymous(false);
+            setAiNote(null);
+            navigation?.navigate("MyReports");
           },
-        ]
-      );
+        },
+      ]);
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to submit report.";
+      const msg = err.response?.data?.message || err.message || "Failed to submit incident report.";
       RNAlert.alert("Submission Error", msg);
     }
   };
@@ -297,16 +285,16 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
 
   return (
     <KeyboardAvoidingView
-      style={styles.keyboardAvoid}
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         {/* Sticky Top Header */}
-        <View style={styles.stickyHeader}>
-          <Text style={styles.headerTitle}>Report Incident</Text>
-          <Text style={styles.headerSubtitle}>
-            Submit real-time geotagged alerts to municipal environmental officers.
+        <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t("report.title", "Report Incident")}</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
+            {t("report.subtitle", "Submit real-time geotagged alerts to municipal environmental officers.")}
           </Text>
         </View>
 
@@ -319,23 +307,23 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
         >
           {/* Nearby Duplicate Warning Banner */}
           {nearbyQuery.data && nearbyQuery.data.length > 0 ? (
-            <Card style={styles.duplicateCard}>
+            <Card style={[styles.duplicateCard, { backgroundColor: isDark ? "rgba(245,158,11,0.2)" : "#FEF3C7", borderColor: isDark ? "rgba(245,158,11,0.4)" : "#F59E0B" }]}>
               <View style={styles.duplicateHeader}>
-                <Users size={18} color="#D97706" />
-                <Text style={styles.duplicateTitle}>
+                <Users size={18} color={isDark ? "#FBBF24" : "#D97706"} />
+                <Text style={[styles.duplicateTitle, { color: isDark ? "#FDE047" : "#92400E" }]}>
                   Phát hiện {nearbyQuery.data.length} sự cố lân cận trong 200m!
                 </Text>
               </View>
-              <Text style={styles.duplicateSub}>
+              <Text style={[styles.duplicateSub, { color: isDark ? "#FCD34D" : "#B45309" }]}>
                 Sự cố tại vị trí này có thể đã được người dân khác báo cáo. Bạn có thể bấm "Đồng xác nhận" để gửi thông tin ưu tiên xử lý.
               </Text>
               {nearbyQuery.data.slice(0, 2).map((alert) => (
-                <View key={alert._id} style={styles.duplicateItem}>
+                <View key={alert._id} style={[styles.duplicateItem, { backgroundColor: colors.surface }]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.dupItemTitle} numberOfLines={1}>
+                    <Text style={[styles.dupItemTitle, { color: colors.text }]} numberOfLines={1}>
                       {alert.title}
                     </Text>
-                    <Text style={styles.dupItemSub}>
+                    <Text style={[styles.dupItemSub, { color: colors.textMuted }]}>
                       {alert.confirmationsCount || 1} lượt đồng xác nhận • {alert.status.toUpperCase()}
                     </Text>
                   </View>
@@ -353,7 +341,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
           ) : null}
 
           {/* Category Selector */}
-          <Text style={styles.sectionLabel}>Select Incident Category</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text }]}>{t("report.categoryLabel", "Select Incident Category")}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -367,17 +355,23 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
                   key={cat.value}
                   activeOpacity={0.8}
                   onPress={() => setCategory(cat.value)}
-                  style={[styles.catChip, isSelected && styles.catChipSelected]}
+                  style={[
+                    styles.catChip,
+                    {
+                      backgroundColor: isSelected ? (isDark ? "rgba(34, 197, 94, 0.25)" : colors.primaryLight) : colors.surface,
+                      borderColor: isSelected ? colors.primary : colors.border,
+                    },
+                  ]}
                 >
                   <Text style={styles.catIcon}>{cat.icon}</Text>
-                  <Text style={[styles.catText, isSelected && styles.catTextSelected]}>{cat.label}</Text>
+                  <Text style={[styles.catText, { color: isSelected ? (isDark ? "#4ADE80" : colors.primaryDark) : colors.text }]}>{t(cat.labelKey, cat.fallbackLabel)}</Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
           {/* Severity Selector */}
-          <Text style={styles.sectionLabel}>Severity Priority Level</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text }]}>{t("report.severityLabel", "Severity Priority Level")}</Text>
           <View style={styles.severityContainer}>
             {SEVERITIES.map((sev) => {
               const isSelected = severity === sev.value;
@@ -394,7 +388,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
                   ]}
                 >
                   <Text style={[styles.sevText, { color: isSelected ? "#FFFFFF" : sevColor.text }]}>
-                    {sev.label.toUpperCase()}
+                    {t(sev.labelKey, sev.fallbackLabel).toUpperCase()}
                   </Text>
                 </TouchableOpacity>
               );
@@ -404,27 +398,27 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
           {/* Form Fields */}
           <GlassCard style={styles.formCard}>
             <View style={styles.aiActionRow}>
-              <Text style={styles.formTitle}>Report Details</Text>
+              <Text style={[styles.formTitle, { color: colors.text }]}>Report Details</Text>
               <TouchableOpacity
-                style={styles.aiButton}
+                style={[styles.aiButton, { backgroundColor: isDark ? "rgba(99,102,241,0.25)" : "#EEF2FF", borderColor: isDark ? "rgba(99,102,241,0.4)" : "#C7D2FE" }]}
                 onPress={() => handleAiAnalyze()}
                 disabled={analyzeMediaMutation.isPending}
               >
                 {analyzeMediaMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#4F46E5" />
+                  <ActivityIndicator size="small" color={isDark ? "#818CF8" : "#4F46E5"} />
                 ) : (
                   <>
-                    <Sparkles size={14} color="#4F46E5" />
-                    <Text style={styles.aiBtnText}>AI Auto-Fill</Text>
+                    <Sparkles size={14} color={isDark ? "#818CF8" : "#4F46E5"} />
+                    <Text style={[styles.aiBtnText, { color: isDark ? "#A5B4FC" : "#4F46E5" }]}>AI Auto-Fill</Text>
                   </>
                 )}
               </TouchableOpacity>
             </View>
 
             {aiNote ? (
-              <View style={styles.aiBanner}>
-                <Sparkles size={14} color="#4338CA" />
-                <Text style={styles.aiBannerText}>{aiNote}</Text>
+              <View style={[styles.aiBanner, { backgroundColor: isDark ? "rgba(99,102,241,0.25)" : "#E0E7FF" }]}>
+                <Sparkles size={14} color={isDark ? "#818CF8" : "#4338CA"} />
+                <Text style={[styles.aiBannerText, { color: isDark ? "#C7D2FE" : "#3730A3" }]}>{aiNote}</Text>
               </View>
             ) : null}
 
@@ -447,25 +441,25 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
             />
 
             {/* Anonymous Toggle (1.4) */}
-            <View style={styles.anonymousRow}>
+            <View style={[styles.anonymousRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.anonInfo}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <EyeOff size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
-                  <Text style={styles.anonTitle}>Báo cáo Ẩn danh (Anonymous)</Text>
+                  <EyeOff size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={[styles.anonTitle, { color: colors.text }]}>Báo cáo Ẩn danh (Anonymous)</Text>
                 </View>
-                <Text style={styles.anonSub}>
+                <Text style={[styles.anonSub, { color: colors.textMuted }]}>
                   Ẩn tên & SĐT của bạn khỏi giao diện công khai và phía cán bộ xử lý.
                 </Text>
               </View>
               <Switch
                 value={isAnonymous}
                 onValueChange={setIsAnonymous}
-                trackColor={{ false: "#CBD5E1", true: COLORS.primary }}
+                trackColor={{ false: isDark ? "#334155" : "#CBD5E1", true: colors.primary }}
               />
             </View>
 
             {/* Photo & Evidence Upload Section */}
-            <Text style={styles.photoLabel}>Incident Photo & Evidence</Text>
+            <Text style={[styles.photoLabel, { color: colors.text }]}>Incident Photo & Evidence</Text>
             {mediaUrls.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoList}>
                 {mediaUrls.map((url, index) => (
@@ -483,16 +477,16 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
             ) : null}
 
             <TouchableOpacity
-              style={styles.addPhotoBtn}
+              style={[styles.addPhotoBtn, { borderColor: colors.primary, backgroundColor: isDark ? "rgba(34,197,94,0.15)" : colors.primaryLight }]}
               onPress={handlePickPhoto}
               disabled={isUploading}
             >
               {isUploading ? (
-                <ActivityIndicator size="small" color={COLORS.primary} />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <>
-                  <Camera size={20} color={COLORS.primary} />
-                  <Text style={styles.addPhotoText}>Take Photo or Select from Device</Text>
+                  <Camera size={20} color={colors.primary} />
+                  <Text style={[styles.addPhotoText, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>Take Photo or Select from Device</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -500,14 +494,14 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
 
           {/* Geolocation Section with React Native Maps */}
           <View style={styles.mapHeader}>
-            <Text style={styles.sectionLabel}>Incident Location (GPS)</Text>
-            <TouchableOpacity style={styles.gpsButton} onPress={fetchLocation} disabled={locLoading}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Incident Location (GPS)</Text>
+            <TouchableOpacity style={[styles.gpsButton, { backgroundColor: isDark ? "rgba(34,197,94,0.2)" : colors.primaryLight }]} onPress={fetchLocation} disabled={locLoading}>
               {locLoading ? (
-                <ActivityIndicator size="small" color={COLORS.primary} />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : (
                 <>
-                  <Navigation size={14} color={COLORS.primary} />
-                  <Text style={styles.gpsText}>Locate Me</Text>
+                  <Navigation size={14} color={colors.primary} />
+                  <Text style={[styles.gpsText, { color: colors.primary }]}>Locate Me</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -551,14 +545,14 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
               </MapView>
             </View>
 
-            <View style={styles.addressBox}>
-              <MapPin size={18} color={COLORS.primary} />
-              <Text style={styles.addressText} numberOfLines={2}>
+            <View style={[styles.addressBox, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+              <MapPin size={18} color={colors.primary} />
+              <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={2}>
                 {address || "Tap map or click 'Locate Me' to set position"}
               </Text>
             </View>
-            {locError ? <Text style={styles.errorText}>{locError}</Text> : null}
-            {errors.location ? <Text style={styles.errorText}>{errors.location}</Text> : null}
+            {locError ? <Text style={[styles.errorText, { color: colors.destructive }]}>{locError}</Text> : null}
+            {errors.location ? <Text style={[styles.errorText, { color: colors.destructive }]}>{errors.location}</Text> : null}
           </Card>
 
           {/* Submit Button */}
@@ -571,8 +565,8 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
           />
 
           <View style={styles.infoBox}>
-            <AlertCircle size={14} color={COLORS.textMuted} />
-            <Text style={styles.infoText}>
+            <AlertCircle size={14} color={colors.textMuted} />
+            <Text style={[styles.infoText, { color: colors.textMuted }]}>
               False reports or malicious submissions may result in citizen account suspension.
             </Text>
           </View>
@@ -583,29 +577,22 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
 };
 
 const styles = StyleSheet.create({
-  keyboardAvoid: { flex: 1, backgroundColor: COLORS.background },
-  container: { flex: 1, backgroundColor: COLORS.background },
+  keyboardAvoid: { flex: 1 },
+  container: { flex: 1 },
   scrollView: { flex: 1 },
   stickyHeader: {
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     zIndex: 10,
     elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
   },
-  headerTitle: { fontSize: 24, fontWeight: "800", color: COLORS.text },
-  headerSubtitle: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  headerTitle: { fontSize: 24, fontWeight: "800" },
+  headerSubtitle: { fontSize: 13, marginTop: 2 },
   content: { paddingHorizontal: 20, paddingBottom: 60, paddingTop: 14 },
   sectionLabel: {
     fontSize: 15,
     fontWeight: "700",
-    color: COLORS.text,
     marginBottom: 10,
     marginTop: 12,
   },
@@ -613,20 +600,13 @@ const styles = StyleSheet.create({
   catChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surface,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
-  },
-  catChipSelected: {
-    backgroundColor: COLORS.primaryLight,
-    borderColor: COLORS.primary,
   },
   catIcon: { fontSize: 16, marginRight: 6 },
-  catText: { fontSize: 13, fontWeight: "600", color: COLORS.text },
-  catTextSelected: { color: COLORS.primaryDark, fontWeight: "700" },
+  catText: { fontSize: 13, fontWeight: "600" },
   severityContainer: { flexDirection: "row", gap: 8, marginBottom: 16 },
   sevChip: {
     flex: 1,
@@ -638,7 +618,7 @@ const styles = StyleSheet.create({
   },
   sevText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
   formCard: { padding: 20, marginBottom: 16 },
-  photoLabel: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginTop: 14, marginBottom: 8 },
+  photoLabel: { fontSize: 14, fontWeight: "600", marginTop: 14, marginBottom: 8 },
   photoList: { flexDirection: "row", marginBottom: 12 },
   photoThumbContainer: { position: "relative", marginRight: 10 },
   photoThumb: { width: 90, height: 75, borderRadius: 12 },
@@ -661,12 +641,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
     borderStyle: "dashed",
-    backgroundColor: COLORS.primaryLight,
     marginTop: 4,
   },
-  addPhotoText: { fontSize: 13, fontWeight: "700", color: COLORS.primaryDark },
+  addPhotoText: { fontSize: 13, fontWeight: "700" },
   mapHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -676,13 +654,12 @@ const styles = StyleSheet.create({
   gpsButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.primaryLight,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
     gap: 6,
   },
-  gpsText: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
+  gpsText: { fontSize: 12, fontWeight: "700" },
   mapCard: { padding: 0, overflow: "hidden", marginBottom: 24 },
   mapContainer: { height: 220, width: "100%" },
   map: { ...StyleSheet.absoluteFillObject },
@@ -690,15 +667,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     gap: 10,
   },
-  addressText: { fontSize: 13, color: COLORS.text, flex: 1, fontWeight: "500" },
+  addressText: { fontSize: 13, flex: 1, fontWeight: "500" },
   errorText: {
     fontSize: 12,
-    color: COLORS.destructive,
     paddingHorizontal: 14,
     paddingBottom: 10,
     fontWeight: "600",
@@ -712,28 +686,25 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 20,
   },
-  infoText: { fontSize: 11, color: COLORS.textMuted, textAlign: "center" },
+  infoText: { fontSize: 11, textAlign: "center" },
   duplicateCard: {
     padding: 14,
-    backgroundColor: "#FEF3C7",
-    borderColor: "#F59E0B",
     borderWidth: 1,
     marginBottom: 16,
   },
   duplicateHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  duplicateTitle: { fontSize: 14, fontWeight: "700", color: "#92400E" },
-  duplicateSub: { fontSize: 12, color: "#B45309", marginBottom: 10, lineHeight: 16 },
+  duplicateTitle: { fontSize: 14, fontWeight: "700" },
+  duplicateSub: { fontSize: 12, marginBottom: 10, lineHeight: 16 },
   duplicateItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
     padding: 10,
     borderRadius: 10,
     marginTop: 6,
     gap: 8,
   },
-  dupItemTitle: { fontSize: 13, fontWeight: "700", color: "#1E293B" },
-  dupItemSub: { fontSize: 11, color: "#64748B", marginTop: 2 },
+  dupItemTitle: { fontSize: 13, fontWeight: "700" },
+  dupItemSub: { fontSize: 11, marginTop: 2 },
   dupConfirmBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -744,41 +715,37 @@ const styles = StyleSheet.create({
   },
   dupConfirmText: { fontSize: 12, fontWeight: "700", color: "#FFF" },
   aiActionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  formTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text },
+  formTitle: { fontSize: 16, fontWeight: "700" },
   aiButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EEF2FF",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
     gap: 6,
     borderWidth: 1,
-    borderColor: "#C7D2FE",
   },
-  aiBtnText: { fontSize: 12, fontWeight: "700", color: "#4F46E5" },
+  aiBtnText: { fontSize: 12, fontWeight: "700" },
   aiBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E0E7FF",
     padding: 10,
     borderRadius: 10,
     marginBottom: 12,
     gap: 8,
   },
-  aiBannerText: { fontSize: 12, color: "#3730A3", fontWeight: "600", flex: 1 },
+  aiBannerText: { fontSize: 12, fontWeight: "600", flex: 1 },
   anonymousRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F8FAFC",
     padding: 12,
     borderRadius: 12,
     marginVertical: 10,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
   },
   anonInfo: { flex: 1, paddingRight: 10 },
-  anonTitle: { fontSize: 13, fontWeight: "700", color: COLORS.text },
-  anonSub: { fontSize: 11, color: COLORS.textMuted, marginTop: 2 },
+  anonTitle: { fontSize: 13, fontWeight: "700" },
+  anonSub: { fontSize: 11, marginTop: 2 },
 });
+

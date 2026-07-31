@@ -10,7 +10,7 @@ import {
 import { X, UserCheck } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 import { useUpdateProfile } from "../../hooks/useUsers";
 import { User } from "../../types";
 
@@ -25,6 +25,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   user,
   onClose,
 }) => {
+  const { colors } = useTheme();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const updateProfileMutation = useUpdateProfile();
@@ -61,14 +62,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <UserCheck size={22} color={COLORS.primary} />
-              <Text style={styles.title}>Edit Profile Information</Text>
+              <UserCheck size={22} color={colors.primary} />
+              <Text style={[styles.title, { color: colors.text }]}>Edit Profile Information</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textMuted} />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -106,7 +107,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
@@ -125,7 +125,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: COLORS.text,
   },
   closeBtn: {
     padding: 6,
@@ -134,3 +133,4 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 });
+

@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { X, Shield } from "lucide-react-native";
 import { Button } from "../ui/Button";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { useChangeRole } from "../../hooks/useUsers";
 import { User, UserRole } from "../../types";
 
@@ -24,6 +25,8 @@ export const RolePickerModal: React.FC<RolePickerModalProps> = ({
   user,
   onClose,
 }) => {
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [selectedRole, setSelectedRole] = useState<UserRole>(user?.role || "CITIZEN");
   const changeRoleMutation = useChangeRole();
 
@@ -46,7 +49,7 @@ export const RolePickerModal: React.FC<RolePickerModalProps> = ({
         id: user._id,
         role: selectedRole,
       });
-      RNAlert.alert("Success", `User role updated to ${selectedRole}.`);
+      RNAlert.alert(t("modals.successTitle", "Success"), `User role updated to ${selectedRole}.`);
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to update role.";
@@ -57,40 +60,49 @@ export const RolePickerModal: React.FC<RolePickerModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <Shield size={22} color="#7C3AED" />
-              <Text style={styles.title}>Change User Role</Text>
+              <Shield size={22} color={isDark ? "#A78BFA" : "#7C3AED"} />
+              <Text style={[styles.title, { color: colors.text }]}>{t("modals.changeRoleTitle", "Change User Role")}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textMuted} />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.userName}>{user.fullName}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{user.fullName}</Text>
+          <Text style={[styles.userEmail, { color: colors.textMuted }]}>{user.email}</Text>
 
-          <Text style={styles.label}>Select New Role:</Text>
+          <Text style={[styles.label, { color: colors.text }]}>{t("modals.selectNewRole", "Select New Role:")}</Text>
           <View style={styles.rolePickerRow}>
-            {(["CITIZEN", "OFFICER", "ADMIN"] as UserRole[]).map((r) => (
-              <TouchableOpacity
-                key={r}
-                style={[styles.roleChip, selectedRole === r && styles.roleChipActive]}
-                onPress={() => setSelectedRole(r)}
-              >
-                <Text style={[styles.roleChipText, selectedRole === r && styles.roleChipTextActive]}>
-                  {r}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {(["CITIZEN", "OFFICER", "ADMIN"] as UserRole[]).map((r) => {
+              const isActive = selectedRole === r;
+              return (
+                <TouchableOpacity
+                  key={r}
+                  style={[
+                    styles.roleChip,
+                    {
+                      backgroundColor: isActive ? (isDark ? "rgba(124,58,237,0.3)" : "#F3E8FF") : colors.background,
+                      borderColor: isActive ? (isDark ? "#A78BFA" : "#7C3AED") : colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedRole(r)}
+                >
+                  <Text style={[styles.roleChipText, { color: isActive ? (isDark ? "#C4B5FD" : "#7C3AED") : colors.textMuted }]}>
+                    {r}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <Button
-            title="Update Role"
+            title={t("modals.updateRoleBtn", "Update Role")}
             onPress={handleSaveRole}
             loading={changeRoleMutation.isPending}
-            style={styles.submitBtn}
+            style={[styles.submitBtn, { backgroundColor: "#7C3AED" }]}
           />
         </View>
       </View>
@@ -105,7 +117,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
@@ -124,7 +135,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: COLORS.text,
   },
   closeBtn: {
     padding: 6,
@@ -132,17 +142,14 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: "700",
-    color: COLORS.text,
   },
   userEmail: {
     fontSize: 13,
-    color: COLORS.textMuted,
     marginBottom: 16,
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.text,
     marginBottom: 10,
   },
   rolePickerRow: {
@@ -155,23 +162,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
     alignItems: "center",
-    backgroundColor: COLORS.background,
-  },
-  roleChipActive: {
-    borderColor: "#7C3AED",
-    backgroundColor: "#F3E8FF",
   },
   roleChipText: {
     fontSize: 13,
     fontWeight: "700",
-    color: COLORS.textMuted,
   },
-  roleChipTextActive: {
-    color: "#7C3AED",
-  },
-  submitBtn: {
-    backgroundColor: "#7C3AED",
-  },
+  submitBtn: {},
 });
+

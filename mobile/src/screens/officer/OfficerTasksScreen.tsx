@@ -12,7 +12,8 @@ import { CheckSquare, AlertCircle, MapPin } from "lucide-react-native";
 import { useOfficerTasks } from "../../hooks/useAlerts";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Badge } from "../../components/ui/Badge";
-import { COLORS, SEVERITY_COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { SEVERITY_COLORS } from "../../utils/constants";
 import { Alert } from "../../types";
 
 const STATUS_TABS = [
@@ -24,6 +25,7 @@ const STATUS_TABS = [
 
 export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
 
   const { data: tasksData, isLoading, refetch, isRefetching } = useOfficerTasks(
@@ -47,8 +49,8 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
             <Badge
               label={item.category?.toUpperCase().replace("_", " ") || "GENERAL"}
               type="custom"
-              bgColor="#DBEAFE"
-              textColor={COLORS.secondary}
+              bgColor={isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE"}
+              textColor={isDark ? "#60A5FA" : colors.secondary}
             />
             <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
               <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
@@ -58,17 +60,17 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
             <Badge label={item.status || "PENDING"} type="status" />
           </View>
 
-          <Text style={styles.taskTitle} numberOfLines={1}>
+          <Text style={[styles.taskTitle, { color: colors.text }]} numberOfLines={1}>
             {item.title}
           </Text>
 
-          <Text style={styles.taskDesc} numberOfLines={2}>
+          <Text style={[styles.taskDesc, { color: colors.textMuted }]} numberOfLines={2}>
             {item.description}
           </Text>
 
           <View style={styles.locationRow}>
-            <MapPin size={14} color={COLORS.secondary} />
-            <Text style={styles.locationText} numberOfLines={1}>
+            <MapPin size={14} color={isDark ? "#60A5FA" : colors.secondary} />
+            <Text style={[styles.locationText, { color: isDark ? "#60A5FA" : colors.secondary }]} numberOfLines={1}>
               {item.address || "GPS Geotag Location"}
             </Text>
           </View>
@@ -78,28 +80,34 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerTitleRow}>
-          <CheckSquare size={24} color={COLORS.secondary} />
-          <Text style={styles.headerTitle}>Assigned Incident Tasks</Text>
+          <CheckSquare size={24} color={isDark ? "#60A5FA" : colors.secondary} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Assigned Incident Tasks</Text>
         </View>
       </View>
 
       {/* Filter Tabs */}
       <View style={styles.tabsRow}>
-        {STATUS_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab.label}
-            style={[styles.tabChip, selectedStatus === tab.value && styles.tabChipActive]}
-            onPress={() => setSelectedStatus(tab.value)}
-          >
-            <Text style={[styles.tabChipText, selectedStatus === tab.value && styles.tabChipTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {STATUS_TABS.map((tab) => {
+          const isActive = selectedStatus === tab.value;
+          return (
+            <TouchableOpacity
+              key={tab.label}
+              style={[
+                styles.tabChip,
+                { borderColor: isActive ? colors.secondary : colors.border, backgroundColor: isActive ? (isDark ? "rgba(59, 130, 246, 0.3)" : "#DBEAFE") : colors.surface },
+              ]}
+              onPress={() => setSelectedStatus(tab.value)}
+            >
+              <Text style={[styles.tabChipText, { color: isActive ? (isDark ? "#93C5FD" : colors.secondary) : colors.textMuted }]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <FlatList
@@ -108,15 +116,15 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
         renderItem={renderTaskItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={COLORS.secondary} />
+          <RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={colors.secondary} />
         }
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyContainer}>
-              <AlertCircle size={48} color={COLORS.textMuted} />
-              <Text style={styles.emptyTitle}>No Tasks Assigned</Text>
-              <Text style={styles.emptyText}>
+              <AlertCircle size={48} color={colors.textMuted} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Tasks Assigned</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
                 No incident reports currently assigned to your Officer account. Once an Admin assigns a report to you, it will appear here.
               </Text>
             </View>
@@ -128,38 +136,33 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerTitleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.text },
+  headerTitle: { fontSize: 20, fontWeight: "800" },
   tabsRow: { flexDirection: "row", gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
   tabChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
   },
-  tabChipActive: { borderColor: COLORS.secondary, backgroundColor: "#DBEAFE" },
-  tabChipText: { fontSize: 11, fontWeight: "700", color: COLORS.textMuted },
-  tabChipTextActive: { color: COLORS.secondary },
+  tabChipText: { fontSize: 11, fontWeight: "700" },
   listContent: { paddingHorizontal: 20, paddingBottom: 40 },
   taskCard: { marginBottom: 14, padding: 16, borderRadius: 20 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" },
   sevBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
   sevBadgeText: { fontSize: 9, fontWeight: "800" },
-  taskTitle: { fontSize: 16, fontWeight: "800", color: COLORS.text, marginBottom: 4 },
-  taskDesc: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18, marginBottom: 10 },
+  taskTitle: { fontSize: 16, fontWeight: "800", marginBottom: 4 },
+  taskDesc: { fontSize: 13, lineHeight: 18, marginBottom: 10 },
   locationRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  locationText: { fontSize: 12, color: COLORS.secondary, flex: 1, fontWeight: "600" },
+  locationText: { fontSize: 12, flex: 1, fontWeight: "600" },
   emptyContainer: { alignItems: "center", justifyContent: "center", paddingVertical: 60, paddingHorizontal: 20 },
-  emptyTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginTop: 12 },
-  emptyText: { marginTop: 6, fontSize: 13, color: COLORS.textMuted, textAlign: "center", lineHeight: 18 },
+  emptyTitle: { fontSize: 16, fontWeight: "700", marginTop: 12 },
+  emptyText: { marginTop: 6, fontSize: 13, textAlign: "center", lineHeight: 18 },
 });
+
