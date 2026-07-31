@@ -28,11 +28,15 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   const deleteAlertMutation = useDeleteAlert();
 
-  const { data: alertsData, isLoading, refetch, isRefetching } = useAlerts(1, 50, {
-    reporterId: profile?._id || "",
-  });
+  const filterParams = React.useMemo(
+    () => (profile?._id ? { reporterId: profile._id } : {}),
+    [profile?._id]
+  );
+
+  const { data: alertsData, isLoading, refetch, isRefetching } = useAlerts(1, 50, filterParams);
 
   const alerts = alertsData?.items ?? [];
+
 
   const handleDelete = (item: AlertItem) => {
     RNAlert.alert(
