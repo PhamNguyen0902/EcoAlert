@@ -77,7 +77,10 @@ export default function CreateAlert() {
   const title = watch('title') ?? '';
   const description = watch('description') ?? '';
   const address = watch('address') ?? '';
+  
+  // Trạng thái isSubmitting được tính toán chung, không cần dùng useState
   const isSubmitting = createAlertMutation.isPending || isUploadingEvidence;
+  
   const steps: ReportStep[] = [
     { id: 1, label: t('report_create.step1'), icon: FileText },
     { id: 2, label: t('report_create.step2'), icon: MapPin },
@@ -210,18 +213,16 @@ export default function CreateAlert() {
     setCurrentStep((step) => Math.min(step + 1, steps.length));
   };
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const handleSubmit = async () => {
     if (isSubmitting || submissionInProgressRef.current || !file || !selectedLocation) return;
 
-    if (isSubmitting || createAlertMutation.isPending) return;
-    setIsSubmitting(true);
     try {
       submissionInProgressRef.current = true;
       const formData = getValues();
+      
       setIsUploadingEvidence(true);
       toast.loading('Uploading evidence…', { id: 'submit' });
+      
       const mediaUrl = await alertService.uploadMedia(file);
       toast.loading(t('report_create.submitting'), { id: 'submit' });
 
@@ -238,15 +239,11 @@ export default function CreateAlert() {
 
       toast.success('Report submitted successfully.', { id: 'submit' });
       navigate('/dashboard');
-    } catch (error) {
-      toast.error(getErrorMessage(error, 'Unable to submit the report. Please try again.'), { id: 'submit' });
+    } catch (err: any) {
+      toast.error(getErrorMessage(err, 'Unable to submit the report. Please try again.'), { id: 'submit' });
     } finally {
       submissionInProgressRef.current = false;
       setIsUploadingEvidence(false);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gửi báo cáo thất bại', { id: 'submit' });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -418,40 +415,28 @@ export default function CreateAlert() {
               </motion.div>
             </AnimatePresence>
 
+            {/* Điều hướng */}
             <div className="mt-8 flex items-center justify-between gap-3 border-t pt-5">
-              <Button type="button" variant="outline" onClick={() => setCurrentStep((step) => Math.max(1, step - 1))} disabled={currentStep === 1 || isSubmitting}>
-                {t('btn.back')}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Điều hướng */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t">
-            <Button 
-              variant="outline" 
-              onClick={handlePrev}
-              disabled={currentStep === 1 || createAlertMutation.isPending}
-            >
-              {t('btn.back')}
-            </Button>
-            
-            {currentStep < 4 ? (
-              <Button onClick={handleNext} className="min-w-[100px]">{t('btn.next')}</Button>
-            ) : (
-              <Button 
-                onClick={handleSubmit} 
-                disabled={isSubmitting || createAlertMutation.isPending}
-                className="min-w-[140px]"
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCurrentStep((step) => Math.max(1, step - 1))}
+                disabled={currentStep === 1 || isSubmitting}
               >
-                {isSubmitting || createAlertMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                {isSubmitting || createAlertMutation.isPending ? t('report_create.submitting') : t('report_create.submit_confirm')}
+                {t('btn.back')}
               </Button>
+
               {currentStep < steps.length ? (
-                <Button type="button" onClick={() => void handleNext()} disabled={isSubmitting}>{nextActionLabel}</Button>
+                <Button type="button" onClick={() => void handleNext()} disabled={isSubmitting} className="min-w-[100px]">
+                  {nextActionLabel}
+                </Button>
               ) : (
-                <Button type="button" onClick={() => void handleSubmit()} disabled={isSubmitting}>
+                <Button 
+                  type="button" 
+                  onClick={() => void handleSubmit()} 
+                  disabled={isSubmitting}
+                  className="min-w-[140px]"
+                >
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
                   {isSubmitting ? t('report_create.submitting') : t('report_create.submit_confirm')}
                 </Button>

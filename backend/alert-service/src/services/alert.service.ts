@@ -22,6 +22,7 @@ import {
   Severity,
 } from '@ecoalert/shared';
 import { rabbitMQService } from './rabbitmq.service';
+import { userDirectoryService } from './user-directory.service';
 
 export interface WorkflowActor {
   id: string;
@@ -239,6 +240,10 @@ export class AlertService {
     if (![AlertStatus.PENDING, AlertStatus.VERIFIED, AlertStatus.AI_ANALYZING].includes(currentStatus)) {
       throw new ConflictError('Only a pending, AI-analyzing, or verified incident can be assigned');
     }
+    if (!mongoose.isValidObjectId(data.officerId)) {
+      throw new NotFoundError('Officer not found');
+    }
+    await userDirectoryService.requireOfficer(data.officerId, actor);
 
     const assignedAt = new Date();
     const updatedAlert = await alertRepository.findOneAndUpdate(

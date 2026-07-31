@@ -17,11 +17,7 @@ app.get('/health', (req, res) => {
 
 app.use('/assistant', assistantRoutes);
 
-app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  if (err instanceof AssistantHttpError) {
-    return res.status(err.statusCode).json(errorResponse(err.message));
-  }
-  return res.status(500).json(errorResponse('Assistant service is temporarily unavailable'));
+// 1. Đưa route /analyze lên TRƯỚC bộ xử lý lỗi
 app.post('/analyze', async (req, res) => {
   try {
     const { description, imageUrl } = req.body;
@@ -31,5 +27,13 @@ app.post('/analyze', async (req, res) => {
     res.status(500).json({ success: false, message: error.message || 'AI Analysis failed' });
   }
 });
+
+// 2. Middleware xử lý lỗi phải nằm ở CUỐI CÙNG và được đóng ngoặc đầy đủ
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err instanceof AssistantHttpError) {
+    return res.status(err.statusCode).json(errorResponse(err.message));
+  }
+  return res.status(500).json(errorResponse('Assistant service is temporarily unavailable'));
+}); // <--- Đã bổ sung dấu }); còn thiếu
 
 export { app };

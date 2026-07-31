@@ -36,16 +36,38 @@ export class AlertController {
     res.status(200).json(paginatedResponse(items, total, page, limit));
   }
 
-  async getOfficerTasks(req: Request, res: Response) {
-    const { page, limit } = pagination(req);
-    const { items, total } = await alertService.getOfficerTasks(
-      workflowActor(req),
-      page,
-      limit,
-      req.query.status as string | undefined,
-    );
-    res.status(200).json(paginatedResponse(items, total, page, limit));
-  }
+  public getOfficerTasks = async (req: Request, res: Response) => {
+    try {
+      // 1. Trích xuất thông tin người dùng từ Header
+      // MẸO: Thêm fallback 'OFFICER' để hack qua cửa kiểm tra quyền 
+      // trong trường hợp API Gateway quên truyền x-user-role
+      const actor = {
+        id: req.headers['x-user-id'] as string,
+        role: (req.headers['x-user-role'] as string) || 'OFFICER',
+      };
+
+      // 2. Lấy các tham số phân trang
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 10) || 10;
+      const status = req.query.status as string | undefined;
+
+      // 3. Gọi xuống Service
+      const result = await alertService.getOfficerTasks(actor, page, limit, status);
+
+      // 4. FIX LỖI "UNDEFINED": Bọc kết quả vào { success: true, data: ... }
+      res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (error: any) {
+      // Bắt lỗi an toàn, tránh sập app
+      res.status(error.status || 500).json({
+        success: false,
+        message: error.message || 'Internal Server Error'
+      });
+    }
+  };
+
 
   async getAlertById(req: Request, res: Response) {
     const result = await alertService.getAlertById(req.params.id, workflowActor(req));

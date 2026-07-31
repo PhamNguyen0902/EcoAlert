@@ -128,7 +128,9 @@ export default function OfficerReportDetail() {
   const normalizedAlertStatus = alert.status.toLowerCase();
   const canAdminAssign = isAdmin && ADMIN_ASSIGNABLE_STATUSES.has(normalizedAlertStatus);
   const isAssignedToCurrentOfficer = isOfficer && alert.assignedOfficerId === user?._id;
-  const officers = officerData?.items ?? [];
+  // The API query is already scoped to OFFICER; keep this boundary guard so only
+  // valid assignees can be rendered if an unexpected response is returned.
+  const officers = (officerData?.items ?? []).filter((user) => user.role === 'OFFICER');
   const assignedOfficer = officers.find((officer) => officer._id === alert.assignedOfficerId);
   const assignedOfficerLabel = alert.assignedOfficerId
     ? assignedOfficer?.fullName || (alert.assignedOfficerId === user?._id ? user.fullName : alert.assignedOfficerId)
