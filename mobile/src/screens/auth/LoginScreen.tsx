@@ -9,35 +9,39 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
-import { Mail, Lock, ShieldAlert, ArrowRight } from "lucide-react-native";
+import { Mail, Lock, ShieldAlert, Sun, Moon, Globe } from "lucide-react-native";
 import { useLogin } from "../../hooks/useAuth";
 import { useFormValidation } from "../../hooks/useFormValidation";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { InlineBanner } from "../../components/ui/InlineBanner";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface LoginValues {
   email: string;
   password: string;
 }
 
-function validateLogin(values: LoginValues) {
-  const errs: Partial<Record<keyof LoginValues, string>> = {};
-  if (!values.email || !values.email.includes("@")) {
-    errs.email = "Please enter a valid email address.";
-  }
-  if (!values.password || values.password.length < 6) {
-    errs.password = "Password must be at least 6 characters.";
-  }
-  return errs;
-}
-
 export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const loginMutation = useLogin();
   const passwordRef = useRef<TextInput>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const { colors, isDark, setThemeMode, themeMode } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
+
+  const validateLogin = (values: LoginValues) => {
+    const errs: Partial<Record<keyof LoginValues, string>> = {};
+    if (!values.email || !values.email.includes("@")) {
+      errs.email = t("auth.emailError", "Please enter a valid email address.");
+    }
+    if (!values.password || values.password.length < 6) {
+      errs.password = t("auth.passwordError", "Password must be at least 6 characters.");
+    }
+    return errs;
+  };
 
   const { values, errors, setField, validate } = useFormValidation<LoginValues>(
     { email: "", password: "" },
@@ -61,9 +65,17 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
   };
 
+  const toggleTheme = () => {
+    setThemeMode(isDark ? "light" : "dark");
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === "vi" ? "en" : "vi");
+  };
+
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
@@ -72,14 +84,44 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
+        {/* Quick Language & Theme Bar */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            onPress={toggleLanguage}
+            style={[styles.topBarBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            activeOpacity={0.7}
+          >
+            <Globe size={16} color={colors.primary} style={{ marginRight: 6 }} />
+            <Text style={[styles.topBarText, { color: colors.text }]}>
+              {language === "vi" ? "VN 🇻🇳" : "EN 🇺🇸"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={toggleTheme}
+            style={[styles.topBarBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            activeOpacity={0.7}
+          >
+            {isDark ? (
+              <Sun size={16} color="#F59E0B" />
+            ) : (
+              <Moon size={16} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.header}>
-          <View style={styles.iconBox}>
-            <ShieldAlert size={40} color={COLORS.primary} />
+          <View style={[styles.iconBox, { backgroundColor: colors.primaryLight }]}>
+            <ShieldAlert size={40} color={colors.primary} />
           </View>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>
-            Log in to EcoAlert to report and monitor environmental incidents in
-            your area.
+          <Text style={[styles.title, { color: colors.text }]}>
+            {t("auth.welcomeBack", "Welcome Back")}
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {t(
+              "auth.loginSubtitle",
+              "Log in to EcoAlert to report and monitor environmental incidents in your area."
+            )}
           </Text>
         </View>
 
@@ -87,8 +129,8 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <InlineBanner message={submitError} type="error" />
 
           <Input
-            label="Email Address"
-            placeholder="example@gmail.com"
+            label={t("auth.emailLabel", "Email Address")}
+            placeholder={t("auth.emailPlaceholder", "example@gmail.com")}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -97,13 +139,13 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             value={values.email}
             onChangeText={(v: string) => setField("email", v)}
             error={errors.email}
-            leftIcon={<Mail size={20} color={COLORS.textMuted} />}
+            leftIcon={<Mail size={20} color={colors.textMuted} />}
           />
 
           <Input
             ref={passwordRef}
-            label="Password"
-            placeholder="••••••••"
+            label={t("auth.passwordLabel", "Password")}
+            placeholder={t("auth.passwordPlaceholder", "••••••••")}
             secureTextEntry
             autoComplete="password"
             returnKeyType="go"
@@ -111,7 +153,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             value={values.password}
             onChangeText={(v: string) => setField("password", v)}
             error={errors.password}
-            leftIcon={<Lock size={20} color={COLORS.textMuted} />}
+            leftIcon={<Lock size={20} color={colors.textMuted} />}
           />
 
           <TouchableOpacity
@@ -119,28 +161,31 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
           >
-            <Text style={styles.forgotText}>Forgot Password?</Text>
+            <Text style={[styles.forgotText, { color: colors.primary }]}>
+              {t("auth.forgotPassword", "Forgot Password?")}
+            </Text>
           </TouchableOpacity>
 
           <Button
-            title="Sign In"
+            title={t("auth.signInBtn", "Sign In")}
             onPress={handleLogin}
             loading={loginMutation.isPending}
             disabled={loginMutation.isPending}
             style={styles.loginBtn}
-            // icon={
-            //   <ArrowRight size={18} color="#FFF" style={{ marginRight: 6 }} />
-            // }
           />
         </GlassCard>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>
+            {t("auth.dontHaveAccount", "Don't have an account?")}{" "}
+          </Text>
           <TouchableOpacity
             onPress={() => navigation.navigate("Register")}
             accessibilityRole="button"
           >
-            <Text style={styles.registerLink}>Sign Up Now</Text>
+            <Text style={[styles.registerLink, { color: colors.primary }]}>
+              {t("auth.signUpLink", "Sign Up Now")}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -149,19 +194,42 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: "center",
+    paddingTop: 50,
     paddingBottom: 40,
   },
-  header: { alignItems: "center", marginBottom: 32 },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginBottom: 20,
+  },
+  topBarBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  topBarText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  header: { alignItems: "center", marginBottom: 28 },
   iconBox: {
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: COLORS.primaryLight,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -169,21 +237,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "800",
-    color: COLORS.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: COLORS.textMuted,
     textAlign: "center",
     lineHeight: 20,
     paddingHorizontal: 20,
   },
   card: { padding: 24, borderRadius: 24 },
   forgotPass: { alignSelf: "flex-end", marginBottom: 20, marginTop: -4 },
-  forgotText: { fontSize: 13, color: COLORS.primary, fontWeight: "600" },
+  forgotText: { fontSize: 13, fontWeight: "600" },
   loginBtn: { marginTop: 8 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 28 },
-  footerText: { fontSize: 14, color: COLORS.textMuted },
-  registerLink: { fontSize: 14, color: COLORS.primary, fontWeight: "700" },
+  footerText: { fontSize: 14 },
+  registerLink: { fontSize: 14, fontWeight: "700" },
 });

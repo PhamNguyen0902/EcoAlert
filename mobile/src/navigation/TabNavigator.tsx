@@ -7,25 +7,26 @@ import { ReportIncidentScreen } from "../screens/citizen/ReportIncidentScreen";
 import { useProfile, useLogout } from "../hooks/useAuth";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { COLORS } from "../utils/constants";
+import { useTheme } from "../context/ThemeContext";
 import type { AppTabParamList } from "./types";
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 const ProfileScreen: React.FC<{ navigation?: any }> = () => {
+  const { colors, isDark } = useTheme();
   const { data: profile } = useProfile();
   const logoutMutation = useLogout();
 
   return (
-    <View style={styles.profileContainer}>
+    <View style={[styles.profileContainer, { backgroundColor: colors.background }]}>
       <GlassCard style={styles.profileCard}>
-        <View style={styles.avatarBox}>
-          <UserIcon size={36} color={COLORS.primary} />
+        <View style={[styles.avatarBox, { backgroundColor: isDark ? "rgba(34, 197, 94, 0.25)" : colors.primaryLight }]}>
+          <UserIcon size={36} color={colors.primary} />
         </View>
-        <Text style={styles.profileName}>{profile?.fullName || "EcoAlert Citizen"}</Text>
-        <Text style={styles.profileEmail}>{profile?.email || "citizen@ecoalert.org"}</Text>
-        <View style={styles.roleTag}>
-          <Text style={styles.roleText}>{profile?.role || "CITIZEN"}</Text>
+        <Text style={[styles.profileName, { color: colors.text }]}>{profile?.fullName || "EcoAlert Citizen"}</Text>
+        <Text style={[styles.profileEmail, { color: colors.textMuted }]}>{profile?.email || "citizen@ecoalert.org"}</Text>
+        <View style={[styles.roleTag, { backgroundColor: isDark ? "rgba(34, 197, 94, 0.25)" : colors.primaryLight }]}>
+          <Text style={[styles.roleText, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>{profile?.role || "CITIZEN"}</Text>
         </View>
 
         <Button
@@ -42,13 +43,21 @@ const ProfileScreen: React.FC<{ navigation?: any }> = () => {
 };
 
 export const TabNavigator = () => {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textMuted,
-        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+          },
+        ],
         tabBarLabelStyle: styles.tabLabel,
         tabBarIcon: ({ color, size }) => {
           if (route.name === "DashboardTab") {
@@ -83,17 +92,11 @@ export const TabNavigator = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     height: 64,
     paddingBottom: 8,
     paddingTop: 8,
+    borderTopWidth: 1,
     elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
   },
   tabLabel: {
     fontSize: 12,
@@ -101,7 +104,6 @@ const styles = StyleSheet.create({
   },
   profileContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
     padding: 24,
     justifyContent: "center",
   },
@@ -114,7 +116,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: COLORS.primaryLight,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -122,27 +123,24 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 22,
     fontWeight: "800",
-    color: COLORS.text,
   },
   profileEmail: {
     fontSize: 14,
-    color: COLORS.textMuted,
     marginTop: 4,
   },
   roleTag: {
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: COLORS.primaryLight,
     borderRadius: 20,
   },
   roleText: {
     fontSize: 12,
     fontWeight: "700",
-    color: COLORS.primaryDark,
   },
   logoutBtn: {
     marginTop: 28,
     width: "100%",
   },
 });
+

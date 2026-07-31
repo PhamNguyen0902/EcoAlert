@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { GlassCard } from "./GlassCard";
 import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 
 interface StatCardProps {
   title: string;
@@ -21,6 +22,8 @@ export const StatCard: React.FC<StatCardProps> = ({
   iconBgColor = COLORS.primaryLight,
   style,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <GlassCard style={[styles.card, style]}>
       <View style={styles.content}>
@@ -28,8 +31,8 @@ export const StatCard: React.FC<StatCardProps> = ({
           <IconComp size={22} color={iconColor} />
         </View>
         <View style={styles.textContainer}>
-          <Text style={styles.value}>{value}</Text>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={[styles.value, { color: colors.text }]}>{value}</Text>
+          <Text style={[styles.title, { color: colors.textMuted }]} numberOfLines={1}>
             {title}
           </Text>
         </View>
@@ -61,12 +64,11 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 20,
     fontWeight: "800",
-    color: COLORS.text,
   },
   title: {
     fontSize: 12,
     fontWeight: "600",
-    color: COLORS.textMuted,
     marginTop: 2,
   },
 });
+

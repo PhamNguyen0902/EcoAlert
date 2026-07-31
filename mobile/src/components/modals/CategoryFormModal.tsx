@@ -12,7 +12,8 @@ import {
 import { X, Tag } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { useCreateCategory, useUpdateCategory } from "../../hooks/useCategories";
 import { Category, Severity } from "../../types";
 
@@ -27,6 +28,8 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   category,
   onClose,
 }) => {
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
@@ -59,7 +62,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
 
   const handleSubmit = async () => {
     if (!name.trim() || !code.trim()) {
-      RNAlert.alert("Validation Error", "Category Name and Code are required.");
+      RNAlert.alert(t("modals.validationError", "Validation Error"), t("modals.catNameCodeRequired", "Category Name and Code are required."));
       return;
     }
 
@@ -76,7 +79,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             isActive,
           },
         });
-        RNAlert.alert("Success", "Category updated successfully.");
+        RNAlert.alert(t("modals.successTitle", "Success"), t("modals.catUpdatedMsg", "Category updated successfully."));
       } else {
         await createMutation.mutateAsync({
           name: name.trim(),
@@ -86,41 +89,41 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
           defaultSeverity,
           isActive,
         });
-        RNAlert.alert("Success", "Category created successfully.");
+        RNAlert.alert(t("modals.successTitle", "Success"), t("modals.catCreatedMsg", "Category created successfully."));
       }
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to save category.";
-      RNAlert.alert("Save Error", msg);
+      RNAlert.alert(t("modals.saveError", "Save Error"), msg);
     }
   };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <Tag size={22} color="#7C3AED" />
-              <Text style={styles.title}>
-                {isEditing ? "Edit Category" : "Create Category"}
+              <Tag size={22} color={isDark ? "#A78BFA" : "#7C3AED"} />
+              <Text style={[styles.title, { color: colors.text }]}>
+                {isEditing ? t("modals.editCatTitle", "Edit Category") : t("modals.createCatTitle", "Create Category")}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textMuted} />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.formContent} showsVerticalScrollIndicator={false}>
             <Input
-              label="Category Name *"
+              label={`${t("modals.catName", "Category Name")} *`}
               placeholder="e.g. Water Pollution"
               value={name}
               onChangeText={setName}
             />
 
             <Input
-              label="Category Code *"
+              label={`${t("modals.catCode", "Category Code")} *`}
               placeholder="e.g. water_pollution"
               autoCapitalize="none"
               value={code}
@@ -128,7 +131,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             />
 
             <Input
-              label="Description"
+              label={t("modals.description", "Description")}
               placeholder="Brief description of this environmental alert category..."
               multiline
               numberOfLines={3}
@@ -137,38 +140,47 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             />
 
             <Input
-              label="Icon Name"
+              label={t("modals.iconName", "Icon Name")}
               placeholder="e.g. Droplets, Trash2, Wind"
               autoCapitalize="none"
               value={icon}
               onChangeText={setIcon}
             />
 
-            <Text style={styles.label}>Default Severity</Text>
+            <Text style={[styles.label, { color: colors.text }]}>{t("modals.defaultSeverity", "Default Severity")}</Text>
             <View style={styles.sevPickerRow}>
-              {(["low", "medium", "high", "critical"] as Severity[]).map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={[styles.sevChip, defaultSeverity === s && styles.sevChipActive]}
-                  onPress={() => setDefaultSeverity(s)}
-                >
-                  <Text style={[styles.sevChipText, defaultSeverity === s && styles.sevChipTextActive]}>
-                    {s.toUpperCase()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {(["low", "medium", "high", "critical"] as Severity[]).map((s) => {
+                const isActiveSev = defaultSeverity === s;
+                return (
+                  <TouchableOpacity
+                    key={s}
+                    style={[
+                      styles.sevChip,
+                      {
+                        backgroundColor: isActiveSev ? (isDark ? "rgba(124,58,237,0.3)" : "#F3E8FF") : colors.background,
+                        borderColor: isActiveSev ? (isDark ? "#A78BFA" : "#7C3AED") : colors.border,
+                      },
+                    ]}
+                    onPress={() => setDefaultSeverity(s)}
+                  >
+                    <Text style={[styles.sevChipText, { color: isActiveSev ? (isDark ? "#C4B5FD" : "#7C3AED") : colors.textMuted }]}>
+                      {s.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Active Category Status</Text>
-              <Switch value={isActive} onValueChange={setIsActive} trackColor={{ true: "#7C3AED" }} />
+              <Text style={[styles.switchLabel, { color: colors.text }]}>{t("modals.activeCatStatus", "Active Category Status")}</Text>
+              <Switch value={isActive} onValueChange={setIsActive} trackColor={{ true: isDark ? "#A78BFA" : "#7C3AED" }} />
             </View>
 
             <Button
-              title={isEditing ? "Save Changes" : "Create Category"}
+              title={isEditing ? t("modals.saveChangesBtn", "Save Changes") : t("modals.createCatBtn", "Create Category")}
               onPress={handleSubmit}
               loading={createMutation.isPending || updateMutation.isPending}
-              style={styles.submitBtn}
+              style={[styles.submitBtn, { backgroundColor: "#7C3AED" }]}
             />
           </ScrollView>
         </View>
@@ -184,7 +196,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "85%",
@@ -204,7 +215,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: COLORS.text,
   },
   closeBtn: {
     padding: 6,
@@ -215,7 +225,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.text,
     marginBottom: 8,
     marginTop: 8,
   },
@@ -229,21 +238,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
     alignItems: "center",
-    backgroundColor: COLORS.background,
-  },
-  sevChipActive: {
-    borderColor: "#7C3AED",
-    backgroundColor: "#F3E8FF",
   },
   sevChipText: {
     fontSize: 11,
     fontWeight: "800",
-    color: COLORS.textMuted,
-  },
-  sevChipTextActive: {
-    color: "#7C3AED",
   },
   switchRow: {
     flexDirection: "row",
@@ -254,10 +253,9 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.text,
   },
   submitBtn: {
     marginTop: 14,
-    backgroundColor: "#7C3AED",
   },
 });
+

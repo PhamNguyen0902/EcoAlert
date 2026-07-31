@@ -23,7 +23,8 @@ import { StatCard } from "../../components/ui/StatCard";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import type { Alert as AlertItem } from "../../types";
 
 function formatGreetingName(fullName?: string): string {
@@ -38,6 +39,8 @@ function formatGreetingName(fullName?: string): string {
 
 export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const { data: profile } = useProfile();
   const { data: alertsData, isLoading, refetch, isRefetching } = useAlerts(1, 50);
   const [refreshing, setRefreshing] = useState(false);
@@ -85,17 +88,17 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Sticky Top Header for Officer */}
-      <View style={styles.stickyHeader}>
+      <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerTextContainer}>
-          <Text style={styles.greeting} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-            Officer {formatGreetingName(profile?.fullName)} 🛡️
+          <Text style={[styles.greeting, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+            {t("officer.officerDashboardTitle", "Officer Control Center")} {formatGreetingName(profile?.fullName)} 🛡️
           </Text>
-          <Text style={styles.subGreeting}>Environmental Command & Response</Text>
+          <Text style={[styles.subGreeting, { color: colors.textMuted }]}>{t("officer.environmentalResponse", "Environmental Command & Response")}</Text>
         </View>
-        <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
-          <RefreshCw size={18} color={COLORS.secondary} />
+        <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE" }]} onPress={onRefresh}>
+          <RefreshCw size={18} color={isDark ? "#60A5FA" : colors.secondary} />
         </TouchableOpacity>
       </View>
 
@@ -103,79 +106,83 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
         refreshControl={
-          <RefreshControl refreshing={refreshing || isLoading} onRefresh={onRefresh} tintColor={COLORS.secondary} />
+          <RefreshControl refreshing={refreshing || isRefetching} onRefresh={onRefresh} tintColor={colors.secondary} />
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Officer Banner */}
-        <GlassCard style={styles.banner} gradientColors={["rgba(59, 130, 246, 0.15)", "rgba(22, 163, 74, 0.1)"]}>
+        {/* Officer Response Desk Banner */}
+        <GlassCard style={styles.banner} gradientColors={isDark ? ["rgba(30, 58, 138, 0.4)", "rgba(13, 148, 136, 0.25)"] : ["rgba(219, 234, 254, 0.9)", "rgba(204, 251, 241, 0.7)"]}>
           <View style={styles.bannerContent}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.bannerTitle}>Response Desk</Text>
-              <Text style={styles.bannerSub}>
-                Verify incoming citizen alerts, dispatch inspection teams, and log resolution updates.
+              <Text style={[styles.bannerTitle, { color: isDark ? "#93C5FD" : "#1E40AF" }]}>{t("officer.responseDesk", "Response Desk")}</Text>
+              <Text style={[styles.bannerSub, { color: colors.text }]}>
+                {t("officer.responseDeskDesc", "Verify incoming citizen alerts, dispatch inspection teams, and log resolution updates.")}
               </Text>
             </View>
-            <View style={styles.bannerIcon}>
-              <ShieldAlert size={32} color={COLORS.secondary} />
+            <View style={[styles.bannerIcon, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.3)" : "#DBEAFE" }]}>
+              <ShieldAlert size={32} color={isDark ? "#60A5FA" : "#1D4ED8"} />
             </View>
           </View>
         </GlassCard>
 
-        {/* Statistics */}
-        <Text style={styles.sectionTitle}>Task Metrics</Text>
+        {/* Task Metrics Grid */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("officer.taskMetrics", "Task Metrics")}</Text>
         <View style={styles.grid}>
           <View style={styles.gridRow}>
             <StatCard
-              title="Pending Verification"
+              title={t("dashboard.pendingAlerts", "Pending")}
               value={officerStats.pendingVerification}
               icon={Clock}
-              iconColor="#EA580C"
-              iconBgColor="#FFEDD5"
+              iconColor={isDark ? "#FDBA74" : "#EA580C"}
+              iconBgColor={isDark ? "rgba(234, 88, 12, 0.25)" : "#FFEDD5"}
               style={styles.cardItem}
             />
             <StatCard
-              title="Assigned / Verified"
+              title={t("officer.assignedToMe", "Assigned To Me")}
               value={officerStats.assignedToMe}
               icon={UserCheck}
-              iconColor="#2563EB"
-              iconBgColor="#DBEAFE"
+              iconColor={isDark ? "#93C5FD" : "#2563EB"}
+              iconBgColor={isDark ? "rgba(37, 99, 235, 0.25)" : "#DBEAFE"}
               style={styles.cardItem}
             />
           </View>
           <View style={styles.gridRow}>
             <StatCard
-              title="In Progress"
+              title={t("officer.inProgress", "In Progress")}
               value={officerStats.inProgress}
               icon={RefreshCw}
-              iconColor="#0284C7"
-              iconBgColor="#E0F2FE"
+              iconColor={isDark ? "#67E8F9" : "#0891B2"}
+              iconBgColor={isDark ? "rgba(8, 145, 178, 0.25)" : "#CFFAFE"}
               style={styles.cardItem}
             />
             <StatCard
-              title="Resolved Reports"
+              title={t("officer.resolved", "Resolved")}
               value={officerStats.resolved}
               icon={CheckCircle}
-              iconColor="#16A34A"
-              iconBgColor="#DCFCE7"
+              iconColor={isDark ? "#86EFAC" : "#16A34A"}
+              iconBgColor={isDark ? "rgba(22, 163, 74, 0.25)" : "#DCFCE7"}
               style={styles.cardItem}
             />
           </View>
         </View>
 
-        {/* Action Queue List */}
+        {/* Action Required Queue */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Action Required Queue</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("OfficerTasksTab")}>
-            <Text style={styles.viewAllText}>View All Queue</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>{t("officer.actionRequiredQueue", "Action Required Queue")}</Text>
+          <TouchableOpacity
+            style={styles.viewAllBtn}
+            onPress={() => navigation.navigate("TasksTab")}
+          >
+            <Text style={[styles.viewAllText, { color: isDark ? "#60A5FA" : colors.secondary }]}>{t("officer.viewAllQueue", "View All Queue")}</Text>
+            <ChevronRight size={16} color={isDark ? "#60A5FA" : colors.secondary} />
           </TouchableOpacity>
         </View>
 
         {actionRequiredAlerts.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <CheckCircle size={36} color={COLORS.secondary} style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyTitle}>All Clear!</Text>
-            <Text style={styles.emptySub}>There are no pending alerts requiring officer verification.</Text>
+            <CheckCircle size={36} color={isDark ? "#60A5FA" : colors.secondary} style={{ marginBottom: 12 }} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>All Clear!</Text>
+            <Text style={[styles.emptySub, { color: colors.textMuted }]}>There are no pending alerts requiring officer verification.</Text>
           </Card>
         ) : (
           actionRequiredAlerts.map((alert) => (
@@ -189,27 +196,27 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
                   <Badge
                     label={alert.category?.toUpperCase().replace("_", " ") || "GENERAL"}
                     type="custom"
-                    bgColor="#F1F5F9"
-                    textColor="#475569"
+                    bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
+                    textColor={isDark ? colors.text : "#475569"}
                   />
                   <Badge label={alert.status || "PENDING"} type="status" />
                 </View>
-                <Text style={styles.queueTitle} numberOfLines={1}>
+                <Text style={[styles.queueTitle, { color: colors.text }]} numberOfLines={1}>
                   {alert.title}
                 </Text>
-                <Text style={styles.queueDesc} numberOfLines={2}>
+                <Text style={[styles.queueDesc, { color: colors.textMuted }]} numberOfLines={2}>
                   {alert.description}
                 </Text>
-                <View style={styles.queueFooter}>
+                <View style={[styles.queueFooter, { borderTopColor: colors.border }]}>
                   <View style={styles.locationBox}>
-                    <MapPin size={14} color={COLORS.textMuted} />
-                    <Text style={styles.locationText} numberOfLines={1}>
+                    <MapPin size={14} color={colors.textMuted} />
+                    <Text style={[styles.locationText, { color: colors.textMuted }]} numberOfLines={1}>
                       {alert.address || "Unknown Location"}
                     </Text>
                   </View>
                   <View style={styles.actionPrompt}>
-                    <Text style={styles.actionPromptText}>Review & Respond</Text>
-                    <ChevronRight size={16} color={COLORS.secondary} />
+                    <Text style={[styles.actionPromptText, { color: isDark ? "#60A5FA" : colors.secondary }]}>Review & Respond</Text>
+                    <ChevronRight size={16} color={isDark ? "#60A5FA" : colors.secondary} />
                   </View>
                 </View>
               </GlassCard>
@@ -222,7 +229,7 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1 },
   scrollView: { flex: 1 },
   contentContainer: { paddingHorizontal: 20, paddingBottom: 40, paddingTop: 12 },
   stickyHeader: {
@@ -231,9 +238,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
     zIndex: 10,
     elevation: 4,
     shadowColor: "#000",
@@ -242,30 +247,28 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   headerTextContainer: { flex: 1, marginRight: 12 },
-  greeting: { fontSize: 22, fontWeight: "800", color: COLORS.text },
-  subGreeting: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  greeting: { fontSize: 22, fontWeight: "800" },
+  subGreeting: { fontSize: 13, marginTop: 2 },
   refreshBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#DBEAFE",
     alignItems: "center",
     justifyContent: "center",
   },
   banner: { marginBottom: 20, borderRadius: 24, padding: 18 },
   bannerContent: { flexDirection: "row", alignItems: "center" },
-  bannerTitle: { fontSize: 18, fontWeight: "800", color: COLORS.secondary, marginBottom: 4 },
-  bannerSub: { fontSize: 13, color: COLORS.text, lineHeight: 18 },
+  bannerTitle: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  bannerSub: { fontSize: 13, lineHeight: 18 },
   bannerIcon: {
     width: 52,
     height: 52,
     borderRadius: 16,
-    backgroundColor: "#DBEAFE",
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 12,
   },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: 12, marginTop: 8 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12, marginTop: 8 },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -273,27 +276,27 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-  viewAllText: { fontSize: 14, color: COLORS.secondary, fontWeight: "700" },
+  viewAllText: { fontSize: 14, fontWeight: "700" },
   grid: { gap: 12, marginBottom: 16 },
   gridRow: { flexDirection: "row", gap: 12 },
   cardItem: { flex: 1 },
   queueCard: { marginBottom: 12, padding: 16 },
   queueHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  queueTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 4 },
-  queueDesc: { fontSize: 13, color: COLORS.textMuted, lineHeight: 18, marginBottom: 12 },
+  queueTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
+  queueDesc: { fontSize: 13, lineHeight: 18, marginBottom: 12 },
   queueFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.05)",
   },
   locationBox: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 },
-  locationText: { fontSize: 12, color: COLORS.textMuted, marginLeft: 4 },
+  locationText: { fontSize: 12, marginLeft: 4 },
   actionPrompt: { flexDirection: "row", alignItems: "center" },
-  actionPromptText: { fontSize: 12, color: COLORS.secondary, fontWeight: "700", marginRight: 2 },
+  actionPromptText: { fontSize: 12, fontWeight: "700", marginRight: 2 },
   emptyCard: { alignItems: "center", paddingVertical: 32, marginTop: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 4 },
-  emptySub: { fontSize: 13, color: COLORS.textMuted, textAlign: "center" },
+  emptyTitle: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
+  emptySub: { fontSize: 13, textAlign: "center" },
 });
+
