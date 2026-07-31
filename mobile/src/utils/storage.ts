@@ -4,6 +4,8 @@ import { Platform } from "react-native";
 const TOKEN_KEY = "ecoalert_access_token";
 const REFRESH_TOKEN_KEY = "ecoalert_refresh_token";
 const USER_KEY = "ecoalert_user";
+const THEME_KEY = "ecoalert_theme";
+const LANGUAGE_KEY = "ecoalert_language";
 
 // Safe SecureStore wrapper that falls back to in-memory/web storage if SecureStore is not available
 const isSecureStoreAvailable = Platform.OS !== "web";
@@ -118,6 +120,52 @@ export const storage = {
       }
     } catch (e) {
       console.warn("Failed to remove user from storage:", e);
+    }
+  },
+
+  getTheme: async (): Promise<string | null> => {
+    try {
+      if (isSecureStoreAvailable) {
+        return await SecureStore.getItemAsync(THEME_KEY);
+      }
+      return localStorage.getItem(THEME_KEY);
+    } catch (e) {
+      return null;
+    }
+  },
+
+  setTheme: async (theme: string): Promise<void> => {
+    try {
+      if (isSecureStoreAvailable) {
+        await SecureStore.setItemAsync(THEME_KEY, theme);
+      } else {
+        localStorage.setItem(THEME_KEY, theme);
+      }
+    } catch (e) {
+      console.warn("Failed to save theme:", e);
+    }
+  },
+
+  getLanguage: async (): Promise<string | null> => {
+    try {
+      if (isSecureStoreAvailable) {
+        return await SecureStore.getItemAsync(LANGUAGE_KEY);
+      }
+      return localStorage.getItem(LANGUAGE_KEY);
+    } catch (e) {
+      return null;
+    }
+  },
+
+  setLanguage: async (lang: string): Promise<void> => {
+    try {
+      if (isSecureStoreAvailable) {
+        await SecureStore.setItemAsync(LANGUAGE_KEY, lang);
+      } else {
+        localStorage.setItem(LANGUAGE_KEY, lang);
+      }
+    } catch (e) {
+      console.warn("Failed to save language:", e);
     }
   },
 
