@@ -84,9 +84,11 @@ services:
       - PORT=3002
       - MONGO_URI=${MONGO_URI_ALERT}
       - RABBITMQ_URL=${RABBITMQ_URL}
+      - USER_SERVICE_URL=http://user-service:3001
     depends_on:
       - mongodb
       - rabbitmq
+      - user-service
     networks:
       - ecoalert_network
 

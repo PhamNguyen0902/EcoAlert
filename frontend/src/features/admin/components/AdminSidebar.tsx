@@ -68,7 +68,6 @@ export default function AdminSidebar() {
           >
             <item.icon className={cn("h-5 w-5 shrink-0", isCollapsed ? "mr-0" : "mr-3")} />
             {!isCollapsed && <span className="whitespace-nowrap">{item.label || t(item.key)}</span>}
-            {!isCollapsed && <span className="whitespace-nowrap flex-1">{t(item.key)}</span>}
             {item.showBadge && pendingCount > 0 && (
               <span
                 className={cn(
