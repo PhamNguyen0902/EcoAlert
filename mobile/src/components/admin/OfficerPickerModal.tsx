@@ -1,253 +1,222 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Modal,
-  Pressable,
   StyleSheet,
+  View,
   Text,
   TouchableOpacity,
-  View,
 } from "react-native";
-import { Check, ShieldCheck, X } from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { User } from "../../types";
-import { COLORS } from "../../utils/constants";
+import { X, UserCheck, ShieldCheck, RefreshCw, AlertCircle, Check } from "lucide-react-native";
 import { Button } from "../ui/Button";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
+import type { User } from "../../types";
 
 interface OfficerPickerModalProps {
   visible: boolean;
   officers: User[];
-  isLoading: boolean;
-  isRefreshing: boolean;
-  isAssigning: boolean;
+  isLoading?: boolean;
+  isRefreshing?: boolean;
+  isAssigning?: boolean;
   errorMessage?: string;
   onClose: () => void;
-  onRetry: () => void;
+  onRetry?: () => void;
   onAssign: (officer: User) => void;
 }
 
 export const OfficerPickerModal: React.FC<OfficerPickerModalProps> = ({
   visible,
   officers,
-  isLoading,
-  isRefreshing,
-  isAssigning,
+  isLoading = false,
+  isRefreshing = false,
+  isAssigning = false,
   errorMessage,
   onClose,
   onRetry,
   onAssign,
 }) => {
-  const insets = useSafeAreaInsets();
-  const [selectedOfficerId, setSelectedOfficerId] = useState<string>();
-  const selectedOfficer = useMemo(
-    () => officers.find((officer) => officer._id === selectedOfficerId),
-    [officers, selectedOfficerId],
-  );
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+  const [selectedOfficerId, setSelectedOfficerId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!visible) setSelectedOfficerId(undefined);
-  }, [visible]);
+    if (visible && officers.length > 0 && !selectedOfficerId) {
+      setSelectedOfficerId(officers[0]._id);
+    }
+  }, [visible, officers, selectedOfficerId]);
 
-  const close = () => {
-    if (!isAssigning) onClose();
-  };
+  const selectedOfficer = officers.find((o) => o._id === selectedOfficerId) || null;
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      statusBarTranslucent
-      onRequestClose={close}
-    >
-      <Pressable style={styles.backdrop} onPress={close}>
-        <Pressable
-          style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]}
-          onPress={(event) => event.stopPropagation()}
-        >
-          <View style={styles.handle} />
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Assign to Officer</Text>
-              <Text style={styles.subtitle}>Select the Officer who will handle this incident.</Text>
+            <View style={styles.headerTitleRow}>
+              <UserCheck size={22} color={colors.primary} />
+              <View>
+                <Text style={[styles.title, { color: colors.text }]}>{t("modals.assignOfficerTitle", "Phân công Cán bộ")}</Text>
+                <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                  {t("modals.assignOfficerSub", "Chọn Cán bộ chịu trách nhiệm theo dõi và xử lý sự cố này.")}
+                </Text>
+              </View>
             </View>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Close Officer picker"
-              disabled={isAssigning}
-              onPress={close}
-              style={styles.closeButton}
-            >
-              <X size={20} color={COLORS.textMuted} />
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           {isLoading ? (
-            <View style={styles.stateContainer}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.stateText}>Loading Officers...</Text>
+            <View style={styles.stateBox}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.stateText, { color: colors.textMuted }]}>{t("modals.loadingOfficers", "Đang tải danh sách Cán bộ...")}</Text>
             </View>
           ) : errorMessage ? (
-            <View style={styles.stateContainer}>
-              <Text style={styles.errorTitle}>Unable to load Officers</Text>
-              <Text style={styles.stateText}>{errorMessage}</Text>
-              <Button title="Try Again" variant="outline" size="sm" onPress={onRetry} />
+            <View style={styles.stateBox}>
+              <AlertCircle size={32} color={colors.destructive} />
+              <Text style={[styles.errorTitle, { color: colors.text }]}>{t("modals.errorLoadingOfficers", "Không thể tải danh sách")}</Text>
+              <Text style={[styles.stateText, { color: colors.textMuted }]}>{errorMessage}</Text>
+              {onRetry ? (
+                <Button
+                  title={t("modals.retry", "Thử lại")}
+                  onPress={onRetry}
+                  variant="outline"
+                  loading={isRefreshing}
+                  style={styles.retryBtn}
+                  icon={<RefreshCw size={16} color={colors.primary} style={{ marginRight: 6 }} />}
+                />
+              ) : null}
             </View>
           ) : officers.length === 0 ? (
-            <View style={styles.stateContainer}>
-              <Text style={styles.errorTitle}>No Officers available</Text>
-              <Text style={styles.stateText}>Create or activate an Officer account before assigning this incident.</Text>
+            <View style={styles.stateBox}>
+              <AlertCircle size={32} color={colors.textMuted} />
+              <Text style={[styles.errorTitle, { color: colors.text }]}>{t("modals.noOfficersFound", "Chưa có Cán bộ trong hệ thống")}</Text>
+              <Text style={[styles.stateText, { color: colors.textMuted }]}>
+                {t("modals.createOfficerFirst", "Hãy tạo tài khoản Cán bộ (OFFICER) trong Quản lý người dùng trước.")}
+              </Text>
             </View>
           ) : (
-            <FlatList
-              data={officers}
-              keyExtractor={(officer) => officer._id}
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
-              refreshing={isRefreshing}
-              onRefresh={onRetry}
-              renderItem={({ item }) => {
-                const selected = item._id === selectedOfficerId;
-                const active = item.isActive !== false;
-                return (
-                  <TouchableOpacity
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: selected, disabled: !active }}
-                    disabled={!active || isAssigning}
-                    activeOpacity={0.75}
-                    onPress={() => setSelectedOfficerId(item._id)}
-                    style={[
-                      styles.officerRow,
-                      selected && styles.officerRowSelected,
-                      !active && styles.officerRowDisabled,
-                    ]}
-                  >
-                    <View style={[styles.avatar, selected && styles.avatarSelected]}>
-                      <ShieldCheck size={22} color={selected ? COLORS.primary : COLORS.textMuted} />
-                    </View>
-                    <View style={styles.officerDetails}>
-                      <Text style={styles.officerName}>{item.fullName}</Text>
-                      <Text style={styles.officerEmail} numberOfLines={1}>{item.email}</Text>
-                      {!active ? <Text style={styles.inactiveLabel}>Inactive account</Text> : null}
-                    </View>
-                    <View style={[styles.radio, selected && styles.radioSelected]}>
-                      {selected ? <Check size={15} color="#FFFFFF" /> : null}
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          )}
+            <>
+              <FlatList
+                data={officers}
+                keyExtractor={(item) => item._id}
+                showsVerticalScrollIndicator={false}
+                style={styles.list}
+                renderItem={({ item }) => {
+                  const selected = selectedOfficerId === item._id;
+                  const inactive = item.isActive === false;
 
-          <View style={styles.actions}>
-            <Button
-              title="Cancel"
-              variant="outline"
-              disabled={isAssigning}
-              onPress={close}
-              style={styles.actionButton}
-            />
-            <Button
-              title="Assign Officer"
-              loading={isAssigning}
-              disabled={!selectedOfficer}
-              onPress={() => selectedOfficer && onAssign(selectedOfficer)}
-              style={styles.actionButton}
-              icon={<ShieldCheck size={18} color="#FFFFFF" />}
-            />
-          </View>
-        </Pressable>
-      </Pressable>
+                  return (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={[
+                        styles.officerRow,
+                        {
+                          borderColor: selected ? colors.primary : colors.border,
+                          backgroundColor: selected ? (isDark ? "rgba(34,197,94,0.2)" : colors.primaryLight) : colors.surface,
+                        },
+                      ]}
+                      onPress={() => setSelectedOfficerId(item._id)}
+                    >
+                      <View style={[styles.officerAvatar, { backgroundColor: colors.background }]}>
+                        <ShieldCheck size={22} color={selected ? colors.primary : colors.textMuted} />
+                      </View>
+                      <View style={styles.officerMeta}>
+                        <Text style={[styles.officerName, { color: colors.text }]}>{item.fullName}</Text>
+                        <Text style={[styles.officerEmail, { color: colors.textMuted }]}>{item.email}</Text>
+                        {inactive ? <Text style={[styles.inactiveLabel, { color: colors.destructive }]}>Vô hiệu hóa</Text> : null}
+                      </View>
+                      <View style={[styles.radioOuter, { borderColor: selected ? colors.primary : colors.border }]}>
+                        {selected ? <Check size={14} color={colors.primary} /> : null}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+
+              <Button
+                title={t("modals.confirmAssignBtn", "Xác nhận phân công")}
+                onPress={() => selectedOfficer && onAssign(selectedOfficer)}
+                loading={isAssigning}
+                disabled={!selectedOfficer}
+                style={styles.submitBtn}
+              />
+            </>
+          )}
+        </View>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
+  overlay: {
     flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
-    backgroundColor: "rgba(15, 23, 42, 0.52)",
   },
-  sheet: {
-    maxHeight: "82%",
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    backgroundColor: COLORS.surface,
+  modalCard: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-  },
-  handle: {
-    width: 44,
-    height: 5,
-    alignSelf: "center",
-    marginBottom: 16,
-    borderRadius: 3,
-    backgroundColor: COLORS.border,
+    maxHeight: "80%",
+    padding: 20,
   },
   header: {
     flexDirection: "row",
-    alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 12,
+    alignItems: "flex-start",
     marginBottom: 16,
   },
-  title: { fontSize: 20, fontWeight: "800", color: COLORS.text },
-  subtitle: { maxWidth: 290, marginTop: 4, fontSize: 13, lineHeight: 18, color: COLORS.textMuted },
-  closeButton: {
-    width: 38,
-    height: 38,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 19,
-    backgroundColor: COLORS.background,
-  },
-  stateContainer: {
-    minHeight: 230,
-    alignItems: "center",
-    justifyContent: "center",
+  headerTitleRow: {
+    flexDirection: "row",
     gap: 10,
-    paddingHorizontal: 24,
+    flex: 1,
+    paddingRight: 8,
   },
-  errorTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, textAlign: "center" },
-  stateText: { fontSize: 13, lineHeight: 19, color: COLORS.textMuted, textAlign: "center" },
-  list: { maxHeight: 390 },
-  listContent: { gap: 10, paddingBottom: 6 },
+  title: { fontSize: 18, fontWeight: "800" },
+  subtitle: { maxWidth: 290, marginTop: 4, fontSize: 13, lineHeight: 18 },
+  closeBtn: { padding: 4 },
+  list: { marginBottom: 16, maxHeight: 320 },
+  stateBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  errorTitle: { fontSize: 16, fontWeight: "700", textAlign: "center" },
+  stateText: { fontSize: 13, lineHeight: 19, textAlign: "center" },
+  retryBtn: { marginTop: 6 },
   officerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    padding: 13,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    padding: 12,
     borderRadius: 16,
-    backgroundColor: COLORS.surface,
-  },
-  officerRowSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
-  officerRowDisabled: { opacity: 0.48 },
-  avatar: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 22,
-    backgroundColor: COLORS.background,
-  },
-  avatarSelected: { backgroundColor: "#FFFFFF" },
-  officerDetails: { flex: 1 },
-  officerName: { fontSize: 14, fontWeight: "700", color: COLORS.text },
-  officerEmail: { marginTop: 2, fontSize: 12, color: COLORS.textMuted },
-  inactiveLabel: { marginTop: 3, fontSize: 11, fontWeight: "700", color: COLORS.destructive },
-  radio: {
-    width: 24,
-    height: 24,
-    alignItems: "center",
-    justifyContent: "center",
     borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: 12,
+    marginBottom: 10,
+    gap: 12,
   },
-  radioSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primary },
-  actions: { flexDirection: "row", gap: 12, paddingTop: 16 },
-  actionButton: { flex: 1 },
+  officerAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  officerMeta: { flex: 1 },
+  officerName: { fontSize: 14, fontWeight: "700" },
+  officerEmail: { marginTop: 2, fontSize: 12 },
+  inactiveLabel: { marginTop: 3, fontSize: 11, fontWeight: "700" },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitBtn: { marginTop: 4 },
 });
+

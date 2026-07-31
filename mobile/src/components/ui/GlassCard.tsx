@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -12,11 +12,26 @@ interface GlassCardProps {
 export const GlassCard: React.FC<GlassCardProps> = ({
   children,
   style,
-  gradientColors = ["rgba(255, 255, 255, 0.95)", "rgba(255, 255, 255, 0.85)"],
+  gradientColors,
 }) => {
+  const { colors, isDark } = useTheme();
+
+  const defaultColors: [string, string] = isDark
+    ? ["rgba(30, 41, 59, 0.95)", "rgba(15, 23, 42, 0.85)"]
+    : ["rgba(255, 255, 255, 0.95)", "rgba(255, 255, 255, 0.85)"];
+
   return (
-    <View style={[styles.container, style]}>
-      <LinearGradient colors={gradientColors} style={styles.gradient}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.glassBorder,
+        },
+        style,
+      ]}
+    >
+      <LinearGradient colors={gradientColors || defaultColors} style={styles.gradient}>
         {children}
       </LinearGradient>
     </View>
@@ -27,9 +42,7 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.8)",
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },

@@ -10,7 +10,7 @@ import {
 import { X, KeyRound } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 import { useChangePassword } from "../../hooks/useUsers";
 
 interface ChangePasswordModalProps {
@@ -22,6 +22,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   visible,
   onClose,
 }) => {
+  const { colors } = useTheme();
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -62,14 +63,14 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <KeyRound size={22} color={COLORS.primary} />
-              <Text style={styles.title}>Change Password</Text>
+              <KeyRound size={22} color={colors.primary} />
+              <Text style={[styles.title, { color: colors.text }]}>Change Password</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textMuted} />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -116,7 +117,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
@@ -135,7 +135,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: COLORS.text,
   },
   closeBtn: {
     padding: 6,
@@ -144,3 +143,4 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 });
+

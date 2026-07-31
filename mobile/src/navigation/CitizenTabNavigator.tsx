@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LayoutDashboard, PlusCircle, FileText, User as UserIcon, Edit2, KeyRound } from "lucide-react-native";
@@ -12,7 +12,9 @@ import { EditProfileModal } from "../components/modals/EditProfileModal";
 import { ChangePasswordModal } from "../components/modals/ChangePasswordModal";
 import { GlassCard } from "../components/ui/GlassCard";
 import { Button } from "../components/ui/Button";
-import { COLORS } from "../utils/constants";
+import { SettingsSection } from "../components/ui/SettingsSection";
+import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -30,48 +32,62 @@ function formatProfileName(fullName?: string): string {
 const ProfileScreen: React.FC = () => {
   const { data: profile } = useProfile();
   const logoutMutation = useLogout();
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [isEditProfileOpen, setEditProfileOpen] = useState(false);
   const [isChangePasswordOpen, setChangePasswordOpen] = useState(false);
 
   return (
-    <View style={styles.profileContainer}>
+    <ScrollView
+      style={[styles.scrollContainer, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.profileContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <GlassCard style={styles.profileCard}>
         <View style={styles.profileContent}>
-          <View style={styles.avatarBox}>
-            <UserIcon size={40} color={COLORS.primary} />
+          <View style={[styles.avatarBox, { backgroundColor: colors.primaryLight }]}>
+            <UserIcon size={40} color={colors.primary} />
           </View>
-          <Text style={styles.profileName}>{formatProfileName(profile?.fullName)}</Text>
-          <Text style={styles.profileEmail}>{profile?.email || "citizen@ecoalert.org"}</Text>
-          <View style={styles.roleTag}>
-            <Text style={styles.roleText}>{profile?.role || "CITIZEN"}</Text>
+          <Text style={[styles.profileName, { color: colors.text }]}>
+            {formatProfileName(profile?.fullName)}
+          </Text>
+          <Text style={[styles.profileEmail, { color: colors.textMuted }]}>
+            {profile?.email || "citizen@ecoalert.org"}
+          </Text>
+          <View style={[styles.roleTag, { backgroundColor: colors.primaryLight }]}>
+            <Text style={[styles.roleText, { color: colors.primaryDark }]}>
+              {profile?.role ? t(`profile.${profile.role.toLowerCase()}Role`, profile.role) : t("profile.citizenRole")}
+            </Text>
           </View>
 
           <View style={styles.profileActions}>
             <Button
-              title="Edit Profile"
+              title={t("profile.editProfile", "Edit Profile")}
               variant="outline"
               onPress={() => setEditProfileOpen(true)}
               style={styles.profileActionBtn}
-              icon={<Edit2 size={16} color={COLORS.primary} style={{ marginRight: 6 }} />}
+              icon={<Edit2 size={16} color={colors.primary} style={{ marginRight: 6 }} />}
             />
             <Button
-              title="Change Password"
+              title={t("profile.changePassword", "Change Password")}
               variant="outline"
               onPress={() => setChangePasswordOpen(true)}
               style={styles.profileActionBtn}
-              icon={<KeyRound size={16} color={COLORS.primary} style={{ marginRight: 6 }} />}
+              icon={<KeyRound size={16} color={colors.primary} style={{ marginRight: 6 }} />}
             />
           </View>
-
-          <Button
-            title="Sign Out"
-            variant="destructive"
-            onPress={() => logoutMutation.mutate()}
-            loading={logoutMutation.isPending}
-            style={styles.logoutBtn}
-          />
         </View>
       </GlassCard>
+
+      <SettingsSection />
+
+      <Button
+        title={t("profile.signOut", "Sign Out")}
+        variant="destructive"
+        onPress={() => logoutMutation.mutate()}
+        loading={logoutMutation.isPending}
+        style={styles.logoutBtn}
+      />
 
       <EditProfileModal
         visible={isEditProfileOpen}
@@ -82,18 +98,27 @@ const ProfileScreen: React.FC = () => {
         visible={isChangePasswordOpen}
         onClose={() => setChangePasswordOpen(false)}
       />
-    </View>
+    </ScrollView>
   );
 };
 
 const CitizenTabs = () => {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textMuted,
-        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+          },
+        ],
         tabBarLabelStyle: styles.tabLabel,
         tabBarIcon: ({ color, size }) => {
           if (route.name === "DashboardTab") {
@@ -112,22 +137,22 @@ const CitizenTabs = () => {
       <Tab.Screen
         name="DashboardTab"
         component={CitizenDashboardScreen}
-        options={{ tabBarLabel: "Dashboard" }}
+        options={{ tabBarLabel: t("tabs.dashboard", "Dashboard") }}
       />
       <Tab.Screen
         name="ReportTab"
         component={ReportIncidentScreen}
-        options={{ tabBarLabel: "Report Alert" }}
+        options={{ tabBarLabel: t("tabs.reportAlert", "Report Alert") }}
       />
       <Tab.Screen
         name="MyReportsTab"
         component={MyReportsScreen}
-        options={{ tabBarLabel: "My Reports" }}
+        options={{ tabBarLabel: t("tabs.myReports", "My Reports") }}
       />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}
-        options={{ tabBarLabel: "Profile" }}
+        options={{ tabBarLabel: t("tabs.profile", "Profile") }}
       />
     </Tab.Navigator>
   );
@@ -143,10 +168,11 @@ export const CitizenTabNavigator = () => {
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 1,
+  },
   tabBar: {
-    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     height: 64,
     paddingBottom: 8,
     paddingTop: 8,
@@ -157,11 +183,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   profileContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    padding: 24,
-    justifyContent: "center",
+    padding: 20,
     alignItems: "center",
+    paddingTop: 50,
+    paddingBottom: 40,
   },
   profileCard: {
     width: "100%",
@@ -171,13 +196,12 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   avatarBox: {
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: COLORS.primaryLight,
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
@@ -186,12 +210,10 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 22,
     fontWeight: "800",
-    color: COLORS.text,
     textAlign: "center",
   },
   profileEmail: {
     fontSize: 14,
-    color: COLORS.textMuted,
     marginTop: 4,
     textAlign: "center",
   },
@@ -199,14 +221,12 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingHorizontal: 18,
     paddingVertical: 6,
-    backgroundColor: COLORS.primaryLight,
     borderRadius: 20,
     alignSelf: "center",
   },
   roleText: {
     fontSize: 12,
     fontWeight: "800",
-    color: COLORS.primaryDark,
     letterSpacing: 0.5,
   },
   profileActions: {
@@ -219,10 +239,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   logoutBtn: {
-    marginTop: 16,
-    paddingHorizontal: 36,
-    minWidth: 180,
-    alignSelf: "center",
+    marginTop: 12,
+    width: "100%",
     borderRadius: 16,
   },
 });

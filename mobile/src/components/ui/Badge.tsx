@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
-import { STATUS_COLORS } from "../../utils/constants";
+import { STATUS_COLORS, DARK_STATUS_COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 
 interface BadgeProps {
   label: string;
@@ -17,11 +18,13 @@ export const Badge: React.FC<BadgeProps> = ({
   textColor,
   style,
 }) => {
+  const { isDark } = useTheme();
   const normStatus = label?.toUpperCase() || "PENDING";
-  const statusColor = STATUS_COLORS[normStatus] || { bg: "#F1F5F9", text: "#475569" };
+  const palette = isDark ? DARK_STATUS_COLORS : STATUS_COLORS;
+  const statusColor = palette[normStatus] || { bg: isDark ? "rgba(148,163,184,0.2)" : "#F1F5F9", text: isDark ? "#CBD5E1" : "#475569" };
 
-  const finalBg = type === "custom" ? bgColor || "#F1F5F9" : statusColor.bg;
-  const finalText = type === "custom" ? textColor || "#475569" : statusColor.text;
+  const finalBg = type === "custom" ? bgColor || (isDark ? "rgba(148,163,184,0.2)" : "#F1F5F9") : statusColor.bg;
+  const finalText = type === "custom" ? textColor || (isDark ? "#CBD5E1" : "#475569") : statusColor.text;
 
   return (
     <View style={[styles.badge, { backgroundColor: finalBg }, style]}>
@@ -43,3 +46,4 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
+

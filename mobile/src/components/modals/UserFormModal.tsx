@@ -11,7 +11,8 @@ import {
 import { X, UserPlus } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { useCreateUser } from "../../hooks/useUsers";
 import { UserRole } from "../../types";
 
@@ -21,6 +22,8 @@ interface UserFormModalProps {
 }
 
 export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }) => {
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +34,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
 
   const handleCreate = async () => {
     if (!email.trim() || !fullName.trim() || !password.trim()) {
-      RNAlert.alert("Validation Error", "Please fill in Email, Full Name, and Password.");
+      RNAlert.alert(t("modals.validationError", "Validation Error"), t("modals.fillRequiredUserFields", "Please fill in Email, Full Name, and Password."));
       return;
     }
 
@@ -43,7 +46,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
         phone: phone.trim() || undefined,
         role,
       });
-      RNAlert.alert("Success", "User account created successfully.");
+      RNAlert.alert(t("modals.successTitle", "Success"), t("modals.userCreatedMsg", "User account created successfully."));
       setEmail("");
       setFullName("");
       setPassword("");
@@ -52,34 +55,34 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to create user.";
-      RNAlert.alert("Creation Error", msg);
+      RNAlert.alert(t("modals.creationError", "Creation Error"), msg);
     }
   };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <UserPlus size={22} color="#7C3AED" />
-              <Text style={styles.title}>Create New User</Text>
+              <UserPlus size={22} color={isDark ? "#A78BFA" : "#7C3AED"} />
+              <Text style={[styles.title, { color: colors.text }]}>{t("modals.createUserTitle", "Create New User")}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textMuted} />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.formContent} showsVerticalScrollIndicator={false}>
             <Input
-              label="Full Name *"
+              label={`${t("auth.fullNameLabel", "Full Name")} *`}
               placeholder="e.g. Nguyen Van A"
               value={fullName}
               onChangeText={setFullName}
             />
 
             <Input
-              label="Email Address *"
+              label={`${t("auth.emailLabel", "Email Address")} *`}
               placeholder="e.g. user@ecoalert.org"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -88,7 +91,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
             />
 
             <Input
-              label="Initial Password *"
+              label={`${t("modals.initialPassword", "Initial Password")} *`}
               placeholder="Minimum 6 characters"
               secureTextEntry
               value={password}
@@ -96,33 +99,47 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
             />
 
             <Input
-              label="Phone Number"
+              label={t("modals.phoneNumber", "Phone Number")}
               placeholder="e.g. 0912345678"
               keyboardType="phone-pad"
               value={phone}
               onChangeText={setPhone}
             />
 
-            <Text style={styles.label}>Select Role *</Text>
+            <Text style={[styles.label, { color: colors.text }]}>{t("modals.selectRole", "Select Role *")}</Text>
             <View style={styles.rolePickerRow}>
-              {(["CITIZEN", "OFFICER", "ADMIN"] as UserRole[]).map((r) => (
-                <TouchableOpacity
-                  key={r}
-                  style={[styles.roleChip, role === r && styles.roleChipActive]}
-                  onPress={() => setRole(r)}
-                >
-                  <Text style={[styles.roleChipText, role === r && styles.roleChipTextActive]}>
-                    {r}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {(["CITIZEN", "OFFICER", "ADMIN"] as UserRole[]).map((r) => {
+                const isActive = role === r;
+                return (
+                  <TouchableOpacity
+                    key={r}
+                    style={[
+                      styles.roleChip,
+                      {
+                        backgroundColor: isActive ? (isDark ? "rgba(124,58,237,0.3)" : "#F3E8FF") : colors.background,
+                        borderColor: isActive ? (isDark ? "#A78BFA" : "#7C3AED") : colors.border,
+                      },
+                    ]}
+                    onPress={() => setRole(r)}
+                  >
+                    <Text
+                      style={[
+                        styles.roleChipText,
+                        { color: isActive ? (isDark ? "#C4B5FD" : "#7C3AED") : colors.textMuted },
+                      ]}
+                    >
+                      {r}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <Button
-              title="Create Account"
+              title={t("modals.createAccountBtn", "Create Account")}
               onPress={handleCreate}
               loading={createUserMutation.isPending}
-              style={styles.submitBtn}
+              style={[styles.submitBtn, { backgroundColor: isDark ? "#7C3AED" : "#7C3AED" }]}
             />
           </ScrollView>
         </View>
@@ -138,7 +155,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "85%",
@@ -158,7 +174,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: COLORS.text,
   },
   closeBtn: {
     padding: 6,
@@ -169,7 +184,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.text,
     marginBottom: 8,
     marginTop: 12,
   },
@@ -183,24 +197,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
     alignItems: "center",
-    backgroundColor: COLORS.background,
-  },
-  roleChipActive: {
-    borderColor: "#7C3AED",
-    backgroundColor: "#F3E8FF",
   },
   roleChipText: {
     fontSize: 12,
     fontWeight: "700",
-    color: COLORS.textMuted,
-  },
-  roleChipTextActive: {
-    color: "#7C3AED",
   },
   submitBtn: {
     marginTop: 10,
-    backgroundColor: "#7C3AED",
   },
 });
+

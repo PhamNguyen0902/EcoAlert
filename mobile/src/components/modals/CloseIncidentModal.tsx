@@ -10,7 +10,8 @@ import {
 import { X, CheckSquare, Star } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { useCloseIncident } from "../../hooks/useAlerts";
 
 interface CloseIncidentModalProps {
@@ -24,6 +25,8 @@ export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
   alertId,
   onClose,
 }) => {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [reviewNote, setReviewNote] = useState("");
   const [rating, setRating] = useState(5);
   const closeMutation = useCloseIncident();
@@ -35,7 +38,7 @@ export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
         reviewNote: reviewNote.trim() ? `[Rating: ${rating}/5] ${reviewNote.trim()}` : undefined,
       });
 
-      RNAlert.alert("Incident Closed", "Thank you for verifying the incident resolution!");
+      RNAlert.alert(t("modals.incidentClosedTitle", "Incident Closed"), t("modals.incidentClosedMsg", "Thank you for verifying the incident resolution!"));
       setReviewNote("");
       onClose();
     } catch (err: any) {
@@ -47,28 +50,28 @@ export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <CheckSquare size={22} color={COLORS.primary} />
-              <Text style={styles.title}>Confirm & Close Incident</Text>
+              <CheckSquare size={22} color={colors.primary} />
+              <Text style={[styles.title, { color: colors.text }]}>{t("modals.closeIncidentTitle", "Confirm & Close Incident")}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textMuted} />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.subTitle}>
-            Are you satisfied with how officers resolved this report? Confirming will officially close the incident.
+          <Text style={[styles.subTitle, { color: colors.textMuted }]}>
+            {t("modals.closeIncidentSub", "Are you satisfied with how officers resolved this report? Confirming will officially close the incident.")}
           </Text>
 
-          <Text style={styles.label}>Rate Resolution Service</Text>
+          <Text style={[styles.label, { color: colors.text }]}>{t("modals.rateService", "Rate Resolution Service")}</Text>
           <View style={styles.ratingRow}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity key={star} onPress={() => setRating(star)} style={styles.starBtn}>
                 <Star
                   size={28}
-                  color={star <= rating ? "#EAB308" : COLORS.textMuted}
+                  color={star <= rating ? "#EAB308" : colors.border}
                   fill={star <= rating ? "#EAB308" : "none"}
                 />
               </TouchableOpacity>
@@ -76,7 +79,7 @@ export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
           </View>
 
           <Input
-            label="Optional Citizen Review / Feedback"
+            label={t("modals.citizenReviewLabel", "Optional Citizen Review / Feedback")}
             placeholder="Add comments about officer response time or resolution quality..."
             multiline
             numberOfLines={3}
@@ -85,7 +88,7 @@ export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
           />
 
           <Button
-            title="Accept & Close Incident"
+            title={t("modals.acceptCloseBtn", "Accept & Close Incident")}
             onPress={handleCloseIncident}
             loading={closeMutation.isPending}
             style={styles.submitBtn}
@@ -103,7 +106,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
@@ -122,21 +124,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: COLORS.text,
   },
   closeBtn: {
     padding: 6,
   },
   subTitle: {
     fontSize: 13,
-    color: COLORS.textMuted,
     lineHeight: 18,
     marginBottom: 16,
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.text,
     marginBottom: 8,
   },
   ratingRow: {
@@ -150,6 +149,6 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: 16,
-    backgroundColor: COLORS.primary,
   },
 });
+

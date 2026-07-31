@@ -8,7 +8,7 @@ import {
   StyleProp,
   ViewStyle,
 } from "react-native";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -30,18 +30,25 @@ export const Input = forwardRef<TextInput, InputProps>(
       rightIcon,
       style,
       multiline,
+      placeholderTextColor,
       ...props
     },
     ref
   ) => {
+    const { colors } = useTheme();
+
     return (
       <View style={[styles.container, containerStyle]}>
-        {label ? <Text style={styles.label}>{label}</Text> : null}
+        {label ? <Text style={[styles.label, { color: colors.text }]}>{label}</Text> : null}
         <View
           style={[
             styles.inputContainer,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
             multiline && styles.multilineInputContainer,
-            Boolean(error) && styles.errorBorder,
+            Boolean(error) && { borderColor: colors.destructive },
           ]}
         >
           {leftIcon ? <View style={[styles.leftIcon, multiline && styles.multilineIcon]}>{leftIcon}</View> : null}
@@ -51,18 +58,19 @@ export const Input = forwardRef<TextInput, InputProps>(
             textAlignVertical={multiline ? "top" : "center"}
             style={[
               styles.input,
+              { color: colors.text },
               multiline && styles.multilineInput,
               style,
             ]}
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={placeholderTextColor || colors.textMuted}
             {...props}
           />
           {rightIcon ? <View style={[styles.rightIcon, multiline && styles.multilineIcon]}>{rightIcon}</View> : null}
         </View>
         {error ? (
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
         ) : hint ? (
-          <Text style={styles.hintText}>{hint}</Text>
+          <Text style={[styles.hintText, { color: colors.textMuted }]}>{hint}</Text>
         ) : null}
       </View>
     );
@@ -78,15 +86,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "700",
-    color: COLORS.text,
     marginBottom: 6,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surface,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     borderRadius: 14,
     paddingHorizontal: 14,
     minHeight: 52,
@@ -96,13 +101,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "flex-start",
   },
-  errorBorder: {
-    borderColor: COLORS.destructive,
-  },
   input: {
     flex: 1,
     fontSize: 14.5,
-    color: COLORS.text,
     paddingVertical: 8,
   },
   multilineInput: {
@@ -121,13 +122,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: COLORS.destructive,
     marginTop: 4,
     fontWeight: "500",
   },
   hintText: {
     fontSize: 12,
-    color: COLORS.textMuted,
     marginTop: 4,
   },
 });
