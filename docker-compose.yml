@@ -138,10 +138,8 @@ services:
       - MONGO_URI=${MONGO_URI_AI}
       - ALERT_MONGO_URI=${MONGO_URI_ALERT}
       - REDIS_URL=${REDIS_URL}
-      - AI_CHAT_PROVIDER=${AI_CHAT_PROVIDER}
-      - AI_CHAT_MODEL=${AI_CHAT_MODEL}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
+      # OpenRouter credentials and task-specific models come only from env_file.
+      # This prevents blank root Compose variables from overriding valid service values.
       - ASSISTANT_RATE_LIMIT=${ASSISTANT_RATE_LIMIT}
       - ASSISTANT_RATE_WINDOW_SECONDS=${ASSISTANT_RATE_WINDOW_SECONDS}
       - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}

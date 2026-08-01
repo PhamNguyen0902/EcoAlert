@@ -26,13 +26,15 @@ const createMessage = () => {
 test('RabbitMQ acknowledges only after analysis is published', async () => {
   const order: string[] = [];
   let publishedData: any;
+  let analysisInput: any;
   const channel = {
     ack: () => order.push('ack'),
     nack: () => order.push('nack'),
   };
   const dependencies: AlertCreatedProcessorDependencies = {
-    analyze: async () => {
+    analyze: async (input) => {
       order.push('analyze');
+      analysisInput = input;
       return {
         category: AlertCategory.ILLEGAL_CONSTRUCTION_WASTE,
         severity: Severity.HIGH,
@@ -62,6 +64,8 @@ test('RabbitMQ acknowledges only after analysis is published', async () => {
   assert.equal(result.acknowledged, true);
   assert.equal(publishedData.analysisId, 'alert-created-event-1');
   assert.equal(publishedData.confidence, 0);
+  assert.equal(analysisInput.imageUrl, 'https://example.com/evidence.jpg');
+  assert.equal(analysisInput.title, 'Roadside dumping');
 });
 
 test('provider failure is rejected without requeue and never acknowledged', async () => {

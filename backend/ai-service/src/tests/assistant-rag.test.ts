@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
+import path from 'node:path';
 import { detectAssistantIntent } from '../assistant/intent-detector';
 import { retrieveKnowledge } from '../assistant/knowledge';
 import { buildAlertAccessFilter } from '../assistant/authorized-data.retriever';
@@ -43,4 +45,23 @@ test('authorized alert filters never use a client-supplied ownership scope', () 
     buildAlertAccessFilter({ userId: 'admin-1', role: 'ADMIN' }),
     { isDeleted: { $ne: true } },
   );
+});
+
+test('frontend source never references the OpenRouter API key', () => {
+  const frontendSource = path.resolve(__dirname, '../../../../frontend/src');
+  const pending = [frontendSource];
+  let combinedSource = '';
+
+  while (pending.length > 0) {
+    const current = pending.pop()!;
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const entryPath = path.join(current, entry.name);
+      if (entry.isDirectory()) pending.push(entryPath);
+      else if (/\.(ts|tsx|js|jsx)$/.test(entry.name)) {
+        combinedSource += fs.readFileSync(entryPath, 'utf8');
+      }
+    }
+  }
+
+  assert.equal(combinedSource.includes('OPENROUTER_API_KEY'), false);
 });

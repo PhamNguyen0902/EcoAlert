@@ -1,55 +1,44 @@
-import OpenAI from 'openai';
-import { envConfig } from '../config/env.config';
+import { AiTask } from '../services/ai-task-router';
+import {
+  getOpenRouterProvider,
+  OpenRouterProvider,
+} from '../services/openrouter.service';
 
 export interface ChatHistoryTurn {
   role: 'USER' | 'ASSISTANT';
   content: string;
 }
 
+export interface AssistantGenerationResult {
+  content: string;
+  provider: 'openrouter';
+  model: string;
+}
+
 export interface AssistantLlmProvider {
-  readonly name: string;
-  readonly isConfigured: boolean;
+  readonly name: 'openrouter';
+  readonly isConfigured: true;
   generate(
     systemPrompt: string,
     history: ChatHistoryTurn[],
     userMessage: string,
-  ): Promise<string>;
+  ): Promise<AssistantGenerationResult>;
 }
 
-class DisabledLlmProvider implements AssistantLlmProvider {
-  readonly name = 'disabled';
-  readonly isConfigured = false;
+type OpenRouterProviderResolver = () => OpenRouterProvider;
 
-  async generate(): Promise<string> {
-    throw new Error('Assistant provider is not configured');
-  }
-}
+class OpenRouterAssistantProvider implements AssistantLlmProvider {
+  readonly name = 'openrouter' as const;
+  readonly isConfigured = true as const;
 
-class OpenAiCompatibleProvider implements AssistantLlmProvider {
-  readonly isConfigured = true;
-
-  private readonly client: OpenAI;
-
-  constructor(
-    readonly name: string,
-    apiKey: string,
-    baseURL?: string,
-  ) {
-    this.client = new OpenAI({
-      apiKey,
-      baseURL,
-      maxRetries: 1,
-      timeout: 15_000,
-    });
-  }
+  constructor(private readonly resolveProvider: OpenRouterProviderResolver) {}
 
   async generate(
     systemPrompt: string,
     history: ChatHistoryTurn[],
     userMessage: string,
-  ): Promise<string> {
-    const completion = await this.client.chat.completions.create({
-      model: envConfig.chatModel,
+  ): Promise<AssistantGenerationResult> {
+    const generation = await this.resolveProvider().generate(AiTask.CHAT, {
       temperature: 0.2,
       max_tokens: 700,
       messages: [
@@ -62,28 +51,12 @@ class OpenAiCompatibleProvider implements AssistantLlmProvider {
       ],
     });
 
-    const text = completion.choices[0]?.message?.content?.trim();
-    if (!text) throw new Error('Assistant provider returned no content');
-    return text;
+    const content = generation.response.choices[0]?.message?.content?.trim();
+    if (!content) throw new Error('Assistant provider returned no content');
+    return { content, provider: 'openrouter', model: generation.model };
   }
 }
 
-export const createAssistantLlmProvider = (): AssistantLlmProvider => {
-  if (envConfig.chatProvider === 'openai' && envConfig.openAiApiKey) {
-    return new OpenAiCompatibleProvider(
-      'openai',
-      envConfig.openAiApiKey,
-      envConfig.openAiBaseUrl,
-    );
-  }
-
-  if (envConfig.chatProvider === 'openrouter' && envConfig.openRouterApiKey) {
-    return new OpenAiCompatibleProvider(
-      'openrouter',
-      envConfig.openRouterApiKey,
-      envConfig.openAiBaseUrl || 'https://openrouter.ai/api/v1',
-    );
-  }
-
-  return new DisabledLlmProvider();
-};
+export const createAssistantLlmProvider = (
+  resolveProvider: OpenRouterProviderResolver = getOpenRouterProvider,
+): AssistantLlmProvider => new OpenRouterAssistantProvider(resolveProvider);

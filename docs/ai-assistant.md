@@ -14,7 +14,7 @@ flowchart LR
   ai --> redis["Redis\nper-user rate limit + 20 s scoped cache"]
   ai --> readmodel["Read-only Alert MongoDB projection\nauthorized filters first"]
   ai --> rag["Static knowledge + keyword retrieval"]
-  rag --> model["Configured LLM provider\noptional"]
+  rag --> model["OpenRouter task router\nCHAT → Llama 3.1 8B"]
   readmodel --> model
   model --> ai
   ai --> browser
@@ -44,7 +44,7 @@ Messages are plain text, limited to 2,000 characters. Responses use the standard
 
 `assistant_messages`:
 
-- `conversationId` (indexed), `userId` (indexed), `role` (`USER` or `ASSISTANT`), bounded `content`, `sources`, optional `provider`, timestamps
+- `conversationId` (indexed), `userId` (indexed), `role` (`USER` or `ASSISTANT`), bounded `content`, `sources`, optional `provider` and `model`, timestamps
 - compound index: `{ conversationId, createdAt }`
 
 Every conversation and message query includes `userId`. A guessed conversation ID returns `404`, so it does not reveal another user's history.
@@ -80,6 +80,19 @@ The frontend only changes suggestions and navigation by role. The AI service rep
 
 Rate limiting fails closed if Redis is unavailable, returning a user-safe retry message. Context caching is best-effort; cache failures do not broaden access or cache a response for another user.
 
+## Task-specific OpenRouter routing
+
+The AI Service owns one OpenAI-compatible OpenRouter client and selects the model deterministically per request:
+
+| Task | Model variable | Intended model | Input |
+| --- | --- | --- | --- |
+| `INCIDENT_ANALYSIS` | `OPENROUTER_ANALYSIS_MODEL` | `openai/gpt-4o-mini` | Incident text and optional evidence image |
+| `CHAT` | `OPENROUTER_CHAT_MODEL` | `meta-llama/llama-3.1-8b-instruct` | Text-only authorized Assistant context |
+
+The frontend never receives the provider credential and never calls OpenRouter. Incident analysis and Assistant chat use the same `OPENROUTER_API_KEY`, but the model is selected per task and is not configured permanently on the shared client.
+
+The incident flow remains: Citizen report → Alert Service → `alert.created` RabbitMQ event → AI Service → structured OpenRouter result → `image.analyzed` event → Alert Service persistence. The Assistant keeps the same role-aware retrieval, scoped data access, history, and read-only behavior.
+
 ## Provider configuration
 
 Use `backend/ai-service/.env.example` as the service template. Do not commit populated secret files.
@@ -90,19 +103,24 @@ Use `backend/ai-service/.env.example` as the service template. Do not commit pop
 | `ALERT_MONGO_URI` | yes | Alert service database, used only through the narrow read model. |
 | `REDIS_URL` | yes | Required rate limiter/cache. |
 | `INTERNAL_GATEWAY_SHARED_SECRET` | production | Same non-empty secret in gateway and AI service. |
-| `AI_CHAT_PROVIDER` | optional | `openai`, `openrouter`, or `disabled`. |
-| `AI_CHAT_MODEL` | with provider | Provider model name. |
-| `OPENAI_API_KEY` / `OPENROUTER_API_KEY` | with matching provider | Store in the deployment secret manager, never frontend code. |
-| `OPENAI_BASE_URL` | optional | For an OpenAI-compatible endpoint. |
+| `OPENROUTER_API_KEY` | yes | One secret shared by both AI tasks. Store only in the deployment secret manager or AI Service `.env`. |
+| `OPENROUTER_BASE_URL` | optional | Defaults to `https://openrouter.ai/api/v1`. |
+| `OPENROUTER_ANALYSIS_MODEL` | yes | Incident and optional vision-analysis model. |
+| `OPENROUTER_CHAT_MODEL` | yes | Text-only Assistant model. |
+| `OPENROUTER_SITE_URL` | optional | OpenRouter attribution URL. |
+| `OPENROUTER_APP_NAME` | optional | OpenRouter attribution title. |
+| `OPENROUTER_MODEL` | migration only | Deprecated fallback for either missing task-specific model; a startup warning is emitted once. |
+| `OPENROUTER_ANALYSIS_FALLBACK_MODEL` | optional/reserved | Parsed for future temporary-provider fallback; automatic fallback is not enabled. |
+| `OPENROUTER_CHAT_FALLBACK_MODEL` | optional/reserved | Parsed for future temporary-provider fallback; automatic fallback is not enabled. |
 
-With `AI_CHAT_PROVIDER=disabled`, the service returns a safe grounded response using the approved retrieval context. Provider timeouts/errors fall back to the same guarded response and never surface upstream error details or keys.
+Assistant provider timeouts/errors still return the safe grounded response and never surface upstream error details or keys. Missing credentials or missing task models fail AI Service startup clearly instead of silently disabling model-backed behavior.
 
 ## Deployment notes
 
-1. Add `MONGO_URI_AI`, `AI_CHAT_PROVIDER`, the chosen provider key, and `INTERNAL_GATEWAY_SHARED_SECRET` to the deployment secret store.
+1. Add `MONGO_URI_AI`, `OPENROUTER_API_KEY`, both task-specific model variables, and `INTERNAL_GATEWAY_SHARED_SECRET` to the deployment secret store.
 2. The supplied Docker Compose file wires gateway-to-AI discovery with `AI_SERVICE_URL=http://ai-service:3005`; do not publish port 3005 publicly.
 3. Apply Mongo backups and retention policy for assistant history. Add a user-facing retention/deletion policy before production rollout.
-4. Monitor gateway 401/429/5xx responses, AI provider latency/error rate, Redis availability, and Mongo query latency. Do not log message bodies, bearer tokens, or provider credentials.
+4. Monitor gateway 401/429/5xx responses, OpenRouter latency/token usage by task and model, Redis availability, and Mongo query latency. Do not log message bodies, bearer tokens, or provider credentials.
 5. For scale, move static chunks into a managed knowledge collection and replace `retrieveKnowledge` with an embedding/vector implementation while preserving source IDs and role filtering.
 
 ## Verification
@@ -112,7 +130,14 @@ cd backend/ai-service
 npm install
 npm test
 
-cd ../../frontend
+cd ../..
+docker compose config --quiet
+docker compose up -d --build --force-recreate ai-service
+
+# Prints only key presence and non-secret model names.
+docker compose exec ai-service node -e "console.log({hasKey:Boolean(process.env.OPENROUTER_API_KEY),analysisModel:process.env.OPENROUTER_ANALYSIS_MODEL,chatModel:process.env.OPENROUTER_CHAT_MODEL})"
+
+cd frontend
 npm run build
 ```
 
