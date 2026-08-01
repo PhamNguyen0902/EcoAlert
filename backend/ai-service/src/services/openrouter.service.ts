@@ -1,6 +1,18 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { AlertCategory, createLogger, Severity } from '@ecoalert/shared';
+import {
+  OpenRouterConfig,
+  OpenRouterConfigurationError,
+  readOpenRouterConfig,
+} from '../config/openrouter.config';
+import { AiTask, resolveModel } from './ai-task-router';
+
+export {
+  OpenRouterConfig,
+  OpenRouterConfigurationError,
+  readOpenRouterConfig,
+} from '../config/openrouter.config';
 
 const logger = createLogger('ai-service');
 
@@ -27,33 +39,33 @@ export interface IncidentAnalysisInput {
   imageUrl?: string;
 }
 
-export interface OpenRouterConfig {
-  apiKey: string;
-  baseURL: string;
-  model: string;
-  siteURL: string;
-  appName: string;
-}
-
 type OpenRouterClientOptions = ConstructorParameters<typeof OpenAI>[0];
+
+export interface OpenAiCompletionResponse {
+  choices: Array<{ message: { content: string | null } }>;
+  model?: string;
+  usage?: {
+    prompt_tokens?: number | null;
+    completion_tokens?: number | null;
+    total_tokens?: number | null;
+  };
+}
 
 export interface OpenAiSdkClient {
   chat: {
     completions: {
-      create: (request: Record<string, unknown>) => Promise<{
-        choices: Array<{ message: { content: string | null } }>;
-      }>;
+      create: (request: Record<string, unknown>) => Promise<OpenAiCompletionResponse>;
     };
   };
 }
 
 export type OpenAiClientFactory = (options: OpenRouterClientOptions) => OpenAiSdkClient;
 
-export class OpenRouterConfigurationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'OpenRouterConfigurationError';
-  }
+export interface OpenRouterGenerationResult {
+  response: OpenAiCompletionResponse;
+  configuredModel: string;
+  model: string;
+  latencyMs: number;
 }
 
 export class OpenRouterResponseError extends Error {
@@ -74,35 +86,6 @@ export class OpenRouterProviderError extends Error {
   }
 }
 
-export const readOpenRouterConfig = (
-  environment: NodeJS.ProcessEnv = process.env,
-): OpenRouterConfig => {
-  const apiKey = environment.OPENROUTER_API_KEY?.trim();
-  const model = environment.OPENROUTER_MODEL?.trim();
-
-  if (!apiKey) {
-    throw new OpenRouterConfigurationError(
-      'OPENROUTER_API_KEY is required but is not configured.',
-    );
-  }
-  if (!model) {
-    throw new OpenRouterConfigurationError(
-      'OPENROUTER_MODEL is required but is not configured.',
-    );
-  }
-
-  return {
-    apiKey,
-    model,
-    baseURL:
-      environment.OPENROUTER_BASE_URL?.trim() ||
-      'https://openrouter.ai/api/v1',
-    siteURL:
-      environment.OPENROUTER_SITE_URL?.trim() || 'http://localhost:5173',
-    appName: environment.OPENROUTER_APP_NAME?.trim() || 'EcoAlert',
-  };
-};
-
 const defaultClientFactory: OpenAiClientFactory = (options) =>
   new OpenAI(options) as unknown as OpenAiSdkClient;
 
@@ -112,31 +95,119 @@ export const createOpenRouterClient = (
 ): OpenAiSdkClient => factory({
   apiKey: config.apiKey,
   baseURL: config.baseURL,
+  maxRetries: 1,
+  timeout: 15_000,
   defaultHeaders: {
     'HTTP-Referer': config.siteURL,
     'X-Title': config.appName,
   },
 });
 
-let runtime: { config: OpenRouterConfig; client: OpenAiSdkClient } | null = null;
+const numberOrUndefined = (value: unknown): number | undefined =>
+  typeof value === 'number' ? value : undefined;
+
+export class OpenRouterProvider {
+  constructor(
+    private readonly client: OpenAiSdkClient,
+    private readonly config: OpenRouterConfig,
+  ) {}
+
+  getModel(task: AiTask): string {
+    return resolveModel(task, this.config);
+  }
+
+  async generate(
+    task: AiTask,
+    request: Record<string, unknown>,
+  ): Promise<OpenRouterGenerationResult> {
+    const configuredModel = this.getModel(task);
+    const startedAt = Date.now();
+
+    logger.info('OpenRouter request started', {
+      provider: 'openrouter',
+      task,
+      model: configuredModel,
+    });
+
+    try {
+      // The routed model is written last so callers cannot override task routing.
+      const response = await this.client.chat.completions.create({
+        ...request,
+        model: configuredModel,
+      });
+      const latencyMs = Date.now() - startedAt;
+      const returnedModel = response.model?.trim() || configuredModel;
+
+      logger.info('OpenRouter request completed', {
+        provider: 'openrouter',
+        task,
+        model: configuredModel,
+        returnedModel,
+        latencyMs,
+        promptTokens: numberOrUndefined(response.usage?.prompt_tokens),
+        completionTokens: numberOrUndefined(response.usage?.completion_tokens),
+        totalTokens: numberOrUndefined(response.usage?.total_tokens),
+      });
+
+      return {
+        response,
+        configuredModel,
+        model: returnedModel,
+        latencyMs,
+      };
+    } catch (error) {
+      logger.warn('OpenRouter request failed', {
+        ...safeOpenRouterErrorMetadata(error),
+        task,
+        model: configuredModel,
+        latencyMs: Date.now() - startedAt,
+      });
+      throw error;
+    }
+  }
+}
+
+export interface OpenRouterRuntime {
+  config: OpenRouterConfig;
+  client: OpenAiSdkClient;
+  provider: OpenRouterProvider;
+}
+
+let runtime: OpenRouterRuntime | null = null;
+let legacyWarningEmitted = false;
 
 export const initializeOpenRouter = (
   environment: NodeJS.ProcessEnv = process.env,
   factory: OpenAiClientFactory = defaultClientFactory,
-) => {
+): OpenRouterRuntime => {
   const config = readOpenRouterConfig(environment);
-  runtime = { config, client: createOpenRouterClient(config, factory) };
-  logger.info('OpenRouter incident analysis configured', {
-    provider: 'openrouter',
-    model: config.model,
+  const client = createOpenRouterClient(config, factory);
+  runtime = { config, client, provider: new OpenRouterProvider(client, config) };
+
+  if (config.legacyModelTasks.length > 0 && !legacyWarningEmitted) {
+    legacyWarningEmitted = true;
+    logger.warn('OPENROUTER_MODEL is deprecated. Configure task-specific models.', {
+      tasksUsingLegacyModel: config.legacyModelTasks,
+    });
+  }
+
+  logger.info('OpenRouter configured', {
+    configured: true,
+    analysisModel: config.analysisModel,
+    chatModel: config.chatModel,
+    analysisFallbackConfigured: Boolean(config.analysisFallbackModel),
+    chatFallbackConfigured: Boolean(config.chatFallbackModel),
     baseURL: config.baseURL,
-    keyConfigured: true,
   });
   return runtime;
 };
 
+export const getOpenRouterProvider = (): OpenRouterProvider =>
+  (runtime || initializeOpenRouter()).provider;
+
 export const resetOpenRouterForTests = () => {
   runtime = null;
+  legacyWarningEmitted = false;
 };
 
 export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
@@ -195,6 +266,38 @@ const buildUserContent = (input: IncidentAnalysisInput, includeImage: boolean) =
   ];
 };
 
+const incidentCompletionRequest = (
+  input: IncidentAnalysisInput,
+  includeImage: boolean,
+): Record<string, unknown> => ({
+  messages: [
+    {
+      role: 'system',
+      content: [
+        'You classify environmental incident reports for EcoAlert.',
+        `Use exactly one category from: ${Object.values(AlertCategory).join(', ')}.`,
+        `Use exactly one severity from: ${Object.values(Severity).join(', ')}.`,
+        'Return confidence as a number from 0 to 1, including 0 when warranted.',
+        'Return a concise factual summary and a concise evidence-based reasoningSummary.',
+        'Do not provide hidden chain-of-thought or step-by-step internal reasoning.',
+      ].join(' '),
+    },
+    { role: 'user', content: buildUserContent(input, includeImage) },
+  ],
+  temperature: 0.1,
+  response_format: structuredResponseFormat,
+});
+
+const analysisFromCompletion = (
+  response: OpenAiCompletionResponse,
+): IncidentAnalysis => {
+  const content = response.choices[0]?.message.content;
+  if (!content) {
+    throw new OpenRouterResponseError('OpenRouter returned an empty response.');
+  }
+  return parseIncidentAnalysis(content);
+};
+
 export const requestIncidentAnalysis = async (
   client: OpenAiSdkClient,
   model: string,
@@ -202,30 +305,10 @@ export const requestIncidentAnalysis = async (
   includeImage: boolean,
 ): Promise<IncidentAnalysis> => {
   const response = await client.chat.completions.create({
+    ...incidentCompletionRequest(input, includeImage),
     model,
-    messages: [
-      {
-        role: 'system',
-        content: [
-          'You classify environmental incident reports for EcoAlert.',
-          `Use exactly one category from: ${Object.values(AlertCategory).join(', ')}.`,
-          `Use exactly one severity from: ${Object.values(Severity).join(', ')}.`,
-          'Return confidence as a number from 0 to 1, including 0 when warranted.',
-          'Return a concise factual summary and a concise evidence-based reasoningSummary.',
-          'Do not provide hidden chain-of-thought or step-by-step internal reasoning.',
-        ].join(' '),
-      },
-      { role: 'user', content: buildUserContent(input, includeImage) },
-    ],
-    temperature: 0.1,
-    response_format: structuredResponseFormat,
   });
-
-  const content = response.choices[0]?.message.content;
-  if (!content) {
-    throw new OpenRouterResponseError('OpenRouter returned an empty response.');
-  }
-  return parseIncidentAnalysis(content);
+  return analysisFromCompletion(response);
 };
 
 const statusFromError = (error: unknown): number | undefined => {
@@ -271,7 +354,7 @@ export const mapProviderError = (error: unknown): Error => {
     );
   }
   return new OpenRouterProviderError(
-    'OpenRouter incident analysis request failed.',
+    'OpenRouter request failed.',
     status,
     code,
   );
@@ -287,37 +370,42 @@ const isUsableImageUrl = (imageUrl?: string) => {
   }
 };
 
-export const analyzeIncidentWithClient = async (
-  client: OpenAiSdkClient,
-  model: string,
+type IncidentRequester = (
+  includeImage: boolean,
+) => Promise<{ analysis: IncidentAnalysis; model: string }>;
+
+const analyzeIncident = async (
+  request: IncidentRequester,
   input: IncidentAnalysisInput,
+  loggedModel: string,
 ): Promise<IncidentAnalysisResult> => {
   const requestedImage = Boolean(input.imageUrl);
   const includeImage = isUsableImageUrl(input.imageUrl);
 
   try {
-    const analysis = await requestIncidentAnalysis(client, model, input, includeImage);
+    const result = await request(includeImage);
     return {
-      ...analysis,
+      ...result.analysis,
       analysisMode: includeImage ? 'vision' : requestedImage ? 'text_fallback' : 'text',
       provider: 'openrouter',
-      model,
+      model: result.model,
     };
   } catch (error) {
     const status = statusFromError(error);
     if (includeImage && (status === 400 || status === 422)) {
       logger.warn('OpenRouter image input was rejected; retrying with report text', {
         provider: 'openrouter',
-        model,
+        task: AiTask.INCIDENT_ANALYSIS,
+        model: loggedModel,
         status,
       });
       try {
-        const analysis = await requestIncidentAnalysis(client, model, input, false);
+        const result = await request(false);
         return {
-          ...analysis,
+          ...result.analysis,
           analysisMode: 'text_fallback',
           provider: 'openrouter',
-          model,
+          model: result.model,
         };
       } catch (fallbackError) {
         logger.error('OpenRouter text fallback failed', safeOpenRouterErrorMetadata(fallbackError));
@@ -330,9 +418,36 @@ export const analyzeIncidentWithClient = async (
   }
 };
 
+export const analyzeIncidentWithClient = async (
+  client: OpenAiSdkClient,
+  model: string,
+  input: IncidentAnalysisInput,
+): Promise<IncidentAnalysisResult> => analyzeIncident(
+  async (includeImage) => ({
+    analysis: await requestIncidentAnalysis(client, model, input, includeImage),
+    model,
+  }),
+  input,
+  model,
+);
+
 export const analyzeIncidentWithOpenRouter = async (
   input: IncidentAnalysisInput,
 ): Promise<IncidentAnalysisResult> => {
-  const activeRuntime = runtime || initializeOpenRouter();
-  return analyzeIncidentWithClient(activeRuntime.client, activeRuntime.config.model, input);
+  const provider = getOpenRouterProvider();
+  const configuredModel = provider.getModel(AiTask.INCIDENT_ANALYSIS);
+  return analyzeIncident(
+    async (includeImage) => {
+      const generation = await provider.generate(
+        AiTask.INCIDENT_ANALYSIS,
+        incidentCompletionRequest(input, includeImage),
+      );
+      return {
+        analysis: analysisFromCompletion(generation.response),
+        model: generation.model,
+      };
+    },
+    input,
+    configuredModel,
+  );
 };

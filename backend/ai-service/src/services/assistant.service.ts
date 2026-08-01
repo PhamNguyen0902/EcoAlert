@@ -16,6 +16,7 @@ import {
   AuthorizedActor,
 } from '../assistant/types';
 import { assistantRedis } from './redis.service';
+import { AiTask } from './ai-task-router';
 
 const logger = createLogger('ai-service');
 const MAX_MESSAGE_LENGTH = 2000;
@@ -34,6 +35,8 @@ type MessageRecord = {
   role: AssistantMessageDto['role'];
   content: string;
   sources: AssistantSource[];
+  provider?: string;
+  model?: string;
   createdAt: Date;
 };
 
@@ -163,11 +166,14 @@ export class AssistantService {
       .map((message) => ({ role: message.role, content: message.content }));
     let responseContent = fallbackAnswer(writeRequest, knowledge, dynamicContext?.text);
     let providerName = 'grounded-fallback';
+    let providerModel: string | undefined;
 
     if (this.provider.isConfigured) {
       try {
-        responseContent = await this.provider.generate(prompt, turns, content);
-        providerName = this.provider.name;
+        const generation = await this.provider.generate(prompt, turns, content);
+        responseContent = generation.content;
+        providerName = generation.provider;
+        providerModel = generation.model;
       } catch (error) {
         logger.warn(`Assistant provider unavailable for request ${actor.requestId || 'unknown'}`);
       }
@@ -180,6 +186,7 @@ export class AssistantService {
       content: responseContent.slice(0, 4000),
       sources,
       provider: providerName,
+      model: providerModel,
     });
 
     conversation.lastMessageAt = new Date();
@@ -188,9 +195,15 @@ export class AssistantService {
     }
     await conversation.save();
 
-    logger.info(
-      `Assistant response created requestId=${actor.requestId || 'unknown'} role=${actor.role} intent=${intent} tool=${selectedTool || 'none'}`,
-    );
+    logger.info('Assistant response created', {
+      requestId: actor.requestId || 'unknown',
+      role: actor.role,
+      intent,
+      tool: selectedTool || 'none',
+      provider: providerName,
+      task: AiTask.CHAT,
+      model: providerModel,
+    });
 
     return {
       conversation: conversationDto(conversation.toObject() as ConversationRecord),

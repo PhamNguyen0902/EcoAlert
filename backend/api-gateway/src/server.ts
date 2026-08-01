@@ -112,20 +112,20 @@ app.use('/api', verifyToken);
 
 // Proxy configuration
 const setupProxy = (path: string, target: string, rewrite: boolean = false, internalAssistant = false) => {
+  const internalGatewaySecret = process.env.INTERNAL_GATEWAY_SHARED_SECRET;
+
   app.use(
     path,
     createProxyMiddleware({
       target,
       changeOrigin: true,
       pathRewrite: rewrite ? { [`^${path}`]: '' } : undefined,
+      headers:
+        internalAssistant && internalGatewaySecret
+          ? { 'x-internal-gateway-secret': internalGatewaySecret }
+          : undefined,
       onProxyReq: (proxyReq, req) => {
         fixRequestBody(proxyReq, req);
-        if (internalAssistant && process.env.INTERNAL_GATEWAY_SHARED_SECRET) {
-          proxyReq.setHeader(
-            'x-internal-gateway-secret',
-            process.env.INTERNAL_GATEWAY_SHARED_SECRET,
-          );
-        }
       },
       onError: (err, req, res) => {
         logger.error(`Proxy error for ${path}`, err);

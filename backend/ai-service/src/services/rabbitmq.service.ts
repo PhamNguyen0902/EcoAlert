@@ -13,6 +13,7 @@ import {
   IncidentAnalysisResult,
   safeOpenRouterErrorMetadata,
 } from './openrouter.service';
+import { AiTask } from './ai-task-router';
 
 const logger = createLogger('ai-service');
 
@@ -52,6 +53,13 @@ export const processAlertCreatedEvent = async (
     title: alert.title,
     description: alert.description || '',
     imageUrl: alert.mediaUrls?.find((url) => typeof url === 'string' && url.length > 0),
+  });
+
+  logger.info(`Analyzed alert ${alert._id}`, {
+    provider: analysis.provider,
+    task: AiTask.INCIDENT_ANALYSIS,
+    model: analysis.model,
+    analysisMode: analysis.analysisMode,
   });
 
   await dependencies.publish(

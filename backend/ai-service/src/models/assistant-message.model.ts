@@ -15,6 +15,7 @@ export interface IAssistantMessage {
   content: string;
   sources: IAssistantSourceRecord[];
   provider?: string;
+  model?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +43,7 @@ const messageSchema = new Schema<IAssistantMessage>(
     content: { type: String, required: true, trim: true, maxlength: 4000 },
     sources: { type: [sourceSchema], default: [] },
     provider: { type: String, maxlength: 64 },
+    model: { type: String, maxlength: 160 },
   },
   { timestamps: true, collection: 'assistant_messages' },
 );
