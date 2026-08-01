@@ -15,7 +15,7 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", service: "ai-service" });
 });
 
-app.use('/assistant', assistantRoutes);
+app.use(['/', '/assistant'], assistantRoutes);
 
 // 1. Đưa route /analyze lên TRƯỚC bộ xử lý lỗi
 app.post('/analyze', async (req, res) => {
