@@ -20,11 +20,15 @@ app.use(['/', '/assistant'], assistantRoutes);
 // 1. Đưa route /analyze lên TRƯỚC bộ xử lý lỗi
 app.post('/analyze', async (req, res) => {
   try {
-    const { description, imageUrl } = req.body;
-    const result = await analyzeIncidentWithOpenRouter(description || "", imageUrl);
+    const { title, description, imageUrl } = req.body;
+    const result = await analyzeIncidentWithOpenRouter({
+      title,
+      description: description || '',
+      imageUrl,
+    });
     res.status(200).json({ success: true, data: result });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message || "AI Analysis failed" });
+  } catch {
+    res.status(503).json({ success: false, message: 'AI analysis is temporarily unavailable' });
   }
 });
 

@@ -45,6 +45,15 @@ export const useAlert = (id: string) => {
     queryKey: ["alert", id],
     queryFn: () => alertService.getAlert(id),
     enabled: !!id,
+    refetchInterval: (query) => {
+      const alert = query.state.data;
+      const analysisPending =
+        alert &&
+        (alert.status === 'pending' || alert.status === 'ai_analyzing') &&
+        alert.category === 'UNCLASSIFIED' &&
+        alert.aiConfidence === undefined;
+      return analysisPending ? 3000 : false;
+    },
   });
 };
 
