@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { baseSchemaPlugin, BaseDocument } from './base.model';
-import { AlertStatus, AlertCategory, Severity } from '@ecoalert/shared';
+import { AiAnalysisMode, AlertStatus, AlertCategory, Severity } from '@ecoalert/shared';
 
 export type WorkflowActorRole = 'CITIZEN' | 'OFFICER' | 'ADMIN' | 'SYSTEM';
 
@@ -61,6 +61,13 @@ export interface IAlert extends BaseDocument {
   };
   aiConfidence?: number;
   aiSuggestedPriority?: Severity;
+  aiSummary?: string;
+  aiReasoningSummary?: string;
+  aiAnalysisMode?: AiAnalysisMode;
+  aiAnalysisProvider?: 'openrouter';
+  aiAnalysisModel?: string;
+  aiAnalysisId?: string;
+  aiAnalyzedAt?: Date;
   officerNote?: string;
   resolvedAt?: Date;
   resolvedBy?: string;
@@ -157,6 +164,13 @@ const alertSchema = new Schema<IAlert>({
     enum: [...Object.values(Severity), ...Object.values(Severity).map((value) => value.toUpperCase())],
     set: (value: unknown) => typeof value === 'string' ? value.toLowerCase() : value,
   },
+  aiSummary: { type: String, trim: true },
+  aiReasoningSummary: { type: String, trim: true },
+  aiAnalysisMode: { type: String, enum: ['text', 'vision', 'text_fallback'] },
+  aiAnalysisProvider: { type: String, enum: ['openrouter'] },
+  aiAnalysisModel: { type: String, trim: true },
+  aiAnalysisId: { type: String, index: true },
+  aiAnalyzedAt: { type: Date },
   officerNote: { type: String, trim: true },
   resolvedAt: { type: Date },
   resolvedBy: { type: String },

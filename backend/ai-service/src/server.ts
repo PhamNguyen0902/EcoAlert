@@ -1,20 +1,20 @@
 import { app } from './app';
-import dotenv from 'dotenv';
 import { createLogger } from '@ecoalert/shared';
 import { rabbitMQService } from './services/rabbitmq.service';
 import { connectDatabases, disconnectDatabases } from './config/database.config';
+import { envConfig } from './config/env.config';
+import { initializeOpenRouter } from './services/openrouter.service';
 
-dotenv.config();
 const logger = createLogger('ai-service');
-const PORT = process.env.PORT || 3005;
 
 const startServer = async () => {
   try {
+    initializeOpenRouter();
     await connectDatabases();
     await rabbitMQService.connect();
     
-    app.listen(PORT, () => {
-      logger.info(`AI Service is running on port ${PORT}`);
+    app.listen(envConfig.port, () => {
+      logger.info(`AI Service is running on port ${envConfig.port}`);
     });
   } catch (error) {
     logger.error('Failed to start AI Service:', error);

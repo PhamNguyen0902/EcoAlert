@@ -1,7 +1,7 @@
 export type UserRole = 'ADMIN' | 'OFFICER' | 'CITIZEN';
 export type WorkflowActorRole = UserRole | 'SYSTEM';
 export type AlertStatus = 'pending' | 'ai_analyzing' | 'verified' | 'assigned' | 'in_progress' | 'resolved' | 'closed' | 'rejected';
-export type AlertCategory = 'illegal_dumping' | 'water_pollution' | 'air_pollution' | 'illegal_burning' | 'flooding' | 'fallen_tree' | 'illegal_construction_waste' | 'noise_pollution' | 'soil_contamination' | 'wildlife_threat' | 'other';
+export type AlertCategory = 'illegal_dumping' | 'water_pollution' | 'air_pollution' | 'illegal_burning' | 'flooding' | 'fallen_tree' | 'illegal_construction_waste' | 'noise_pollution' | 'soil_contamination' | 'wildlife_threat' | 'other' | 'UNCLASSIFIED';
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
 
 export interface User {
@@ -55,6 +55,13 @@ export interface Alert {
   arrivalLocation?: ArrivalLocation;
   aiConfidence?: number;
   aiSuggestedPriority?: Severity;
+  aiSummary?: string;
+  aiReasoningSummary?: string;
+  aiAnalysisMode?: 'text' | 'vision' | 'text_fallback';
+  aiAnalysisProvider?: 'openrouter';
+  aiAnalysisModel?: string;
+  aiAnalysisId?: string;
+  aiAnalyzedAt?: string;
   officerNote?: string;
   resolvedAt?: string;
   resolvedBy?: string;

@@ -18,6 +18,7 @@ import {
   ConflictError,
   EVENTS,
   ForbiddenError,
+  IAiAnalysisCompletedData,
   NotFoundError,
   Severity,
 } from '@ecoalert/shared';
@@ -514,24 +515,34 @@ export class AlertService {
     return updatedAlert;
   }
 
-  async internalUpdateAiResult(id: string, category: string, confidence: number, priority: string) {
+  async internalUpdateAiResult(id: string, analysis: IAiAnalysisCompletedData) {
     if (!mongoose.isValidObjectId(id)) return null;
     const alert = await alertRepository.findById(id);
     if (!alert) return null;
+    if (alert.aiAnalysisId === analysis.analysisId) return alert;
 
     const currentStatus = normalizeStatus(alert.status);
     // Tính năng an toàn: Đòi hỏi độ tự tin > 85% mới duyệt tự động
-    const newStatus = confidence > 0.85 ? AlertStatus.VERIFIED : AlertStatus.AI_ANALYZING; 
+    const newStatus = analysis.confidence > 0.85
+      ? AlertStatus.VERIFIED
+      : AlertStatus.AI_ANALYZING;
     const analyzedAt = new Date();
     const actor: WorkflowActor = { id: 'ai-service', role: 'SYSTEM' };
     
     const update: Record<string, unknown> = {
       $set: {
-        category,
-        aiConfidence: confidence,
-        aiSuggestedPriority: priority ? priority.toLowerCase() : Severity.LOW,
+        category: analysis.category,
+        aiConfidence: analysis.confidence,
+        aiSuggestedPriority: analysis.severity,
         // 👇 THÊM DÒNG NÀY ĐỂ GHI NHẬN MỨC ĐỘ NGHIÊM TRỌNG TỪ AI 👇
-        severity: priority ? priority.toLowerCase() : Severity.LOW, 
+        severity: analysis.severity,
+        aiSummary: analysis.summary,
+        aiReasoningSummary: analysis.reasoningSummary,
+        aiAnalysisMode: analysis.analysisMode,
+        aiAnalysisProvider: analysis.provider,
+        aiAnalysisModel: analysis.model,
+        aiAnalysisId: analysis.analysisId,
+        aiAnalyzedAt: analyzedAt,
         status: newStatus,
       },
       $push: {
@@ -540,7 +551,10 @@ export class AlertService {
           'AI analysis completed',
           actor,
           analyzedAt,
-          { status: newStatus, note: `Confidence: ${Math.round(confidence * 100)}%` },
+          {
+            status: newStatus,
+            note: `Confidence: ${Math.round(analysis.confidence * 100)}%`,
+          },
         ),
         ...(currentStatus !== newStatus
           ? { statusHistory: this.historyEntry(currentStatus, newStatus, actor, analyzedAt) }
@@ -548,9 +562,17 @@ export class AlertService {
       },
     };
     const updatedAlert = await alertRepository.findOneAndUpdate(
-      { _id: id, status: statusFilter(currentStatus) },
+      {
+        _id: id,
+        status: statusFilter(currentStatus),
+        aiAnalysisId: { $ne: analysis.analysisId },
+      },
       update,
     );
+    if (!updatedAlert) {
+      const existingAlert = await alertRepository.findById(id);
+      if (existingAlert?.aiAnalysisId === analysis.analysisId) return existingAlert;
+    }
     if (updatedAlert) await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert);
     return updatedAlert;
   }

@@ -1,11 +1,12 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 export const envConfig = {
   port: parseInt(process.env.PORT || '3005', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
   rabbitMqUrl: process.env.RABBITMQ_URL || 'amqp://localhost',
-  geminiApiKey: process.env.GEMINI_API_KEY || 'YOUR_API_KEY',
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/ecoalert-ai-db',
   alertMongoUri:
     process.env.ALERT_MONGO_URI ||
@@ -22,5 +23,9 @@ export const envConfig = {
   openAiApiKey: process.env.OPENAI_API_KEY,
   openAiBaseUrl: process.env.OPENAI_BASE_URL,
   openRouterApiKey: process.env.OPENROUTER_API_KEY,
+  openRouterBaseUrl: process.env.OPENROUTER_BASE_URL,
+  openRouterModel: process.env.OPENROUTER_MODEL,
+  openRouterSiteUrl: process.env.OPENROUTER_SITE_URL,
+  openRouterAppName: process.env.OPENROUTER_APP_NAME,
   internalGatewaySecret: process.env.INTERNAL_GATEWAY_SHARED_SECRET,
 };
