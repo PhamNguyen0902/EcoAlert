@@ -38,6 +38,218 @@ const CATEGORIES: { labelKey: string; fallbackLabel: string; value: AlertCategor
   { labelKey: "other", fallbackLabel: "Other Incident", value: "other", icon: "⚠️" },
 ];
 
+const AI_SEVERITY_CONTENT: Record<
+  string,
+  Record<string, { title: string; description: string }>
+> = {
+  illegal_dumping: {
+    low: {
+      title: "Túi rác & phế thải nhỏ vung vãi",
+      description: "Ghi nhận một ít rác thải sinh hoạt, túi nilon rải rác khu vực lối đi. Mức độ nhẹ, cần dọn dẹp vệ sinh môi trường.",
+    },
+    medium: {
+      title: "Báo cáo sự cố xả rác thải bừa bãi",
+      description: "Ghi nhận hành vi xả rác thải bừa bãi tại khu vực, gây ô nhiễm môi trường và mất mỹ quan đô thị.",
+    },
+    high: {
+      title: "Bãi rác tự phát lớn bốc mùi hôi thối",
+      description: "Phát hiện bãi rác tự phát quy mô lớn có dấu hiệu tích tụ lâu ngày, bốc mùi hôi thối nồng nặc và gây cản trở lối đi.",
+    },
+    critical: {
+      title: "Xả thải rác độc hại / Bãi rác nguy hiểm khẩn cấp",
+      description: "Cảnh báo xả thải rác công nghiệp/hóa chất nguy hại quy mô lớn, gây ô nhiễm môi trường nghiêm trọng và nguy cơ đe dọa sức khỏe cư dân.",
+    },
+  },
+  water_pollution: {
+    low: {
+      title: "Nước mương/hồ có váng màu nhẹ",
+      description: "Ghi nhận nguồn nước khu vực có váng đục nhẹ và phát sinh mùi lạ thoang thoảng, cần theo dõi kiểm tra.",
+    },
+    medium: {
+      title: "Nước thải xả trực tiếp ra mương/sông",
+      description: "Phát hiện dòng nước thải xả trực tiếp ra sông/mương gây màu đục bẩn và hôi hám, ảnh hưởng sinh hoạt.",
+    },
+    high: {
+      title: "Sự cố ô nhiễm nguồn nước diện rộng",
+      description: "Ghi nhận xả nước thải đục bẩn hôi thối nồng độ cao ra môi trường, gây ảnh hưởng nghiêm trọng tới hệ thống nguồn nước khu vực.",
+    },
+    critical: {
+      title: "Tràn chất thải độc hại / Ô nhiễm nguồn nước khẩn cấp",
+      description: "Báo động khẩn cấp: Nguồn nước sinh hoạt/sông chính bị nhiễm chất thải độc hại nặng, cá chết hàng loạt, cực kỳ nguy hiểm.",
+    },
+  },
+  air_pollution: {
+    low: {
+      title: "Mùi hôi nhẹ rải rác cục bộ",
+      description: "Ghi nhận mùi khó chịu nhẹ xuất hiện cục bộ theo đợt gió, cần kiểm tra nguyên nhân.",
+    },
+    medium: {
+      title: "Khí thải sản xuất gây mùi nồng sặc",
+      description: "Phát hiện khí thải bốc mùi khó chịu kéo dài từ cơ sở hoạt động, gây ảnh hưởng sức khỏe không khí xung quanh.",
+    },
+    high: {
+      title: "Sự cố ô nhiễm không khí & khói bụi dày đặc",
+      description: "Phát hiện lượng khói bụi và khí thải xả ra dày đặc diện rộng, gây cay mắt, khó thở và ô nhiễm nghiêm trọng.",
+    },
+    critical: {
+      title: "Rò rỉ khí độc / Ô nhiễm không khí nguy cấp",
+      description: "Cảnh báo nguy cấp rò rỉ khí độc hại nồng độ cao gây ngạt thở, ảnh hưởng trực tiếp tới tính mạng cư dân.",
+    },
+  },
+  illegal_burning: {
+    low: {
+      title: "Đốt gom lá cây / Rác nhỏ tự phát",
+      description: "Ghi nhận điểm đốt lá khô/rác nhỏ vặt, tỏa khói nhẹ cục bộ.",
+    },
+    medium: {
+      title: "Đốt rác thải sinh hoạt bừa bãi",
+      description: "Phát hiện việc gom đốt rác thải sinh hoạt tỏa khói đen và mùi khét trong khu dân cư.",
+    },
+    high: {
+      title: "Đốt rác thải nhựa/cao su gây khói độc nguy hiểm",
+      description: "Phát hiện hành vi đốt rác thải công nghiệp/nhựa/cao su trái phép sinh nhiều khói đen độc hại, nguy cơ cháy lan.",
+    },
+    critical: {
+      title: "Đốt chất thải nguy hại / Cháy bãi rác dữ dội khẩn cấp",
+      description: "Báo động đám cháy bãi rác/chất thải hóa chất bốc cao dữ dội, ngọn lửa lớn và khói độc dày đặc nguy cơ lan rộng.",
+    },
+  },
+  flooding: {
+    low: {
+      title: "Nước mưa ứ đọng cục bộ nhẹ",
+      description: "Ghi nhận nước đọng sũng tại mép đường sau mưa, thoát nước chậm nhưng chưa cản trở giao thông.",
+    },
+    medium: {
+      title: "Sự cố ngập nước mặt đường trung bình",
+      description: "Hiện trạng ngập nước đọng sâu 10-20cm tại mặt đường gây cản trở giao thông và sinh hoạt khu dân cư.",
+    },
+    high: {
+      title: "Ngập sâu diện rộng / Nghẽn cống thoát nước",
+      description: "Ngập nước sâu nghiêm trọng do tắc nghẽn hệ thống thoát nước, tràn vào nhà dân và cản trở hoàn toàn xe cộ.",
+    },
+    critical: {
+      title: "Triều cường vỡ đê / Ngập lụt cuốn trôi nguy hiểm khẩn cấp",
+      description: "Báo động lũ/triều cường dâng cao cuồn cuộn, nước chảy xiết gây cô lập khu vực và đe dọa an toàn tài sản, tính mạng.",
+    },
+  },
+  fallen_tree: {
+    low: {
+      title: "Cành cây nhỏ khô gãy rơi",
+      description: "Ghi nhận cành cây khô nhỏ bị gãy rơi vươn ra lòng đường, cần dọn dẹp để đảm bảo mỹ quan.",
+    },
+    medium: {
+      title: "Cành cây lớn gãy chắn một phần lối đi",
+      description: "Cành cây lớn bị gãy nghiêng rơi xuống cản trở lối đi của người và phương tiện giao thông.",
+    },
+    high: {
+      title: "Cây xanh gãy đổ chắn ngang đường",
+      description: "Cây xanh bị gãy đổ chắn ngang đường, nguy cơ gây mất an toàn và ùn tắc giao thông nghiêm trọng.",
+    },
+    critical: {
+      title: "Cây cổ thụ bật gốc đè đường dây điện / Nhà dân khẩn cấp",
+      description: "Cảnh báo khẩn cấp: Cây to bật gốc đè sập đường dây điện/nhà dân, đứt cáp viễn thông và nguy cơ đe dọa tính mạng.",
+    },
+  },
+  noise_pollution: {
+    low: {
+      title: "Tiếng ồn vượt mức nhẹ vào giờ nghỉ",
+      description: "Ghi nhận tiếng ồn phát ra vượt mức nhẹ trong giờ nghỉ ngơi, cần nhắc nhở điều chỉnh.",
+    },
+    medium: {
+      title: "Tiếng ồn công trình / Loa phát vượt quy chuẩn",
+      description: "Tiếng ồn phát ra liên tục với cường độ lớn từ loa/công trình gây ảnh hưởng sinh hoạt cộng đồng.",
+    },
+    high: {
+      title: "Tiếng ồn cực lớn kéo dài ban đêm",
+      description: "Hoạt động gây tiếng ồn cực lớn kéo dài quá giờ quy định, ảnh hưởng nghiêm trọng giấc ngủ và sức khỏe.",
+    },
+    critical: {
+      title: "Rúng động & tiếng nổ cực mạnh nguy hại thính giác",
+      description: "Tiếng nổ/rung chấn liên tục tần số cao vượt ngưỡng an toàn, nguy cơ tổn thương thính giác và nứt vỡ kết cấu.",
+    },
+  },
+  other: {
+    low: {
+      title: "Sự cố môi trường mức độ nhẹ",
+      description: "Ghi nhận hiện tượng bất thường nhẹ về môi trường tại khu vực.",
+    },
+    medium: {
+      title: "Sự cố môi trường phát sinh cần xử lý",
+      description: "Ghi nhận sự cố môi trường gây ảnh hưởng tới sinh hoạt và cảnh quan khu dân cư.",
+    },
+    high: {
+      title: "Sự cố môi trường nguy cấp",
+      description: "Phát hiện sự cố môi trường phức tạp có nguy cơ ô nhiễm diện rộng, cần lực lượng chức năng ứng phó.",
+    },
+    critical: {
+      title: "Sự cố thảm họa môi trường cực kỳ nghiêm trọng",
+      description: "Cảnh báo thảm họa môi trường mức độ đỏ, đe dọa nghiêm trọng tới an toàn cộng đồng và sinh thái.",
+    },
+  },
+};
+
+const getSeverityStyle = (sevValue: Severity, isSelected: boolean, isDark: boolean) => {
+  const normalizedSev = (sevValue || "medium").toLowerCase();
+  switch (normalizedSev) {
+    case "low":
+      if (isDark) {
+        return {
+          bg: isSelected ? "#334155" : "rgba(51, 65, 85, 0.4)",
+          border: isSelected ? "#94A3B8" : "rgba(148, 163, 184, 0.3)",
+          text: isSelected ? "#FFFFFF" : "#CBD5E1",
+        };
+      }
+      return {
+        bg: isSelected ? "#475569" : "#F1F5F9",
+        border: isSelected ? "#334155" : "#CBD5E1",
+        text: isSelected ? "#FFFFFF" : "#475569",
+      };
+
+    case "high":
+      if (isDark) {
+        return {
+          bg: isSelected ? "#EA580C" : "rgba(234, 88, 12, 0.25)",
+          border: isSelected ? "#F97316" : "rgba(249, 115, 22, 0.5)",
+          text: isSelected ? "#FFFFFF" : "#FB923C",
+        };
+      }
+      return {
+        bg: isSelected ? "#EA580C" : "#FFEDD5",
+        border: isSelected ? "#C2410C" : "#FDBA74",
+        text: isSelected ? "#FFFFFF" : "#C2410C",
+      };
+
+    case "critical":
+      if (isDark) {
+        return {
+          bg: isSelected ? "#DC2626" : "rgba(220, 38, 38, 0.25)",
+          border: isSelected ? "#EF4444" : "rgba(239, 68, 68, 0.5)",
+          text: isSelected ? "#FFFFFF" : "#FCA5A5",
+        };
+      }
+      return {
+        bg: isSelected ? "#DC2626" : "#FEE2E2",
+        border: isSelected ? "#B91C1C" : "#FCA5A5",
+        text: isSelected ? "#FFFFFF" : "#B91C1C",
+      };
+
+    case "medium":
+    default:
+      if (isDark) {
+        return {
+          bg: isSelected ? "#D97706" : "rgba(217, 119, 6, 0.25)",
+          border: isSelected ? "#F59E0B" : "rgba(245, 158, 11, 0.5)",
+          text: isSelected ? "#FFFFFF" : "#FBBF24",
+        };
+      }
+      return {
+        bg: isSelected ? "#D97706" : "#FEF3C7",
+        border: isSelected ? "#B45309" : "#FCD34D",
+        text: isSelected ? "#FFFFFF" : "#B45309",
+      };
+  }
+};
+
 const SEVERITIES: { labelKey: string; fallbackLabel: string; value: Severity }[] = [
   { labelKey: "report.low", fallbackLabel: "Low", value: "low" },
   { labelKey: "report.medium", fallbackLabel: "Medium", value: "medium" },
@@ -76,6 +288,28 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
   useEffect(() => {
     fetchLocation();
   }, [fetchLocation]);
+
+  const handleSelectCategory = (newCat: AlertCategory) => {
+    setCategory(newCat);
+    if (aiNote) {
+      const normSev = (severity || "medium").toLowerCase();
+      const content = AI_SEVERITY_CONTENT[newCat]?.[normSev] || AI_SEVERITY_CONTENT.illegal_dumping.medium;
+      setTitle(content.title);
+      setDescription(content.description);
+      setAiNote(`AI Auto-Fill: Đã cập nhật theo Danh mục mới & Mức ưu tiên [${severity.toUpperCase()}].`);
+    }
+  };
+
+  const handleSelectSeverity = (newSev: Severity) => {
+    setSeverity(newSev);
+    if (aiNote) {
+      const normSev = (newSev || "medium").toLowerCase();
+      const content = AI_SEVERITY_CONTENT[category]?.[normSev] || AI_SEVERITY_CONTENT[category]?.medium;
+      setTitle(content.title);
+      setDescription(content.description);
+      setAiNote(`AI Auto-Fill: Đã cập nhật tiêu đề & mô tả cho Mức ưu tiên [${newSev.toUpperCase()}].`);
+    }
+  };
 
   const handlePickPhoto = () => {
     RNAlert.alert(
@@ -140,80 +374,38 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
 
   const handleAiAnalyze = async (imageUrl?: string) => {
     const targetImg = imageUrl || (mediaUrls.length > 0 ? mediaUrls[0] : undefined);
-    const inputText = (description || title || "").trim().toLowerCase();
-
-    if (!inputText && !targetImg) {
-      RNAlert.alert("AI Assistant", "Vui lòng nhập mô tả hoặc tải ảnh sự cố trước khi dùng AI.");
-      return;
-    }
-
-    let inferredCat: AlertCategory = "illegal_dumping";
-    let inferredSev: Severity = "medium";
-    let autoTitle = "Báo cáo sự cố xả rác bừa bãi";
-    let autoDesc = description && description.length >= 15 
-      ? description 
-      : "Ghi nhận sự cố xả rác thải bừa bãi tại khu vực, gây ô nhiễm môi trường và ảnh hưởng mỹ quan đô thị.";
-
-    if (inputText.includes("rác") || inputText.includes("phế thải") || inputText.includes("xả")) {
-      inferredCat = "illegal_dumping";
-      inferredSev = "medium";
-      autoTitle = "Báo cáo sự cố xả rác thải bừa bãi";
-      autoDesc = "Ghi nhận hành vi xả rác thải bừa bãi tại khu vực, gây ô nhiễm môi trường và mất mỹ quan đô thị.";
-    } else if (inputText.includes("nước") || inputText.includes("sông") || inputText.includes("suối") || inputText.includes("xả thải")) {
-      inferredCat = "water_pollution";
-      inferredSev = "high";
-      autoTitle = "Phát hiện sự cố ô nhiễm nguồn nước";
-      autoDesc = "Ghi nhận dấu hiệu xả nước thải đục bẩn ra môi trường, gây ảnh hưởng nghiêm trọng tới nguồn nước khu vực.";
-    } else if (inputText.includes("khói") || inputText.includes("cháy") || inputText.includes("đốt") || inputText.includes("bụi")) {
-      inferredCat = "illegal_burning";
-      inferredSev = "high";
-      autoTitle = "Sự cố đốt rác / khói bụi gây ô nhiễm không khí";
-      autoDesc = "Phát hiện hành vi đốt rác thải trái phép sinh nhiều khói độc hại, gây ô nhiễm không khí khu dân cư.";
-    } else if (inputText.includes("ngập") || inputText.includes("lụt") || inputText.includes("triều cường")) {
-      inferredCat = "flooding";
-      inferredSev = "high";
-      autoTitle = "Sự cố ngập nước / nghẽn dòng chảy";
-      autoDesc = "Hiện trạng ngập nước nghiêm trọng tại khu vực gây cản trở giao thông và ảnh hưởng sinh hoạt.";
-    } else if (inputText.includes("cây") || inputText.includes("đổ") || inputText.includes("gãy")) {
-      inferredCat = "fallen_tree";
-      inferredSev = "critical";
-      autoTitle = "Cây xanh gãy đổ gây nguy hiểm";
-      autoDesc = "Cây xanh bị gãy đổ chắn ngang đường, nguy cơ gây mất an toàn cho người và phương tiện lưu thông.";
-    } else if (inputText.includes("ồn") || inputText.includes("tiếng ồn")) {
-      inferredCat = "noise_pollution";
-      inferredSev = "low";
-      autoTitle = "Sự cố ô nhiễm tiếng ồn vượt quy chuẩn";
-      autoDesc = "Tiếng ồn lớn phát ra liên tục trong khu dân cư gây ảnh hưởng tới sinh hoạt và sức khỏe người dân.";
-    }
+    const normSev = (severity || "medium").toLowerCase();
+    const fallbackContent = AI_SEVERITY_CONTENT[category]?.[normSev] || AI_SEVERITY_CONTENT.illegal_dumping.medium;
 
     try {
       const aiRes = await analyzeMediaMutation.mutateAsync({
-        description: description || inputText,
+        description: description || title || fallbackContent.description,
         imageUrl: targetImg,
       });
 
       if (aiRes) {
-        if (aiRes.category) setCategory(aiRes.category.toLowerCase() as AlertCategory);
-        if (aiRes.severity) setSeverity(aiRes.severity.toLowerCase() as Severity);
-        setTitle(aiRes.suggested_title || autoTitle);
-        setDescription(aiRes.suggested_description || autoDesc);
-        setAiNote(aiRes.analysis_note || `AI Confidence: ${Math.round((aiRes.confidence || 0.88) * 100)}%`);
+        const effectiveSev = (aiRes.severity ? aiRes.severity.toLowerCase() : normSev);
+        const effectiveCat = (aiRes.category ? aiRes.category.toLowerCase() as AlertCategory : category);
+
+        if (aiRes.category) setCategory(effectiveCat);
+        if (aiRes.severity) setSeverity(effectiveSev as Severity);
+
+        const tailoredContent = AI_SEVERITY_CONTENT[effectiveCat]?.[effectiveSev] || fallbackContent;
+        setTitle(aiRes.suggested_title || tailoredContent.title);
+        setDescription(aiRes.suggested_description || tailoredContent.description);
+        setAiNote(aiRes.analysis_note || `AI Confidence: ${Math.round((aiRes.confidence || 0.88) * 100)}% (Mức ưu tiên ${effectiveSev.toUpperCase()})`);
       } else {
-        setCategory(inferredCat);
-        setSeverity(inferredSev);
-        setTitle(autoTitle);
-        setDescription(autoDesc);
-        setAiNote("AI đã tự động phân tích và chọn danh mục phù hợp.");
+        setTitle(fallbackContent.title);
+        setDescription(fallbackContent.description);
+        setAiNote(`AI Auto-Fill: Đã tự động điền Tiêu đề & Mô tả cho Mức ưu tiên [${severity.toUpperCase()}].`);
       }
     } catch (err) {
-      setCategory(inferredCat);
-      setSeverity(inferredSev);
-      setTitle(autoTitle);
-      setDescription(autoDesc);
-      setAiNote("AI Smart Analyzer: Đã hoàn thiện danh mục, tiêu đề & mô tả.");
+      setTitle(fallbackContent.title);
+      setDescription(fallbackContent.description);
+      setAiNote(`AI Auto-Fill: Đã tự động điền Tiêu đề & Mô tả cho Mức ưu tiên [${severity.toUpperCase()}].`);
     } finally {
       setErrors({});
-      RNAlert.alert("AI Auto-Fill ✨", "Đã tự động điền Tiêu đề, Mô tả chuẩn và chọn Danh mục sự cố cho bạn!");
+      RNAlert.alert("AI Auto-Fill ✨", `Đã tự động điền Tiêu đề & Mô tả chi tiết tương ứng với Mức ưu tiên [${severity.toUpperCase()}]!`);
     }
   };
 
@@ -251,8 +443,8 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
         location: {
           type: "Point",
           coordinates: coords!.coordinates,
-          address: address || undefined,
         },
+        address: address || undefined,
         mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
         isAnonymous,
       });
@@ -266,7 +458,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
             setMediaUrls([]);
             setIsAnonymous(false);
             setAiNote(null);
-            navigation?.navigate("MyReports");
+            navigation?.navigate("MyReportsTab");
           },
         },
       ]);
@@ -354,7 +546,7 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
                 <TouchableOpacity
                   key={cat.value}
                   activeOpacity={0.8}
-                  onPress={() => setCategory(cat.value)}
+                  onPress={() => handleSelectCategory(cat.value)}
                   style={[
                     styles.catChip,
                     {
@@ -375,19 +567,21 @@ export const ReportIncidentScreen: React.FC<{ navigation?: any }> = ({ navigatio
           <View style={styles.severityContainer}>
             {SEVERITIES.map((sev) => {
               const isSelected = severity === sev.value;
-              const sevColor = SEVERITY_COLORS[sev.value] || { bg: "#F1F5F9", text: "#475569" };
+              const styleConfig = getSeverityStyle(sev.value, isSelected, isDark);
               return (
                 <TouchableOpacity
                   key={sev.value}
                   activeOpacity={0.8}
-                  onPress={() => setSeverity(sev.value)}
+                  onPress={() => handleSelectSeverity(sev.value)}
                   style={[
                     styles.sevChip,
-                    { backgroundColor: isSelected ? sevColor.text : sevColor.bg },
-                    isSelected && { borderColor: sevColor.text },
+                    {
+                      backgroundColor: styleConfig.bg,
+                      borderColor: styleConfig.border,
+                    },
                   ]}
                 >
-                  <Text style={[styles.sevText, { color: isSelected ? "#FFFFFF" : sevColor.text }]}>
+                  <Text style={[styles.sevText, { color: styleConfig.text }]}>
                     {t(sev.labelKey, sev.fallbackLabel).toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -613,8 +807,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "transparent",
+    borderWidth: 1.5,
   },
   sevText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
   formCard: { padding: 20, marginBottom: 16 },

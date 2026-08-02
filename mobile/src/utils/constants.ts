@@ -99,14 +99,14 @@ export const DARK_STATUS_COLORS: Record<string, { bg: string; text: string; bord
   rejected: { bg: "rgba(220, 38, 38, 0.25)", text: "#FCA5A5", border: "rgba(220, 38, 38, 0.4)" },
 };
 
-export const SEVERITY_COLORS: Record<string, { bg: string; text: string }> = {
-  low: { bg: "#F1F5F9", text: "#475569" },
-  LOW: { bg: "#F1F5F9", text: "#475569" },
-  medium: { bg: "#FEF3C7", text: "#D97706" },
-  MEDIUM: { bg: "#FEF3C7", text: "#D97706" },
-  high: { bg: "#FFEDD5", text: "#EA580C" },
-  HIGH: { bg: "#FFEDD5", text: "#EA580C" },
-  critical: { bg: "#FEE2E2", text: "#DC2626" },
-  CRITICAL: { bg: "#FEE2E2", text: "#DC2626" },
+export const SEVERITY_COLORS: Record<string, { bg: string; text: string; border?: string }> = {
+  low: { bg: "#F1F5F9", text: "#475569", border: "#CBD5E1" },
+  LOW: { bg: "#F1F5F9", text: "#475569", border: "#CBD5E1" },
+  medium: { bg: "#FEF3C7", text: "#D97706", border: "#FCD34D" },
+  MEDIUM: { bg: "#FEF3C7", text: "#D97706", border: "#FCD34D" },
+  high: { bg: "#FFEDD5", text: "#C2410C", border: "#FDBA74" },
+  HIGH: { bg: "#FFEDD5", text: "#C2410C", border: "#FDBA74" },
+  critical: { bg: "#FEE2E2", text: "#DC2626", border: "#FCA5A5" },
+  CRITICAL: { bg: "#FEE2E2", text: "#DC2626", border: "#FCA5A5" },
 };
 
