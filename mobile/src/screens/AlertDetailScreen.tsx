@@ -17,7 +17,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { COLORS } from "../utils/constants";
+import { useTheme } from "../context/ThemeContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "AlertDetail">;
 
@@ -28,6 +28,7 @@ const formatAddressLines = (address: string | undefined): string[] => {
 
 export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
   const { data: alert, isLoading, isError } = useAlert(route.params.id);
   const coordinates = alert?.location?.coordinates;
   const longitude = coordinates?.[0];
@@ -42,7 +43,6 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
     const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
     try {
-      // This HTTPS URL opens Google Maps when installed and the browser otherwise.
       await Linking.openURL(mapsUrl);
     } catch {
       Alert.alert("Unable to open maps", "Please try again or open the location in your browser.");
@@ -51,23 +51,23 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (isError || !alert) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>Unable to load this incident report.</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: colors.destructive }]}>Unable to load this incident report.</Text>
         <Button title="Go Back" variant="outline" onPress={() => navigation.goBack()} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         showsVerticalScrollIndicator={false}
@@ -76,51 +76,56 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
         >
-          <ArrowLeft size={22} color={COLORS.text} />
+          <ArrowLeft size={22} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.title}>{alert.title}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
         <View style={styles.badges}>
           <Badge label={alert.status || "PENDING"} type="status" />
-          <Badge label={alert.category || "General"} type="custom" bgColor="#F1F5F9" textColor="#475569" />
+          <Badge
+            label={alert.category || "General"}
+            type="custom"
+            bgColor={isDark ? "rgba(71, 85, 105, 0.4)" : "#F1F5F9"}
+            textColor={isDark ? "#CBD5E1" : "#475569"}
+          />
         </View>
 
         <Card style={styles.descriptionCard}>
-          <Text style={styles.cardLabel}>Incident Details</Text>
-          <Text style={styles.description}>{alert.description}</Text>
+          <Text style={[styles.cardLabel, { color: colors.text }]}>Incident Details</Text>
+          <Text style={[styles.description, { color: colors.textMuted }]}>{alert.description}</Text>
         </Card>
 
         <Card style={styles.locationCard}>
           <View style={styles.locationHeading}>
-            <View style={styles.locationIcon}>
-              <MapPin size={21} color={COLORS.primary} />
+            <View style={[styles.locationIcon, { backgroundColor: isDark ? "rgba(34, 197, 94, 0.2)" : colors.primaryLight }]}>
+              <MapPin size={21} color={colors.primary} />
             </View>
-            <Text style={styles.locationTitle}>Location</Text>
+            <Text style={[styles.locationTitle, { color: colors.text }]}>Location</Text>
           </View>
 
           <View style={styles.addressLines}>
             {addressLines.map((line, index) => (
-              <Text key={`${line}-${index}`} style={styles.addressLine}>
+              <Text key={index} style={[styles.addressLine, { color: colors.text }]}>
                 {line}
               </Text>
             ))}
           </View>
 
           {hasCoordinates && latitude !== undefined && longitude !== undefined ? (
-            <View style={styles.coordinates}>
+            <View style={[styles.coordinates, { borderTopColor: colors.border }]}>
               <View style={styles.coordinateRow}>
-                <Text style={styles.coordinateLabel}>Latitude:</Text>
-                <Text style={styles.coordinateValue}>{latitude.toFixed(6)}</Text>
+                <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Latitude:</Text>
+                <Text style={[styles.coordinateValue, { color: colors.text }]}>{latitude.toFixed(6)}</Text>
               </View>
               <View style={styles.coordinateRow}>
-                <Text style={styles.coordinateLabel}>Longitude:</Text>
-                <Text style={styles.coordinateValue}>{longitude.toFixed(6)}</Text>
+                <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Longitude:</Text>
+                <Text style={[styles.coordinateValue, { color: colors.text }]}>{longitude.toFixed(6)}</Text>
               </View>
             </View>
           ) : (
-            <Text style={styles.coordinateUnavailable}>GPS coordinates are unavailable for this report.</Text>
+            <Text style={[styles.coordinateUnavailable, { color: colors.textMuted }]}>GPS coordinates are unavailable for this report.</Text>
           )}
 
           {hasCoordinates ? (
@@ -140,7 +145,6 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -152,7 +156,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 16,
     padding: 24,
-    backgroundColor: COLORS.background,
   },
   backButton: {
     width: 44,
@@ -160,13 +163,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 22,
-    backgroundColor: COLORS.surface,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
   title: {
-    color: COLORS.text,
     fontSize: 26,
     fontWeight: "800",
   },
@@ -181,13 +181,11 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   cardLabel: {
-    color: COLORS.text,
     fontSize: 14,
     fontWeight: "800",
     marginBottom: 8,
   },
   description: {
-    color: COLORS.textMuted,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -206,10 +204,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 19,
-    backgroundColor: COLORS.primaryLight,
   },
   locationTitle: {
-    color: COLORS.text,
     fontSize: 18,
     fontWeight: "800",
   },
@@ -218,7 +214,6 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   addressLine: {
-    color: COLORS.text,
     fontSize: 15,
     lineHeight: 21,
   },
@@ -226,7 +221,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     gap: 7,
   },
   coordinateRow: {
@@ -234,18 +228,15 @@ const styles = StyleSheet.create({
   },
   coordinateLabel: {
     width: 88,
-    color: COLORS.textMuted,
     fontSize: 13,
     fontWeight: "700",
   },
   coordinateValue: {
-    color: COLORS.text,
     fontSize: 13,
     fontVariant: ["tabular-nums"],
   },
   coordinateUnavailable: {
     marginTop: 16,
-    color: COLORS.textMuted,
     fontSize: 13,
   },
   mapsButton: {
@@ -255,7 +246,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   errorText: {
-    color: COLORS.destructive,
     fontSize: 15,
     fontWeight: "600",
     textAlign: "center",
