@@ -18,17 +18,19 @@ export const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
   icon: IconComp,
-  iconColor = COLORS.primary,
-  iconBgColor = COLORS.primaryLight,
+  iconColor,
+  iconBgColor,
   style,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const effectiveIconColor = iconColor || colors.primary;
+  const effectiveIconBgColor = iconBgColor || (isDark ? "rgba(34, 197, 94, 0.2)" : colors.primaryLight);
 
   return (
     <GlassCard style={[styles.card, style]}>
       <View style={styles.content}>
-        <View style={[styles.iconBox, { backgroundColor: iconBgColor }]}>
-          <IconComp size={22} color={iconColor} />
+        <View style={[styles.iconBox, { backgroundColor: effectiveIconBgColor }]}>
+          <IconComp size={22} color={effectiveIconColor} />
         </View>
         <View style={styles.textContainer}>
           <Text style={[styles.value, { color: colors.text }]}>{value}</Text>

@@ -11,7 +11,7 @@ import {
 import { X, Edit3 } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 import { useUpdateAlert } from "../../hooks/useAlerts";
 import { Alert, AlertCategory, Severity } from "../../types";
 
@@ -43,6 +43,7 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
   alert,
   onClose,
 }) => {
+  const { colors, isDark } = useTheme();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<AlertCategory>("illegal_dumping");
@@ -93,14 +94,14 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-              <Edit3 size={22} color={COLORS.primary} />
-              <Text style={styles.title}>Edit Incident Report</Text>
+              <Edit3 size={22} color={colors.primary} />
+              <Text style={[styles.title, { color: colors.text }]}>Edit Incident Report</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textMuted} />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -122,34 +123,74 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
               onChangeText={setDescription}
             />
 
-            <Text style={styles.label}>Category</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Category</Text>
             <View style={styles.chipRow}>
-              {CATEGORIES.map((cat) => (
-                <TouchableOpacity
-                  key={cat.value}
-                  style={[styles.chip, category === cat.value && styles.chipActive]}
-                  onPress={() => setCategory(cat.value)}
-                >
-                  <Text style={[styles.chipText, category === cat.value && styles.chipTextActive]}>
-                    {cat.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {CATEGORIES.map((cat) => {
+                const isSelected = category === cat.value;
+                return (
+                  <TouchableOpacity
+                    key={cat.value}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? "rgba(34,197,94,0.25)" : colors.primaryLight)
+                          : (isDark ? "rgba(51, 65, 85, 0.4)" : colors.surface),
+                        borderColor: isSelected ? colors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => setCategory(cat.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        {
+                          color: isSelected
+                            ? (isDark ? "#4ADE80" : colors.primaryDark)
+                            : colors.text,
+                        },
+                      ]}
+                    >
+                      {cat.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
-            <Text style={styles.label}>Severity Level</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Severity Level</Text>
             <View style={styles.chipRow}>
-              {SEVERITIES.map((sev) => (
-                <TouchableOpacity
-                  key={sev.value}
-                  style={[styles.chip, severity === sev.value && styles.chipActive]}
-                  onPress={() => setSeverity(sev.value)}
-                >
-                  <Text style={[styles.chipText, severity === sev.value && styles.chipTextActive]}>
-                    {sev.label.toUpperCase()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {SEVERITIES.map((sev) => {
+                const isSelected = severity === sev.value;
+                return (
+                  <TouchableOpacity
+                    key={sev.value}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? "rgba(34,197,94,0.25)" : colors.primaryLight)
+                          : (isDark ? "rgba(51, 65, 85, 0.4)" : colors.surface),
+                        borderColor: isSelected ? colors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => setSeverity(sev.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        {
+                          color: isSelected
+                            ? (isDark ? "#4ADE80" : colors.primaryDark)
+                            : colors.text,
+                        },
+                      ]}
+                    >
+                      {sev.label.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <Button
@@ -168,11 +209,10 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "85%",
@@ -192,7 +232,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: COLORS.text,
   },
   closeBtn: {
     padding: 6,
@@ -207,7 +246,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.text,
     marginBottom: 8,
     marginTop: 8,
   },
@@ -221,21 +259,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.background,
-  },
-  chipActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryLight,
+    borderWidth: 1.5,
   },
   chipText: {
     fontSize: 12,
     fontWeight: "700",
-    color: COLORS.textMuted,
-  },
-  chipTextActive: {
-    color: COLORS.primaryDark,
   },
   submitBtn: {
     marginTop: 12,

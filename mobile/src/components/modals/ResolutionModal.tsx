@@ -14,7 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import { X, CheckCircle2, Camera, UploadCloud } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { COLORS } from "../../utils/constants";
+import { useTheme } from "../../context/ThemeContext";
 import {
   useResolveIncident,
   useUploadMedia,
@@ -52,6 +52,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
   alertId,
   onClose,
 }) => {
+  const { colors, isDark } = useTheme();
   const [resolutionSummary, setResolutionSummary] = useState("");
   const [treatmentMethod, setTreatmentMethod] = useState("Thu gom & vận chuyển phế thải đến nơi xử lý");
   const [materialsUsed, setMaterialsUsed] = useState("");
@@ -158,7 +159,6 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
         });
       }
 
-      // Auto-ensure prerequisite workflow steps (Start Handling & Confirm Arrival) are satisfied
       try {
         await startHandlingMutation.mutateAsync(alertId);
       } catch (e) {
@@ -197,19 +197,19 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <CheckCircle2 size={22} color="#16A34A" />
-              <Text style={styles.title}>Mark Incident Resolved</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Mark Incident Resolved</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textMuted} />
+              <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.formContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.subTitle}>
+            <Text style={[styles.subTitle, { color: colors.textMuted }]}>
               Upload proof photo and specify treatment methods used to resolve this environmental incident.
             </Text>
 
@@ -224,17 +224,34 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
             />
 
             {/* Quick Select Treatment Method Chips */}
-            <Text style={styles.label}>Treatment Method (Select Option) *</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Treatment Method (Select Option) *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {TREATMENT_OPTIONS.map((opt) => {
                 const isSelected = treatmentMethod === opt.value;
                 return (
                   <TouchableOpacity
                     key={opt.value}
-                    style={[styles.chip, isSelected && styles.chipSelected]}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? "rgba(34, 197, 94, 0.25)" : "#DCFCE7")
+                          : (isDark ? "rgba(51, 65, 85, 0.4)" : colors.surface),
+                        borderColor: isSelected ? (isDark ? "#4ADE80" : "#16A34A") : colors.border,
+                      },
+                    ]}
                     onPress={() => handleSelectTreatment(opt.value)}
                   >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        {
+                          color: isSelected
+                            ? (isDark ? "#4ADE80" : "#15803D")
+                            : colors.text,
+                        },
+                      ]}
+                    >
                       {opt.label}
                     </Text>
                   </TouchableOpacity>
@@ -250,17 +267,34 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
             />
 
             {/* Quick Select Materials Chips */}
-            <Text style={styles.label}>Materials & Equipment Used</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Materials & Equipment Used</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {MATERIAL_OPTIONS.map((mat) => {
                 const isSelected = materialsUsed.includes(mat);
                 return (
                   <TouchableOpacity
                     key={mat}
-                    style={[styles.chip, isSelected && styles.chipSelected]}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: isSelected
+                          ? (isDark ? "rgba(34, 197, 94, 0.25)" : "#DCFCE7")
+                          : (isDark ? "rgba(51, 65, 85, 0.4)" : colors.surface),
+                        borderColor: isSelected ? (isDark ? "#4ADE80" : "#16A34A") : colors.border,
+                      },
+                    ]}
                     onPress={() => handleSelectMaterial(mat)}
                   >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        {
+                          color: isSelected
+                            ? (isDark ? "#4ADE80" : "#15803D")
+                            : colors.text,
+                        },
+                      ]}
+                    >
                       {isSelected ? `✓ ${mat}` : mat}
                     </Text>
                   </TouchableOpacity>
@@ -284,7 +318,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
               onChangeText={setAdditionalNotes}
             />
 
-            <Text style={styles.label}>Resolution Proof Evidence Photo *</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Resolution Proof Evidence Photo *</Text>
             {evidenceUri ? (
               <View style={styles.imagePreviewContainer}>
                 <Image source={{ uri: evidenceUri }} style={styles.imagePreview} />
@@ -293,13 +327,23 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.uploadBox} onPress={handlePickPhoto} disabled={isUploading}>
+              <TouchableOpacity
+                style={[
+                  styles.uploadBox,
+                  {
+                    borderColor: colors.border,
+                    backgroundColor: isDark ? "rgba(34,197,94,0.12)" : colors.background,
+                  },
+                ]}
+                onPress={handlePickPhoto}
+                disabled={isUploading}
+              >
                 {isUploading ? (
-                  <ActivityIndicator size="small" color={COLORS.secondary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <>
-                    <Camera size={28} color={COLORS.secondary} />
-                    <Text style={styles.uploadText}>Take Photo or Select from Device</Text>
+                    <Camera size={28} color={colors.primary} />
+                    <Text style={[styles.uploadText, { color: colors.primary }]}>Take Photo or Select from Device</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -328,11 +372,10 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: COLORS.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "88%",
@@ -352,14 +395,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: COLORS.text,
   },
   closeBtn: {
     padding: 6,
   },
   subTitle: {
     fontSize: 13,
-    color: COLORS.textMuted,
     lineHeight: 18,
     marginBottom: 14,
   },
@@ -373,7 +414,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: COLORS.text,
     marginBottom: 8,
     marginTop: 8,
   },
@@ -381,18 +421,15 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: COLORS.border,
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.background,
     marginBottom: 20,
   },
   uploadText: {
     marginTop: 8,
     fontSize: 13,
     fontWeight: "600",
-    color: COLORS.secondary,
   },
   imagePreviewContainer: {
     position: "relative",
@@ -427,22 +464,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: COLORS.background,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
     marginRight: 8,
-  },
-  chipSelected: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#16A34A",
   },
   chipText: {
     fontSize: 12,
     fontWeight: "600",
-    color: COLORS.text,
-  },
-  chipTextSelected: {
-    color: "#15803D",
-    fontWeight: "700",
   },
 });

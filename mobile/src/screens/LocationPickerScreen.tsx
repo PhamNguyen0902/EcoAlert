@@ -14,7 +14,7 @@ import { useLocation } from "../hooks/useLocation";
 import { defaultReverseGeocoder } from "../services/reverseGeocoder";
 import type { LocationSelection, RootStackParamList } from "../navigation/types";
 import { Button } from "../components/ui/Button";
-import { COLORS } from "../utils/constants";
+import { useTheme } from "../context/ThemeContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "LocationPicker">;
 
@@ -37,6 +37,7 @@ const coordinateAddress = (latitude: number, longitude: number): string =>
 
 export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const mapRef = useRef<MapView>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const geocodeRequestId = useRef(0);
@@ -99,19 +100,30 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
   }, [fetchLocation, initialLocation]);
 
   useEffect(() => {
-    if (!initialLocation && currentCoords && !hasAppliedCurrentLocation.current) {
-      const latitude = currentCoords.coordinates[1];
-      const longitude = currentCoords.coordinates[0];
+    if (hasAnimatedInitialRegion.current) {
+      return;
+    }
+
+    if (initialLocation) {
+      hasAnimatedInitialRegion.current = true;
+      moveToCoordinate(initialLocation.latitude, initialLocation.longitude, false);
+      return;
+    }
+
+    if (currentCoords) {
+      hasAnimatedInitialRegion.current = true;
       hasAppliedCurrentLocation.current = true;
+      const [longitude, latitude] = currentCoords.coordinates;
+
       setSelection({
         latitude,
         longitude,
-        address: currentAddress || coordinateAddress(latitude, longitude),
+        address: currentAddress ?? coordinateAddress(latitude, longitude),
       });
-      mapRef.current?.animateToRegion(regionFor(latitude, longitude), 500);
-      scheduleReverseGeocode(latitude, longitude);
+
+      moveToCoordinate(latitude, longitude, false);
     }
-  }, [currentAddress, currentCoords, initialLocation, scheduleReverseGeocode]);
+  }, [currentAddress, currentCoords, initialLocation, moveToCoordinate]);
 
   useEffect(() => {
     return () => {
@@ -122,11 +134,8 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
     };
   }, []);
 
-  const handleMapReady = () => {
-    if (!hasAnimatedInitialRegion.current) {
-      hasAnimatedInitialRegion.current = true;
-      mapRef.current?.animateToRegion(regionFor(selection.latitude, selection.longitude), 500);
-    }
+  const handleRegionChangeComplete = (region: Region) => {
+    scheduleReverseGeocode(region.latitude, region.longitude);
   };
 
   const handleConfirm = () => {
@@ -144,34 +153,16 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <MapView
         ref={mapRef}
         style={styles.map}
         initialRegion={regionFor(selection.latitude, selection.longitude)}
-        onMapReady={handleMapReady}
-        onPress={(event) => {
-          const { latitude, longitude } = event.nativeEvent.coordinate;
-          moveToCoordinate(latitude, longitude);
-        }}
-        onRegionChangeComplete={(region) => {
-          scheduleReverseGeocode(region.latitude, region.longitude);
-        }}
+        onRegionChangeComplete={handleRegionChangeComplete}
       >
-        <Marker
-          coordinate={{ latitude: selection.latitude, longitude: selection.longitude }}
-          title="Selected incident location"
-          description={selection.address}
-          draggable
-          pinColor={COLORS.primary}
-          onDrag={(event) => {
-            const { latitude, longitude } = event.nativeEvent.coordinate;
-            scheduleReverseGeocode(latitude, longitude);
-          }}
-          onDragEnd={(event) => {
-            const { latitude, longitude } = event.nativeEvent.coordinate;
-            moveToCoordinate(latitude, longitude);
-          }}
+        <Marker 
+          coordinate={{ latitude: selection.latitude, longitude: selection.longitude }} 
+          pinColor={colors.primary} 
         />
       </MapView>
 
@@ -179,42 +170,42 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
         accessibilityRole="button"
         accessibilityLabel="Cancel location selection"
         onPress={() => navigation.goBack()}
-        style={[styles.backButton, { top: insets.top + 12 }]}
+        style={[styles.backButton, { top: insets.top + 12, backgroundColor: colors.surface }]}
       >
-        <ArrowLeft size={22} color={COLORS.text} />
+        <ArrowLeft size={22} color={colors.text} />
       </TouchableOpacity>
 
       <View pointerEvents="none" style={styles.crosshair}>
-        <View style={styles.crosshairHorizontal} />
-        <View style={styles.crosshairVertical} />
-        <View style={styles.crosshairCenter} />
+        <View style={[styles.crosshairHorizontal, { backgroundColor: colors.destructive }]} />
+        <View style={[styles.crosshairVertical, { backgroundColor: colors.destructive }]} />
+        <View style={[styles.crosshairCenter, { backgroundColor: colors.surface, borderColor: colors.destructive }]} />
       </View>
 
       <View style={[styles.bottomArea, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={styles.addressCard}>
+        <View style={[styles.addressCard, { backgroundColor: colors.surface }]}>
           <View style={styles.addressHeader}>
-            <MapPin size={18} color={COLORS.primary} />
-            <Text style={styles.addressLabel}>Current Address</Text>
+            <MapPin size={18} color={colors.primary} />
+            <Text style={[styles.addressLabel, { color: colors.text }]}>Current Address</Text>
           </View>
 
           {isFindingAddress ? (
             <View style={styles.findingAddress}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={styles.findingAddressText}>Finding address...</Text>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.findingAddressText, { color: colors.textMuted }]}>Finding address...</Text>
             </View>
           ) : (
-            <Text style={styles.address} numberOfLines={3}>
+            <Text style={[styles.address, { color: colors.text }]} numberOfLines={3}>
               {selection.address}
             </Text>
           )}
 
           <View style={styles.coordinateRow}>
-            <Text style={styles.coordinateLabel}>Latitude:</Text>
-            <Text style={styles.coordinateValue}>{selection.latitude.toFixed(6)}</Text>
+            <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Latitude:</Text>
+            <Text style={[styles.coordinateValue, { color: colors.text }]}>{selection.latitude.toFixed(6)}</Text>
           </View>
           <View style={styles.coordinateRow}>
-            <Text style={styles.coordinateLabel}>Longitude:</Text>
-            <Text style={styles.coordinateValue}>{selection.longitude.toFixed(6)}</Text>
+            <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Longitude:</Text>
+            <Text style={[styles.coordinateValue, { color: colors.text }]}>{selection.longitude.toFixed(6)}</Text>
           </View>
         </View>
 
@@ -223,7 +214,7 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
             title="Cancel"
             variant="outline"
             onPress={() => navigation.goBack()}
-            style={styles.cancelButton}
+            style={[styles.cancelButton, { backgroundColor: colors.surface }]}
           />
           <Button
             title="Confirm Location"
@@ -240,7 +231,6 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -253,7 +243,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 22,
-    backgroundColor: COLORS.surface,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
@@ -275,23 +264,19 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 28,
     height: 2,
-    backgroundColor: COLORS.destructive,
     borderRadius: 2,
   },
   crosshairVertical: {
     position: "absolute",
     width: 2,
     height: 28,
-    backgroundColor: COLORS.destructive,
     borderRadius: 2,
   },
   crosshairCenter: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.surface,
     borderWidth: 2,
-    borderColor: COLORS.destructive,
   },
   bottomArea: {
     position: "absolute",
@@ -301,7 +286,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   addressCard: {
-    backgroundColor: COLORS.surface,
     borderRadius: 20,
     padding: 16,
     shadowColor: "#000",
@@ -316,13 +300,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addressLabel: {
-    color: COLORS.text,
     fontSize: 14,
     fontWeight: "800",
   },
   address: {
     marginTop: 8,
-    color: COLORS.text,
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 21,
@@ -334,7 +316,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   findingAddressText: {
-    color: COLORS.textMuted,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -344,12 +325,10 @@ const styles = StyleSheet.create({
   },
   coordinateLabel: {
     width: 88,
-    color: COLORS.textMuted,
     fontSize: 13,
     fontWeight: "600",
   },
   coordinateValue: {
-    color: COLORS.text,
     fontSize: 13,
     fontVariant: ["tabular-nums"],
   },
@@ -359,7 +338,6 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: COLORS.surface,
   },
   confirmButton: {
     flex: 1.4,
