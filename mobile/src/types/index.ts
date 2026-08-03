@@ -110,6 +110,59 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
+export interface CurrentWeather {
+  temperature: number;
+  feelsLike: number;
+  humidity: number;
+  windSpeed: number;
+  windDirection: number;
+  description: string;
+  icon: string;
+  sunrise: string;
+  sunset: string;
+  aqi: number;
+  aqiLabel: string;
+  lastUpdated: string;
+}
+
+export interface AssistantSource {
+  id: string;
+  title: string;
+  href?: string;
+  type: "knowledge" | "dynamic";
+}
+
+export interface AssistantMessage {
+  id: string;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  sources: AssistantSource[];
+  createdAt: string;
+}
+
+export interface AssistantConversation {
+  id: string;
+  title: string;
+  role: UserRole;
+  lastMessageAt: string;
+  createdAt: string;
+}
+
+export interface AssistantReply {
+  conversation: AssistantConversation;
+  message: AssistantMessage;
+}
+
+export interface Notification {
+  _id: string;
+  recipientId: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;

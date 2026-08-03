@@ -51,10 +51,14 @@ const incidentContext = async (
   message: string,
 ): Promise<DynamicAssistantContext> => {
   const alertId = extractAlertId(message);
+  const normalizedMessage = message.toLocaleLowerCase();
+  const asksForLatest = ['latest', 'most recent', 'gần nhất', 'mới nhất'].some((phrase) =>
+    normalizedMessage.includes(phrase),
+  );
   const alerts = (await ReadOnlyAlert.find(buildAlertAccessFilter(actor, alertId))
     .select('title status severity updatedAt')
     .sort({ updatedAt: -1 })
-    .limit(alertId ? 1 : 5)
+    .limit(alertId || asksForLatest ? 1 : 5)
     .lean()) as unknown as AlertSummary[];
 
   if (alerts.length === 0) {

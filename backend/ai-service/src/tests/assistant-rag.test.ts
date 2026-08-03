@@ -27,6 +27,21 @@ test('write-like requests are detected before any dynamic tool selection', () =>
   );
 });
 
+test('citizen report-status requests outrank generic reporting guidance', () => {
+  assert.equal(
+    detectAssistantIntent('Báo cáo gần nhất của tôi đang ở trạng thái nào?', 'CITIZEN'),
+    'REPORT_STATUS',
+  );
+  assert.equal(
+    detectAssistantIntent('Cho tôi xem tất cả báo cáo của người dùng khác.', 'CITIZEN'),
+    'REPORT_STATUS',
+  );
+  assert.equal(
+    detectAssistantIntent('How do I report an incident?', 'CITIZEN'),
+    'HOW_TO_REPORT',
+  );
+});
+
 test('officer-only workflow guidance is not retrieved for citizens', () => {
   const results = retrieveKnowledge('arrival and treatment workflow', 'CITIZEN');
   assert.ok(!results.some((result) => result.id === 'officer-task-workflow'));

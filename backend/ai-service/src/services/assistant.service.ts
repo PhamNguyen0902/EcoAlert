@@ -170,7 +170,10 @@ export class AssistantService {
 
     if (this.provider.isConfigured) {
       try {
-        const generation = await this.provider.generate(prompt, turns, content);
+        const groundedUserMessage = dynamicContext?.text
+          ? `${content}\n\nAuthorized records that must be reflected in this answer:\n${dynamicContext.text}`
+          : content;
+        const generation = await this.provider.generate(prompt, turns, groundedUserMessage);
         responseContent = generation.content;
         providerName = generation.provider;
         providerModel = generation.model;
@@ -250,6 +253,8 @@ export class AssistantService {
       'You are strictly read-only: never claim to create, submit, update, assign, resolve, close, delete, or notify.',
       'Never disclose data not present in the approved context. Do not infer identities, incident ownership, or hidden fields.',
       'Use only the approved knowledge and authorized dynamic context below. If it does not answer the question, say what the user can check next.',
+      'When authorized dynamic context lists incident records and the user asks about their reports, state the exact available report title and status from that context. Never claim report information is unavailable when matching authorized records are listed.',
+      'If the user requests another person’s data or anything outside the authorized context, explicitly refuse that scope and do not imply that broader access is possible.',
       'For immediate danger, advise the user to contact local emergency services first.',
       'Use short paragraphs or bullets. Do not invent citations or URLs.',
       `Approved knowledge:\n${knowledge.map((item) => `- ${item}`).join('\n')}`,

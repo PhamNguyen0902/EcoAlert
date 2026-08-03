@@ -11,6 +11,7 @@ export const en: Translations = {
     users: "Users",
     categories: "Categories",
     audit: "Audit Logs",
+    assistant: "Assistant",
     profile: "Profile",
   },
 
