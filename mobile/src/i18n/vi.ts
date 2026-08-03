@@ -9,6 +9,7 @@ export const vi = {
     users: "Người dùng",
     categories: "Danh mục",
     audit: "Nhật ký hệ thống",
+    assistant: "Trợ lý AI",
     profile: "Cá nhân",
   },
 

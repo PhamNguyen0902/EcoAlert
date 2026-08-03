@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { gisService } from '../services/gis.service';
+import { weatherService } from '../services/weather.service';
 import { successResponse } from '@ecoalert/shared';
 
 export class GisController {
@@ -27,6 +28,25 @@ export class GisController {
     
     const results = await gisService.getRadius(lng, lat, radius);
     res.status(200).json(successResponse(results));
+  }
+
+  async getWeather(req: Request, res: Response) {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      return res.status(400).json({ success: false, message: 'Invalid coordinates' });
+    }
+
+    const weather = await weatherService.getCurrentWeather(lat, lng);
+    res.status(200).json(successResponse(weather));
   }
 }
 

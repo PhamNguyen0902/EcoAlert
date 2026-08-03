@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { LayoutDashboard, PlusCircle, FileText, User as UserIcon, Edit2, KeyRound } from "lucide-react-native";
+import { Bot, LayoutDashboard, PlusCircle, FileText, User as UserIcon, Edit2, KeyRound } from "lucide-react-native";
 import { CitizenDashboardScreen } from "../screens/citizen/CitizenDashboardScreen";
 import { ReportIncidentScreen } from "../screens/citizen/ReportIncidentScreen";
 import { MyReportsScreen } from "../screens/citizen/MyReportsScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
+import { AssistantScreen } from "../screens/citizen/AssistantScreen";
+import { NotificationsScreen } from "../screens/citizen/NotificationsScreen";
 import { useProfile, useLogout } from "../hooks/useAuth";
 import { EditProfileModal } from "../components/modals/EditProfileModal";
 import { ChangePasswordModal } from "../components/modals/ChangePasswordModal";
@@ -129,6 +131,8 @@ const CitizenTabs = () => {
             return <PlusCircle color={color} size={size + 4} />;
           } else if (route.name === "MyReportsTab") {
             return <FileText color={color} size={size} />;
+          } else if (route.name === "AssistantTab") {
+            return <Bot color={color} size={size} />;
           } else if (route.name === "ProfileTab") {
             return <UserIcon color={color} size={size} />;
           }
@@ -152,6 +156,11 @@ const CitizenTabs = () => {
         options={{ tabBarLabel: t("tabs.myReports", "My Reports") }}
       />
       <Tab.Screen
+        name="AssistantTab"
+        component={AssistantScreen}
+        options={{ tabBarLabel: t("tabs.assistant", "Assistant") }}
+      />
+      <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}
         options={{ tabBarLabel: t("tabs.profile", "Profile") }}
@@ -166,6 +175,7 @@ export const CitizenTabNavigator = () => {
       <Stack.Screen name="CitizenTabs" component={CitizenTabs} />
       <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
       <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 };
@@ -182,7 +192,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
   },
   profileContainer: {

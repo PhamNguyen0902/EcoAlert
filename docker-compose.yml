@@ -118,6 +118,7 @@ services:
       - PORT=3004
       - MONGO_URI=${MONGO_URI_GIS}
       - RABBITMQ_URL=${RABBITMQ_URL}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
     depends_on:
       - mongodb
       - rabbitmq

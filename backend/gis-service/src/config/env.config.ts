@@ -6,4 +6,5 @@ export const envConfig = {
   nodeEnv: process.env.NODE_ENV || 'development',
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/ecoalert-gis-db',
   rabbitMqUrl: process.env.RABBITMQ_URL || 'amqp://localhost',
+  openWeatherApiKey: process.env.OPENWEATHER_API_KEY || '',
 };

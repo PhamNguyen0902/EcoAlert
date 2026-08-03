@@ -9,6 +9,7 @@
 **/.env
 **/.env.*
 !backend/ai-service/.env.example
+!backend/gis-service/.env.example
 
 # IDE
 .vscode/

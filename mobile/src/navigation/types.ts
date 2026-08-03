@@ -16,6 +16,7 @@ export type CitizenTabParamList = {
   DashboardTab: undefined;
   ReportTab: { selectedLocation?: LocationSelection } | undefined;
   MyReportsTab: undefined;
+  AssistantTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -23,6 +24,7 @@ export type CitizenStackParamList = {
   CitizenTabs: NavigatorScreenParams<CitizenTabParamList> | undefined;
   AlertDetail: { id: string };
   LocationPicker: { initialLocation?: LocationSelection };
+  Notifications: undefined;
 };
 
 export type RootStackParamList = {

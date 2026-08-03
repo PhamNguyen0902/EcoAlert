@@ -19,10 +19,6 @@ export const detectAssistantIntent = (
     return 'WRITE_REQUEST';
   }
 
-  if (containsAny(normalized, ['how to report', 'report an incident', 'how do i report', 'báo cáo', 'tạo báo'])) {
-    return 'HOW_TO_REPORT';
-  }
-
   if (role === 'OFFICER' && containsAny(normalized, ['assigned', 'task', 'workload', 'nhiệm vụ', 'được giao'])) {
     return 'ASSIGNED_TASKS';
   }
@@ -31,8 +27,28 @@ export const detectAssistantIntent = (
     return 'SYSTEM_OVERVIEW';
   }
 
-  if (containsAny(normalized, ['status', 'my report', 'my incident', 'tracking', 'trạng thái', 'báo cáo của tôi'])) {
+  if (
+    containsAny(normalized, [
+      'status',
+      'my report',
+      'my incident',
+      'tracking',
+      'latest report',
+      'being processed',
+      'other user',
+      'trạng thái',
+      'báo cáo của tôi',
+      'báo cáo gần nhất',
+      'đang được xử lý',
+      'đang xử lý',
+      'người dùng khác',
+    ])
+  ) {
     return 'REPORT_STATUS';
+  }
+
+  if (containsAny(normalized, ['how to report', 'report an incident', 'how do i report', 'báo cáo', 'tạo báo'])) {
+    return 'HOW_TO_REPORT';
   }
 
   return 'GENERAL';
