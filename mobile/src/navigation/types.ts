@@ -25,6 +25,11 @@ export type CitizenStackParamList = {
   AlertDetail: { id: string };
   LocationPicker: { initialLocation?: LocationSelection };
   Notifications: undefined;
+  WeatherDetails: {
+    latitude: number;
+    longitude: number;
+    locationLabel: string;
+  };
 };
 
 export type RootStackParamList = {

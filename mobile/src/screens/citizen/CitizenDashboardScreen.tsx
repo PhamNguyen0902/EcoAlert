@@ -159,6 +159,16 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
       ?.navigate("Notifications");
   };
 
+  const openWeatherDetails = () => {
+    navigation
+      .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+      ?.navigate("WeatherDetails", {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        locationLabel: location.label,
+      });
+  };
+
   const refresh = async () => {
     setRefreshing(true);
     try {
@@ -300,6 +310,7 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
           isError={weatherQuery.isError}
           isCached={Boolean(weatherQuery.data && !weatherQuery.isFetchedAfterMount)}
           onRetry={() => weatherQuery.refetch()}
+          onPress={openWeatherDetails}
         />
 
         <View style={[styles.reportCta, { backgroundColor: isDark ? "#0D5132" : "#15803D" }]}>

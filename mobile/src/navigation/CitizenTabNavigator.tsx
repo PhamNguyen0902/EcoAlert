@@ -9,6 +9,7 @@ import { MyReportsScreen } from "../screens/citizen/MyReportsScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { AssistantScreen } from "../screens/citizen/AssistantScreen";
 import { NotificationsScreen } from "../screens/citizen/NotificationsScreen";
+import { WeatherDetailsScreen } from "../screens/citizen/WeatherDetailsScreen";
 import { useProfile, useLogout } from "../hooks/useAuth";
 import { EditProfileModal } from "../components/modals/EditProfileModal";
 import { ChangePasswordModal } from "../components/modals/ChangePasswordModal";
@@ -176,6 +177,7 @@ export const CitizenTabNavigator = () => {
       <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
       <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="WeatherDetails" component={WeatherDetailsScreen} />
     </Stack.Navigator>
   );
 };
