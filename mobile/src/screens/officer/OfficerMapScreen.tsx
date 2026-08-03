@@ -47,7 +47,7 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
           if (!coords || coords.length < 2) return null;
           const lat = coords[1];
           const lng = coords[0];
-          const sevColor = SEVERITY_COLORS[alert.severity]?.text || colors.primary;
+          const sevColor = SEVERITY_COLORS[alert.severity ?? "low"]?.text || colors.primary;
 
           return (
             <Marker

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { alertService } from "../api/alertService";
 import { CreateAlertData, ResolutionInput } from "../types";
+import { AI_POLL_INTERVAL_MS, shouldPollAiAnalysis } from "../utils/aiAnalysis";
 
 const EMPTY_FILTERS: Record<string, string> = {};
 
@@ -21,6 +22,9 @@ export const useAlert = (id: string) => {
     queryKey: ["alert", id],
     queryFn: () => alertService.getAlert(id),
     enabled: Boolean(id),
+    refetchInterval: (query) =>
+      shouldPollAiAnalysis(query.state.data) ? AI_POLL_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
   });
 };
 
@@ -38,7 +42,8 @@ export const useCreateAlert = () => {
 
   return useMutation({
     mutationFn: (data: CreateAlertData) => alertService.createAlert(data),
-    onSuccess: () => {
+    onSuccess: (createdAlert) => {
+      queryClient.setQueryData(["alert", createdAlert._id], createdAlert);
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
     },
   });
@@ -201,10 +206,11 @@ export const useAssignOfficer = () => {
 };
 
 export const useCheckNearbyAlerts = (lat?: number, lng?: number, radius = 200) => {
+  const hasCoordinates = lat !== undefined && lng !== undefined;
   return useQuery({
     queryKey: ["nearby-alerts", lat, lng, radius],
-    queryFn: () => (lat && lng ? alertService.checkNearbyAlerts(lat, lng, radius) : Promise.resolve([])),
-    enabled: Boolean(lat && lng),
+    queryFn: () => (hasCoordinates ? alertService.checkNearbyAlerts(lat, lng, radius) : Promise.resolve([])),
+    enabled: hasCoordinates,
   });
 };
 
@@ -220,12 +226,4 @@ export const useConfirmAlert = () => {
     },
   });
 };
-
-export const useAnalyzeMedia = () => {
-  return useMutation({
-    mutationFn: ({ description, imageUrl }: { description?: string; imageUrl?: string }) =>
-      alertService.analyzeMediaWithAI(description, imageUrl),
-  });
-};
-
 

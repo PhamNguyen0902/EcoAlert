@@ -30,6 +30,7 @@ export type AlertCategory =
   | "soil_contamination"
   | "wildlife_threat"
   | "other"
+  | "UNCLASSIFIED"
   | "Waste"
   | "Water"
   | "Air"
@@ -72,15 +73,22 @@ export interface Alert {
   title: string;
   description: string;
   status: AlertStatus;
-  category: AlertCategory;
-  severity: Severity;
+  category?: AlertCategory | null;
+  severity?: Severity | null;
   mediaUrls: string[];
   location: GeoLocation;
   address: string;
   citizenId: string | User;
   assignedOfficerId?: string | User;
-  aiConfidence?: number;
-  aiSuggestedPriority?: Severity;
+  aiConfidence?: number | null;
+  aiSuggestedPriority?: Severity | null;
+  aiSummary?: string | null;
+  aiReasoningSummary?: string | null;
+  aiAnalysisMode?: "text" | "vision" | "text_fallback" | null;
+  aiAnalysisProvider?: "openrouter" | null;
+  aiAnalysisModel?: string | null;
+  aiAnalysisId?: string | null;
+  aiAnalyzedAt?: string | null;
   officerNote?: string;
   arrivedAt?: string;
   assignedAt?: string;
@@ -126,22 +134,11 @@ export interface RegisterData {
 export interface CreateAlertData {
   title: string;
   description: string;
-  category?: AlertCategory;
-  severity?: Severity;
   location: GeoLocation;
   address?: string;
   mediaUrls?: string[];
   isAnonymous?: boolean;
   voiceNoteUrl?: string;
-}
-
-export interface AIAnalysisResult {
-  category: AlertCategory;
-  severity: Severity;
-  suggested_title?: string;
-  suggested_description?: string;
-  confidence?: number;
-  analysis_note?: string;
 }
 
 export interface ResolutionEvidenceInput {

@@ -112,7 +112,7 @@ export const UserManagementScreen: React.FC = () => {
               <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
                 {item.fullName}
               </Text>
-              <Badge title={item.role} color={roleColor} style={styles.roleBadge} />
+              <Badge label={item.role} type="custom" bgColor={`${roleColor}22`} textColor={roleColor} style={styles.roleBadge} />
             </View>
             <Text style={[styles.userEmail, { color: colors.textMuted }]} numberOfLines={1}>
               {item.email}
@@ -185,7 +185,7 @@ export const UserManagementScreen: React.FC = () => {
           placeholder={t("admin.searchUserPlaceholder", "Search users by name or email...")}
           value={search}
           onChangeText={setSearch}
-          icon={<Search size={18} color={colors.textMuted} />}
+          leftIcon={<Search size={18} color={colors.textMuted} />}
           style={styles.searchInput}
         />
 

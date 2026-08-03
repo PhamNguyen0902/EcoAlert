@@ -12,6 +12,19 @@ export type AppTabParamList = {
   ProfileTab: undefined;
 };
 
+export type CitizenTabParamList = {
+  DashboardTab: undefined;
+  ReportTab: { selectedLocation?: LocationSelection } | undefined;
+  MyReportsTab: undefined;
+  ProfileTab: undefined;
+};
+
+export type CitizenStackParamList = {
+  CitizenTabs: NavigatorScreenParams<CitizenTabParamList> | undefined;
+  AlertDetail: { id: string };
+  LocationPicker: { initialLocation?: LocationSelection };
+};
+
 export type RootStackParamList = {
   AdminApp: undefined;
   OfficerApp: undefined;

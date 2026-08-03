@@ -23,6 +23,11 @@ import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { format } from "date-fns";
 import type { Alert as AlertItem } from "../../types";
+import {
+  getAiAnalysisState,
+  getCategoryLabel,
+  getWorkflowStatusLabel,
+} from "../../utils/aiAnalysis";
 
 const CATEGORY_META = [
   { name: "Waste & Dumping", key: "illegal_dumping", color: "#16A34A" },
@@ -49,17 +54,18 @@ function useAlertStats(alerts: AlertItem[]) {
       else if (status && RESOLVED_STATUSES.has(status)) resolved++;
     }
 
+    const analyzedAlerts = alerts.filter((alert) => getAiAnalysisState(alert) === "COMPLETED");
     const categoryCounts = CATEGORY_META.map((cat) => {
-      const count = alerts.filter((a) => {
+      const count = analyzedAlerts.filter((a) => {
         const key = a.category?.toLowerCase();
         if (cat.key === "other") return !key || !KNOWN_CATEGORY_KEYS.has(key);
         return key === cat.key;
       }).length;
-      const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+      const percentage = analyzedAlerts.length > 0 ? Math.round((count / analyzedAlerts.length) * 100) : 0;
       return { ...cat, count, percentage };
     });
 
-    return { total, pending, processing, resolved, categoryCounts };
+    return { total, pending, processing, resolved, analyzedTotal: analyzedAlerts.length, categoryCounts };
   }, [alerts]);
 }
 
@@ -76,7 +82,7 @@ function formatGreetingName(fullName?: string): string {
 export const CitizenDashboardScreen: React.FC<{ navigation?: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: alertsData, isLoading, refetch, isRefetching } = useAlerts(1, 50);
   const { data: profile } = useProfile();
   const [refreshing, setRefreshing] = useState(false);
@@ -188,7 +194,7 @@ export const CitizenDashboardScreen: React.FC<{ navigation?: any }> = ({ navigat
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("dashboard.incidentsByCategory", "Incidents by Category")}</Text>
-        {stats.total === 0 ? (
+        {stats.analyzedTotal === 0 ? (
           <Card style={styles.categoryEmptyCard}>
             <PieChart size={28} color={colors.textMuted} />
             <Text style={[styles.categoryEmptyText, { color: colors.textMuted }]}>Category breakdown will appear once reports come in.</Text>
@@ -256,42 +262,51 @@ export const CitizenDashboardScreen: React.FC<{ navigation?: any }> = ({ navigat
             ) : null}
           </Card>
         ) : (
-          recentAlerts.map((alert) => (
-            <TouchableOpacity
-              key={alert._id}
-              activeOpacity={0.8}
-              onPress={() => navigation?.navigate("AlertDetail", { id: alert._id })}
-              accessibilityRole="button"
-              accessibilityLabel={`${alert.title}, status ${alert.status || "pending"}`}
-            >
-              <GlassCard style={styles.recentCard}>
-                <View style={styles.recentHeader}>
-                  <Badge label={alert.category || "General"} type="custom" bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"} textColor={isDark ? colors.text : "#475569"} />
-                  <Badge label={alert.status || "PENDING"} type="status" />
-                </View>
-                <Text style={[styles.recentTitle, { color: colors.text }]} numberOfLines={1}>
-                  {alert.title}
-                </Text>
-                <Text style={[styles.recentDesc, { color: colors.textMuted }]} numberOfLines={2}>
-                  {alert.description}
-                </Text>
-                <View style={[styles.recentFooter, { borderTopColor: colors.border }]}>
-                  <View style={styles.locationBox}>
-                    <MapPin size={14} color={colors.textMuted} />
-                    <Text style={[styles.locationText, { color: colors.textMuted }]} numberOfLines={1}>
-                      {alert.address || "Unknown Location"}
-                    </Text>
+          recentAlerts.map((alert) => {
+            const aiState = getAiAnalysisState(alert);
+            const aiLabel = aiState === "COMPLETED"
+              ? getCategoryLabel(alert.category, language)
+              : aiState === "PENDING"
+                ? t("aiAnalysis.analyzingShort", "AI: Analyzing...")
+                : t("aiAnalysis.unavailableTitle", "AI analysis unavailable");
+
+            return (
+              <TouchableOpacity
+                key={alert._id}
+                activeOpacity={0.8}
+                onPress={() => navigation?.navigate("AlertDetail", { id: alert._id })}
+                accessibilityRole="button"
+                accessibilityLabel={`${alert.title}, status ${alert.status || "pending"}`}
+              >
+                <GlassCard style={styles.recentCard}>
+                  <View style={styles.recentHeader}>
+                    <Badge label={aiLabel} type="custom" bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"} textColor={isDark ? colors.text : "#475569"} />
+                    <Badge label={getWorkflowStatusLabel(alert.status, language)} type="status" />
                   </View>
-                  <View style={styles.timeBox}>
-                    <Text style={[styles.timeText, { color: colors.textMuted }]}>
-                      {alert.createdAt ? format(new Date(alert.createdAt), "MMM d, HH:mm") : "Just now"}
-                    </Text>
-                    <ChevronRight size={16} color={colors.textMuted} />
+                  <Text style={[styles.recentTitle, { color: colors.text }]} numberOfLines={1}>
+                    {alert.title}
+                  </Text>
+                  <Text style={[styles.recentDesc, { color: colors.textMuted }]} numberOfLines={2}>
+                    {alert.description}
+                  </Text>
+                  <View style={[styles.recentFooter, { borderTopColor: colors.border }]}>
+                    <View style={styles.locationBox}>
+                      <MapPin size={14} color={colors.textMuted} />
+                      <Text style={[styles.locationText, { color: colors.textMuted }]} numberOfLines={1}>
+                        {alert.address || "Unknown Location"}
+                      </Text>
+                    </View>
+                    <View style={styles.timeBox}>
+                      <Text style={[styles.timeText, { color: colors.textMuted }]}>
+                        {alert.createdAt ? format(new Date(alert.createdAt), "MMM d, HH:mm") : "Just now"}
+                      </Text>
+                      <ChevronRight size={16} color={colors.textMuted} />
+                    </View>
                   </View>
-                </View>
-              </GlassCard>
-            </TouchableOpacity>
-          ))
+                </GlassCard>
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
     </View>
@@ -347,6 +362,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   viewAllText: { fontSize: 14, fontWeight: "700" },
+  viewAllBtn: { paddingVertical: 4, paddingLeft: 10 },
   grid: { gap: 12, marginBottom: 16 },
   gridRow: { flexDirection: "row", gap: 12 },
   cardItem: { flex: 1 },

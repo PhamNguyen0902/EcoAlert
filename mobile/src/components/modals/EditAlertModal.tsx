@@ -8,12 +8,13 @@ import {
   ScrollView,
   Alert as RNAlert,
 } from "react-native";
-import { X, Edit3 } from "lucide-react-native";
+import { X, Edit3, Sparkles } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { useUpdateAlert } from "../../hooks/useAlerts";
-import { Alert, AlertCategory, Severity } from "../../types";
+import type { Alert } from "../../types";
 
 interface EditAlertModalProps {
   visible: boolean;
@@ -21,33 +22,15 @@ interface EditAlertModalProps {
   onClose: () => void;
 }
 
-const CATEGORIES: { label: string; value: AlertCategory }[] = [
-  { label: "Illegal Dumping", value: "illegal_dumping" },
-  { label: "Water Pollution", value: "water_pollution" },
-  { label: "Air Pollution", value: "air_pollution" },
-  { label: "Illegal Burning", value: "illegal_burning" },
-  { label: "Flooding", value: "flooding" },
-  { label: "Fallen Tree", value: "fallen_tree" },
-  { label: "Other", value: "other" },
-];
-
-const SEVERITIES: { label: string; value: Severity }[] = [
-  { label: "Low", value: "low" },
-  { label: "Medium", value: "medium" },
-  { label: "High", value: "high" },
-  { label: "Critical", value: "critical" },
-];
-
 export const EditAlertModal: React.FC<EditAlertModalProps> = ({
   visible,
   alert,
   onClose,
 }) => {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<AlertCategory>("illegal_dumping");
-  const [severity, setSeverity] = useState<Severity>("medium");
 
   const updateMutation = useUpdateAlert();
 
@@ -55,8 +38,6 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
     if (alert) {
       setTitle(alert.title || "");
       setDescription(alert.description || "");
-      setCategory(alert.category || "illegal_dumping");
-      setSeverity(alert.severity || "medium");
     }
   }, [alert, visible]);
 
@@ -78,15 +59,14 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
         data: {
           title: title.trim(),
           description: description.trim(),
-          category,
-          severity,
         },
       });
 
       RNAlert.alert("Success", "Incident report updated successfully.");
       onClose();
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to update incident.";
+    } catch (error: unknown) {
+      const requestError = error as { response?: { data?: { message?: string } }; message?: string };
+      const msg = requestError.response?.data?.message || requestError.message || "Failed to update incident.";
       RNAlert.alert("Update Error", msg);
     }
   };
@@ -123,74 +103,22 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
               onChangeText={setDescription}
             />
 
-            <Text style={[styles.label, { color: colors.text }]}>Category</Text>
-            <View style={styles.chipRow}>
-              {CATEGORIES.map((cat) => {
-                const isSelected = category === cat.value;
-                return (
-                  <TouchableOpacity
-                    key={cat.value}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: isSelected
-                          ? (isDark ? "rgba(34,197,94,0.25)" : colors.primaryLight)
-                          : (isDark ? "rgba(51, 65, 85, 0.4)" : colors.surface),
-                        borderColor: isSelected ? colors.primary : colors.border,
-                      },
-                    ]}
-                    onPress={() => setCategory(cat.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        {
-                          color: isSelected
-                            ? (isDark ? "#4ADE80" : colors.primaryDark)
-                            : colors.text,
-                        },
-                      ]}
-                    >
-                      {cat.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <Text style={[styles.label, { color: colors.text }]}>Severity Level</Text>
-            <View style={styles.chipRow}>
-              {SEVERITIES.map((sev) => {
-                const isSelected = severity === sev.value;
-                return (
-                  <TouchableOpacity
-                    key={sev.value}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: isSelected
-                          ? (isDark ? "rgba(34,197,94,0.25)" : colors.primaryLight)
-                          : (isDark ? "rgba(51, 65, 85, 0.4)" : colors.surface),
-                        borderColor: isSelected ? colors.primary : colors.border,
-                      },
-                    ]}
-                    onPress={() => setSeverity(sev.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        {
-                          color: isSelected
-                            ? (isDark ? "#4ADE80" : colors.primaryDark)
-                            : colors.text,
-                        },
-                      ]}
-                    >
-                      {sev.label.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View
+              style={[
+                styles.aiReadOnlyCard,
+                {
+                  backgroundColor: isDark ? "rgba(99,102,241,0.18)" : "#EEF2FF",
+                  borderColor: isDark ? "rgba(129,140,248,0.35)" : "#C7D2FE",
+                },
+              ]}
+            >
+              <Sparkles size={16} color={isDark ? "#A5B4FC" : "#4F46E5"} />
+              <Text style={[styles.aiReadOnlyText, { color: isDark ? "#C7D2FE" : "#3730A3" }]}>
+                {t(
+                  "report.aiReadOnlyEdit",
+                  "Category and severity are assessed by EcoAlert AI and cannot be edited here.",
+                )}
+              </Text>
             </View>
 
             <Button
@@ -243,27 +171,20 @@ const styles = StyleSheet.create({
     height: 90,
     textAlignVertical: "top",
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
+  aiReadOnlyCard: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "flex-start",
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     marginTop: 8,
   },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1.5,
-  },
-  chipText: {
+  aiReadOnlyText: {
+    flex: 1,
     fontSize: 12,
-    fontWeight: "700",
+    lineHeight: 17,
+    fontWeight: "600",
   },
   submitBtn: {
     marginTop: 12,
