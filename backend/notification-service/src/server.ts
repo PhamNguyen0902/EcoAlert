@@ -1,13 +1,18 @@
 import { app } from './app';
+import http from 'http';
 import dotenv from 'dotenv';
 import { createLogger } from '@ecoalert/shared';
 import { rabbitMQService } from './services/rabbitmq.service';
+import { socketService } from './services/socket.service';
 import mongoose from 'mongoose';
 
 dotenv.config();
 const logger = createLogger('notification-service');
 const PORT = process.env.PORT || 3006;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ecoalert-notification-db';
+
+const server = http.createServer(app);
+socketService.initialize(server);
 
 const startServer = async () => {
   try {
@@ -16,7 +21,7 @@ const startServer = async () => {
     
     await rabbitMQService.connect();
     
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       logger.info(`Notification Service is running on port ${PORT}`);
     });
   } catch (error) {

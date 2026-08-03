@@ -111,7 +111,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 app.use('/api', verifyToken);
 
 // Proxy configuration
-const setupProxy = (path: string, target: string, rewrite: boolean = false, internalAssistant = false) => {
+const setupProxy = (path: string, target: string, rewrite: boolean = false, internalAssistant = false, ws = false) => {
   const internalGatewaySecret = process.env.INTERNAL_GATEWAY_SHARED_SECRET;
 
   app.use(
@@ -119,6 +119,7 @@ const setupProxy = (path: string, target: string, rewrite: boolean = false, inte
     createProxyMiddleware({
       target,
       changeOrigin: true,
+      ws,
       pathRewrite: rewrite ? { [`^${path}`]: '' } : undefined,
       headers:
         internalAssistant && internalGatewaySecret
@@ -135,18 +136,15 @@ const setupProxy = (path: string, target: string, rewrite: boolean = false, inte
   );
 };
 
-// The proxy middleware automatically streams the request body. 
-// However, if we parse it before proxying (e.g. express.json()), it breaks. 
-// We use fixRequestBody to re-stream it if needed, but it's safer to only parse when needed.
-// For Gateway, we don't parse JSON globally to avoid interfering with file uploads to media service.
-// We only parse if absolutely necessary.
+// WebSocket proxy for Notification Service
+setupProxy('/socket.io', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', false, false, true);
 
 setupProxy('/api/v1/auth', process.env.USER_SERVICE_URL || 'http://localhost:3001');
 setupProxy('/api/v1/users', process.env.USER_SERVICE_URL || 'http://localhost:3001');
 setupProxy('/api/v1/alerts', process.env.ALERT_SERVICE_URL || 'http://localhost:3002', true);
 setupProxy('/api/v1/media', process.env.MEDIA_SERVICE_URL || 'http://localhost:3003', true);
 setupProxy('/api/v1/gis', process.env.GIS_SERVICE_URL || 'http://localhost:3004', true);
-setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', true);
+setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', true, false, true);
 setupProxy('/api/v1/assistant', process.env.AI_SERVICE_URL || 'http://localhost:3005', true, true);
 setupProxy('/api/v1/ai', process.env.AI_SERVICE_URL || 'http://localhost:3005', true);
 

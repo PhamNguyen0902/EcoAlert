@@ -2,6 +2,7 @@ import amqp from 'amqplib';
 import { envConfig } from '../config/env.config';
 import { createLogger, IEventMessage, EVENTS } from '@ecoalert/shared';
 import { notificationService } from './notification.service';
+import { socketService } from './socket.service';
 
 const logger = createLogger('notification-service');
 
@@ -29,6 +30,7 @@ class RabbitMQService {
 
       const queue = await this.channel.assertQueue('notification_service_queue', { durable: true });
       const eventNames = [
+        EVENTS.ALERT_CREATED,
         EVENTS.IMAGE_ANALYZED,
         EVENTS.ALERT_UPDATED,
         EVENTS.OFFICER_ASSIGNED,
@@ -65,8 +67,22 @@ class RabbitMQService {
     const incidentId = data.alertId || data._id || 'incident';
     const incidentLabel = data.title ? `“${data.title}”` : incidentId;
 
+    // Broadcast generic realtime event to all connected clients
+    socketService.emitToAll('realtime:event', {
+      type: event.eventType,
+      data,
+      eventId: event.eventId,
+      timestamp: new Date().toISOString(),
+    });
+
     switch (event.eventType) {
+      case EVENTS.ALERT_CREATED:
+        socketService.emitToAll('alert:created', data);
+        break;
+
       case EVENTS.IMAGE_ANALYZED:
+        socketService.emitToAll('image:analyzed', data);
+        socketService.emitToAll('alert:updated', data);
         await notificationService.notifyCitizen(
           'System',
           'Alert Analyzed',
@@ -80,7 +96,9 @@ class RabbitMQService {
         );
         break;
       case EVENTS.OFFICER_ASSIGNED:
+        socketService.emitToAll('alert:updated', data);
         if (data.assignedOfficerId) {
+          socketService.emitToRoom(`user:${data.assignedOfficerId}`, 'officer:assigned', data);
           await notificationService.notifyOfficer(
             data.assignedOfficerId,
             'New incident assigned',
@@ -90,6 +108,7 @@ class RabbitMQService {
         }
         break;
       case EVENTS.ALERT_STARTED:
+        socketService.emitToAll('alert:updated', data);
         if (data.citizenId) {
           await notificationService.notifyCitizen(
             data.citizenId,
@@ -100,6 +119,7 @@ class RabbitMQService {
         }
         break;
       case EVENTS.ALERT_ARRIVED:
+        socketService.emitToAll('alert:updated', data);
         if (data.citizenId) {
           await notificationService.notifyCitizen(
             data.citizenId,
@@ -110,6 +130,7 @@ class RabbitMQService {
         }
         break;
       case EVENTS.ALERT_RESOLVED:
+        socketService.emitToAll('alert:updated', data);
         if (data.citizenId) {
           await notificationService.notifyCitizen(
             data.citizenId,
@@ -125,6 +146,7 @@ class RabbitMQService {
         );
         break;
       case EVENTS.ALERT_CLOSED:
+        socketService.emitToAll('alert:updated', data);
         if (data.citizenId) {
           await notificationService.notifyCitizen(
             data.citizenId,
@@ -143,13 +165,16 @@ class RabbitMQService {
         }
         break;
       case EVENTS.ALERT_UPDATED:
-        if (!data.workflowNotificationHandled && data.citizenId) {
-          await notificationService.notifyCitizen(
-            data.citizenId,
-            'Alert Status Update',
-            `Your alert ${incidentId} is now ${data.status}`,
-            event.eventId,
-          );
+        if (!data.workflowNotificationHandled) {
+          socketService.emitToAll('alert:updated', data);
+          if (data.citizenId) {
+            await notificationService.notifyCitizen(
+              data.citizenId,
+              'Alert Status Update',
+              `Your alert ${incidentId} is now ${data.status}`,
+              event.eventId,
+            );
+          }
         }
         break;
       default:
