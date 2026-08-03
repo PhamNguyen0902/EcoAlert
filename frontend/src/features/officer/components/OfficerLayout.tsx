@@ -9,7 +9,7 @@ export default function OfficerLayout() {
       <OfficerSidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <OfficerTopbar />
-        <main className="flex-1 overflow-y-auto p-6 bg-background">
+        <main className="flex-1 overflow-y-auto bg-background p-4 pb-20 md:p-6">
           <Outlet />
         </main>
       </div>
