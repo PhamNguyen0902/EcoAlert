@@ -6,7 +6,7 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "npm run build && node --test dist/tests/assistant-rag.test.js dist/tests/openrouter.service.test.js dist/tests/rabbitmq.service.test.js"
+    "test": "npm run build && node --test dist/tests/*.test.js"
   },
   "dependencies": {
     "@ecoalert/shared": "file:../shared",

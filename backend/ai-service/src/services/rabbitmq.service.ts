@@ -8,12 +8,14 @@ import {
   IEventMessage,
 } from '@ecoalert/shared';
 import {
-  analyzeIncidentWithOpenRouter,
-  IncidentAnalysisInput,
-  IncidentAnalysisResult,
   safeOpenRouterErrorMetadata,
 } from './openrouter.service';
 import { AiTask } from './ai-task-router';
+import {
+  analyzeMultimodalIncident,
+  MultimodalAnalysisResult,
+  MultimodalInput,
+} from './multimodal-analysis.service';
 
 const logger = createLogger('ai-service');
 
@@ -25,7 +27,7 @@ interface AlertCreatedData {
 }
 
 export interface AlertCreatedProcessorDependencies {
-  analyze: (input: IncidentAnalysisInput) => Promise<IncidentAnalysisResult>;
+  analyze: (input: MultimodalInput) => Promise<MultimodalAnalysisResult>;
   publish: (
     routingKey: string,
     data: IAiAnalysisCompletedData,
@@ -50,6 +52,7 @@ export const processAlertCreatedEvent = async (
   if (!alert?._id) throw new Error('alert.created event is missing data._id');
 
   const analysis = await dependencies.analyze({
+    alertId: alert._id,
     title: alert.title,
     description: alert.description || '',
     imageUrl: alert.mediaUrls?.find((url) => typeof url === 'string' && url.length > 0),
@@ -60,6 +63,9 @@ export const processAlertCreatedEvent = async (
     task: AiTask.INCIDENT_ANALYSIS,
     model: analysis.model,
     analysisMode: analysis.analysisMode,
+    pipelineVersion: analysis.pipelineVersion,
+    visionStatus: analysis.vision?.status,
+    processingTimeMs: analysis.totalProcessingTimeMs || analysis.semanticProcessingTimeMs,
   });
 
   await dependencies.publish(
@@ -109,7 +115,7 @@ class RabbitMQService {
         if (!message || !this.channel) return;
 
         const result = await settleAlertCreatedMessage(message, this.channel, {
-          analyze: analyzeIncidentWithOpenRouter,
+          analyze: analyzeMultimodalIncident,
           publish: (routingKey, data, correlationId) =>
             this.publishEvent(routingKey, data, correlationId),
         });

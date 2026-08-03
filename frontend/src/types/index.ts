@@ -3,6 +3,38 @@ export type WorkflowActorRole = UserRole | 'SYSTEM';
 export type AlertStatus = 'pending' | 'ai_analyzing' | 'verified' | 'assigned' | 'in_progress' | 'resolved' | 'closed' | 'rejected';
 export type AlertCategory = 'illegal_dumping' | 'water_pollution' | 'air_pollution' | 'illegal_burning' | 'flooding' | 'fallen_tree' | 'illegal_construction_waste' | 'noise_pollution' | 'soil_contamination' | 'wildlife_threat' | 'other' | 'UNCLASSIFIED';
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
+export type AiAnalysisMode = 'text' | 'vision' | 'text_fallback' | 'FULL_MULTIMODAL' | 'SEMANTIC_ONLY' | 'VISION_ONLY' | 'FAILED';
+export type AiWasteType = 'PLASTIC_WASTE' | 'ORGANIC_WASTE' | 'CONSTRUCTION_WASTE' | 'HAZARDOUS_WASTE' | 'METAL_WASTE' | 'GLASS_WASTE' | 'PAPER_WASTE' | 'E_WASTE' | 'MIXED_WASTE' | 'OTHER';
+
+export interface AiVisionAnalysis {
+  status: 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'UNAVAILABLE';
+  detectorModel: string;
+  segmenterModel?: string;
+  detections: Array<{ label: string; confidence: number; wasteType?: AiWasteType }>;
+  objectCounts: Array<{ label: string; count: number }>;
+  totalDetectedObjects: number;
+  visibleWasteCoverage: number | null;
+  detectorConfidence: number | null;
+  segmentationConfidence: number | null;
+  annotatedImageUrl?: string;
+  processingTimeMs: number;
+  detectionTimeMs: number;
+  segmentationTimeMs: number;
+  annotationTimeMs: number;
+  warnings: string[];
+}
+
+export interface AiFusionAnalysis {
+  version: 'vision-fusion-v1';
+  mode: 'FULL_MULTIMODAL' | 'SEMANTIC_ONLY' | 'VISION_ONLY' | 'FAILED';
+  wasteType?: AiWasteType;
+  severityScore: number;
+  explanations: string[];
+  semanticConfidence: number | null;
+  visionConfidence: number | null;
+  fusionConfidence: number;
+  processingTimeMs: number;
+}
 
 export interface User {
   _id: string;
@@ -57,11 +89,16 @@ export interface Alert {
   aiSuggestedPriority?: Severity;
   aiSummary?: string;
   aiReasoningSummary?: string;
-  aiAnalysisMode?: 'text' | 'vision' | 'text_fallback';
-  aiAnalysisProvider?: 'openrouter';
+  aiAnalysisMode?: AiAnalysisMode;
+  aiAnalysisProvider?: 'openrouter' | 'vision-service';
   aiAnalysisModel?: string;
   aiAnalysisId?: string;
   aiAnalyzedAt?: string;
+  aiPipelineVersion?: 'multimodal-v1';
+  aiVision?: AiVisionAnalysis;
+  aiFusion?: AiFusionAnalysis;
+  aiSemanticProcessingTimeMs?: number;
+  aiTotalProcessingTimeMs?: number;
   officerNote?: string;
   resolvedAt?: string;
   resolvedBy?: string;

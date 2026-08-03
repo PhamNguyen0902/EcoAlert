@@ -103,6 +103,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+      - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}
     depends_on:
       - mongodb
     networks:
@@ -145,10 +146,58 @@ services:
       - ASSISTANT_RATE_LIMIT=${ASSISTANT_RATE_LIMIT}
       - ASSISTANT_RATE_WINDOW_SECONDS=${ASSISTANT_RATE_WINDOW_SECONDS}
       - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}
+      - VISION_AI_ENABLED=${VISION_AI_ENABLED:-false}
+      - VISION_SEGMENTATION_ENABLED=${VISION_SEGMENTATION_ENABLED:-false}
+      - VISION_SERVICE_URL=http://vision-service:3007
+      - VISION_TIMEOUT_MS=${VISION_TIMEOUT_MS:-45000}
+      - MEDIA_SERVICE_URL=http://media-service:3003
     depends_on:
       - mongodb
       - redis
       - rabbitmq
+      - media-service
+      - vision-service
+    networks:
+      - ecoalert_network
+
+  vision-service:
+    build:
+      context: ./backend/vision-service
+      target: runtime
+      args:
+        TORCH_INDEX_URL: ${VISION_TORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
+    container_name: ecoalert_vision_service
+    expose:
+      - "3007"
+    environment:
+      - VISION_INTERNAL_TOKEN=${INTERNAL_GATEWAY_SHARED_SECRET}
+      - VISION_ALLOWED_IMAGE_HOSTS=${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com
+      - VISION_ALLOW_PRIVATE_HOSTS=false
+      - VISION_MAX_IMAGE_BYTES=10485760
+      - VISION_MAX_IMAGE_PIXELS=25000000
+      - VISION_MAX_INFERENCE_SIDE=1280
+      - VISION_REQUEST_TIMEOUT_SECONDS=12
+      - VISION_MAX_CONCURRENCY=${VISION_MAX_CONCURRENCY:-1}
+      - VISION_DETECTION_MODEL_PATH=/models/yolo26n.pt
+      - VISION_CONFIDENCE_THRESHOLD=${VISION_CONFIDENCE_THRESHOLD:-0.40}
+      # No-build compatibility for the currently deployed Phase 1A image.
+      - VISION_DETECTION_CONFIDENCE=${VISION_CONFIDENCE_THRESHOLD:-0.40}
+      - VISION_IOU_THRESHOLD=${VISION_IOU_THRESHOLD:-0.45}
+      - VISION_MAX_DETECTIONS=${VISION_MAX_DETECTIONS:-100}
+      - VISION_DEVICE=${VISION_DEVICE:-auto}
+      - VISION_SEGMENTATION_ENABLED=${VISION_SEGMENTATION_ENABLED:-false}
+      - VISION_SAM2_CHECKPOINT_PATH=/models/sam2.1_hiera_tiny.pt
+      - VISION_SAM2_CONFIG=configs/sam2.1/sam2.1_hiera_t.yaml
+      - VISION_MODEL_EAGER_LOAD=${VISION_MODEL_EAGER_LOAD:-false}
+      - VISION_SERVICE_PORT=3007
+    volumes:
+      - vision_model_cache:/models
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3007/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     networks:
       - ecoalert_network
 
@@ -174,3 +223,4 @@ networks:
 
 volumes:
   mongo_data:
+  vision_model_cache:

@@ -10,6 +10,18 @@
 **/.env.*
 !backend/ai-service/.env.example
 !backend/gis-service/.env.example
+!backend/media-service/.env.example
+!backend/vision-service/.env.example
+
+# ML model artifacts and experiment outputs are external to source control
+**/models/weights/*
+**/models/checkpoints/*
+*.pt
+*.pth
+*.onnx
+*.engine
+**/runs/
+**/datasets/
 
 # IDE
 .vscode/

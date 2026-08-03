@@ -14,6 +14,16 @@ export class UploadController {
       successResponse({ url: imageUrl }, "Image uploaded successfully")
     );
   }
+
+  async uploadVisionAnnotation(req: Request, res: Response) {
+    if (!req.file) {
+      throw new BadRequestError("No annotated image file provided");
+    }
+    const imageUrl = await s3Service.uploadImage(req.file, "ecoalert/ai-analysis");
+    res.status(200).json(
+      successResponse({ url: imageUrl }, "Vision annotation uploaded successfully")
+    );
+  }
 }
 
 export const uploadController = new UploadController();

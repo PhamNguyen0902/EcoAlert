@@ -100,3 +100,48 @@ test('replaying the same analysis ID does not issue another database update', as
     repository.findOneAndUpdate = originalFindOneAndUpdate;
   }
 });
+
+test('structured multimodal evidence is validated and included in the additive update', async () => {
+  const multimodal: IAiAnalysisCompletedData = {
+    ...analysis(),
+    analysisMode: 'FULL_MULTIMODAL',
+    pipelineVersion: 'multimodal-v1',
+    vision: {
+      status: 'COMPLETED', detectorModel: 'yolo26n.pt', detections: [], objectCounts: [],
+      totalDetectedObjects: 0, visibleWasteCoverage: null, detectorConfidence: null,
+      segmentationConfidence: null, processingTimeMs: 20,
+      detectionTimeMs: 12, segmentationTimeMs: 0, annotationTimeMs: 5, warnings: [],
+    },
+    fusion: {
+      version: 'vision-fusion-v1', mode: 'FULL_MULTIMODAL', severityScore: 65,
+      severityFactors: [{ factor: 'semantic_severity', score: 65, evidenceSource: 'semantic', explanation: 'High baseline.' }],
+      explanations: ['High baseline.'], semanticConfidence: 0, visionConfidence: null,
+      fusionConfidence: 0,
+      processingTimeMs: 1,
+    },
+  };
+  assert.equal(aiAnalysisCompletedSchema.parse(multimodal).vision?.detectorModel, 'yolo26n.pt');
+
+  const repository = alertRepository as any;
+  const rabbit = rabbitMQService as any;
+  const originalFindById = repository.findById;
+  const originalFindOneAndUpdate = repository.findOneAndUpdate;
+  const originalPublish = rabbit.publishEvent;
+  let capturedUpdate: any;
+  try {
+    repository.findById = async () => ({ _id: multimodal.alertId, status: 'pending' });
+    repository.findOneAndUpdate = async (_filter: unknown, update: unknown) => {
+      capturedUpdate = update;
+      return { _id: multimodal.alertId };
+    };
+    rabbit.publishEvent = async () => undefined;
+    await alertService.internalUpdateAiResult(multimodal.alertId, multimodal);
+    assert.equal(capturedUpdate.$set.aiPipelineVersion, 'multimodal-v1');
+    assert.equal(capturedUpdate.$set.aiVision.detectorModel, 'yolo26n.pt');
+    assert.equal(capturedUpdate.$set.aiFusion.severityScore, 65);
+  } finally {
+    repository.findById = originalFindById;
+    repository.findOneAndUpdate = originalFindOneAndUpdate;
+    rabbit.publishEvent = originalPublish;
+  }
+});

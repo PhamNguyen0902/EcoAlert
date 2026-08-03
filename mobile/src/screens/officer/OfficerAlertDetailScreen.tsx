@@ -34,6 +34,7 @@ import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
+import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
 import { useTheme } from "../../context/ThemeContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 
@@ -221,6 +222,8 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           <Text style={[styles.sectionHeading, { color: colors.text }]}>Citizen Incident Description</Text>
           <Text style={[styles.descriptionText, { color: colors.text }]}>{alert.description}</Text>
         </GlassCard>
+
+        <VisionAnalysisCard alert={alert} />
 
         {/* Evidence Photos */}
         {alert.mediaUrls && alert.mediaUrls.length > 0 ? (

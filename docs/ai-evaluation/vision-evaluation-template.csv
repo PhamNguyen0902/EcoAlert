@@ -1,0 +1,1 @@
+sample_id,dataset_version,split,source_region,device_type,lighting,ground_truth_classes,predicted_classes,true_positive,false_positive,false_negative,box_iou,mask_iou,ground_truth_coverage,predicted_coverage,semantic_severity,fused_severity,human_severity,detector_latency_ms,segmenter_latency_ms,end_to_end_latency_ms,reviewer,notes

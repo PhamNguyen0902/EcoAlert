@@ -543,6 +543,15 @@ export class AlertService {
         aiAnalysisModel: analysis.model,
         aiAnalysisId: analysis.analysisId,
         aiAnalyzedAt: analyzedAt,
+        ...(analysis.pipelineVersion ? { aiPipelineVersion: analysis.pipelineVersion } : {}),
+        ...(analysis.vision ? { aiVision: analysis.vision } : {}),
+        ...(analysis.fusion ? { aiFusion: analysis.fusion } : {}),
+        ...(analysis.semanticProcessingTimeMs !== undefined
+          ? { aiSemanticProcessingTimeMs: analysis.semanticProcessingTimeMs }
+          : {}),
+        ...(analysis.totalProcessingTimeMs !== undefined
+          ? { aiTotalProcessingTimeMs: analysis.totalProcessingTimeMs }
+          : {}),
         status: newStatus,
       },
       $push: {

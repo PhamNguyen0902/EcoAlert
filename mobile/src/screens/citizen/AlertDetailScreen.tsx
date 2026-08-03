@@ -35,6 +35,7 @@ import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
@@ -408,6 +409,8 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
             </View>
           ) : null}
         </Card>
+
+        <VisionAnalysisCard alert={alert} />
 
         {alert.assignedOfficerId ? (
           <Card style={[styles.assignedOfficerCard, { backgroundColor: isDark ? "rgba(79,70,229,0.2)" : "#EEF2FF", borderColor: isDark ? "rgba(79,70,229,0.4)" : "#C7D2FE" }]}>
