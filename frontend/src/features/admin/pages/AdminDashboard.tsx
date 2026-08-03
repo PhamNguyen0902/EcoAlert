@@ -53,7 +53,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">{t('nav.dashboard')}</h2>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 items-stretch">
         <StatCard title={t('stats.total_users')} value={totalUsers} icon={Users} />
         <StatCard title={t('stats.total_reports')} value={totalReports} icon={FileText} />
         <StatCard title={t('stats.active_officers')} value={activeOfficersCount} icon={ShieldCheck} />

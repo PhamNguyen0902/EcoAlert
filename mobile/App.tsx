@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { LanguageProvider } from "./src/context/LanguageContext";
+import { SocketProvider } from "./src/context/SocketContext";
 
 // Create TanStack Query client with custom retry and cache policies
 const queryClient = new QueryClient({
@@ -47,9 +48,11 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <LanguageProvider>
-          <SafeAreaProvider>
-            <AppContent />
-          </SafeAreaProvider>
+          <SocketProvider>
+            <SafeAreaProvider>
+              <AppContent />
+            </SafeAreaProvider>
+          </SocketProvider>
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>
