@@ -5,6 +5,7 @@ import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SocketProvider } from "./contexts/SocketContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AppToaster } from "./components/ui/app-toaster";
@@ -30,8 +31,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>
-              <App />
-              <AppToaster />
+              <SocketProvider>
+                <App />
+                <AppToaster />
+              </SocketProvider>
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
