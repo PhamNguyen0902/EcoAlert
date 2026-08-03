@@ -28,6 +28,7 @@ import {
   StatusBadge,
 } from '@/components/incidents/incident-status';
 import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
+import { VisionAnalysisCard } from '@/components/incidents/VisionAnalysisCard';
 import { IncidentLocationDetails } from '@/components/location/IncidentLocationDetails';
 import { hasValidCoordinates } from '@/lib/maps';
 import 'leaflet/dist/leaflet.css';
@@ -194,6 +195,7 @@ export default function AlertDetail() {
                   </div>
                 ) : <p className="text-sm text-muted-foreground">Analysis confidence is not available.</p>}
                 <p className="rounded-lg border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">AI analysis supports triage and may be reviewed by an officer. It is not a final determination.</p>
+                <VisionAnalysisCard alert={alert} />
               </div>
             </CardContent>
           </Card>

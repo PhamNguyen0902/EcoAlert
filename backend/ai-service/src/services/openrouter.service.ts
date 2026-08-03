@@ -31,6 +31,7 @@ export interface IncidentAnalysisResult extends IncidentAnalysis {
   analysisMode: IncidentAnalysisMode;
   provider: 'openrouter';
   model: string;
+  semanticProcessingTimeMs?: number;
 }
 
 export interface IncidentAnalysisInput {
@@ -372,7 +373,7 @@ const isUsableImageUrl = (imageUrl?: string) => {
 
 type IncidentRequester = (
   includeImage: boolean,
-) => Promise<{ analysis: IncidentAnalysis; model: string }>;
+) => Promise<{ analysis: IncidentAnalysis; model: string; latencyMs?: number }>;
 
 const analyzeIncident = async (
   request: IncidentRequester,
@@ -389,6 +390,7 @@ const analyzeIncident = async (
       analysisMode: includeImage ? 'vision' : requestedImage ? 'text_fallback' : 'text',
       provider: 'openrouter',
       model: result.model,
+      ...(result.latencyMs !== undefined ? { semanticProcessingTimeMs: result.latencyMs } : {}),
     };
   } catch (error) {
     const status = statusFromError(error);
@@ -406,6 +408,7 @@ const analyzeIncident = async (
           analysisMode: 'text_fallback',
           provider: 'openrouter',
           model: result.model,
+          ...(result.latencyMs !== undefined ? { semanticProcessingTimeMs: result.latencyMs } : {}),
         };
       } catch (fallbackError) {
         logger.error('OpenRouter text fallback failed', safeOpenRouterErrorMetadata(fallbackError));
@@ -423,10 +426,14 @@ export const analyzeIncidentWithClient = async (
   model: string,
   input: IncidentAnalysisInput,
 ): Promise<IncidentAnalysisResult> => analyzeIncident(
-  async (includeImage) => ({
-    analysis: await requestIncidentAnalysis(client, model, input, includeImage),
-    model,
-  }),
+  async (includeImage) => {
+    const startedAt = Date.now();
+    return {
+      analysis: await requestIncidentAnalysis(client, model, input, includeImage),
+      model,
+      latencyMs: Date.now() - startedAt,
+    };
+  },
   input,
   model,
 );
@@ -445,6 +452,7 @@ export const analyzeIncidentWithOpenRouter = async (
       return {
         analysis: analysisFromCompletion(generation.response),
         model: generation.model,
+        latencyMs: generation.latencyMs,
       };
     },
     input,

@@ -37,6 +37,38 @@ export type AlertCategory =
   | "Other";
 
 export type Severity = "low" | "medium" | "high" | "critical" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type AiAnalysisMode = "text" | "vision" | "text_fallback" | "FULL_MULTIMODAL" | "SEMANTIC_ONLY" | "VISION_ONLY" | "FAILED";
+export type AiWasteType = "PLASTIC_WASTE" | "ORGANIC_WASTE" | "CONSTRUCTION_WASTE" | "HAZARDOUS_WASTE" | "METAL_WASTE" | "GLASS_WASTE" | "PAPER_WASTE" | "E_WASTE" | "MIXED_WASTE" | "OTHER";
+
+export interface AiVisionAnalysis {
+  status: "COMPLETED" | "FAILED" | "SKIPPED" | "UNAVAILABLE";
+  detectorModel: string;
+  segmenterModel?: string;
+  detections: Array<{ label: string; confidence: number; wasteType?: AiWasteType }>;
+  objectCounts: Array<{ label: string; count: number }>;
+  totalDetectedObjects: number;
+  visibleWasteCoverage: number | null;
+  detectorConfidence: number | null;
+  segmentationConfidence: number | null;
+  annotatedImageUrl?: string;
+  processingTimeMs: number;
+  detectionTimeMs: number;
+  segmentationTimeMs: number;
+  annotationTimeMs: number;
+  warnings: string[];
+}
+
+export interface AiFusionAnalysis {
+  version: "vision-fusion-v1";
+  mode: "FULL_MULTIMODAL" | "SEMANTIC_ONLY" | "VISION_ONLY" | "FAILED";
+  wasteType?: AiWasteType;
+  severityScore: number;
+  explanations: string[];
+  semanticConfidence: number | null;
+  visionConfidence: number | null;
+  fusionConfidence: number;
+  processingTimeMs: number;
+}
 
 export interface User {
   _id: string;
@@ -84,11 +116,16 @@ export interface Alert {
   aiSuggestedPriority?: Severity | null;
   aiSummary?: string | null;
   aiReasoningSummary?: string | null;
-  aiAnalysisMode?: "text" | "vision" | "text_fallback" | null;
-  aiAnalysisProvider?: "openrouter" | null;
+  aiAnalysisMode?: AiAnalysisMode | null;
+  aiAnalysisProvider?: "openrouter" | "vision-service" | null;
   aiAnalysisModel?: string | null;
   aiAnalysisId?: string | null;
   aiAnalyzedAt?: string | null;
+  aiPipelineVersion?: "multimodal-v1" | null;
+  aiVision?: AiVisionAnalysis | null;
+  aiFusion?: AiFusionAnalysis | null;
+  aiSemanticProcessingTimeMs?: number | null;
+  aiTotalProcessingTimeMs?: number | null;
   officerNote?: string;
   arrivedAt?: string;
   assignedAt?: string;

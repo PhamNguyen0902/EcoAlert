@@ -3,6 +3,9 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
+const booleanValue = (value: string | undefined, fallback = false) =>
+  value === undefined ? fallback : value.trim().toLowerCase() === 'true';
+
 export const envConfig = {
   port: parseInt(process.env.PORT || '3005', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -19,4 +22,9 @@ export const envConfig = {
     10,
   ),
   internalGatewaySecret: process.env.INTERNAL_GATEWAY_SHARED_SECRET,
+  visionAiEnabled: booleanValue(process.env.VISION_AI_ENABLED),
+  visionSegmentationEnabled: booleanValue(process.env.VISION_SEGMENTATION_ENABLED),
+  visionServiceUrl: process.env.VISION_SERVICE_URL || 'http://vision-service:3007',
+  visionTimeoutMs: parseInt(process.env.VISION_TIMEOUT_MS || '45000', 10),
+  mediaServiceUrl: process.env.MEDIA_SERVICE_URL || 'http://media-service:3003',
 };
