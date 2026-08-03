@@ -37,7 +37,7 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
   const tasks = tasksData?.items ?? [];
 
   const renderTaskItem = ({ item }: { item: Alert }) => {
-    const sevColor = SEVERITY_COLORS[item.severity] || { bg: "#F1F5F9", text: "#475569" };
+    const sevColor = SEVERITY_COLORS[item.severity ?? "low"] || { bg: "#F1F5F9", text: "#475569" };
 
     return (
       <TouchableOpacity

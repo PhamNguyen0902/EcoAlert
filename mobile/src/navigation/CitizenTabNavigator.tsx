@@ -15,9 +15,11 @@ import { Button } from "../components/ui/Button";
 import { SettingsSection } from "../components/ui/SettingsSection";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
+import { LocationPickerScreen } from "../screens/LocationPickerScreen";
+import type { CitizenStackParamList, CitizenTabParamList } from "./types";
 
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator<CitizenTabParamList>();
+const Stack = createNativeStackNavigator<CitizenStackParamList>();
 
 function formatProfileName(fullName?: string): string {
   if (!fullName) return "EcoAlert Citizen";
@@ -163,6 +165,7 @@ export const CitizenTabNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CitizenTabs" component={CitizenTabs} />
       <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
+      <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
     </Stack.Navigator>
   );
 };

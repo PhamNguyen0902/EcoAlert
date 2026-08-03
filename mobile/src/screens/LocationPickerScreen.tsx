@@ -12,11 +12,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Check, MapPin } from "lucide-react-native";
 import { useLocation } from "../hooks/useLocation";
 import { defaultReverseGeocoder } from "../services/reverseGeocoder";
-import type { LocationSelection, RootStackParamList } from "../navigation/types";
+import type { CitizenStackParamList, LocationSelection } from "../navigation/types";
 import { Button } from "../components/ui/Button";
 import { useTheme } from "../context/ThemeContext";
 
-type Props = NativeStackScreenProps<RootStackParamList, "LocationPicker">;
+type Props = NativeStackScreenProps<CitizenStackParamList, "LocationPicker">;
 
 const DEFAULT_REGION: Region = {
   latitude: 10.762622,
@@ -139,17 +139,10 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
   };
 
   const handleConfirm = () => {
-    const reportTabParams = {
-      screen: "ReportTab" as const,
+    navigation.navigate("CitizenTabs", {
+      screen: "ReportTab",
       params: { selectedLocation: selection },
-    };
-
-    if (navigation.getState().routes.some((screen) => screen.name === "AppTabsGuest")) {
-      navigation.navigate("AppTabsGuest", reportTabParams);
-      return;
-    }
-
-    navigation.navigate("AppTabs", reportTabParams);
+    });
   };
 
   return (

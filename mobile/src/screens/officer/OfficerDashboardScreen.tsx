@@ -277,6 +277,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   viewAllText: { fontSize: 14, fontWeight: "700" },
+  viewAllBtn: { paddingVertical: 4, paddingLeft: 10 },
   grid: { gap: 12, marginBottom: 16 },
   gridRow: { flexDirection: "row", gap: 12 },
   cardItem: { flex: 1 },

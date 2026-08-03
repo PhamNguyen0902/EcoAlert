@@ -81,7 +81,7 @@ export const alertService = {
       uri: fileUri,
       name: fileName,
       type: fileType,
-    } as any);
+    } as unknown as Blob);
 
     const res = await api.post("/v1/media/upload", formData, {
       headers: {
@@ -121,10 +121,6 @@ export const alertService = {
     return res.data?.data || res.data;
   },
 
-  analyzeMediaWithAI: async (description?: string, imageUrl?: string) => {
-    const res = await api.post(`/v1/ai/analyze`, { description, imageUrl });
-    return res.data?.data || res.data;
-  },
 };
 
 

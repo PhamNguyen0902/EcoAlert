@@ -17,19 +17,33 @@ import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { format } from "date-fns";
 import type { Alert as AlertItem } from "../../types";
+import {
+  getAiAnalysisState,
+  getCategoryLabel,
+  getSeverityLabel,
+  getWorkflowStatusLabel,
+} from "../../utils/aiAnalysis";
 
 export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { language, t } = useLanguage();
   const { data: profile } = useProfile();
   const [editingAlert, setEditingAlert] = useState<AlertItem | null>(null);
 
   const deleteAlertMutation = useDeleteAlert();
 
-  const filterParams = React.useMemo(
-    () => (profile?._id ? { reporterId: profile._id } : {}),
+  const filterParams = React.useMemo<Record<string, string>>(
+    () => {
+      const filters: Record<string, string> = {};
+      if (typeof profile?._id === "string") {
+        filters.reporterId = profile._id;
+      }
+      return filters;
+    },
     [profile?._id]
   );
 
@@ -62,7 +76,14 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   };
 
   const renderItem = ({ item }: { item: AlertItem }) => {
-    const isPending = item.status?.toUpperCase() === "PENDING";
+    const normalizedStatus = item.status?.toUpperCase();
+    const canEdit = normalizedStatus === "PENDING" || normalizedStatus === "AI_ANALYZING";
+    const aiState = getAiAnalysisState(item);
+    const aiLabel = aiState === "COMPLETED"
+      ? getCategoryLabel(item.category, language)
+      : aiState === "PENDING"
+        ? t("aiAnalysis.analyzingShort", "AI: Analyzing...")
+        : t("aiAnalysis.unavailableTitle", "AI analysis unavailable");
 
     return (
       <TouchableOpacity
@@ -73,12 +94,12 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         <GlassCard style={styles.card}>
           <View style={styles.header}>
             <Badge
-              label={item.category?.toUpperCase().replace("_", " ") || "GENERAL"}
+              label={aiLabel}
               type="custom"
               bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
               textColor={isDark ? colors.text : "#475569"}
             />
-            <Badge label={item.status || "PENDING"} type="status" />
+            <Badge label={getWorkflowStatusLabel(item.status, language)} type="status" />
           </View>
 
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
@@ -87,6 +108,15 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Text style={[styles.desc, { color: colors.textMuted }]} numberOfLines={2}>
             {item.description}
           </Text>
+
+          {aiState === "COMPLETED" ? (
+            <View style={styles.aiMetaRow}>
+              <Text style={[styles.aiMetaLabel, { color: colors.textMuted }]}>AI</Text>
+              <Text style={[styles.aiMetaValue, { color: colors.text }]} numberOfLines={1}>
+                {getCategoryLabel(item.category, language)} · {getSeverityLabel(item.severity)}
+              </Text>
+            </View>
+          ) : null}
 
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
             <View style={styles.locationBox}>
@@ -103,7 +133,7 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             </View>
           </View>
 
-          {isPending ? (
+          {canEdit ? (
             <View style={[styles.actionsRow, { borderTopColor: colors.border }]}>
               <TouchableOpacity
                 style={styles.actionBtn}
@@ -190,6 +220,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   title: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
   desc: { fontSize: 13, lineHeight: 18, marginBottom: 12 },
+  aiMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  aiMetaLabel: { fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
+  aiMetaValue: { flex: 1, fontSize: 12, fontWeight: "700" },
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",

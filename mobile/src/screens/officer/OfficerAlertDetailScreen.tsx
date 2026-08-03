@@ -82,7 +82,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
   const latitude = coords ? coords[1] : 10.762622;
   const longitude = coords ? coords[0] : 106.660172;
 
-  const sevColor = SEVERITY_COLORS[alert.severity] || { bg: "#F1F5F9", text: "#475569" };
+  const sevColor = SEVERITY_COLORS[alert.severity ?? "low"] || { bg: "#F1F5F9", text: "#475569" };
   const currentStatus = alert.status?.toUpperCase();
 
   const handleStartHandling = async () => {

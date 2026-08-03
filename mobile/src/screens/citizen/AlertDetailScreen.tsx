@@ -23,6 +23,7 @@ import {
   Edit2,
   Trash2,
   RotateCcw,
+  Sparkles,
 } from "lucide-react-native";
 import { useAlert, useAssignOfficer, useDeleteAlert, useRestoreAlert } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
@@ -35,8 +36,16 @@ import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import type { User } from "../../types";
+import {
+  getAiAnalysisState,
+  getCategoryLabel,
+  getConfidencePercentage,
+  getSeverityLabel,
+  getWorkflowStatusLabel,
+} from "../../utils/aiAnalysis";
 import { format } from "date-fns";
 
 const getRequestErrorMessage = (error: unknown, fallback: string): string => {
@@ -47,12 +56,10 @@ const getRequestErrorMessage = (error: unknown, fallback: string): string => {
   return requestError.response?.data?.message || requestError.message || fallback;
 };
 
-export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
-  route,
-  navigation,
-}) => {
+export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { language, t } = useLanguage();
   const alertId = route.params?.id;
   const { data: alert, isLoading, error } = useAlert(alertId);
   const { data: profile } = useProfile();
@@ -75,7 +82,9 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     normalizedStatus !== "CLOSED" &&
     normalizedStatus !== "REJECTED";
   const canClose = (isOwnReport || isAdmin) && normalizedStatus === "RESOLVED";
-  const canEdit = (isOwnReport || isAdmin) && normalizedStatus === "PENDING";
+  const canEdit =
+    (isOwnReport || isAdmin) &&
+    (normalizedStatus === "PENDING" || normalizedStatus === "AI_ANALYZING");
   const canDelete = isOwnReport || isAdmin;
 
   const {
@@ -181,7 +190,10 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const coords = alert.location?.coordinates;
   const latitude = coords ? coords[1] : 10.762622;
   const longitude = coords ? coords[0] : 106.660172;
-  const sevColor = SEVERITY_COLORS[alert.severity] || { bg: "#F1F5F9", text: "#475569" };
+  const aiState = getAiAnalysisState(alert);
+  const sevColor = SEVERITY_COLORS[alert.severity ?? "low"] || { bg: "#F1F5F9", text: "#475569" };
+  const confidencePercentage = getConfidencePercentage(alert.aiConfidence);
+  const workflowStatusLabel = getWorkflowStatusLabel(alert.status, language);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -208,20 +220,24 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Category & Status Row */}
+        {/* Workflow and AI badges */}
         <View style={styles.badgesRow}>
-          <Badge
-            label={alert.category?.toUpperCase().replace("_", " ") || "GENERAL"}
-            type="custom"
-            bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
-            textColor={isDark ? colors.text : "#334155"}
-          />
-          <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
-            <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-              {alert.severity?.toUpperCase()} PRIORITY
-            </Text>
-          </View>
-          <Badge label={alert.status || "PENDING"} type="status" />
+          {aiState === "COMPLETED" ? (
+            <>
+              <Badge
+                label={getCategoryLabel(alert.category, language)}
+                type="custom"
+                bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
+                textColor={isDark ? colors.text : "#334155"}
+              />
+              <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
+                <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
+                  {getSeverityLabel(alert.severity)} · {t("aiAnalysis.aiAssessed", "AI assessed")}
+                </Text>
+              </View>
+            </>
+          ) : null}
+          <Badge label={workflowStatusLabel} type="status" />
           {alert.isAnonymous ? (
             <Badge label="ẨN DANH 👤" type="custom" bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"} textColor={isDark ? colors.text : "#475569"} />
           ) : null}
@@ -274,6 +290,124 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <Text style={[styles.sectionHeading, { color: colors.text }]}>Description</Text>
           <Text style={[styles.descriptionText, { color: colors.text }]}>{alert.description}</Text>
         </GlassCard>
+
+        <Card
+          style={[
+            styles.aiCard,
+            {
+              backgroundColor: isDark ? "rgba(99,102,241,0.12)" : "#F8FAFF",
+              borderColor: isDark ? "rgba(129,140,248,0.35)" : "#C7D2FE",
+            },
+          ]}
+        >
+          <View style={styles.aiCardHeader}>
+            <View style={[styles.aiIconBox, { backgroundColor: isDark ? "rgba(129,140,248,0.18)" : "#E0E7FF" }]}>
+              <Sparkles size={18} color={isDark ? "#A5B4FC" : "#4F46E5"} />
+            </View>
+            <Text style={[styles.aiCardTitle, { color: colors.text }]}>
+              {t("aiAnalysis.title", "AI Analysis")}
+            </Text>
+          </View>
+
+          {aiState === "PENDING" ? (
+            <View style={styles.aiStateRow}>
+              <ActivityIndicator size="small" color={isDark ? "#A5B4FC" : "#4F46E5"} />
+              <View style={styles.aiStateCopy}>
+                <Text style={[styles.aiStateTitle, { color: colors.text }]}>
+                  {t("aiAnalysis.pendingTitle", "Analyzing incident...")}
+                </Text>
+                <Text style={[styles.aiStateBody, { color: colors.textMuted }]}>
+                  {t(
+                    "aiAnalysis.pendingBody",
+                    "EcoAlert AI is analyzing the report image and description. This usually takes a few moments.",
+                  )}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {aiState === "COMPLETED" ? (
+            <View style={styles.aiResultContent}>
+              <View style={styles.aiMetricRow}>
+                <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
+                  {t("aiAnalysis.category", "Category")}
+                </Text>
+                <Text style={[styles.aiMetricValue, { color: colors.text }]}>
+                  {getCategoryLabel(alert.category, language)}
+                </Text>
+              </View>
+              <View style={styles.aiMetricRow}>
+                <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
+                  {t("aiAnalysis.severity", "Severity")}
+                </Text>
+                <View style={[styles.aiSeverityPill, { backgroundColor: sevColor.bg, borderColor: sevColor.border || sevColor.bg }]}>
+                  <Text style={[styles.aiSeverityText, { color: sevColor.text }]}>
+                    {getSeverityLabel(alert.severity)}
+                  </Text>
+                </View>
+              </View>
+              {confidencePercentage !== null ? (
+                <View style={styles.confidenceBlock}>
+                  <View style={styles.aiMetricRow}>
+                    <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
+                      {t("aiAnalysis.confidence", "Confidence")}
+                    </Text>
+                    <Text style={[styles.confidenceValue, { color: colors.text }]}>
+                      {confidencePercentage}%
+                    </Text>
+                  </View>
+                  <View
+                    style={[styles.confidenceTrack, { backgroundColor: colors.border }]}
+                    accessibilityRole="progressbar"
+                    accessibilityValue={{ min: 0, max: 100, now: confidencePercentage }}
+                  >
+                    <View
+                      style={[
+                        styles.confidenceFill,
+                        { width: `${confidencePercentage}%`, backgroundColor: isDark ? "#818CF8" : "#4F46E5" },
+                      ]}
+                    />
+                  </View>
+                </View>
+              ) : null}
+              {alert.aiSummary ? (
+                <View style={[styles.aiSummaryBox, { backgroundColor: isDark ? "rgba(15,23,42,0.45)" : "#FFFFFF" }]}>
+                  <Text style={[styles.aiSummaryLabel, { color: colors.textMuted }]}>
+                    {t("aiAnalysis.summary", "AI Summary")}
+                  </Text>
+                  <Text style={[styles.aiSummaryText, { color: colors.text }]}>{alert.aiSummary}</Text>
+                </View>
+              ) : null}
+              <Text style={[styles.aiDisclaimer, { color: colors.textMuted }]}>
+                {t("aiAnalysis.completedNote", "AI supports incident triage. An officer may review the result.")}
+              </Text>
+            </View>
+          ) : null}
+
+          {aiState === "FAILED" || aiState === "UNAVAILABLE" ? (
+            <View style={styles.aiStateRow}>
+              <AlertTriangle size={20} color={aiState === "FAILED" ? colors.destructive : colors.textMuted} />
+              <View style={styles.aiStateCopy}>
+                <Text style={[styles.aiStateTitle, { color: colors.text }]}>
+                  {aiState === "FAILED"
+                    ? t("aiAnalysis.failedTitle", "AI analysis incomplete")
+                    : t("aiAnalysis.unavailableTitle", "AI analysis unavailable")}
+                </Text>
+                <Text style={[styles.aiStateBody, { color: colors.textMuted }]}>
+                  {aiState === "FAILED"
+                    ? t(
+                        "aiAnalysis.failedBody",
+                        "The report was submitted, but its AI result could not be completed. It remains available for officer review.",
+                      )
+                    : t(
+                        "aiAnalysis.unavailableBody",
+                        "No AI analysis metadata is available for this report. The report remains available for officer review.",
+                      )}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+        </Card>
 
         {alert.assignedOfficerId ? (
           <Card style={[styles.assignedOfficerCard, { backgroundColor: isDark ? "rgba(79,70,229,0.2)" : "#EEF2FF", borderColor: isDark ? "rgba(79,70,229,0.4)" : "#C7D2FE" }]}>
@@ -457,6 +591,28 @@ const styles = StyleSheet.create({
   restoreCard: { padding: 16, marginBottom: 20, borderRadius: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   restoreText: { fontSize: 13, fontWeight: "600" },
   mainCard: { padding: 18, marginBottom: 20, borderRadius: 20 },
+  aiCard: { padding: 18, marginBottom: 20, borderWidth: 1 },
+  aiCardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  aiIconBox: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  aiCardTitle: { fontSize: 16, fontWeight: "800" },
+  aiStateRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginTop: 16 },
+  aiStateCopy: { flex: 1 },
+  aiStateTitle: { fontSize: 14, fontWeight: "800" },
+  aiStateBody: { fontSize: 12, lineHeight: 18, marginTop: 4 },
+  aiResultContent: { marginTop: 16, gap: 14 },
+  aiMetricRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 },
+  aiMetricLabel: { fontSize: 12, fontWeight: "600" },
+  aiMetricValue: { flex: 1, fontSize: 14, fontWeight: "800", textAlign: "right" },
+  aiSeverityPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, borderWidth: 1 },
+  aiSeverityText: { fontSize: 11, fontWeight: "900", letterSpacing: 0.5 },
+  confidenceBlock: { gap: 8 },
+  confidenceValue: { fontSize: 13, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  confidenceTrack: { height: 8, borderRadius: 4, overflow: "hidden" },
+  confidenceFill: { height: "100%", borderRadius: 4 },
+  aiSummaryBox: { padding: 12, borderRadius: 12 },
+  aiSummaryLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.4 },
+  aiSummaryText: { fontSize: 13, lineHeight: 19, marginTop: 5 },
+  aiDisclaimer: { fontSize: 11, lineHeight: 16 },
   sectionHeading: { fontSize: 15, fontWeight: "700", marginBottom: 8 },
   descriptionText: { fontSize: 14, lineHeight: 22 },
   assignmentCard: { padding: 16, marginBottom: 20 },
