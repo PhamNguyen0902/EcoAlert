@@ -8,5 +8,6 @@ const router = Router();
 router.get('/nearby', asyncHandler(gisController.getNearby));
 router.get('/radius', asyncHandler(gisController.getRadius));
 router.get('/weather', asyncHandler(gisController.getWeather));
+router.get('/weather/details', asyncHandler(gisController.getWeatherDetails));
 
 export default router;

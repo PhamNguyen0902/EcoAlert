@@ -31,23 +31,45 @@ export class GisController {
   }
 
   async getWeather(req: Request, res: Response) {
-    const lat = Number(req.query.lat);
-    const lng = Number(req.query.lng);
-
-    if (
-      !Number.isFinite(lat) ||
-      !Number.isFinite(lng) ||
-      lat < -90 ||
-      lat > 90 ||
-      lng < -180 ||
-      lng > 180
-    ) {
+    const coordinates = parseCoordinates(req);
+    if (!coordinates) {
       return res.status(400).json({ success: false, message: 'Invalid coordinates' });
     }
 
-    const weather = await weatherService.getCurrentWeather(lat, lng);
+    const weather = await weatherService.getCurrentWeather(
+      coordinates.lat,
+      coordinates.lng,
+    );
+    res.status(200).json(successResponse(weather));
+  }
+
+  async getWeatherDetails(req: Request, res: Response) {
+    const coordinates = parseCoordinates(req);
+    if (!coordinates) {
+      return res.status(400).json({ success: false, message: 'Invalid coordinates' });
+    }
+
+    const weather = await weatherService.getWeatherDetails(
+      coordinates.lat,
+      coordinates.lng,
+    );
     res.status(200).json(successResponse(weather));
   }
 }
+
+const parseCoordinates = (
+  req: Request,
+): { lat: number; lng: number } | null => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng);
+  return Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+    ? { lat, lng }
+    : null;
+};
 
 export const gisController = new GisController();

@@ -125,6 +125,62 @@ export interface CurrentWeather {
   lastUpdated: string;
 }
 
+export interface WeatherForecastPeriod {
+  timestamp: string;
+  temperature: number;
+  feelsLike: number;
+  temperatureMin: number;
+  temperatureMax: number;
+  condition: string;
+  description: string;
+  icon: string;
+  precipitationProbability: number;
+}
+
+export interface DailyWeatherForecast {
+  date: string;
+  minTemperature: number;
+  maxTemperature: number;
+  condition: string;
+  description: string;
+  icon: string;
+  precipitationProbability: number;
+}
+
+export interface WeatherAirQuality {
+  aqi: number;
+  aqiLabel: string;
+  pm2_5: number | null;
+  pm10: number | null;
+  co: number | null;
+  no2: number | null;
+  o3: number | null;
+}
+
+export interface WeatherDetails {
+  location: {
+    name: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+    timezoneOffsetSeconds: number;
+  };
+  current: CurrentWeather & {
+    condition: string;
+    pressure: number | null;
+    visibilityKm: number | null;
+    cloudiness: number | null;
+  };
+  hourly: WeatherForecastPeriod[];
+  daily: DailyWeatherForecast[];
+  airQuality: WeatherAirQuality | null;
+  availability: {
+    forecast: boolean;
+    airQuality: boolean;
+  };
+  fetchedAt: string;
+}
+
 export interface AssistantSource {
   id: string;
   title: string;

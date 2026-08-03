@@ -2,12 +2,13 @@ import React from "react";
 import {
   ActivityIndicator,
   Image,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { AlertCircle, CloudSun, Droplets, MapPin, RefreshCw, Wind } from "lucide-react-native";
+import { AlertCircle, ChevronRight, CloudSun, Droplets, MapPin, RefreshCw, Wind } from "lucide-react-native";
 import type { CurrentWeather } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -19,6 +20,7 @@ interface WeatherCardProps {
   isError: boolean;
   isCached?: boolean;
   onRetry: () => void;
+  onPress: () => void;
 }
 
 export const WeatherCard: React.FC<WeatherCardProps> = ({
@@ -28,6 +30,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
   isError,
   isCached = false,
   onRetry,
+  onPress,
 }) => {
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
@@ -43,6 +46,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
         wind: "Gió",
         air: "Không khí",
         cached: "Đã lưu",
+        details: "Xem chi tiết thời tiết",
       }
     : {
         title: "Current weather",
@@ -55,6 +59,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
         wind: "Wind",
         air: "Air",
         cached: "Cached",
+        details: "View weather details",
       };
 
   const cardColors = {
@@ -114,10 +119,16 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
   });
 
   return (
-    <View
-      style={[styles.card, { backgroundColor: cardColors.background, borderColor: cardColors.border }]}
-      accessible
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        { backgroundColor: cardColors.background, borderColor: cardColors.border },
+        pressed && styles.pressed,
+      ]}
+      accessibilityRole="button"
       accessibilityLabel={`${copy.title}. ${roundedTemperature} degrees, ${weather.description}. ${copy.humidity} ${weather.humidity} percent.`}
+      accessibilityHint={copy.details}
     >
       <View style={styles.topRow}>
         <View style={styles.titleRow}>
@@ -174,8 +185,9 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
         <Text style={[styles.locationText, { color: colors.textMuted }]} numberOfLines={1}>
           {locationLabel}
         </Text>
+        <ChevronRight size={16} color={cardColors.accent} />
       </View>
-    </View>
+    </Pressable>
   );
 };
 
@@ -210,4 +222,5 @@ const styles = StyleSheet.create({
   aqiDot: { width: 8, height: 8, borderRadius: 4, marginVertical: 4 },
   locationRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 },
   locationText: { flex: 1, fontSize: 11, fontWeight: "600" },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
 });
