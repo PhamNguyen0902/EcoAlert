@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +17,7 @@ import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { useTheme } from "../context/ThemeContext";
+import { getGeoJsonMapCoordinates, openGoogleMaps } from "../utils/maps";
 
 type Props = NativeStackScreenProps<RootStackParamList, "AlertDetail">;
 
@@ -30,21 +30,21 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const { data: alert, isLoading, isError } = useAlert(route.params.id);
-  const coordinates = alert?.location?.coordinates;
-  const longitude = coordinates?.[0];
-  const latitude = coordinates?.[1];
-  const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+  const mapCoordinates = getGeoJsonMapCoordinates(alert?.location?.coordinates);
   const addressLines = useMemo(() => formatAddressLines(alert?.address), [alert?.address]);
 
   const openInGoogleMaps = async () => {
-    if (!hasCoordinates || latitude === undefined || longitude === undefined) {
+    if (!mapCoordinates) {
+      Alert.alert("Location unavailable", "Incident location is unavailable.");
       return;
     }
 
-    const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-    try {
-      await Linking.openURL(mapsUrl);
-    } catch {
+    const result = await openGoogleMaps(
+      mapCoordinates.latitude,
+      mapCoordinates.longitude,
+      "view",
+    );
+    if (!result.success) {
       Alert.alert("Unable to open maps", "Please try again or open the location in your browser.");
     }
   };
@@ -113,22 +113,26 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             ))}
           </View>
 
-          {hasCoordinates && latitude !== undefined && longitude !== undefined ? (
+          {mapCoordinates ? (
             <View style={[styles.coordinates, { borderTopColor: colors.border }]}>
               <View style={styles.coordinateRow}>
                 <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Latitude:</Text>
-                <Text style={[styles.coordinateValue, { color: colors.text }]}>{latitude.toFixed(6)}</Text>
+                <Text style={[styles.coordinateValue, { color: colors.text }]}>
+                  {mapCoordinates.latitude.toFixed(6)}
+                </Text>
               </View>
               <View style={styles.coordinateRow}>
                 <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Longitude:</Text>
-                <Text style={[styles.coordinateValue, { color: colors.text }]}>{longitude.toFixed(6)}</Text>
+                <Text style={[styles.coordinateValue, { color: colors.text }]}>
+                  {mapCoordinates.longitude.toFixed(6)}
+                </Text>
               </View>
             </View>
           ) : (
             <Text style={[styles.coordinateUnavailable, { color: colors.textMuted }]}>GPS coordinates are unavailable for this report.</Text>
           )}
 
-          {hasCoordinates ? (
+          {mapCoordinates ? (
             <Button
               title="Open in Google Maps"
               onPress={openInGoogleMaps}
