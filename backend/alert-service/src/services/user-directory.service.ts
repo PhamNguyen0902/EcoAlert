@@ -2,16 +2,21 @@ import { BadRequestError, NotFoundError } from '@ecoalert/shared';
 import { envConfig } from '../config/env.config';
 import type { WorkflowActor } from './alert.service';
 
+export interface UserDirectoryItem {
+  _id: string;
+  fullName: string;
+  email: string;
+  role: string;
+}
+
 interface UserLookupResponse {
-  data?: {
-    role?: unknown;
-  };
+  data?: UserDirectoryItem;
 }
 
 export class UserDirectoryService {
   private readonly baseUrl = envConfig.userServiceUrl.replace(/\/$/, '');
 
-  async requireOfficer(userId: string, actor: WorkflowActor): Promise<void> {
+  async requireOfficer(userId: string, actor: WorkflowActor): Promise<UserDirectoryItem> {
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}/api/v1/users/${encodeURIComponent(userId)}`, {
@@ -36,7 +41,10 @@ export class UserDirectoryService {
     if (body.data?.role !== 'OFFICER') {
       throw new BadRequestError('Selected user must have the OFFICER role');
     }
+
+    return body.data;
   }
 }
 
 export const userDirectoryService = new UserDirectoryService();
+

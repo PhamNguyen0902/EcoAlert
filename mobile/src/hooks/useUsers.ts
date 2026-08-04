@@ -11,6 +11,15 @@ export const useOfficers = (enabled = true) => {
   });
 };
 
+export const useUser = (id?: string) => {
+  return useQuery({
+    queryKey: ["user", id],
+    queryFn: () => (id ? userService.getUserById(id) : Promise.resolve(null)),
+    enabled: Boolean(id),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 export const useUsers = (page = 1, limit = 10, role?: string, search?: string) => {
   return useQuery({
     queryKey: ["users", page, limit, role, search],

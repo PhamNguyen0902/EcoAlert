@@ -112,6 +112,8 @@ export interface Alert {
   address: string;
   citizenId: string | User;
   assignedOfficerId?: string | User;
+  assignedOfficerName?: string;
+  assignedOfficerEmail?: string;
   aiConfidence?: number | null;
   aiSuggestedPriority?: Severity | null;
   aiSummary?: string | null;

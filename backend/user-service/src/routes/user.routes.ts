@@ -12,12 +12,12 @@ router.use(requireAuth);
 router.get('/profile', asyncHandler(userController.getMe));
 router.patch('/profile', validate(updateProfileSchema), asyncHandler(userController.updateProfile));
 router.patch('/change-password', validate(changePasswordSchema), asyncHandler(userController.changePassword));
+router.get('/:id', asyncHandler(userController.getUserById));
 
 router.use(requireRoles([UserRole.ADMIN]));
 router.get('/audit-logs', asyncHandler(userController.getAuditLogs));
 router.get('/', asyncHandler(userController.listUsers));
 router.post('/', validate(createUserSchema), asyncHandler(userController.createUser));
-router.get('/:id', asyncHandler(userController.getUserById));
 router.patch('/:id/role', validate(changeRoleSchema), asyncHandler(userController.changeRole));
 router.patch('/:id/status', asyncHandler(userController.toggleStatus));
 router.delete('/:id', asyncHandler(userController.deleteUser));
