@@ -80,9 +80,16 @@ export class UserService {
     return userRepository.update(targetUserId, { isActive, updatedBy: userId });
   }
 
-  async softDelete(userId: string, targetUserId: string) {
-    const success = await userRepository.softDelete(targetUserId, userId);
+  async deleteUser(userId: string, targetUserId: string) {
+    const target = await userRepository.findById(targetUserId);
+    if (!target) throw new NotFoundError('User not found');
+    const success = await userRepository.delete(targetUserId);
     if (!success) throw new NotFoundError('User not found');
+    return target;
+  }
+
+  async softDelete(userId: string, targetUserId: string) {
+    return this.deleteUser(userId, targetUserId);
   }
 }
 

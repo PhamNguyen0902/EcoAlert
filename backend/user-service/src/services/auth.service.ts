@@ -11,9 +11,13 @@ import { hashPassword, comparePassword } from "../utils/password.util";
 
 export class AuthService {
   async register(data: RegisterDto) {
-    const existingUser = await userRepository.findOne({ email: data.email });
+    const existingUser = await userRepository.findOne({ email: data.email, includeDeleted: true });
     if (existingUser) {
-      throw new ConflictError("Email already in use");
+      if (!existingUser.isDeleted) {
+        throw new ConflictError("Email already in use");
+      }
+      // If user was soft-deleted, delete old record to prevent duplicate key constraint on re-registration
+      await userRepository.delete(existingUser._id.toString());
     }
 
     const { firstName, lastName, fullName: inputFullName, ...rest } = data;
