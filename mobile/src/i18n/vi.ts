@@ -20,7 +20,7 @@ export const vi = {
     createAccount: "Tạo tài khoản",
     registerSubtitle: "Tham gia EcoAlert để góp phần bảo vệ môi trường xung quanh bạn.",
     emailLabel: "Địa chỉ Email",
-    emailPlaceholder: "nguyenvana@gmail.com",
+    // emailPlaceholder: "nguyenvana@gmail.com",
     passwordLabel: "Mật khẩu",
     passwordPlaceholder: "••••••••",
     fullNameLabel: "Họ và tên",
