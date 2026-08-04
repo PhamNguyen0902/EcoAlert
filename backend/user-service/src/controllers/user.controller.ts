@@ -75,15 +75,15 @@ export class UserController {
 
   async deleteUser(req: Request, res: Response) {
     const currentUserId = req.headers['x-user-id'] as string;
-    await userService.softDelete(currentUserId, req.params.id);
+    const deletedUser = await userService.deleteUser(currentUserId, req.params.id);
     await auditLogService.log({
       user: 'Admin',
       userId: currentUserId,
       action: 'USER_DELETED',
-      resource: `User ID: ${req.params.id}`,
-      details: 'Soft deleted user account',
+      resource: `User: ${deletedUser?.email || req.params.id}`,
+      details: 'Permanently deleted user account from DB',
     });
-    res.status(200).json(successResponse(null, 'User deleted'));
+    res.status(200).json(successResponse(null, 'User permanently deleted'));
   }
 
   async getAuditLogs(req: Request, res: Response) {
