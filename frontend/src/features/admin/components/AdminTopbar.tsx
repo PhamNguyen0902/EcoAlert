@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ export default function AdminTopbar() {
           </Badge>
         </div>
 
+        <LanguageToggle />
         <ThemeToggle />
 
         <DropdownMenu>

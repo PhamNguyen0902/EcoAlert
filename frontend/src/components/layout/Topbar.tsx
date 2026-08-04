@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { ThemeToggle } from "../ui/theme-toggle"
+import { LanguageToggle } from "../ui/language-toggle"
 import { useUnreadCount } from "../../hooks/hooks"
 
 export function Topbar() {
@@ -42,6 +43,7 @@ export function Topbar() {
       </div>
       
       <div className="flex items-center gap-4">
+        <LanguageToggle />
         <ThemeToggle />
 
         <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground" onClick={() => navigate('/notifications')}>

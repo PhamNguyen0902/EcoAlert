@@ -54,20 +54,20 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   const handleDelete = (item: AlertItem) => {
     RNAlert.alert(
-      "Delete Report",
-      `Are you sure you want to delete report "${item.title}"?`,
+      t("myReports.deleteTitle", "Delete Report"),
+      t("myReports.deleteConfirmMsg", `Are you sure you want to delete report "${item.title}"?`),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("modals.cancel", "Cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("btn.delete", "Delete"),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteAlertMutation.mutateAsync(item._id);
-              RNAlert.alert("Deleted", "Your report has been deleted.");
+              RNAlert.alert(t("modals.successTitle", "Deleted"), t("myReports.deletedSuccessMsg", "Your report has been deleted."));
             } catch (err: any) {
-              const msg = err.response?.data?.message || err.message || "Failed to delete report.";
-              RNAlert.alert("Error", msg);
+              const msg = err.response?.data?.message || err.message || t("myReports.deleteFailed", "Failed to delete report.");
+              RNAlert.alert(t("modals.saveError", "Error"), msg);
             }
           },
         },
@@ -122,12 +122,12 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             <View style={styles.locationBox}>
               <MapPin size={14} color={colors.textMuted} />
               <Text style={[styles.locationText, { color: colors.textMuted }]} numberOfLines={1}>
-                {item.address || "Unknown location"}
+                {item.address || t("report.selectedCoordinates", "Unknown location")}
               </Text>
             </View>
             <View style={styles.timeBox}>
               <Text style={[styles.timeText, { color: colors.textMuted }]}>
-                {item.createdAt ? format(new Date(item.createdAt), "MMM d, HH:mm") : "Just now"}
+                {item.createdAt ? format(new Date(item.createdAt), "MMM d, HH:mm") : t("dashboard.recentAlerts", "Just now")}
               </Text>
               <ChevronRight size={16} color={colors.textMuted} />
             </View>
@@ -140,7 +140,7 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                 onPress={() => setEditingAlert(item)}
               >
                 <Edit2 size={15} color={colors.primary} />
-                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Edit</Text>
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>{t("btn.edit", "Edit")}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -148,7 +148,7 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                 onPress={() => handleDelete(item)}
               >
                 <Trash2 size={15} color={isDark ? "#FCA5A5" : "#DC2626"} />
-                <Text style={[styles.actionBtnText, { color: isDark ? "#FCA5A5" : "#DC2626" }]}>Delete</Text>
+                <Text style={[styles.actionBtnText, { color: isDark ? "#FCA5A5" : "#DC2626" }]}>{t("btn.delete", "Delete")}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -161,9 +161,9 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>My Incident Reports</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("tabs.myReports", "My Incident Reports")}</Text>
         <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-          Track real-time resolution of reports submitted by you
+          {t("myReports.subtitle", "Track real-time resolution of reports submitted by you")}
         </Text>
       </View>
 
@@ -179,9 +179,9 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           !isLoading ? (
             <Card style={styles.emptyCard}>
               <FileText size={40} color={colors.textMuted} style={{ marginBottom: 12 }} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Reports Submitted</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("myReports.emptyTitle", "No Reports Submitted")}</Text>
               <Text style={[styles.emptySub, { color: colors.textMuted }]}>
-                You haven't reported any environmental issues yet. Help your community by creating an alert.
+                {t("myReports.emptySub", "You haven't reported any environmental issues yet. Help your community by creating an alert.")}
               </Text>
               <TouchableOpacity
                 style={[styles.createBtn, { backgroundColor: colors.primary }]}
@@ -189,7 +189,7 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                 accessibilityRole="button"
               >
                 <PlusCircle size={18} color="#FFF" style={{ marginRight: 6 }} />
-                <Text style={styles.createBtnText}>Report New Incident</Text>
+                <Text style={styles.createBtnText}>{t("myReports.createBtn", "Report New Incident")}</Text>
               </TouchableOpacity>
             </Card>
           ) : null

@@ -27,7 +27,7 @@ import {
 } from "lucide-react-native";
 import { useAlert, useAssignOfficer, useDeleteAlert, useRestoreAlert } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
-import { useOfficers } from "../../hooks/useUsers";
+import { useOfficers, useUser } from "../../hooks/useUsers";
 import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
 import { CloseIncidentModal } from "../../components/modals/CloseIncidentModal";
 import { EditAlertModal } from "../../components/modals/EditAlertModal";
@@ -82,11 +82,18 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     normalizedStatus !== "RESOLVED" &&
     normalizedStatus !== "CLOSED" &&
     normalizedStatus !== "REJECTED";
-  const canClose = (isOwnReport || isAdmin) && normalizedStatus === "RESOLVED";
+  const canClose = isAdmin && normalizedStatus === "RESOLVED";
+  const isPendingAdminReview = !isAdmin && normalizedStatus === "RESOLVED";
   const canEdit =
     (isOwnReport || isAdmin) &&
     (normalizedStatus === "PENDING" || normalizedStatus === "AI_ANALYZING");
   const canDelete = isOwnReport || isAdmin;
+
+  const assignedOfficerIdStr = typeof alert?.assignedOfficerId === "object"
+    ? alert.assignedOfficerId._id
+    : alert?.assignedOfficerId;
+
+  const { data: fetchedOfficer } = useUser(assignedOfficerIdStr);
 
   const {
     data: officerData,
@@ -94,14 +101,22 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     isFetching: isFetchingOfficers,
     error: officersError,
     refetch: refetchOfficers,
-  } = useOfficers(Boolean(canAssign || alert?.assignedOfficerId));
+  } = useOfficers(Boolean(canAssign));
 
   const assignedOfficerObj = typeof alert?.assignedOfficerId === "object"
     ? alert.assignedOfficerId
-    : officerData?.find((u) => u._id === alert?.assignedOfficerId);
+    : (fetchedOfficer || officerData?.find((u) => u._id === alert?.assignedOfficerId));
 
-  const officerDisplayName = assignedOfficerObj?.fullName ||
+  const officerDisplayName =
+    alert?.assignedOfficerName ||
+    assignedOfficerObj?.fullName ||
+    fetchedOfficer?.fullName ||
     (typeof alert?.assignedOfficerId === "string" ? `Cán bộ (${alert.assignedOfficerId.slice(-6)})` : undefined);
+
+  const officerDisplayEmail =
+    alert?.assignedOfficerEmail ||
+    assignedOfficerObj?.email ||
+    fetchedOfficer?.email;
 
   const officers = (officerData ?? []).filter(
     (user) => user.role?.toUpperCase() === "OFFICER",
@@ -253,7 +268,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         {/* Title & Description */}
         <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
 
-        {/* Close Incident Action Banner for Citizen */}
+        {/* Close Incident Action Banner for Admin */}
         {canClose ? (
           <GlassCard style={styles.closeCard}>
             <View style={styles.closeHeader}>
@@ -270,6 +285,18 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               onPress={() => setCloseModalOpen(true)}
               style={styles.closeBtnAction}
             />
+          </GlassCard>
+        ) : isPendingAdminReview ? (
+          <GlassCard style={[styles.closeCard, { borderColor: isDark ? "rgba(34,197,94,0.3)" : "#BBF7D0", backgroundColor: isDark ? "rgba(22,163,74,0.15)" : "#F0FDF4" }]}>
+            <View style={styles.closeHeader}>
+              <CheckSquare size={22} color="#16A34A" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.closeTitle, { color: isDark ? "#86EFAC" : "#15803D" }]}>Sự cố đã được Cán bộ xử lý</Text>
+                <Text style={[styles.closeSub, { color: isDark ? "#CBD5E1" : "#475569" }]}>
+                  Cán bộ đã hoàn thành xử lý sự cố. Hồ sơ đang được Admin kiểm tra và duyệt nghiệm thu.
+                </Text>
+              </View>
+            </View>
           </GlassCard>
         ) : null}
 
@@ -423,8 +450,8 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
                 <Text style={[styles.assignedOfficerName, { color: colors.text }]}>
                   {officerDisplayName || "Đã phân công Cán bộ"}
                 </Text>
-                {assignedOfficerObj?.email ? (
-                  <Text style={[styles.assignedOfficerEmail, { color: colors.textMuted }]}>{assignedOfficerObj.email}</Text>
+                {officerDisplayEmail ? (
+                  <Text style={[styles.assignedOfficerEmail, { color: colors.textMuted }]}>{officerDisplayEmail}</Text>
                 ) : null}
               </View>
               {isAdmin && normalizedStatus !== "RESOLVED" && normalizedStatus !== "CLOSED" ? (
