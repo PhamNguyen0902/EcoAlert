@@ -244,7 +244,7 @@ export class AlertService {
     if (!mongoose.isValidObjectId(data.officerId)) {
       throw new NotFoundError('Officer not found');
     }
-    await userDirectoryService.requireOfficer(data.officerId, actor);
+    const officer = await userDirectoryService.requireOfficer(data.officerId, actor);
 
     const assignedAt = new Date();
     const updatedAlert = await alertRepository.findOneAndUpdate(
@@ -253,6 +253,8 @@ export class AlertService {
         $set: {
           status: AlertStatus.ASSIGNED,
           assignedOfficerId: data.officerId,
+          assignedOfficerName: officer.fullName,
+          assignedOfficerEmail: officer.email,
           assignedAt,
           assignedBy: actor.id,
           updatedBy: actor.id,
@@ -600,6 +602,18 @@ export class AlertService {
     }
     const success = await alertRepository.softDelete(id, actor.id);
     if (!success) throw new NotFoundError('Alert not found');
+
+    // Notify RabbitMQ & Socket.IO subscribers that the report has been deleted
+    const deletedAlertData = {
+      _id: alert._id,
+      alertId: alert._id,
+      citizenId: alert.citizenId,
+      status: 'deleted',
+      isDeleted: true,
+      deletedAt: new Date(),
+    };
+    await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, deletedAlertData, actor.correlationId);
+
     return true;
   }
 
