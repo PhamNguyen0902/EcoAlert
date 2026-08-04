@@ -56,6 +56,8 @@ export interface IAlert extends BaseDocument {
   address?: string;
   citizenId: string;
   assignedOfficerId?: string;
+  assignedOfficerName?: string;
+  assignedOfficerEmail?: string;
   assignedAt?: Date;
   assignedBy?: string;
   startedAt?: Date;
@@ -234,6 +236,8 @@ const alertSchema = new Schema<IAlert>({
   address: { type: String },
   citizenId: { type: String, required: true, index: true },
   assignedOfficerId: { type: String, index: true },
+  assignedOfficerName: { type: String },
+  assignedOfficerEmail: { type: String },
   assignedAt: { type: Date },
   assignedBy: { type: String },
   startedAt: { type: Date },
