@@ -35,20 +35,20 @@ app.use(morgan('combined', {
   stream: { write: (message) => logger.info(message.trim()) }
 }));
 
-// Rate Limiting - Global (tăng lên cho môi trường dev)
+// Rate Limiting - API routes only (exclude /socket.io and /health)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // Tăng từ 100 → 500 requests per 15 minutes
+  max: 2000, // High limit for dev/testing API requests
   standardHeaders: true,
   legacyHeaders: false,
   message: errorResponse('Too many requests, please try again later.')
 });
-app.use(limiter);
+app.use('/api', limiter);
 
 // Rate Limiter riêng cho auth (login/register) - thoải mái hơn để dev/test
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100, // 100 login attempts per 15 minutes
+  max: 200, // 200 login attempts per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
   message: errorResponse('Too many login attempts, please try again later.')
@@ -110,7 +110,22 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 // Apply auth middleware to all /api routes
 app.use('/api', verifyToken);
 
-// Proxy configuration
+// WebSocket Proxy specifically configured for Notification Service
+const socketProxy = createProxyMiddleware({
+  target: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006',
+  changeOrigin: true,
+  ws: true,
+  onError: (err, req, res) => {
+    logger.error('WebSocket Proxy error for /socket.io', err);
+    if (res && 'status' in res) {
+      (res as Response).status(502).json(errorResponse('Bad Gateway'));
+    }
+  }
+});
+
+app.use('/socket.io', socketProxy);
+
+// General Proxy configuration
 const setupProxy = (path: string, target: string, rewrite: boolean = false, internalAssistant = false, ws = false) => {
   const internalGatewaySecret = process.env.INTERNAL_GATEWAY_SHARED_SECRET;
 
@@ -126,7 +141,9 @@ const setupProxy = (path: string, target: string, rewrite: boolean = false, inte
           ? { 'x-internal-gateway-secret': internalGatewaySecret }
           : undefined,
       onProxyReq: (proxyReq, req) => {
-        fixRequestBody(proxyReq, req);
+        if (req.body && Object.keys(req.body).length) {
+          fixRequestBody(proxyReq, req);
+        }
       },
       onError: (err, req, res) => {
         logger.error(`Proxy error for ${path}`, err);
@@ -135,9 +152,6 @@ const setupProxy = (path: string, target: string, rewrite: boolean = false, inte
     })
   );
 };
-
-// WebSocket proxy for Notification Service
-setupProxy('/socket.io', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', false, false, true);
 
 setupProxy('/api/v1/auth', process.env.USER_SERVICE_URL || 'http://localhost:3001');
 setupProxy('/api/v1/users', process.env.USER_SERVICE_URL || 'http://localhost:3001');
@@ -154,6 +168,14 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json(errorResponse('API Gateway Internal Error'));
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`API Gateway running on port ${PORT}`);
 });
+
+// Handle WebSocket HTTP upgrade requests for /socket.io
+server.on('upgrade', (req, socket, head) => {
+  if (req.url && req.url.startsWith('/socket.io')) {
+    (socketProxy as any).upgrade?.(req, socket, head);
+  }
+});
+
