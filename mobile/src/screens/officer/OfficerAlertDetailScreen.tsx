@@ -37,6 +37,7 @@ import { Button } from "../../components/ui/Button";
 import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
 import { useTheme } from "../../context/ThemeContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
+import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../utils/maps";
 
 export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
@@ -54,6 +55,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
   const [note, setNote] = useState("");
   const [isResolutionModalOpen, setResolutionModalOpen] = useState(false);
+  const [isOpeningMaps, setIsOpeningMaps] = useState(false);
 
   if (isLoading) {
     return (
@@ -79,9 +81,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
     );
   }
 
-  const coords = alert.location?.coordinates;
-  const latitude = coords ? coords[1] : 10.762622;
-  const longitude = coords ? coords[0] : 106.660172;
+  const incidentCoordinates = getGeoJsonMapCoordinates(alert.location?.coordinates);
 
   const sevColor = SEVERITY_COLORS[alert.severity ?? "low"] || { bg: "#F1F5F9", text: "#475569" };
   const currentStatus = alert.status?.toUpperCase();
@@ -97,15 +97,45 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
   };
 
   const handleConfirmArrival = async () => {
+    if (!incidentCoordinates) {
+      RNAlert.alert("Location Unavailable", "Incident location is unavailable.");
+      return;
+    }
+
     try {
       await confirmArrivalMutation.mutateAsync({
         id: alert._id,
-        location: { latitude, longitude },
+        location: incidentCoordinates,
       });
       RNAlert.alert("Arrival Confirmed", "Your GPS location arrival has been logged.");
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to confirm arrival.";
       RNAlert.alert("Error", msg);
+    }
+  };
+
+  const handleOpenGoogleMaps = async () => {
+    if (!incidentCoordinates) {
+      RNAlert.alert("Location Unavailable", "Incident location is unavailable.");
+      return;
+    }
+
+    setIsOpeningMaps(true);
+    try {
+      const result = await openGoogleMaps(
+        incidentCoordinates.latitude,
+        incidentCoordinates.longitude,
+        "navigate",
+      );
+
+      if (!result.success) {
+        RNAlert.alert(
+          "Unable to Open Google Maps",
+          "Navigation could not be opened. Please try again.",
+        );
+      }
+    } finally {
+      setIsOpeningMaps(false);
     }
   };
 
@@ -239,27 +269,64 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         {/* Map View */}
         <View style={styles.sectionBox}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>Incident Geotag Location</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>Incident Location</Text>
           <Card style={styles.mapCard}>
-            <MapView
-              style={styles.map}
-              initialRegion={{
-                latitude,
-                longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-              scrollEnabled={false}
-              zoomEnabled={false}
-            >
-              <Marker coordinate={{ latitude, longitude }} title={alert.title} description={alert.address} />
-            </MapView>
+            {incidentCoordinates ? (
+              <MapView
+                style={styles.map}
+                initialRegion={{
+                  ...incidentCoordinates,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                scrollEnabled={false}
+                zoomEnabled={false}
+              >
+                <Marker
+                  coordinate={incidentCoordinates}
+                  title={alert.title}
+                  description={alert.address}
+                />
+              </MapView>
+            ) : (
+              <View style={[styles.mapUnavailable, { backgroundColor: colors.background }]}>
+                <MapPin size={30} color={colors.textMuted} />
+                <Text style={[styles.mapUnavailableText, { color: colors.textMuted }]}>
+                  Incident location is unavailable.
+                </Text>
+              </View>
+            )}
             <View style={[styles.addressBox, { backgroundColor: colors.surface }]}>
               <MapPin size={16} color={colors.secondary} />
-              <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={2}>
-                {alert.address || "Coordinates: " + latitude.toFixed(4) + ", " + longitude.toFixed(4)}
+              <View style={styles.locationCopy}>
+                <Text style={[styles.locationLabel, { color: colors.textMuted }]}>Address</Text>
+                <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={3}>
+                  {alert.address || "Address unavailable"}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.coordinatesBox, { borderTopColor: colors.border }]}>
+              <Text style={[styles.locationLabel, { color: colors.textMuted }]}>Coordinates</Text>
+              <Text style={[styles.coordinatesText, { color: colors.text }]}>
+                {incidentCoordinates
+                  ? `${incidentCoordinates.latitude.toFixed(6)}, ${incidentCoordinates.longitude.toFixed(6)}`
+                  : "Unavailable"}
               </Text>
             </View>
+            <Button
+              title="Navigate with Google Maps"
+              onPress={handleOpenGoogleMaps}
+              loading={isOpeningMaps}
+              disabled={!incidentCoordinates}
+              style={styles.navigationButton}
+              icon={<Navigation size={18} color="#FFF" style={styles.navigationIcon} />}
+              accessibilityHint="Opens driving directions to this incident without changing its workflow status"
+            />
+            {!incidentCoordinates ? (
+              <Text style={[styles.locationUnavailableText, { color: colors.textMuted }]}>
+                Incident location is unavailable.
+              </Text>
+            ) : null}
           </Card>
         </View>
 
@@ -330,8 +397,28 @@ const styles = StyleSheet.create({
   evidenceImage: { width: 140, height: 100, borderRadius: 14, marginRight: 10 },
   mapCard: { padding: 0, overflow: "hidden", marginTop: 4 },
   map: { width: "100%", height: 180 },
+  mapUnavailable: {
+    height: 180,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  mapUnavailableText: { fontSize: 13, fontWeight: "600" },
   addressBox: { flexDirection: "row", alignItems: "center", padding: 12, gap: 8 },
-  addressText: { fontSize: 13, flex: 1, fontWeight: "500" },
+  locationCopy: { flex: 1, gap: 3 },
+  locationLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
+  addressText: { fontSize: 13, fontWeight: "500", lineHeight: 18 },
+  coordinatesBox: { marginHorizontal: 12, paddingVertical: 12, borderTopWidth: 1, gap: 3 },
+  coordinatesText: { fontSize: 13, fontWeight: "600", fontVariant: ["tabular-nums"] },
+  navigationButton: { marginHorizontal: 12, marginBottom: 12 },
+  navigationIcon: { marginRight: 8 },
+  locationUnavailableText: {
+    marginHorizontal: 12,
+    marginTop: -4,
+    marginBottom: 12,
+    fontSize: 12,
+    textAlign: "center",
+  },
   savedNoteCard: { padding: 16, marginBottom: 20, borderRadius: 18 },
   savedNoteHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   savedNoteTitle: { fontSize: 14, fontWeight: "700" },
