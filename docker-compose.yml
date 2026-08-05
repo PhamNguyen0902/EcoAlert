@@ -66,6 +66,8 @@ services:
       - MONGO_URI=${MONGO_URI_USER}
       - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./backend/user-service/dist:/app/user-service/dist:ro
     depends_on:
       - mongodb
       - redis
