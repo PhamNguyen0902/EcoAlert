@@ -895,7 +895,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const t = (key: string): string => {
-    return translations[language]?.[key] || translations["en"]?.[key] || key;
+    return translations[language]?.[key] || translations["vi"]?.[key] || translations["en"]?.[key] || key;
   };
 
   return (

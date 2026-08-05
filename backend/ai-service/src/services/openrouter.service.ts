@@ -459,3 +459,28 @@ export const analyzeIncidentWithOpenRouter = async (
     configuredModel,
   );
 };
+
+export const translateTextWithOpenRouter = async (
+  text: string,
+  targetLang: 'vi' | 'en' = 'en',
+): Promise<string> => {
+  const provider = getOpenRouterProvider();
+  const systemPrompt =
+    targetLang === 'en'
+      ? 'You are a translation assistant for the EcoAlert environmental system. Translate the user input from Vietnamese into clear, professional English. Output ONLY the translated string without commentary, extra notes, or quotes.'
+      : 'Bạn là trợ lý dịch thuật cho hệ thống EcoAlert. Hãy dịch văn bản sang tiếng Việt chính xác, tự nhiên. CHỈ trả về văn bản đã dịch, không kèm bất kỳ giải thích hay dấu ngoặc kép nào.';
+
+  const generation = await provider.generate(
+    AiTask.CHAT,
+    {
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text },
+      ],
+      temperature: 0.1,
+    },
+  );
+
+  const content = generation.response.choices[0]?.message.content;
+  return content ? content.trim() : text;
+};

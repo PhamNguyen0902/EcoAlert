@@ -4,7 +4,7 @@ import { errorResponse } from "@ecoalert/shared";
 import assistantRoutes from "./routes/assistant.routes";
 import { AssistantHttpError } from "./assistant/types";
 
-import { analyzeIncidentWithOpenRouter } from "./services/openrouter.service";
+import { analyzeIncidentWithOpenRouter, translateTextWithOpenRouter } from "./services/openrouter.service";
 
 const app = express();
 
@@ -17,7 +17,7 @@ app.get("/health", (req, res) => {
 
 app.use(['/', '/assistant'], assistantRoutes);
 
-// 1. Đưa route /analyze lên TRƯỚC bộ xử lý lỗi
+// Route phân tích sự cố
 app.post('/analyze', async (req, res) => {
   try {
     const { title, description, imageUrl } = req.body;
@@ -29,6 +29,20 @@ app.post('/analyze', async (req, res) => {
     res.status(200).json({ success: true, data: result });
   } catch {
     res.status(503).json({ success: false, message: 'AI analysis is temporarily unavailable' });
+  }
+});
+
+// Route dịch thuật AI (Vietnamese <-> English)
+app.post('/translate', async (req, res) => {
+  try {
+    const { text, targetLang = 'en' } = req.body;
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ success: false, message: 'Text is required for translation' });
+    }
+    const translatedText = await translateTextWithOpenRouter(text, targetLang);
+    res.status(200).json({ success: true, data: { text: translatedText, targetLang } });
+  } catch {
+    res.status(503).json({ success: false, message: 'AI translation service is temporarily unavailable' });
   }
 });
 

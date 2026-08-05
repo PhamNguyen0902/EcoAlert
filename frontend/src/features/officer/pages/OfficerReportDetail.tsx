@@ -311,7 +311,7 @@ export default function OfficerReportDetail() {
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <Button asChild variant="ghost" className="w-fit">
-          <Link to={isAdmin ? '/admin/reports' : '/officer/assigned'}><ChevronLeft className="mr-2 h-4 w-4" />Back to Reports</Link>
+          <Link to={isAdmin ? '/admin/reports' : '/officer/assigned'}><ChevronLeft className="mr-2 h-4 w-4" />Quay lại danh sách</Link>
         </Button>
         <div className="flex gap-2">
           <Badge variant="outline" className="capitalize">{alert.severity}</Badge>
@@ -328,7 +328,7 @@ export default function OfficerReportDetail() {
                   <CardTitle className="text-2xl">{alert.title}</CardTitle>
                   <CardDescription className="mt-2 capitalize">{alert.category.replace(/_/g, ' ')}</CardDescription>
                 </div>
-                <Badge variant="outline" className="capitalize">{alert.severity} priority</Badge>
+                <Badge variant="outline" className="capitalize">Mức độ {alert.severity}</Badge>
               </div>
               <div className="flex flex-wrap gap-4 pt-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{format(new Date(alert.createdAt), 'PP')}</span>
@@ -338,16 +338,16 @@ export default function OfficerReportDetail() {
             <CardContent className="space-y-6">
               <p className="whitespace-pre-wrap leading-relaxed">{alert.description}</p>
               <div>
-                <h3 className="mb-3 flex items-center gap-2 font-semibold"><ImageIcon className="h-4 w-4" />Citizen Evidence ({originalEvidence.length})</h3>
+                <h3 className="mb-3 flex items-center gap-2 font-semibold"><ImageIcon className="h-4 w-4" />Minh chứng từ Người dân ({originalEvidence.length})</h3>
                 {originalEvidence.length ? (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {originalEvidence.map((url, index) => (
                       <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="aspect-video overflow-hidden rounded-lg border bg-muted">
-                        <img src={url} alt={`Citizen evidence ${index + 1}`} className="h-full w-full object-cover transition hover:scale-105" />
+                        <img src={url} alt={`Minh chứng ${index + 1}`} className="h-full w-full object-cover transition hover:scale-105" />
                       </a>
                     ))}
                   </div>
-                ) : <p className="text-sm text-muted-foreground">No citizen image was submitted.</p>}
+                ) : <p className="text-sm text-muted-foreground">Người dân chưa gửi hình ảnh minh chứng.</p>}
               </div>
             </CardContent>
           </Card>
@@ -355,27 +355,27 @@ export default function OfficerReportDetail() {
           {(alert.resolutionSummary || resolutionEvidence.length > 0) ? (
             <Card className="border-emerald-500/30">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg"><ShieldCheck className="h-5 w-5 text-emerald-600" />Resolution Details</CardTitle>
-                <CardDescription>Officer-submitted treatment record, kept separate from citizen evidence.</CardDescription>
+                <CardTitle className="flex items-center gap-2 text-lg"><ShieldCheck className="h-5 w-5 text-emerald-600" />Chi tiết xử lý của Cán bộ</CardTitle>
+                <CardDescription>Hồ sơ phương pháp và kết quả xử lý do Cán bộ lưu trữ.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div><p className="text-xs font-semibold uppercase text-muted-foreground">Resolution summary</p><p className="mt-1 whitespace-pre-wrap text-sm">{alert.resolutionSummary || 'Not provided'}</p></div>
-                  <div><p className="text-xs font-semibold uppercase text-muted-foreground">Treatment method</p><p className="mt-1 whitespace-pre-wrap text-sm">{alert.treatmentMethod || 'Not provided'}</p></div>
-                  {alert.materialsUsed ? <div><p className="text-xs font-semibold uppercase text-muted-foreground">Materials / equipment</p><p className="mt-1 whitespace-pre-wrap text-sm">{alert.materialsUsed}</p></div> : null}
-                  {alert.resolutionNotes ? <div><p className="text-xs font-semibold uppercase text-muted-foreground">Additional notes</p><p className="mt-1 whitespace-pre-wrap text-sm">{alert.resolutionNotes}</p></div> : null}
+                  <div><p className="text-xs font-semibold uppercase text-muted-foreground">Tóm tắt kết quả</p><p className="mt-1 whitespace-pre-wrap text-sm">{alert.resolutionSummary || 'Chưa cung cấp'}</p></div>
+                  <div><p className="text-xs font-semibold uppercase text-muted-foreground">Phương pháp xử lý</p><p className="mt-1 whitespace-pre-wrap text-sm">{alert.treatmentMethod || 'Chưa cung cấp'}</p></div>
+                  {alert.materialsUsed ? <div><p className="text-xs font-semibold uppercase text-muted-foreground">Vật tư & Thiết bị</p><p className="mt-1 whitespace-pre-wrap text-sm">{alert.materialsUsed}</p></div> : null}
+                  {alert.resolutionNotes ? <div><p className="text-xs font-semibold uppercase text-muted-foreground">Ghi chú bổ sung</p><p className="mt-1 whitespace-pre-wrap text-sm">{alert.resolutionNotes}</p></div> : null}
                 </div>
                 <div>
-                  <p className="mb-3 text-sm font-semibold">After-treatment evidence ({resolutionEvidence.length})</p>
+                  <p className="mb-3 text-sm font-semibold">Hình ảnh sau xử lý ({resolutionEvidence.length})</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {resolutionEvidence.map((item, index) => (
                       <a key={item._id || item.url} href={item.url} target="_blank" rel="noopener noreferrer" className="aspect-video overflow-hidden rounded-lg border bg-muted">
-                        <img src={item.url} alt={`After-treatment evidence ${index + 1}`} className="h-full w-full object-cover" />
+                        <img src={item.url} alt={`Hình ảnh sau xử lý ${index + 1}`} className="h-full w-full object-cover" />
                       </a>
                     ))}
                   </div>
                 </div>
-                {alert.adminReviewNote ? <div className="rounded-lg border bg-muted/40 p-3"><p className="text-xs font-semibold uppercase text-muted-foreground">Admin review note</p><p className="mt-1 text-sm">{alert.adminReviewNote}</p></div> : null}
+                {alert.adminReviewNote ? <div className="rounded-lg border bg-muted/40 p-3"><p className="text-xs font-semibold uppercase text-muted-foreground">Ghi chú duyệt của Admin</p><p className="mt-1 text-sm">{alert.adminReviewNote}</p></div> : null}
               </CardContent>
             </Card>
           ) : null}
@@ -383,81 +383,81 @@ export default function OfficerReportDetail() {
           <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} />
 
           <Card>
-            <CardHeader><CardTitle className="text-lg">Status History</CardTitle><CardDescription>Append-only workflow transitions recorded by the server.</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="text-lg">Lịch sử trạng thái</CardTitle><CardDescription>Nhật ký chuyển đổi trạng thái do máy chủ lưu trữ.</CardDescription></CardHeader>
             <CardContent>
               {statusHistory.length ? (
                 <div className="space-y-3">
                   {[...statusHistory].sort((a, b) => new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime()).map((entry, index) => (
                     <div key={entry._id || `${entry.changedAt}-${index}`} className="flex flex-col justify-between gap-2 rounded-lg border p-3 sm:flex-row sm:items-center">
                       <div className="flex items-center gap-2 text-sm">
-                        <Badge variant="outline" className="capitalize">{entry.fromStatus?.replace(/_/g, ' ') || 'created'}</Badge>
+                        <Badge variant="outline" className="capitalize">{entry.fromStatus?.replace(/_/g, ' ') || 'khởi tạo'}</Badge>
                         <span>→</span>
                         <Badge className="capitalize">{entry.toStatus.replace(/_/g, ' ')}</Badge>
-                        <span className="text-muted-foreground">by {entry.changedByRole.toLowerCase()}</span>
+                        <span className="text-muted-foreground">bởi {entry.changedByRole.toLowerCase()}</span>
                       </div>
                       <time className="text-xs text-muted-foreground">{formatTimestamp(entry.changedAt)}</time>
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-sm text-muted-foreground">This legacy incident has no recorded status history.</p>}
+              ) : <p className="text-sm text-muted-foreground">Sự cố này chưa có lịch sử trạng thái được ghi lại.</p>}
             </CardContent>
           </Card>
         </div>
 
         <aside className="space-y-6">
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><UserCheck className="h-5 w-5" />Officer Assignment</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><UserCheck className="h-5 w-5" />Phân công Cán bộ</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Assigned officer</span><span className="text-right font-medium">{assignedOfficerLabel}</span></div>
-              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Assigned date</span><span className="text-right">{formatTimestamp(alert.assignedAt)}</span></div>
-              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Workflow</span><Badge className="capitalize">{alert.status.replace(/_/g, ' ')}</Badge></div>
-              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Started</span><span className="text-right">{formatTimestamp(alert.startedAt)}</span></div>
-              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Arrival</span><span className="text-right">{formatTimestamp(alert.arrivedAt)}</span></div>
-              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Resolved</span><span className="text-right">{formatTimestamp(alert.resolvedAt)}</span></div>
-              {alert.arrivedAt ? <div className="flex items-start gap-2 rounded-lg bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-300"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>Officer has arrived at the scene.</span></div> : null}
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Cán bộ phụ trách</span><span className="text-right font-medium">{assignedOfficerLabel}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Ngày phân công</span><span className="text-right">{formatTimestamp(alert.assignedAt)}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Trạng thái</span><Badge className="capitalize">{alert.status.replace(/_/g, ' ')}</Badge></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Bắt đầu xử lý</span><span className="text-right">{formatTimestamp(alert.startedAt)}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Thời gian đến nơi</span><span className="text-right">{formatTimestamp(alert.arrivedAt)}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Hoàn thành</span><span className="text-right">{formatTimestamp(alert.resolvedAt)}</span></div>
+              {alert.arrivedAt ? <div className="flex items-start gap-2 rounded-lg bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-300"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>Cán bộ đã có mặt tại hiện trường.</span></div> : null}
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-lg">{isAdmin ? 'Admin Review' : 'Officer Action'}</CardTitle><CardDescription>The next valid workflow action is shown here.</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="text-lg">{isAdmin ? 'Admin Duyệt' : 'Hành động Cán bộ'}</CardTitle><CardDescription>Hành động tiếp theo có thể thực hiện.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               {canAdminAssign ? (
                 <div className="space-y-3">
-                  <label htmlFor="assigned-officer" className="text-sm font-medium">Assign to Officer</label>
+                  <label htmlFor="assigned-officer" className="text-sm font-medium">Phân công cho Cán bộ</label>
                   <select id="assigned-officer" value={selectedOfficerId} onChange={(event) => setSelectedOfficerId(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-                    <option value="">Select an Officer</option>
+                    <option value="">Chọn Cán bộ</option>
                     {officers.map((officer) => <option key={officer._id} value={officer._id}>{officer.fullName} · {officer.email}</option>)}
                   </select>
-                  <Button className="w-full" disabled={!selectedOfficerId} onClick={() => setConfirmAction('assign')}><UserCheck className="mr-2 h-4 w-4" />Assign Incident</Button>
+                  <Button className="w-full" disabled={!selectedOfficerId} onClick={() => setConfirmAction('assign')}><UserCheck className="mr-2 h-4 w-4" />Xác nhận Phân công</Button>
                 </div>
               ) : null}
 
               {isAssignedToCurrentOfficer && alert.status === 'assigned' ? (
-                <Button className="w-full" onClick={() => setConfirmAction('start')}><PlayCircle className="mr-2 h-4 w-4" />Start Handling</Button>
+                <Button className="w-full" onClick={() => setConfirmAction('start')}><PlayCircle className="mr-2 h-4 w-4" />Bắt đầu xử lý</Button>
               ) : null}
 
               {isAssignedToCurrentOfficer && alert.status === 'in_progress' && !alert.arrivedAt ? (
-                <Button className="w-full" onClick={() => setConfirmAction('arrival')}><MapPin className="mr-2 h-4 w-4" />Confirm Arrival</Button>
+                <Button className="w-full" onClick={() => setConfirmAction('arrival')}><MapPin className="mr-2 h-4 w-4" />Xác nhận đã đến hiện trường</Button>
               ) : null}
 
               {isAssignedToCurrentOfficer && alert.status === 'in_progress' && alert.arrivedAt ? (
                 <div className="space-y-4">
-                  <div className="rounded-lg border bg-muted/30 p-3 text-sm"><p className="font-medium">Resolution evidence and notes</p><p className="mt-1 text-muted-foreground">Required fields are marked with an asterisk.</p></div>
-                  <div><label htmlFor="resolution-summary" className="text-sm font-medium">Resolution Summary *</label><textarea id="resolution-summary" value={resolutionSummary} onChange={(event) => setResolutionSummary(event.target.value)} maxLength={4000} className="mt-1 min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="What was resolved?" /></div>
-                  <div><label htmlFor="treatment-method" className="text-sm font-medium">Treatment Method *</label><textarea id="treatment-method" value={treatmentMethod} onChange={(event) => setTreatmentMethod(event.target.value)} maxLength={4000} className="mt-1 min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Actions taken at the site" /></div>
-                  <div><label htmlFor="materials-used" className="text-sm font-medium">Materials / Equipment</label><textarea id="materials-used" value={materialsUsed} onChange={(event) => setMaterialsUsed(event.target.value)} maxLength={2000} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" /></div>
-                  <div><label htmlFor="additional-notes" className="text-sm font-medium">Additional Notes</label><textarea id="additional-notes" value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} maxLength={4000} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" /></div>
+                  <div className="rounded-lg border bg-muted/30 p-3 text-sm"><p className="font-medium">Minh chứng & Báo cáo kết quả</p><p className="mt-1 text-muted-foreground">Các trường có dấu (*) là bắt buộc.</p></div>
+                  <div><label htmlFor="resolution-summary" className="text-sm font-medium">Tóm tắt kết quả xử lý *</label><textarea id="resolution-summary" value={resolutionSummary} onChange={(event) => setResolutionSummary(event.target.value)} maxLength={4000} className="mt-1 min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Sự cố đã được giải quyết thế nào?" /></div>
+                  <div><label htmlFor="treatment-method" className="text-sm font-medium">Phương pháp xử lý *</label><textarea id="treatment-method" value={treatmentMethod} onChange={(event) => setTreatmentMethod(event.target.value)} maxLength={4000} className="mt-1 min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Các biện pháp đã áp dụng tại hiện trường" /></div>
+                  <div><label htmlFor="materials-used" className="text-sm font-medium">Vật tư / Thiết bị sử dụng</label><textarea id="materials-used" value={materialsUsed} onChange={(event) => setMaterialsUsed(event.target.value)} maxLength={2000} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" /></div>
+                  <div><label htmlFor="additional-notes" className="text-sm font-medium">Ghi chú bổ sung</label><textarea id="additional-notes" value={additionalNotes} onChange={(event) => setAdditionalNotes(event.target.value)} maxLength={4000} className="mt-1 min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" /></div>
                   <div className="space-y-3">
-                    <label htmlFor="resolution-evidence" className="text-sm font-medium">After-treatment Images * ({evidenceDrafts.length}/{MAX_EVIDENCE_COUNT})</label>
-                    <label htmlFor="resolution-evidence" className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed p-5 text-sm text-muted-foreground transition hover:border-primary hover:text-primary"><Upload className="mr-2 h-4 w-4" />Choose camera or image files</label>
+                    <label htmlFor="resolution-evidence" className="text-sm font-medium">Hình ảnh sau xử lý * ({evidenceDrafts.length}/{MAX_EVIDENCE_COUNT})</label>
+                    <label htmlFor="resolution-evidence" className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed p-5 text-sm text-muted-foreground transition hover:border-primary hover:text-primary"><Upload className="mr-2 h-4 w-4" />Chọn ảnh từ thiết bị</label>
                     <input id="resolution-evidence" type="file" accept="image/*" multiple className="sr-only" onChange={(event) => { addEvidenceFiles(event.target.files); event.target.value = ''; }} />
                     <div className="grid grid-cols-2 gap-2">
                       {evidenceDrafts.map((draft) => (
                         <div key={draft.id} className="relative overflow-hidden rounded-lg border bg-muted">
-                          <img src={draft.previewUrl} alt="After-treatment preview" className="aspect-square h-full w-full object-cover" />
-                          <button type="button" onClick={() => removeEvidence(draft.id)} disabled={draft.state === 'uploading'} className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white disabled:opacity-50" aria-label={`Remove ${draft.file.name}`}><Trash2 className="h-3.5 w-3.5" /></button>
+                          <img src={draft.previewUrl} alt="Xem trước ảnh sau xử lý" className="aspect-square h-full w-full object-cover" />
+                          <button type="button" onClick={() => removeEvidence(draft.id)} disabled={draft.state === 'uploading'} className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white disabled:opacity-50" aria-label={`Xóa ${draft.file.name}`}><Trash2 className="h-3.5 w-3.5" /></button>
                           <div className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-[10px] text-white">
-                            {draft.state === 'uploading' ? `Uploading ${draft.progress}%` : draft.state === 'failed' ? draft.error : draft.state === 'uploaded' ? 'Uploaded' : `${(draft.file.size / 1024 / 1024).toFixed(1)} MB`}
+                            {draft.state === 'uploading' ? `Đang tải ${draft.progress}%` : draft.state === 'failed' ? draft.error : draft.state === 'uploaded' ? 'Đã tải lên' : `${(draft.file.size / 1024 / 1024).toFixed(1)} MB`}
                           </div>
                         </div>
                       ))}
@@ -465,36 +465,36 @@ export default function OfficerReportDetail() {
                   </div>
                   <Button className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={!resolutionFieldsValid || isUploadingEvidence || resolveIncident.isPending} onClick={uploadEvidenceAndConfirm}>
                     {isUploadingEvidence ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ClipboardCheck className="mr-2 h-4 w-4" />}
-                    {isUploadingEvidence ? 'Uploading Evidence...' : 'Mark as Resolved'}
+                    {isUploadingEvidence ? 'Đang tải ảnh...' : 'Đánh dấu đã Hoàn thành'}
                   </Button>
                 </div>
               ) : null}
 
               {isAdmin && alert.status === 'resolved' ? (
                 <div className="space-y-3">
-                  <label htmlFor="review-note" className="text-sm font-medium">Admin Review Note (optional)</label>
-                  <textarea id="review-note" value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} maxLength={4000} className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Review observations before closing" />
-                  <Button className="w-full" onClick={() => setConfirmAction('close')}><CheckCircle2 className="mr-2 h-4 w-4" />Close Incident</Button>
+                  <label htmlFor="review-note" className="text-sm font-medium">Ghi chú duyệt của Admin (tùy chọn)</label>
+                  <textarea id="review-note" value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} maxLength={4000} className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="Ghi chú đánh giá trước khi đóng sự cố" />
+                  <Button className="w-full" onClick={() => setConfirmAction('close')}><CheckCircle2 className="mr-2 h-4 w-4" />Đóng Sự cố</Button>
                 </div>
               ) : null}
 
-              {['resolved', 'closed'].includes(alert.status) && !isAdmin ? <p className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">Officer workflow is complete. Admin review is {alert.status === 'resolved' ? 'pending' : 'complete'}.</p> : null}
-              {isAdmin && !ADMIN_ASSIGNABLE_STATUSES.has(normalizedAlertStatus) && normalizedAlertStatus !== 'resolved' ? <p className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">No Admin action is available for the current status.</p> : null}
-              {isOfficer && !isAssignedToCurrentOfficer ? <p className="text-sm text-destructive">This incident is not assigned to your account.</p> : null}
+              {['resolved', 'closed'].includes(alert.status) && !isAdmin ? <p className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">Quy trình xử lý của Cán bộ đã hoàn tất. Đánh giá của Admin đang {alert.status === 'resolved' ? 'chờ xử lý' : 'hoàn tất'}.</p> : null}
+              {isAdmin && !ADMIN_ASSIGNABLE_STATUSES.has(normalizedAlertStatus) && normalizedAlertStatus !== 'resolved' ? <p className="rounded-lg bg-muted/50 p-4 text-center text-sm text-muted-foreground">Không có hành động khả dụng cho trạng thái hiện tại.</p> : null}
+              {isOfficer && !isAssignedToCurrentOfficer ? <p className="text-sm text-destructive">Sự cố này chưa được phân công cho tài khoản của bạn.</p> : null}
             </CardContent>
           </Card>
 
           {canEditOfficerNote ? (
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><StickyNote className="h-5 w-5 text-amber-500" />Officer Note</CardTitle><CardDescription>Internal operational note.</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><StickyNote className="h-5 w-5 text-amber-500" />Ghi chú Cán bộ</CardTitle><CardDescription>Ghi chú nghiệp vụ nội bộ.</CardDescription></CardHeader>
               <CardContent className="space-y-3">
                 {editingNote ? (
                   <>
                     <textarea value={noteText} onChange={(event) => setNoteText(event.target.value)} maxLength={2000} className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                    <div className="flex gap-2"><Button size="sm" onClick={handleSaveNote} disabled={!noteText.trim() || addOfficerNote.isPending}>{addOfficerNote.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save</Button><Button size="sm" variant="ghost" onClick={() => setEditingNote(false)}>Cancel</Button></div>
+                    <div className="flex gap-2"><Button size="sm" onClick={handleSaveNote} disabled={!noteText.trim() || addOfficerNote.isPending}>{addOfficerNote.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Lưu ghi chú</Button><Button size="sm" variant="ghost" onClick={() => setEditingNote(false)}>Hủy</Button></div>
                   </>
                 ) : (
-                  <><p className="whitespace-pre-wrap text-sm text-muted-foreground">{alert.officerNote || 'No note added.'}</p><Button size="sm" variant="outline" onClick={() => { setNoteText(alert.officerNote || ''); setEditingNote(true); }}>{alert.officerNote ? 'Edit Note' : 'Add Note'}</Button></>
+                  <><p className="whitespace-pre-wrap text-sm text-muted-foreground">{alert.officerNote || 'Chưa có ghi chú.'}</p><Button size="sm" variant="outline" onClick={() => { setNoteText(alert.officerNote || ''); setEditingNote(true); }}>{alert.officerNote ? 'Sửa ghi chú' : 'Thêm ghi chú'}</Button></>
                 )}
               </CardContent>
             </Card>
@@ -505,17 +505,17 @@ export default function OfficerReportDetail() {
             <CardContent className="overflow-hidden rounded-b-xl border-t p-0">
               {hasCoordinates ? (
                 <div className="h-64 w-full"><MapContainer center={[latitude, longitude]} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><Marker position={[latitude, longitude]}><Popup>{alert.address || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`}</Popup></Marker></MapContainer></div>
-              ) : <div className="flex h-48 items-center justify-center text-sm text-muted-foreground"><MapPin className="mr-2 h-4 w-4" />Location not available</div>}
+              ) : <div className="flex h-48 items-center justify-center text-sm text-muted-foreground"><MapPin className="mr-2 h-4 w-4" />Không có vị trí</div>}
             </CardContent>
           </Card>
         </aside>
       </div>
 
-      <ConfirmActionDialog open={confirmAction === 'assign'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Assign this incident?" description="The selected Officer will receive this incident as a new task." confirmLabel="Assign Incident" isPending={assignOfficer.isPending} onConfirm={handleAssign} />
-      <ConfirmActionDialog open={confirmAction === 'start'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Start handling this incident?" description="The Citizen will be notified and the incident will move to In Progress." confirmLabel="Start Handling" pendingLabel="Starting..." isPending={startHandling.isPending} onConfirm={handleStart} />
-      <ConfirmActionDialog open={confirmAction === 'arrival'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Confirm arrival at the scene?" description="Your arrival time will be recorded. Location permission is not required." confirmLabel="Confirm Arrival" pendingLabel="Confirming..." isPending={confirmArrival.isPending} onConfirm={handleArrival} />
-      <ConfirmActionDialog open={confirmAction === 'resolve'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Mark this incident as resolved?" description="Resolution notes and after-treatment evidence will be submitted for Admin review." confirmLabel="Mark as Resolved" pendingLabel="Resolving..." isPending={resolveIncident.isPending} onConfirm={handleResolve} />
-      <ConfirmActionDialog open={confirmAction === 'close'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Close this incident?" description="This completes the workflow after Admin review. The Citizen and assigned Officer will be notified." confirmLabel="Close Incident" pendingLabel="Closing..." destructive isPending={closeIncident.isPending} onConfirm={handleClose} />
+      <ConfirmActionDialog open={confirmAction === 'assign'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Phân công sự cố này?" description="Cán bộ được chọn sẽ nhận sự cố này làm nhiệm vụ mới." confirmLabel="Phân công Cán bộ" isPending={assignOfficer.isPending} onConfirm={handleAssign} />
+      <ConfirmActionDialog open={confirmAction === 'start'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Bắt đầu xử lý sự cố?" description="Người dân sẽ nhận được thông báo và trạng thái chuyển sang Đang xử lý." confirmLabel="Bắt đầu Xử lý" pendingLabel="Đang khởi tạo..." isPending={startHandling.isPending} onConfirm={handleStart} />
+      <ConfirmActionDialog open={confirmAction === 'arrival'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Xác nhận đã tới hiện trường?" description="Thời gian tới hiện trường của bạn sẽ được ghi lại hệ thống." confirmLabel="Xác nhận Đã tới" pendingLabel="Đang xác nhận..." isPending={confirmArrival.isPending} onConfirm={handleArrival} />
+      <ConfirmActionDialog open={confirmAction === 'resolve'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Đánh dấu đã hoàn thành xử lý?" description="Hồ sơ kết quả và minh chứng sau xử lý sẽ được gửi để Admin xem xét." confirmLabel="Đánh dấu Hoàn thành" pendingLabel="Đang gửi..." isPending={resolveIncident.isPending} onConfirm={handleResolve} />
+      <ConfirmActionDialog open={confirmAction === 'close'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Đóng sự cố này?" description="Thao tác này hoàn tất quy trình xử lý sau khi Admin phê duyệt." confirmLabel="Đóng Sự cố" pendingLabel="Đang đóng..." destructive isPending={closeIncident.isPending} onConfirm={handleClose} />
     </div>
   );
 }
