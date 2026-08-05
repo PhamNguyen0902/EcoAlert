@@ -1,15 +1,14 @@
 # EcoAlert Vision Service
 
-Internal FastAPI service for Phase 1 YOLO26 detection, optional SAM 2.1 box-prompt segmentation, exact object counting, union-mask coverage, and annotated-image generation. It has no OpenRouter, AWS, JWT, MongoDB, or RabbitMQ credentials.
+Internal FastAPI service for Phase 1A custom YOLO26 detection, exact object counting, and annotated-image generation. It has no OpenRouter, AWS, JWT, MongoDB, or RabbitMQ credentials.
 
-The production contract, model honesty notes, security controls, scoring, rollout, and validation instructions are documented in [`../../docs/phase-1-vision-ai.md`](../../docs/phase-1-vision-ai.md).
+The deployed model is `/models/ecoalert-waste-yolo26n-v1.pt`. Startup rejects any detector whose embedded ID-to-name mapping differs from the six-class EcoAlert V1 taxonomy. The production contract, security controls, evaluation metrics, and failure behavior are documented in [`../../docs/phase-1a-multimodal-vision.md`](../../docs/phase-1a-multimodal-vision.md).
 
 Quick validation:
 
 ```powershell
-docker build --target test -t ecoalert-vision-test backend/vision-service
-docker run --rm ecoalert-vision-test
-docker compose up -d --build vision-service
+docker compose up -d --no-build --force-recreate vision-service
+docker compose exec vision-service python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:3007/health').read().decode())"
 ```
 
-Model downloads are explicit. Run `python /app/scripts/download_models.py --yolo --sam2` inside the runtime image with `/models` mounted. No pretrained checkpoint or custom dataset is stored in Git.
+The model is provisioned explicitly into the named `/models` volume. Phase 1B and SAM2 remain disabled; do not download or enable segmentation artifacts as part of Phase 1A.

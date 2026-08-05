@@ -83,6 +83,10 @@ services:
       - MONGO_URI=${MONGO_URI_ALERT}
       - RABBITMQ_URL=${RABBITMQ_URL}
       - USER_SERVICE_URL=http://user-service:3001
+    volumes:
+      # Keep the strict Phase 1A event contract synchronized without rebuilding
+      # the Node image on this constrained local machine.
+      - ./backend/alert-service/dist:/app/alert-service/dist:ro
     depends_on:
       - mongodb
       - rabbitmq
@@ -151,6 +155,10 @@ services:
       - VISION_SERVICE_URL=http://vision-service:3007
       - VISION_TIMEOUT_MS=${VISION_TIMEOUT_MS:-45000}
       - MEDIA_SERVICE_URL=http://media-service:3003
+    volumes:
+      # Resource-safe local Phase 1A deployment: use the locally type-checked
+      # service output without rebuilding the Node image.
+      - ./backend/ai-service/dist:/app/ai-service/dist:ro
     depends_on:
       - mongodb
       - redis
@@ -192,6 +200,9 @@ services:
       - VISION_SERVICE_PORT=3007
     volumes:
       - vision_model_cache:/models
+      # Resource-safe local Phase 1A deployment: run the audited source without
+      # rebuilding the large ML dependency layers on this constrained machine.
+      - ./backend/vision-service/app:/app/app:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3007/health', timeout=3)"]
       interval: 30s

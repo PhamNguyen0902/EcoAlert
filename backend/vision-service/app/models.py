@@ -12,42 +12,46 @@ from .config import Settings
 from .schemas import BoundingBox, Detection, ObjectCount
 
 
+ECOALERT_CLASS_NAMES = (
+    "plastic_bottle",
+    "plastic_bag",
+    "plastic_cup",
+    "metal_can",
+    "cardboard",
+    "glass_bottle",
+)
+EXPECTED_ECOALERT_TAXONOMY = dict(enumerate(ECOALERT_CLASS_NAMES))
+
 CUSTOM_WASTE_LABELS = {
-    "plastic_waste": "PLASTIC_WASTE",
     "plastic_bottle": "PLASTIC_WASTE",
     "plastic_bag": "PLASTIC_WASTE",
-    "plastic_container": "PLASTIC_WASTE",
-    "paper": "PAPER_WASTE",
+    "plastic_cup": "PLASTIC_WASTE",
     "cardboard": "PAPER_WASTE",
     "glass_bottle": "GLASS_WASTE",
-    "glass": "GLASS_WASTE",
     "metal_can": "METAL_WASTE",
-    "metal": "METAL_WASTE",
-    "organic_waste": "ORGANIC_WASTE",
-    "food_waste": "ORGANIC_WASTE",
-    "electronic_waste": "E_WASTE",
-    "e_waste": "E_WASTE",
-    "construction_waste": "CONSTRUCTION_WASTE",
-    "hazardous_waste": "HAZARDOUS_WASTE",
-    "metal_waste": "METAL_WASTE",
-    "glass_waste": "GLASS_WASTE",
-    "paper_waste": "PAPER_WASTE",
-    "mixed_waste": "MIXED_WASTE",
-    "trash_pile": "MIXED_WASTE",
 }
 
-# COCO has no waste classes. These labels are only potential litter objects and
-# intentionally map to OTHER rather than guessing their material or disposal state.
-COCO_POTENTIAL_LITTER = {"bottle", "cup"}
+
+class DetectorTaxonomyError(RuntimeError):
+    pass
+
+
+def validate_detector_taxonomy(names: dict[int, str] | list[str]) -> dict[int, str]:
+    normalized = (
+        {int(class_id): str(label) for class_id, label in names.items()}
+        if isinstance(names, dict)
+        else {class_id: str(label) for class_id, label in enumerate(names)}
+    )
+    if normalized != EXPECTED_ECOALERT_TAXONOMY:
+        raise DetectorTaxonomyError(
+            "Detector must expose the EcoAlert Waste YOLO26n V1 six-class taxonomy"
+        )
+    return normalized
 
 
 def map_waste_type(label: str) -> str | None:
     normalized = label.strip().lower().replace(" ", "_")
-    if normalized in CUSTOM_WASTE_LABELS:
-        return CUSTOM_WASTE_LABELS[normalized]
-    if normalized in COCO_POTENTIAL_LITTER:
-        return "OTHER"
-    return None
+    return CUSTOM_WASTE_LABELS.get(normalized)
 
 
 def boxes_from_xyxy(
@@ -90,6 +94,7 @@ class YoloDetector:
         self.iou = iou
         self.max_detections = max_detections
         self.model = YOLO(model_path)
+        self.class_names = validate_detector_taxonomy(self.model.names)
         self.device = device
 
     def detect(self, image: Image.Image) -> list[Detection]:
@@ -105,17 +110,17 @@ class YoloDetector:
         detections: list[Detection] = []
         if result.boxes is None:
             return detections
-        names = result.names
         for xyxy, confidence, class_id in zip(
             result.boxes.xyxy.cpu().tolist(),
             result.boxes.conf.cpu().tolist(),
             result.boxes.cls.cpu().tolist(),
         ):
-            label = str(names[int(class_id)])
+            numeric_class_id = int(class_id)
+            label = self.class_names[numeric_class_id]
             box, normalized = boxes_from_xyxy(xyxy, width, height)
             detections.append(
                 Detection(
-                    class_id=int(class_id),
+                    class_id=numeric_class_id,
                     label=label,
                     confidence=float(confidence),
                     bbox=box,

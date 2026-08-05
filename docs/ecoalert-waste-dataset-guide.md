@@ -1,6 +1,6 @@
 # EcoAlert waste dataset guide
 
-This guide defines the first custom EcoAlert object-detection dataset. It is a YOLO bounding-box dataset, not a segmentation dataset. The current production `yolo26n.pt` remains a general COCO baseline until a separately evaluated custom checkpoint is approved and deployed.
+This guide defines the first custom EcoAlert object-detection dataset. It is a YOLO bounding-box dataset, not a segmentation dataset. The evaluated V1 checkpoint is deployed as `ecoalert-waste-yolo26n-v1.pt`; the generic `yolo26n.pt` is retained only as a rollback/fine-tuning artifact.
 
 ## Dataset layout
 

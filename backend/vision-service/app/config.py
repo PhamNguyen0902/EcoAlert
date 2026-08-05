@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     max_inference_side: int = Field(default=1280, alias="VISION_MAX_INFERENCE_SIDE")
     request_timeout_seconds: float = Field(default=12.0, alias="VISION_REQUEST_TIMEOUT_SECONDS")
     max_concurrency: int = Field(default=1, alias="VISION_MAX_CONCURRENCY")
-    detector_model_path: str = Field(default="yolo26n.pt", alias="VISION_DETECTION_MODEL_PATH")
+    detector_model_path: str = Field(
+        default="/models/ecoalert-waste-yolo26n-v1.pt",
+        alias="VISION_DETECTION_MODEL_PATH",
+    )
     detector_confidence: float = Field(default=0.25, alias="VISION_CONFIDENCE_THRESHOLD")
     detector_iou: float = Field(default=0.45, alias="VISION_IOU_THRESHOLD")
     max_detections: int = Field(default=100, alias="VISION_MAX_DETECTIONS")

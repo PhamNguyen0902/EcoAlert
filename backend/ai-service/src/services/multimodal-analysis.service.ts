@@ -1,12 +1,17 @@
-import { AlertCategory, IAiAnalysisCompletedData } from '@ecoalert/shared';
+import { AlertCategory, createLogger, IAiAnalysisCompletedData } from '@ecoalert/shared';
 import { envConfig } from '../config/env.config';
 import {
   analyzeIncidentWithOpenRouter,
   IncidentAnalysisInput,
   IncidentAnalysisResult,
 } from './openrouter.service';
-import { analyzeImageWithVision } from './vision-client.service';
+import {
+  analyzeImageWithVision,
+  safeVisionErrorMetadata,
+} from './vision-client.service';
 import { fuseIncidentEvidence } from './vision-fusion.service';
+
+const logger = createLogger('ai-service');
 
 export type MultimodalAnalysisResult = Omit<IAiAnalysisCompletedData, 'alertId' | 'analysisId'>;
 
@@ -48,6 +53,13 @@ export const analyzeMultimodalIncident = async (
   const semantic = semanticResult.status === 'fulfilled' ? semanticResult.value : undefined;
   const vision = visionResult.status === 'fulfilled' ? visionResult.value : undefined;
 
+  if (visionResult.status === 'rejected') {
+    logger.warn('Vision analysis branch failed; semantic fallback may be used', {
+      alertId: input.alertId,
+      ...safeVisionErrorMetadata(visionResult.reason),
+    });
+  }
+
   if (!semantic && !vision) {
     const semanticError = semanticResult.status === 'rejected'
       ? semanticResult.reason
@@ -71,7 +83,7 @@ export const analyzeMultimodalIncident = async (
       pipelineVersion: 'multimodal-v1',
       vision: vision || {
         status: input.imageUrl ? 'FAILED' : 'SKIPPED',
-        detectorModel: 'yolo26n.pt',
+        detectorModel: 'ecoalert-waste-yolo26n-v1.pt',
         detections: [],
         objectCounts: [],
         totalDetectedObjects: 0,

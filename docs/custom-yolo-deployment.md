@@ -1,6 +1,6 @@
 # Deploying a trained EcoAlert YOLO26 checkpoint
 
-Do not follow this procedure until Colab training and held-out test evaluation are complete. The current `/models/yolo26n.pt` must remain available as the rollback baseline.
+V1 training and held-out evaluation are complete. Use this procedure when provisioning or replacing the approved `ecoalert-waste-yolo26n-v1.pt` artifact. Keep `/models/yolo26n.pt` available as a rollback artifact, but do not configure it as the primary detector.
 
 ## Prepare the artifact
 
@@ -23,7 +23,7 @@ Keep a model record containing the dataset version, six-class mapping, Ultralyti
 With the existing Vision container running, copy the artifact into its mounted `/models` directory without deleting the baseline:
 
 ```powershell
-docker compose cp .\ecoalert-waste-yolo26n-v1.pt vision-service:/models/ecoalert-waste-yolo26n-v1.pt
+docker compose cp .\models\ecoalert-waste-yolo26n-v1.pt vision-service:/models/ecoalert-waste-yolo26n-v1.pt
 docker compose exec -T vision-service python -c "import hashlib,os; p='/models/ecoalert-waste-yolo26n-v1.pt'; print({'exists':os.path.isfile(p),'bytes':os.path.getsize(p) if os.path.isfile(p) else None,'sha256':hashlib.sha256(open(p,'rb').read()).hexdigest() if os.path.isfile(p) else None})"
 ```
 
@@ -34,12 +34,12 @@ Compare the container checksum with the downloaded artifact. A plausible file si
 - Confirm the model exposes exactly IDs 0–5 in the order defined by `training/data.yaml`.
 - Confirm the Vision mapping layer recognizes all six custom labels; specifically verify `plastic_cup` before activation.
 - Re-run the approved evaluation set and false-positive hard negatives.
-- Choose a confidence threshold from validation results rather than assuming the COCO baseline threshold is optimal.
+- Keep the approved `0.40` confidence threshold unless a later validation run supports a change.
 - Preserve `/models/yolo26n.pt` and record the rollback command.
 
-## Planned runtime switch — not performed by this preparation task
+## Active runtime configuration
 
-After approval, change the Vision environment to:
+The active Vision environment is:
 
 ```dotenv
 VISION_DETECTION_MODEL_PATH=/models/ecoalert-waste-yolo26n-v1.pt
@@ -59,4 +59,4 @@ VISION_DETECTION_MODEL_PATH=/models/yolo26n.pt
 
 and recreate only Vision again with `--no-build`.
 
-This document does not switch the current runtime model and does not enable SAM2.
+The V1 runtime switch is complete. This procedure does not enable SAM2.

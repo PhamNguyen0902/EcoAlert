@@ -110,7 +110,8 @@ export const fuseIncidentEvidence = (
   let fusionConfidence: number;
   let mode: IAiFusionAnalysis['mode'];
   if (semantic && vision) {
-    // Vision is capped because the shipped detector is a general COCO baseline.
+    // Detector confidence is supporting evidence rather than incident-level certainty.
+    // Keep semantic context dominant and bound detector influence conservatively.
     fusionConfidence = clamp(semantic.confidence * 0.85 + Math.min(visionConfidence || 0, 0.75) * 0.15);
     mode = 'FULL_MULTIMODAL';
   } else if (semantic) {
