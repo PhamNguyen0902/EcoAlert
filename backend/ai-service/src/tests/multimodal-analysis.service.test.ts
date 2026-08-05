@@ -16,7 +16,7 @@ const semantic = async () => ({
 });
 const vision = async () => ({
   status: 'COMPLETED' as const,
-  detectorModel: 'yolo26n.pt',
+  detectorModel: 'ecoalert-waste-yolo26n-v1.pt',
   detections: [], objectCounts: [], totalDetectedObjects: 0,
   visibleWasteCoverage: null, detectorConfidence: null,
   segmentationConfidence: null, processingTimeMs: 10, warnings: [],
@@ -38,6 +38,19 @@ test('both successful branches produce a full multimodal result', async () => {
   assert.equal(result.analysisMode, 'FULL_MULTIMODAL');
   assert.equal(result.vision?.status, 'COMPLETED');
   assert.equal(result.fusion?.semanticConfidence, 0.8);
+});
+
+test('vision failure preserves semantic analysis as a semantic-only result', async () => {
+  const result = await analyzeMultimodalIncident(input, {
+    visionEnabled: true,
+    analyzeSemantic: semantic,
+    analyzeVision: async () => { throw new Error('Vision timeout'); },
+  });
+  assert.equal(result.analysisMode, 'SEMANTIC_ONLY');
+  assert.equal(result.vision?.status, 'FAILED');
+  assert.equal(result.vision?.detectorModel, 'ecoalert-waste-yolo26n-v1.pt');
+  assert.equal(result.fusion?.semanticConfidence, 0.8);
+  assert.equal(result.fusion?.visionConfidence, null);
 });
 
 test('semantic failure degrades to cautious vision-only review', async () => {

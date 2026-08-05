@@ -13,6 +13,12 @@ import {
 
 const logger = createLogger('alert-service');
 
+const ecoAlertClassNames = [
+  'plastic_bottle', 'plastic_bag', 'plastic_cup',
+  'metal_can', 'cardboard', 'glass_bottle',
+] as const;
+const ecoAlertClassSchema = z.enum(ecoAlertClassNames);
+
 const boundingBoxSchema = z.object({
   x: z.number().nonnegative(), y: z.number().nonnegative(),
   width: z.number().nonnegative(), height: z.number().nonnegative(),
@@ -21,20 +27,36 @@ const wasteTypeSchema = z.enum([
   'PLASTIC_WASTE', 'ORGANIC_WASTE', 'CONSTRUCTION_WASTE', 'HAZARDOUS_WASTE',
   'METAL_WASTE', 'GLASS_WASTE', 'PAPER_WASTE', 'E_WASTE', 'MIXED_WASTE', 'OTHER',
 ]);
+const visionDetectionSchema = z.object({
+  classId: z.number().int().min(0).max(ecoAlertClassNames.length - 1),
+  label: ecoAlertClassSchema,
+  confidence: z.number().min(0).max(1),
+  bbox: boundingBoxSchema,
+  normalizedBbox: boundingBoxSchema,
+  wasteType: wasteTypeSchema.optional(),
+  maskAreaPixels: z.number().int().nonnegative().optional(),
+  maskCoverage: z.number().min(0).max(1).optional(),
+}).strict().superRefine((detection, context) => {
+  if (ecoAlertClassNames[detection.classId] !== detection.label) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Vision class ID and label do not match the EcoAlert V1 taxonomy',
+      path: ['label'],
+    });
+  }
+});
+
 const visionSchema = z.object({
   status: z.enum(['COMPLETED', 'FAILED', 'SKIPPED', 'UNAVAILABLE']),
-  detectorModel: z.string().min(1),
+  detectorModel: z.string().refine(
+    (value) => value.replace(/\\/g, '/').split('/').pop() === 'ecoalert-waste-yolo26n-v1.pt',
+    'Unexpected Vision detector model',
+  ),
   segmenterModel: z.string().min(1).optional(),
   imageWidth: z.number().int().positive().optional(),
   imageHeight: z.number().int().positive().optional(),
-  detections: z.array(z.object({
-    classId: z.number().int().nonnegative(), label: z.string().min(1),
-    confidence: z.number().min(0).max(1), bbox: boundingBoxSchema,
-    normalizedBbox: boundingBoxSchema, wasteType: wasteTypeSchema.optional(),
-    maskAreaPixels: z.number().int().nonnegative().optional(),
-    maskCoverage: z.number().min(0).max(1).optional(),
-  }).strict()),
-  objectCounts: z.array(z.object({ label: z.string().min(1), count: z.number().int().nonnegative() }).strict()),
+  detections: z.array(visionDetectionSchema),
+  objectCounts: z.array(z.object({ label: ecoAlertClassSchema, count: z.number().int().nonnegative() }).strict()),
   totalDetectedObjects: z.number().int().nonnegative(),
   visibleWasteCoverage: z.number().min(0).max(1).nullable(),
   detectorConfidence: z.number().min(0).max(1).nullable(),
@@ -114,6 +136,15 @@ class RabbitMQService {
         } catch (error) {
           logger.error('Failed to process image.analyzed; message rejected without requeue', {
             errorType: error instanceof Error ? error.name : 'UnknownError',
+            ...(error instanceof z.ZodError
+              ? {
+                  validationIssues: error.issues.slice(0, 5).map((issue) => ({
+                    path: issue.path.join('.') || '<root>',
+                    code: issue.code,
+                    message: issue.message,
+                  })),
+                }
+              : {}),
           });
           this.channel.nack(message, false, false);
         }

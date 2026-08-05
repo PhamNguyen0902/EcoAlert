@@ -13,12 +13,12 @@ class FakeDetector:
     def detect(self, image):
         return [
             Detection(
-                class_id=39,
-                label="bottle",
+                class_id=0,
+                label="plastic_bottle",
                 confidence=0.91,
                 bbox=BoundingBox(x=1, y=1, width=3, height=3),
                 normalized_bbox=BoundingBox(x=0.1, y=0.1, width=0.3, height=0.3),
-                waste_type="OTHER",
+                waste_type="PLASTIC_WASTE",
             )
         ]
 
@@ -67,6 +67,6 @@ def test_internal_endpoint_requires_token_and_returns_camel_case_contract():
     assert response.status_code == 200
     body = response.json()
     assert body["totalDetectedObjects"] == 1
-    assert body["detections"][0]["label"] == "bottle"
+    assert body["detections"][0]["label"] == "plastic_bottle"
     assert body["visibleWasteCoverage"] is None
     assert body["detectionTimeMs"] >= 0

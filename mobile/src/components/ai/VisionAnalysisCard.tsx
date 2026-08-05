@@ -9,7 +9,9 @@ const humanize = (value?: string) => value
   ? value.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
   : "Not determined";
 const percentage = (value: number | null | undefined) =>
-  value === null || value === undefined ? "N/A" : `${Math.round(value * 100)}%`;
+  value === null || value === undefined || !Number.isFinite(value)
+    ? "N/A"
+    : `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
 
 export const VisionAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
   const { colors, isDark } = useTheme();
@@ -17,6 +19,15 @@ export const VisionAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
   const vision = alert.aiVision;
   const fusion = alert.aiFusion;
   if (!vision && !fusion) return null;
+  const visionSucceeded = vision?.status === "COMPLETED";
+  const detections = Array.isArray(vision?.detections) ? vision.detections : [];
+  const objectCounts = Array.isArray(vision?.objectCounts) ? vision.objectCounts : [];
+  const explanations = Array.isArray(fusion?.explanations) ? fusion.explanations : [];
+  const detectorStatus = !visionSucceeded
+    ? "N/A"
+    : fusion?.visionConfidence === null || fusion?.visionConfidence === undefined
+      ? "Available"
+      : percentage(fusion.visionConfidence);
 
   return (
     <Card style={[styles.card, { borderColor: colors.border, backgroundColor: colors.surface }]}>
@@ -32,26 +43,41 @@ export const VisionAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
 
       <View style={styles.grid}>
         <Metric label="Waste type" value={humanize(fusion?.wasteType)} colors={colors} />
-        <Metric label="Objects" value={String(vision?.totalDetectedObjects ?? 0)} colors={colors} />
-        <Metric label="Coverage" value={percentage(vision?.visibleWasteCoverage)} colors={colors} />
-        <Metric label="Severity score" value={fusion ? `${fusion.severityScore}/100` : "N/A"} colors={colors} />
+        <Metric label="Objects" value={visionSucceeded ? String(vision.totalDetectedObjects) : "N/A"} colors={colors} />
+        <Metric label="Severity" value={humanize(alert.severity ?? undefined)} colors={colors} />
+        <Metric label="Severity score" value={Number.isFinite(fusion?.severityScore) ? `${fusion!.severityScore}/100` : "N/A"} colors={colors} />
       </View>
 
-      {vision?.objectCounts.length ? (
+      {objectCounts.length ? (
         <Text style={[styles.counts, { color: colors.textMuted }]}>
-          {vision.objectCounts.slice(0, 4).map((item) => `${item.label}: ${item.count}`).join(" · ")}
+          Counts: {objectCounts.slice(0, 6).map((item) => `${humanize(item.label)}: ${item.count}`).join(" · ")}
         </Text>
+      ) : null}
+
+      {visionSucceeded && detections.length ? (
+        <View style={styles.detectionList} accessibilityLabel="Custom waste detections">
+          {detections.slice(0, 6).map((detection, index) => (
+            <View key={`${detection.label}-${index}`} style={[styles.detectionRow, { borderColor: colors.border }]}>
+              <Text style={[styles.detectionLabel, { color: colors.text }]}>{humanize(detection.label)}</Text>
+              <Text style={[styles.detectionConfidence, { color: colors.textMuted }]}>{percentage(detection.confidence)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : visionSucceeded ? (
+        <Text style={[styles.noDetections, { color: colors.textMuted }]}>No EcoAlert waste objects were detected.</Text>
+      ) : vision ? (
+        <Text style={[styles.noDetections, { color: colors.textMuted }]}>Detector not available for this analysis.</Text>
       ) : null}
 
       {fusion ? (
         <View style={[styles.confidenceRow, { borderColor: colors.border, backgroundColor: isDark ? "rgba(15,23,42,0.4)" : colors.background }]}>
           <Metric label="Semantic" value={percentage(fusion.semanticConfidence)} colors={colors} compact />
-          <Metric label="Detector" value={percentage(fusion.visionConfidence)} colors={colors} compact />
+          <Metric label="Detector" value={detectorStatus} colors={colors} compact />
           <Metric label="Fusion" value={percentage(fusion.fusionConfidence)} colors={colors} compact />
         </View>
       ) : null}
 
-      {fusion?.explanations[0] ? <Text style={[styles.explanation, { color: colors.textMuted }]}>{fusion.explanations[0]}</Text> : null}
+      {explanations[0] ? <Text style={[styles.explanation, { color: colors.textMuted }]}>{explanations[0]}</Text> : null}
 
       {vision?.annotatedImageUrl ? (
         <>
@@ -93,6 +119,11 @@ const styles = StyleSheet.create({
   label: { fontSize: 10, fontWeight: "600" },
   value: { fontSize: 12, fontWeight: "800", marginTop: 3 },
   counts: { fontSize: 11, lineHeight: 17, marginTop: 12 },
+  detectionList: { gap: 6, marginTop: 12 },
+  detectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 7 },
+  detectionLabel: { fontSize: 11, fontWeight: "700" },
+  detectionConfidence: { fontSize: 11, fontWeight: "600" },
+  noDetections: { fontSize: 11, lineHeight: 17, marginTop: 12 },
   confidenceRow: { flexDirection: "row", borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 12 },
   explanation: { fontSize: 11, lineHeight: 17, marginTop: 12 },
   imageButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderWidth: 1, borderRadius: 10, padding: 9, marginTop: 12 },

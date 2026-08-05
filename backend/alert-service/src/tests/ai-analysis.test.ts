@@ -32,6 +32,26 @@ test('AI event validation accepts confidence zero and rejects arbitrary enum val
   }));
 });
 
+test('AI event validation rejects generic detector evidence', () => {
+  assert.throws(() => aiAnalysisCompletedSchema.parse({
+    ...analysis(),
+    analysisMode: 'FULL_MULTIMODAL',
+    pipelineVersion: 'multimodal-v1',
+    vision: {
+      status: 'COMPLETED', detectorModel: 'yolo26n.pt',
+      detections: [{
+        classId: 0, label: 'person', confidence: 0.9,
+        bbox: { x: 0, y: 0, width: 10, height: 10 },
+        normalizedBbox: { x: 0, y: 0, width: 0.5, height: 1 },
+      }],
+      objectCounts: [{ label: 'person', count: 1 }], totalDetectedObjects: 1,
+      visibleWasteCoverage: null, detectorConfidence: 0.9,
+      segmentationConfidence: null, processingTimeMs: 20,
+      detectionTimeMs: 12, segmentationTimeMs: 0, annotationTimeMs: 5, warnings: [],
+    },
+  }));
+});
+
 test('valid category, severity, confidence, and metadata are included in persistence update', async () => {
   const repository = alertRepository as any;
   const rabbit = rabbitMQService as any;
@@ -107,7 +127,7 @@ test('structured multimodal evidence is validated and included in the additive u
     analysisMode: 'FULL_MULTIMODAL',
     pipelineVersion: 'multimodal-v1',
     vision: {
-      status: 'COMPLETED', detectorModel: 'yolo26n.pt', detections: [], objectCounts: [],
+      status: 'COMPLETED', detectorModel: 'ecoalert-waste-yolo26n-v1.pt', detections: [], objectCounts: [],
       totalDetectedObjects: 0, visibleWasteCoverage: null, detectorConfidence: null,
       segmentationConfidence: null, processingTimeMs: 20,
       detectionTimeMs: 12, segmentationTimeMs: 0, annotationTimeMs: 5, warnings: [],
@@ -120,7 +140,7 @@ test('structured multimodal evidence is validated and included in the additive u
       processingTimeMs: 1,
     },
   };
-  assert.equal(aiAnalysisCompletedSchema.parse(multimodal).vision?.detectorModel, 'yolo26n.pt');
+  assert.equal(aiAnalysisCompletedSchema.parse(multimodal).vision?.detectorModel, 'ecoalert-waste-yolo26n-v1.pt');
 
   const repository = alertRepository as any;
   const rabbit = rabbitMQService as any;
@@ -137,7 +157,7 @@ test('structured multimodal evidence is validated and included in the additive u
     rabbit.publishEvent = async () => undefined;
     await alertService.internalUpdateAiResult(multimodal.alertId, multimodal);
     assert.equal(capturedUpdate.$set.aiPipelineVersion, 'multimodal-v1');
-    assert.equal(capturedUpdate.$set.aiVision.detectorModel, 'yolo26n.pt');
+    assert.equal(capturedUpdate.$set.aiVision.detectorModel, 'ecoalert-waste-yolo26n-v1.pt');
     assert.equal(capturedUpdate.$set.aiFusion.severityScore, 65);
   } finally {
     repository.findById = originalFindById;

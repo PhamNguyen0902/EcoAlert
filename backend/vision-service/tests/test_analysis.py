@@ -6,7 +6,14 @@ from PIL import Image
 
 from app.analysis import InvalidImageError, analyze_image, apply_masks, decode_image
 from app.config import Settings
-from app.models import ModelHealth, boxes_from_xyxy, object_counts
+from app.models import (
+    DetectorTaxonomyError,
+    ModelHealth,
+    boxes_from_xyxy,
+    map_waste_type,
+    object_counts,
+    validate_detector_taxonomy,
+)
 from app.schemas import BoundingBox, Detection
 
 
@@ -14,12 +21,12 @@ class FakeDetector:
     def detect(self, image: Image.Image):
         return [
             Detection(
-                class_id=39,
-                label="bottle",
+                class_id=0,
+                label="plastic_bottle",
                 confidence=0.8,
                 bbox=BoundingBox(x=2, y=2, width=4, height=5),
                 normalized_bbox=BoundingBox(x=0.2, y=0.2, width=0.4, height=0.5),
-                waste_type="OTHER",
+                waste_type="PLASTIC_WASTE",
             )
         ]
 
@@ -71,7 +78,7 @@ def jpeg_bytes(width=10, height=10):
 def test_analysis_reports_exact_counts_and_union_mask_coverage():
     result = analyze_image(jpeg_bytes(), Settings(), FakeRegistry(), True)
     assert result.total_detected_objects == 1
-    assert result.object_counts[0].model_dump() == {"label": "bottle", "count": 1}
+    assert result.object_counts[0].model_dump() == {"label": "plastic_bottle", "count": 1}
     assert result.visible_waste_coverage == pytest.approx(0.2)
     assert result.detections[0].mask_area_pixels == 20
     assert result.segmentation_confidence is None
@@ -124,12 +131,33 @@ def test_object_counts_are_deterministic_and_sorted():
             bbox=BoundingBox(x=0, y=0, width=1, height=1),
             normalized_bbox=BoundingBox(x=0, y=0, width=1, height=1),
         )
-        for label in ["cup", "bottle", "cup"]
+        for label in ["plastic_cup", "plastic_bottle", "plastic_cup"]
     ]
     assert [item.model_dump() for item in object_counts(detections)] == [
-        {"label": "bottle", "count": 1},
-        {"label": "cup", "count": 2},
+        {"label": "plastic_bottle", "count": 1},
+        {"label": "plastic_cup", "count": 2},
     ]
+
+
+def test_custom_taxonomy_is_exact_and_maps_material_types():
+    names = {
+        0: "plastic_bottle",
+        1: "plastic_bag",
+        2: "plastic_cup",
+        3: "metal_can",
+        4: "cardboard",
+        5: "glass_bottle",
+    }
+    assert validate_detector_taxonomy(names) == names
+    assert map_waste_type("plastic_cup") == "PLASTIC_WASTE"
+    assert map_waste_type("metal_can") == "METAL_WASTE"
+    assert map_waste_type("cardboard") == "PAPER_WASTE"
+    assert map_waste_type("glass_bottle") == "GLASS_WASTE"
+
+
+def test_generic_coco_taxonomy_is_rejected():
+    with pytest.raises(DetectorTaxonomyError):
+        validate_detector_taxonomy({0: "person", 39: "bottle"})
 
 
 def test_empty_detections_are_reported_without_fabricated_confidence():

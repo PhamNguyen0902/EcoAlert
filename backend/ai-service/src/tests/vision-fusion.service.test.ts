@@ -16,7 +16,7 @@ const semantic = {
 
 const vision = (overrides: Partial<IAiVisionAnalysis> = {}): IAiVisionAnalysis => ({
   status: 'COMPLETED',
-  detectorModel: 'yolo26n.pt',
+  detectorModel: 'ecoalert-waste-yolo26n-v1.pt',
   detections: [],
   objectCounts: [],
   totalDetectedObjects: 0,
@@ -58,7 +58,7 @@ test('box area is never substituted when segmentation coverage is unavailable', 
   assert.ok(result.fusion.explanations.some((text) => text.includes('not scored')));
 });
 
-test('vision-only confidence is capped for the general pretrained detector', () => {
+test('vision-only confidence remains bounded for cautious human review', () => {
   const result = fuseIncidentEvidence(undefined, vision({ detectorConfidence: 0.99 }));
   assert.equal(result.fusion.mode, 'VISION_ONLY');
   assert.equal(result.confidence, 0.6);

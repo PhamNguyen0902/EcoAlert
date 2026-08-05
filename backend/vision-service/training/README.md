@@ -1,6 +1,6 @@
 # EcoAlert custom waste detector training contract
 
-This directory contains reproducible entry points, not a dataset or a trained custom model. The shipped `yolo26n.pt` is pretrained on COCO and must not be reported as an EcoAlert waste detector.
+This directory contains reproducible remote-GPU training entry points, not the deployed model artifact. Runtime detection uses the separately provisioned `ecoalert-waste-yolo26n-v1.pt`; the retained generic `yolo26n.pt` is only a fine-tuning seed/fallback artifact and must not be reported as the active EcoAlert detector.
 
 The V1 contract contains six classes in `data.yaml`: `plastic_bottle`, `plastic_bag`, `plastic_cup`, `metal_can`, `cardboard`, and `glass_bottle`. Prepare independently licensed images and YOLO-format bounding-box labels following [`../../../docs/ecoalert-waste-dataset-guide.md`](../../../docs/ecoalert-waste-dataset-guide.md).
 

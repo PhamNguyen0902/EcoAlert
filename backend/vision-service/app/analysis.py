@@ -86,9 +86,7 @@ def analyze_image(
     detection_started = time.perf_counter()
     detections = registry.detector.detect(image)
     detection_time_ms = round((time.perf_counter() - detection_started) * 1000)
-    warnings: list[str] = [
-        "YOLO26 COCO baseline is not a custom waste classifier; potential litter mappings are conservative."
-    ]
+    warnings: list[str] = []
     masks: list[np.ndarray] | None = None
     coverage: float | None = None
     segmenter_model: str | None = None
