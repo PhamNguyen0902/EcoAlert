@@ -71,7 +71,7 @@ app.get('/health', (req, res) => {
 // Authentication Middleware for Gateway
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   // Allow unauthenticated access to certain routes
-  const publicRoutes = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh-token'];
+  const publicRoutes = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh-token', '/api/v1/ai/translate'];
   const cleanPath = req.originalUrl.split('?')[0];
   if (publicRoutes.includes(cleanPath)) {
     return next();

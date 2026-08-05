@@ -27,9 +27,9 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
       {/* Sticky Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Incident Map View</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Bản đồ Giám sát Sự cố</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-            Geotagged environmental alerts ({alerts.length} reports)
+            Vị trí các sự cố môi trường ({alerts.length} báo cáo)
           </Text>
         </View>
         <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE" }]} onPress={() => refetch()} disabled={isRefetching}>
@@ -61,8 +61,8 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                     {alert.title}
                   </Text>
                   <Text style={[styles.calloutCategory, { color: colors.textMuted }]}>{alert.category?.toUpperCase()}</Text>
-                  <Text style={[styles.calloutStatus, { color: colors.secondary }]}>Status: {alert.status}</Text>
-                  <Text style={[styles.calloutCta, { color: colors.primaryDark }]}>Tap to view & verify ›</Text>
+                  <Text style={[styles.calloutStatus, { color: colors.secondary }]}>Trạng thái: {alert.status}</Text>
+                  <Text style={[styles.calloutCta, { color: colors.primaryDark }]}>Nhấn để xem & xác minh ›</Text>
                 </View>
               </Callout>
             </Marker>

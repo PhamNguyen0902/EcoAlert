@@ -61,7 +61,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={colors.secondary} />
-        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Loading report for officer verification...</Text>
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Đang tải thông tin xác minh cho cán bộ...</Text>
       </View>
     );
   }
@@ -70,12 +70,12 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
     return (
       <View style={[styles.errorContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <AlertTriangle size={48} color={colors.destructive} />
-        <Text style={[styles.errorTitle, { color: colors.text }]}>Report Not Available</Text>
+        <Text style={[styles.errorTitle, { color: colors.text }]}>Không tìm thấy báo cáo</Text>
         <Text style={[styles.errorSub, { color: colors.textMuted }]}>
-          This incident is not assigned to your Officer account or is no longer available.
+          Sự cố này chưa được phân công cho tài khoản của bạn hoặc không còn khả dụng.
         </Text>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : colors.primaryLight }]} onPress={() => navigation.goBack()}>
-          <Text style={[styles.backBtnText, { color: isDark ? "#60A5FA" : colors.primaryDark }]}>Go Back</Text>
+          <Text style={[styles.backBtnText, { color: isDark ? "#60A5FA" : colors.primaryDark }]}>Quay lại</Text>
         </TouchableOpacity>
       </View>
     );
@@ -89,16 +89,16 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
   const handleStartHandling = async () => {
     try {
       await startHandlingMutation.mutateAsync(alert._id);
-      RNAlert.alert("Workflow Started", "Incident status set to IN_PROGRESS.");
+      RNAlert.alert("Thành công", "Đã chuyển trạng thái sự cố sang Đang xử lý.");
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to start handling.";
-      RNAlert.alert("Error", msg);
+      const msg = err.response?.data?.message || err.message || "Không thể bắt đầu xử lý.";
+      RNAlert.alert("Lỗi", msg);
     }
   };
 
   const handleConfirmArrival = async () => {
     if (!incidentCoordinates) {
-      RNAlert.alert("Location Unavailable", "Incident location is unavailable.");
+      RNAlert.alert("Thiếu vị trí", "Không có tọa độ vị trí sự cố.");
       return;
     }
 
@@ -107,16 +107,16 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         id: alert._id,
         location: incidentCoordinates,
       });
-      RNAlert.alert("Arrival Confirmed", "Your GPS location arrival has been logged.");
+      RNAlert.alert("Thành công", "Đã ghi nhận thời điểm cán bộ tới hiện trường.");
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to confirm arrival.";
-      RNAlert.alert("Error", msg);
+      const msg = err.response?.data?.message || err.message || "Không thể xác nhận tới hiện trường.";
+      RNAlert.alert("Lỗi", msg);
     }
   };
 
   const handleOpenGoogleMaps = async () => {
     if (!incidentCoordinates) {
-      RNAlert.alert("Location Unavailable", "Incident location is unavailable.");
+      RNAlert.alert("Thiếu vị trí", "Không có tọa độ vị trí sự cố.");
       return;
     }
 
@@ -130,8 +130,8 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
       if (!result.success) {
         RNAlert.alert(
-          "Unable to Open Google Maps",
-          "Navigation could not be opened. Please try again.",
+          "Không thể mở Google Maps",
+          "Không thể mở ứng dụng chỉ đường. Vui lòng thử lại sau.",
         );
       }
     } finally {
@@ -141,17 +141,17 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
   const handleAddNote = async () => {
     if (!note.trim()) {
-      RNAlert.alert("Validation Error", "Please write an officer response note first.");
+      RNAlert.alert("Thông báo", "Vui lòng nhập nội dung ghi chú nghiệp vụ trước khi lưu.");
       return;
     }
 
     try {
       await addNoteMutation.mutateAsync({ id: alert._id, note: note.trim() });
-      RNAlert.alert("Note Saved", "Officer response note added successfully.");
+      RNAlert.alert("Thành công", "Đã lưu ghi chú cán bộ.");
       setNote("");
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to add note.";
-      RNAlert.alert("Note Error", msg);
+      const msg = err.response?.data?.message || err.message || "Không thể lưu ghi chú.";
+      RNAlert.alert("Lỗi", msg);
     }
   };
 
@@ -162,7 +162,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         <TouchableOpacity style={[styles.circleBtn, { backgroundColor: colors.background }]} onPress={() => navigation.goBack()}>
           <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.topBarTitle, { color: colors.text }]}>Officer Task & Verification</Text>
+        <Text style={[styles.topBarTitle, { color: colors.text }]}>Nhiệm vụ & Xác minh Cán bộ</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -170,14 +170,14 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         {/* Category & Status */}
         <View style={styles.badgesRow}>
           <Badge
-            label={alert.category?.toUpperCase().replace("_", " ") || "GENERAL"}
+            label={alert.category?.toUpperCase().replace("_", " ") || "CHUNG"}
             type="custom"
             bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
             textColor={isDark ? colors.text : "#334155"}
           />
           <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
             <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-              {alert.severity?.toUpperCase()} PRIORITY
+              MỨC ĐỘ {alert.severity?.toUpperCase()}
             </Text>
           </View>
           <Badge label={alert.status || "PENDING"} type="status" />
@@ -186,11 +186,11 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
 
         {/* Workflow Quick Action Buttons */}
-        <Text style={[styles.sectionHeading, { color: colors.text }]}>Officer Incident Actions</Text>
+        <Text style={[styles.sectionHeading, { color: colors.text }]}>Hành động Xử lý Sự cố</Text>
         <View style={styles.workflowGrid}>
           {currentStatus === "ASSIGNED" || currentStatus === "VERIFIED" || currentStatus === "PENDING" ? (
             <Button
-              title="Step 1: Start Handling"
+              title="Bước 1: Bắt đầu xử lý"
               onPress={handleStartHandling}
               loading={startHandlingMutation.isPending}
               style={styles.workflowBtn}
@@ -202,11 +202,11 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             alert.arrivedAt ? (
               <View style={[styles.arrivedBadge, { backgroundColor: isDark ? "rgba(22,163,74,0.25)" : "#DCFCE7", borderColor: isDark ? "rgba(22,163,74,0.4)" : "#86EFAC" }]}>
                 <CheckCircle size={16} color={isDark ? "#86EFAC" : "#16A34A"} />
-                <Text style={[styles.arrivedBadgeText, { color: isDark ? "#86EFAC" : "#15803D" }]}>Arrived at Scene</Text>
+                <Text style={[styles.arrivedBadgeText, { color: isDark ? "#86EFAC" : "#15803D" }]}>Đã đến hiện trường</Text>
               </View>
             ) : (
               <Button
-                title="Step 2: Confirm GPS Arrival"
+                title="Bước 2: Xác nhận đã đến hiện trường"
                 onPress={handleConfirmArrival}
                 loading={confirmArrivalMutation.isPending}
                 variant="outline"
@@ -218,7 +218,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
           {currentStatus !== "RESOLVED" && currentStatus !== "CLOSED" ? (
             <Button
-              title="Step 3: Mark Incident Resolved"
+              title="Bước 3: Đánh dấu Đã hoàn thành"
               onPress={() => setResolutionModalOpen(true)}
               style={[styles.workflowBtn, { backgroundColor: "#16A34A" }]}
               icon={<CheckCircle size={18} color="#FFF" style={{ marginRight: 6 }} />}
@@ -228,9 +228,9 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         {/* Officer Note Input */}
         <GlassCard style={styles.noteFormCard}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>Officer Inspection Note / Remarks</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>Ghi chú kiểm tra / Nghiệp vụ Cán bộ</Text>
           <Input
-            placeholder="Enter verification result, dispatched team details, or inspection note..."
+            placeholder="Nhập kết quả xác minh, phương án hoặc ghi chú kiểm tra..."
             multiline
             numberOfLines={3}
             style={styles.textArea}
@@ -238,7 +238,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             onChangeText={setNote}
           />
           <Button
-            title="Save Officer Note"
+            title="Lưu ghi chú Cán bộ"
             onPress={handleAddNote}
             loading={addNoteMutation.isPending}
             variant="outline"
@@ -249,7 +249,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         {/* Incident Details Card */}
         <GlassCard style={styles.mainCard}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>Citizen Incident Description</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>Mô tả từ Người dân</Text>
           <Text style={[styles.descriptionText, { color: colors.text }]}>{alert.description}</Text>
         </GlassCard>
 
@@ -258,7 +258,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         {/* Evidence Photos */}
         {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
           <View style={styles.sectionBox}>
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>Photos & Evidence</Text>
+            <Text style={[styles.sectionHeading, { color: colors.text }]}>Hình ảnh & Minh chứng</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
               {alert.mediaUrls.map((url, idx) => (
                 <Image key={idx} source={{ uri: url }} style={styles.evidenceImage} />
@@ -269,7 +269,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         {/* Map View */}
         <View style={styles.sectionBox}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>Incident Location</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>Vị trí Sự cố (Bản đồ)</Text>
           <Card style={styles.mapCard}>
             {incidentCoordinates ? (
               <MapView

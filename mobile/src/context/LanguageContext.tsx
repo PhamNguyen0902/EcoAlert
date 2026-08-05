@@ -8,6 +8,7 @@ export type Language = "vi" | "en";
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => Promise<void>;
+  toggleLanguage: () => Promise<void>;
   t: (path: string, fallback?: string) => string;
 }
 
@@ -26,6 +27,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       const savedLang = await storage.getLanguage();
       if (savedLang === "vi" || savedLang === "en") {
         setLanguageState(savedLang);
+      } else {
+        setLanguageState("vi");
       }
     };
     loadLanguage();
@@ -36,6 +39,11 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     await storage.setLanguage(lang);
   };
 
+  const toggleLanguage = async () => {
+    const newLang: Language = language === "vi" ? "en" : "vi";
+    await setLanguage(newLang);
+  };
+
   const t = (path: string, fallback?: string): string => {
     const keys = path.split(".");
     let current: any = translationsMap[language];
@@ -44,6 +52,17 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (current && typeof current === "object" && key in current) {
         current = current[key];
       } else {
+        // Fallback to Vietnamese if key missing in current language
+        let viCurrent: any = translationsMap["vi"];
+        for (const k of keys) {
+          if (viCurrent && typeof viCurrent === "object" && k in viCurrent) {
+            viCurrent = viCurrent[k];
+          } else {
+            viCurrent = undefined;
+            break;
+          }
+        }
+        if (typeof viCurrent === "string") return viCurrent;
         return fallback || path;
       }
     }
@@ -56,7 +75,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );
