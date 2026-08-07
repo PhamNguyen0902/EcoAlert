@@ -78,7 +78,7 @@ test('valid category, severity, confidence, and metadata are included in persist
     );
 
     assert.ok(updated);
-    assert.equal(capturedUpdate.$set.category, AlertCategory.ILLEGAL_DUMPING);
+    assert.equal(capturedUpdate.$set.category, 'UNCLASSIFIED');
     assert.equal(capturedUpdate.$set.severity, Severity.HIGH);
     assert.equal(capturedUpdate.$set.aiConfidence, 0);
     assert.equal(capturedUpdate.$set.aiAnalysisId, 'analysis-event-1');

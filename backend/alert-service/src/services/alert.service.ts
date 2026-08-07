@@ -524,19 +524,18 @@ export class AlertService {
     if (alert.aiAnalysisId === analysis.analysisId) return alert;
 
     const currentStatus = normalizeStatus(alert.status);
-    // Tính năng an toàn: Đòi hỏi độ tự tin > 85% mới duyệt tự động
-    const newStatus = analysis.confidence > 0.85
-      ? AlertStatus.VERIFIED
-      : AlertStatus.AI_ANALYZING;
+    // Theo góp ý của Thầy: AI không tự động duyệt VERIFIED mà giữ PENDING cho con người xác nhận.
+    // Nếu độ tin cậy thấp (< 60%), hệ thống gán phân loại là UNCLASSIFIED (Chưa phân loại).
+    const newStatus = AlertStatus.PENDING;
+    const finalCategory = analysis.confidence >= 0.60 ? analysis.category : 'UNCLASSIFIED';
     const analyzedAt = new Date();
     const actor: WorkflowActor = { id: 'ai-service', role: 'SYSTEM' };
     
     const update: Record<string, unknown> = {
       $set: {
-        category: analysis.category,
+        category: finalCategory,
         aiConfidence: analysis.confidence,
         aiSuggestedPriority: analysis.severity,
-        // 👇 THÊM DÒNG NÀY ĐỂ GHI NHẬN MỨC ĐỘ NGHIÊM TRỌNG TỪ AI 👇
         severity: analysis.severity,
         aiSummary: analysis.summary,
         aiReasoningSummary: analysis.reasoningSummary,
