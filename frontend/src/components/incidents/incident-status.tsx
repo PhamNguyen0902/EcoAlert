@@ -111,7 +111,7 @@ export function getStatusDescription(status?: string | null) {
 }
 
 export function formatIncidentCategory(category?: string | null) {
-  if (!category) return 'Uncategorized';
+  if (!category || category.toLowerCase() === 'unclassified') return 'Chưa phân loại (Cần kiểm tra thủ công)';
   return category.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
