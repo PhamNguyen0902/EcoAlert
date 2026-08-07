@@ -147,8 +147,9 @@ services:
       - MONGO_URI=${MONGO_URI_AI}
       - ALERT_MONGO_URI=${MONGO_URI_ALERT}
       - REDIS_URL=${REDIS_URL}
-      # OpenRouter credentials and task-specific models come only from env_file.
-      # This prevents blank root Compose variables from overriding valid service values.
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_ANALYSIS_MODEL=${OPENROUTER_ANALYSIS_MODEL:-openai/gpt-4o-mini}
+      - OPENROUTER_CHAT_MODEL=${OPENROUTER_CHAT_MODEL:-meta-llama/llama-3.1-8b-instruct}
       - ASSISTANT_RATE_LIMIT=${ASSISTANT_RATE_LIMIT}
       - ASSISTANT_RATE_WINDOW_SECONDS=${ASSISTANT_RATE_WINDOW_SECONDS}
       - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}
