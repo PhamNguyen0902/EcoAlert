@@ -36,9 +36,7 @@ const normalizedCategory = (category?: AlertCategory | null): string =>
   typeof category === "string" ? category.trim().toLowerCase() : "";
 
 export const hasCompletedAiClassification = (alert?: Alert | null): boolean => {
-  if (!alert?.aiAnalysisId && !alert?.aiAnalyzedAt) return false;
-  const category = normalizedCategory(alert.category);
-  return Boolean(category && category !== "unclassified" && alert.severity);
+  return Boolean(alert?.aiAnalysisId || alert?.aiAnalyzedAt);
 };
 
 export const getAiAnalysisState = (
@@ -71,7 +69,7 @@ export const getCategoryLabel = (
   const knownLabel = CATEGORY_LABELS[normalized]?.[language];
   if (knownLabel) return knownLabel;
   if (!normalized || normalized === "unclassified") {
-    return language === "vi" ? "Chưa phân loại" : "Not classified";
+    return language === "vi" ? "Chưa phân loại (Cần kiểm tra thủ công)" : "Unclassified (Manual check required)";
   }
 
   return normalized

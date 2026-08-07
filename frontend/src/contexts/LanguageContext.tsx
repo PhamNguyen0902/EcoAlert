@@ -157,7 +157,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Officer Map & Stats
     "officer_map.layer_title": "Lớp bản đồ GIS",
-    "officer_map.heatmap": "Bản đồ nhiệt (Heatmap)",
+    "officer_map.heatmap": "Bản đồ mật độ báo cáo sự cố",
     "officer_map.clusters": "Cụm điểm sự cố",
     "officer_map.filter_radius": "Bán kính giám sát",
     "officer_stats.sla_title": "Tỷ lệ đáp ứng SLA",
@@ -384,9 +384,9 @@ const translations: Record<Language, Record<string, string>> = {
     "map.low": "Thấp",
     "map.visualization_mode": "Chế độ hiển thị bản đồ",
     "map.marker_view": "Sự cố",
-    "map.heatmap_view": "Bản đồ nhiệt",
+    "map.heatmap_view": "Mật độ báo cáo sự cố",
     "map.heatmap_explanation":
-      "Cường độ bản đồ nhiệt phản ánh cả số lượng sự cố trong khu vực và mức độ nghiêm trọng.",
+      "Bản đồ thể hiện mật độ tập trung các báo cáo sự cố môi trường giúp bộ phận quản lý ưu tiên phân bổ nhân sự kiểm tra.",
     "map.category": "Danh mục",
     "map.all_categories": "Tất cả danh mục",
     "map.status": "Trạng thái",
@@ -760,9 +760,9 @@ const translations: Record<Language, Record<string, string>> = {
     "map.low": "Low",
     "map.visualization_mode": "Map visualization mode",
     "map.marker_view": "Incidents",
-    "map.heatmap_view": "Heatmap",
+    "map.heatmap_view": "Incident Density",
     "map.heatmap_explanation":
-      "Heatmap intensity reflects both the number of incidents in an area and their severity.",
+      "Map shows incident density concentration to help managers prioritize dispatching officers for inspection.",
     "map.category": "Category",
     "map.all_categories": "All categories",
     "map.status": "Status",
