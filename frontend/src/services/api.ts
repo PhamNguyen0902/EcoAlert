@@ -1,7 +1,23 @@
 import axios from "axios";
 
+const getApiBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    const { protocol, hostname, port } = window.location;
+    // Nếu chạy qua Vite dev/preview port 5173 hoặc 4173 -> tự động trỏ sang port 3000 của IP/Domain hiện tại
+    if (port === "5173" || port === "4173") {
+      return `${protocol}//${hostname}:3000/api`;
+    }
+    // Nếu chạy qua domain/cổng Nginx/Gateway chính
+    return `${protocol}//${hostname}${port ? `:${port}` : ""}/api`;
+  }
+  return "http://localhost:3000/api";
+};
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
+  baseURL: getApiBaseUrl(),
   headers: { "Content-Type": "application/json" },
 });
 

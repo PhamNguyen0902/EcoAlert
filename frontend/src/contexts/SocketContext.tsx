@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { playNotificationSound } from '@/lib/audio-alert';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -27,7 +28,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     // Target API Gateway port 3000 directly or via Vite proxy
-    const socketUrl = window.location.port === '5173' ? 'http://localhost:3000' : window.location.origin;
+    const { protocol, hostname, port } = window.location;
+    const socketUrl = (port === '5173' || port === '4173') ? `${protocol}//${hostname}:3000` : window.location.origin;
     console.log('[Web Socket] Connecting to:', socketUrl);
 
     const socketInstance = io(socketUrl, {
@@ -67,6 +69,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     socketInstance.on('alert:created', (data: any) => {
       console.log('[Web Socket] New alert created:', data);
+      playNotificationSound('alert');
       const alertId = data._id || data.alertId || 'new';
       toast.success(`Sự cố mới vừa được báo cáo: ${data.title || 'Không có tiêu đề'}`, {
         id: `alert-created-${alertId}`,
@@ -78,6 +81,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     socketInstance.on('alert:updated', (data: any) => {
       console.log('[Web Socket] Alert updated:', data);
+      playNotificationSound('info');
       const alertId = data._id || data.alertId || 'update';
       if (data.isDeleted || data.status === 'deleted') {
         toast('Sự cố đã bị xóa!', {
@@ -99,6 +103,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     socketInstance.on('image:analyzed', (data: any) => {
       console.log('[Web Socket] Image analyzed by AI:', data);
+      playNotificationSound('success');
       const alertId = data._id || data.alertId || 'analyzed';
       toast(`AI đã phân tích sự cố! Mức độ: ${data.suggestedPriority || data.severity || 'đã cập nhật'}`, {
         id: `image-analyzed-${alertId}`,
@@ -111,11 +116,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     socketInstance.on('officer:assigned', (data: any) => {
       console.log('[Web Socket] Officer assigned:', data);
+      playNotificationSound('alert');
       refreshActiveData();
     });
 
     socketInstance.on('realtime:event', (data: any) => {
       console.log('[Web Socket] Realtime event:', data);
+      playNotificationSound('info');
       refreshActiveData();
     });
 

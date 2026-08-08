@@ -13,6 +13,7 @@ import {
 } from "../ui/dropdown-menu"
 import { ThemeToggle } from "../ui/theme-toggle"
 import { LanguageToggle } from "../ui/language-toggle"
+import { SoundToggle } from "../ui/sound-toggle"
 import { useUnreadCount } from "../../hooks/hooks"
 
 export function Topbar() {
@@ -43,6 +44,7 @@ export function Topbar() {
       </div>
       
       <div className="flex items-center gap-4">
+        <SoundToggle />
         <LanguageToggle />
         <ThemeToggle />
 

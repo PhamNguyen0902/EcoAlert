@@ -3,6 +3,7 @@ import { Bell, Search, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
+import { SoundToggle } from '@/components/ui/sound-toggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUnreadCount } from '@/hooks/hooks';
 import {
@@ -48,6 +49,7 @@ export default function OfficerTopbar() {
           />
         </div>
 
+        <SoundToggle />
         <LanguageToggle />
         <ThemeToggle />
 

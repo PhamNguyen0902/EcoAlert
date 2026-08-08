@@ -26,6 +26,7 @@ import {
 import { HeatmapLayer } from '@/components/map/HeatmapLayer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { useGeolocation } from '@/features/citizen/hooks/useGeolocation';
 import {
   buildHeatPoints,
   countIncidentsBySeverity,
@@ -33,6 +34,8 @@ import {
   formatMapLabel,
   getIncidentLatLng,
   MapCategoryFilter,
+  MapDateRangeFilter,
+  MapRadiusFilter,
   MapSeverityFilter,
   MapStatusFilter,
   MapVisualizationMode,
@@ -73,11 +76,19 @@ const severityTranslationKey: Record<Severity, string> = {
 export default function OfficerMap() {
   const { t } = useLanguage();
   const { data, isLoading } = useAlerts(1, 1000);
+  const { latitude: userLat, longitude: userLng } = useGeolocation();
+  const userCoords = useMemo<[number, number] | null>(
+    () => (userLat !== null && userLng !== null ? [userLat, userLng] : null),
+    [userLat, userLng],
+  );
+
   const [mode, setMode] = useState<MapVisualizationMode>('markers');
   const [search, setSearch] = useState('');
   const [severity, setSeverity] = useState<MapSeverityFilter>('all');
   const [category, setCategory] = useState<MapCategoryFilter>('all');
   const [status, setStatus] = useState<MapStatusFilter>('all');
+  const [dateRange, setDateRange] = useState<MapDateRangeFilter>('all');
+  const [radius, setRadius] = useState<MapRadiusFilter>('all');
 
   const alerts = data?.items ?? [];
   const mappableAlerts = useMemo(
@@ -101,8 +112,11 @@ export default function OfficerMap() {
       severity: 'all',
       category,
       status,
+      dateRange,
+      radius,
+      userCoords,
     }),
-    [mappableAlerts, search, category, status],
+    [mappableAlerts, search, category, status, dateRange, radius, userCoords],
   );
   const filteredAlerts = useMemo(
     () => filterIncidentsForMap(severityBaseAlerts, {
@@ -110,6 +124,8 @@ export default function OfficerMap() {
       severity,
       category: 'all',
       status: 'all',
+      dateRange: 'all',
+      radius: 'all',
     }),
     [severityBaseAlerts, severity],
   );
@@ -243,6 +259,43 @@ export default function OfficerMap() {
                 <SelectItem value="active">{t('map.active_incidents')}</SelectItem>
                 <SelectItem value="resolved">{t('status.resolved')}</SelectItem>
                 <SelectItem value="closed">{t('map.closed')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+
+          <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
+            <span>Thời gian</span>
+            <Select
+              value={dateRange}
+              onValueChange={(value) => setDateRange(value as MapDateRangeFilter)}
+            >
+              <SelectTrigger aria-label="Thời gian">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả thời gian</SelectItem>
+                <SelectItem value="today">Hôm nay (24h)</SelectItem>
+                <SelectItem value="7days">7 ngày qua</SelectItem>
+                <SelectItem value="30days">30 ngày qua</SelectItem>
+              </SelectContent>
+            </Select>
+          </label>
+
+          <label className="space-y-1.5 text-xs font-medium text-muted-foreground">
+            <span>Bán kính vị trí</span>
+            <Select
+              value={radius}
+              onValueChange={(value) => setRadius(value as MapRadiusFilter)}
+            >
+              <SelectTrigger aria-label="Bán kính vị trí">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toàn bộ vùng</SelectItem>
+                <SelectItem value="2km">Trong bán kính 2 km</SelectItem>
+                <SelectItem value="5km">Trong bán kính 5 km</SelectItem>
+                <SelectItem value="10km">Trong bán kính 10 km</SelectItem>
+                <SelectItem value="20km">Trong bán kính 20 km</SelectItem>
               </SelectContent>
             </Select>
           </label>

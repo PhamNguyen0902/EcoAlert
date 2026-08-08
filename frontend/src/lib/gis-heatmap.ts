@@ -5,12 +5,17 @@ export type MapVisualizationMode = 'markers' | 'heatmap';
 export type MapSeverityFilter = Severity | 'all';
 export type MapCategoryFilter = AlertCategory | 'all';
 export type MapStatusFilter = 'all' | 'active' | 'resolved' | 'closed';
+export type MapDateRangeFilter = 'all' | 'today' | '7days' | '30days';
+export type MapRadiusFilter = 'all' | '2km' | '5km' | '10km' | '20km';
 
 export interface MapIncidentFilters {
   search: string;
   severity: MapSeverityFilter;
   category: MapCategoryFilter;
   status: MapStatusFilter;
+  dateRange?: MapDateRangeFilter;
+  radius?: MapRadiusFilter;
+  userCoords?: [number, number] | null;
 }
 
 export interface SeverityCounts extends Record<Severity, number> {
@@ -117,6 +122,61 @@ const matchesStatusFilter = (status: AlertStatus, filter: MapStatusFilter): bool
   return status === filter;
 };
 
+export const calculateHaversineDistanceKm = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number => {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const matchesDateRangeFilter = (
+  createdAt?: string,
+  filter?: MapDateRangeFilter,
+): boolean => {
+  if (!filter || filter === 'all' || !createdAt) return true;
+  const created = new Date(createdAt).getTime();
+  const now = Date.now();
+  const diffDays = (now - created) / (1000 * 3600 * 24);
+
+  if (filter === 'today') return diffDays <= 1;
+  if (filter === '7days') return diffDays <= 7;
+  if (filter === '30days') return diffDays <= 30;
+  return true;
+};
+
+const matchesRadiusFilter = (
+  alert: Alert,
+  radius?: MapRadiusFilter,
+  userCoords?: [number, number] | null,
+): boolean => {
+  if (!radius || radius === 'all' || !userCoords) return true;
+  const incidentLatLng = getIncidentLatLng(alert);
+  if (!incidentLatLng) return false;
+
+  const maxKm = parseInt(radius, 10);
+  if (Number.isNaN(maxKm)) return true;
+
+  const distance = calculateHaversineDistanceKm(
+    userCoords[0],
+    userCoords[1],
+    incidentLatLng[0],
+    incidentLatLng[1],
+  );
+  return distance <= maxKm;
+};
+
 export const filterIncidentsForMap = (
   alerts: readonly Alert[],
   filters: MapIncidentFilters,
@@ -134,8 +194,21 @@ export const filterIncidentsForMap = (
       filters.category === 'all' ||
       normalizeMapCategory(alert.category) === normalizeMapCategory(filters.category);
     const matchesStatus = matchesStatusFilter(alert.status, filters.status);
+    const matchesDate = matchesDateRangeFilter(alert.createdAt, filters.dateRange);
+    const matchesDistance = matchesRadiusFilter(
+      alert,
+      filters.radius,
+      filters.userCoords,
+    );
 
-    return matchesSearch && matchesSeverity && matchesCategory && matchesStatus;
+    return (
+      matchesSearch &&
+      matchesSeverity &&
+      matchesCategory &&
+      matchesStatus &&
+      matchesDate &&
+      matchesDistance
+    );
   });
 };
 
