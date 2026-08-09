@@ -107,69 +107,69 @@ export default function UserManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('officer_reports.table_action')}</DropdownMenuLabel>
                           <DropdownMenuItem
                             onClick={async () => {
                               try {
                                 await changeRole.mutateAsync({ id: user._id, role: 'ADMIN' });
-                                toast.success('Đã cập nhật vai trò: Quản trị viên (Admin)');
+                                toast.success(t('toast.role_updated_admin'));
                               } catch (err: any) {
-                                toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi đổi vai trò');
+                                toast.error(err.response?.data?.message || t('toast.role_update_failed'));
                               }
                             }}
                           >
-                            Đổi thành Admin
+                            {t('admin_users.role_admin')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={async () => {
                               try {
                                 await changeRole.mutateAsync({ id: user._id, role: 'OFFICER' });
-                                toast.success('Đã cập nhật vai trò: Cán bộ (Officer)');
+                                toast.success(t('toast.role_updated_officer'));
                               } catch (err: any) {
-                                toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi đổi vai trò');
+                                toast.error(err.response?.data?.message || t('toast.role_update_failed'));
                               }
                             }}
                           >
-                            Đổi thành Cán bộ (Officer)
+                            {t('admin_users.role_officer')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={async () => {
                               try {
                                 await changeRole.mutateAsync({ id: user._id, role: 'CITIZEN' });
-                                toast.success('Đã cập nhật vai trò: Người dân (Citizen)');
+                                toast.success(t('toast.role_updated_citizen'));
                               } catch (err: any) {
-                                toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi đổi vai trò');
+                                toast.error(err.response?.data?.message || t('toast.role_update_failed'));
                               }
                             }}
                           >
-                            Đổi thành Người dân (Citizen)
+                            {t('admin_users.role_citizen')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={async () => {
                               try {
                                 await toggleStatus.mutateAsync({ id: user._id, isActive: !user.isActive });
-                                toast.success(`Đã ${!user.isActive ? 'kích hoạt' : 'khóa'} tài khoản`);
+                                toast.success(t('toast.account_status_updated'));
                               } catch (err: any) {
-                                toast.error(err.response?.data?.message || 'Có lỗi xảy ra');
+                                toast.error(err.response?.data?.message || t('toast.category_status_failed'));
                               }
                             }}
                           >
-                            {user.isActive ? 'Khóa tài khoản' : 'Kích hoạt tài khoản'}
+                            {user.isActive ? t('admin_officers.deactivate') : t('admin_officers.activate')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-600 font-medium"
                             onClick={async () => {
-                              if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+                              if (confirm('Delete user?')) {
                                 try {
                                   await deleteUser.mutateAsync(user._id);
-                                  toast.success('Đã xóa người dùng');
+                                  toast.success(t('toast.user_deleted_success'));
                                 } catch (err: any) {
-                                  toast.error(err.response?.data?.message || 'Có lỗi xảy ra');
+                                  toast.error(err.response?.data?.message || t('toast.category_delete_failed'));
                                 }
                               }
                             }}
                           >
-                            Xóa người dùng
+                            {t('btn.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

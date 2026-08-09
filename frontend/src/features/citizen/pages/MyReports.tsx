@@ -52,7 +52,7 @@ export default function MyReports() {
   // Hàm xử lý Xóa / Hủy báo cáo
   const handleDelete = (id: string, status: string) => {
     if (status !== "pending" && status !== "ai_analyzing") {
-      toast.error("Chỉ có thể xóa báo cáo khi đang ở trạng thái chờ duyệt!");
+      toast.error(t("toast.delete_pending_only"));
       return;
     }
 
@@ -61,10 +61,10 @@ export default function MyReports() {
     ) {
       deleteAlertMutation.mutate(id, {
         onSuccess: () => {
-          toast.success("Đã xóa báo cáo thành công!");
+          toast.success(t("toast.report_deleted_success"));
         },
         onError: (err: any) => {
-          toast.error(err.response?.data?.message || "Xóa báo cáo thất bại.");
+          toast.error(err.response?.data?.message || t("toast.report_delete_failed"));
         },
       });
     }

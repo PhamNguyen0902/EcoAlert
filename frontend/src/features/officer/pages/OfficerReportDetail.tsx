@@ -34,6 +34,7 @@ import {
 } from '@/hooks/hooks';
 import { alertService } from '@/services/services';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { hasValidCoordinates } from '@/lib/maps';
 import { Badge } from '@/components/ui/badge';
@@ -74,6 +75,7 @@ const formatTimestamp = (value?: string) => value ? format(new Date(value), 'PPp
 export default function OfficerReportDetail() {
   const { id = '' } = useParams<{ id: string }>();
   const { user, role } = useAuth();
+  const { t } = useLanguage();
   const { data: alert, isLoading, isError, error } = useAlert(id);
   const { data: officerData } = useUsers(1, 100, 'OFFICER', undefined, role === 'ADMIN');
   const assignOfficer = useAssignOfficer();
@@ -152,7 +154,9 @@ export default function OfficerReportDetail() {
       { id, officerId: selectedOfficerId },
       {
         onSuccess: () => {
-          toast.success('Officer assigned successfully.');
+          toast.success(t('toast.officer_assigned_success'), {
+            id: `alert-updated-${id}`,
+          });
           setConfirmAction(null);
         },
         onError: (mutationError) => onWorkflowError(mutationError, 'Unable to assign this incident.'),
@@ -163,7 +167,9 @@ export default function OfficerReportDetail() {
   const handleStart = () => {
     startHandling.mutate(id, {
       onSuccess: () => {
-        toast.success('Incident handling started.');
+        toast.success(t('toast.handling_started_success'), {
+          id: `alert-updated-${id}`,
+        });
         setConfirmAction(null);
       },
       onError: (mutationError) => onWorkflowError(mutationError, 'Unable to start handling.'),
@@ -175,7 +181,9 @@ export default function OfficerReportDetail() {
       { id },
       {
         onSuccess: () => {
-          toast.success('Arrival confirmed.');
+          toast.success(t('toast.arrival_confirmed_success'), {
+            id: `alert-updated-${id}`,
+          });
           setConfirmAction(null);
         },
         onError: (mutationError) => onWorkflowError(mutationError, 'Unable to confirm arrival.'),
@@ -272,7 +280,9 @@ export default function OfficerReportDetail() {
       { id, data },
       {
         onSuccess: () => {
-          toast.success('Incident marked as resolved.');
+          toast.success(t('toast.incident_resolved_success'), {
+            id: `alert-updated-${id}`,
+          });
           setConfirmAction(null);
         },
         onError: (mutationError) => onWorkflowError(mutationError, 'Unable to resolve this incident.'),
@@ -285,7 +295,9 @@ export default function OfficerReportDetail() {
       { id, reviewNote: reviewNote.trim() || undefined },
       {
         onSuccess: () => {
-          toast.success('Incident closed successfully.');
+          toast.success(t('toast.incident_closed_success'), {
+            id: `alert-updated-${id}`,
+          });
           setConfirmAction(null);
         },
         onError: (mutationError) => onWorkflowError(mutationError, 'Unable to close this incident.'),

@@ -33,7 +33,7 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !email.trim() || !password.trim()) {
-      toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc');
+      toast.error(t('toast.fill_required_fields'));
       return;
     }
 
@@ -45,7 +45,7 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
         phone: phone || undefined,
         role: role.toUpperCase(),
       });
-      toast.success(`Created account ${role}`);
+      toast.success(t('toast.create_account_success'));
       onOpenChange(false);
       setFullName('');
       setEmail('');
@@ -57,7 +57,7 @@ export function CreateUserModal({ open, onOpenChange, defaultRole = 'OFFICER' }:
       const validationErrors = Array.isArray(err.response?.data?.errors) && err.response?.data?.errors.length > 0
         ? err.response?.data?.errors.join(', ')
         : null;
-      const errorText = validationErrors || serverMessage || err.message || 'Error creating account';
+      const errorText = validationErrors || serverMessage || err.message || t('toast.create_account_failed');
       toast.error(errorText);
     }
   };

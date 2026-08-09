@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { useLanguage } from './LanguageContext';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { playNotificationSound } from '@/lib/audio-alert';
@@ -19,12 +20,18 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const userRef = useRef(user);
+  const tRef = useRef(t);
 
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   useEffect(() => {
     // Target API Gateway port 3000 directly or via Vite proxy
@@ -71,7 +78,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('[Web Socket] New alert created:', data);
       playNotificationSound('alert');
       const alertId = data._id || data.alertId || 'new';
-      toast.success(`Sự cố mới vừa được báo cáo: ${data.title || 'Không có tiêu đề'}`, {
+      const titleStr = data.title ? ` ${data.title}` : '';
+      toast.success(`${tRef.current('toast.new_alert_created')}${titleStr}`, {
         id: `alert-created-${alertId}`,
         duration: 5000,
         position: 'top-right',
@@ -84,14 +92,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       playNotificationSound('info');
       const alertId = data._id || data.alertId || 'update';
       if (data.isDeleted || data.status === 'deleted') {
-        toast('Sự cố đã bị xóa!', {
-          id: `alert-deleted-${alertId}`,
+        toast(tRef.current('toast.alert_deleted'), {
+          id: `alert-updated-${alertId}`,
           icon: '🗑️',
           duration: 4000,
           position: 'top-right',
         });
       } else {
-        toast('Trạng thái sự cố đã được cập nhật!', {
+        toast(tRef.current('toast.alert_updated'), {
           id: `alert-updated-${alertId}`,
           icon: '🔄',
           duration: 4000,
@@ -105,7 +113,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('[Web Socket] Image analyzed by AI:', data);
       playNotificationSound('success');
       const alertId = data._id || data.alertId || 'analyzed';
-      toast(`AI đã phân tích sự cố! Mức độ: ${data.suggestedPriority || data.severity || 'đã cập nhật'}`, {
+      const severityStr = data.suggestedPriority || data.severity || '';
+      toast(`${tRef.current('toast.ai_analyzed')} ${severityStr}`, {
         id: `image-analyzed-${alertId}`,
         icon: '🤖',
         duration: 5000,

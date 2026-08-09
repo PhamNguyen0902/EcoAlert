@@ -19,7 +19,7 @@ export default function AdminSettings() {
     setSaving(true);
     setTimeout(() => {
       setSaving(false);
-      toast.success('Saved system settings');
+      toast.success(t('toast.settings_saved'));
     }, 500);
   };
 
