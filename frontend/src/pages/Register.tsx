@@ -4,15 +4,18 @@ import { useRegister } from '../hooks/hooks';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Leaf } from 'lucide-react';
+import { Leaf, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 import { ThemeToggle } from '../components/ui/theme-toggle';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Register() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const registerMutation = useRegister();
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -35,11 +38,11 @@ export default function Register() {
       },
       {
         onSuccess: () => {
-          toast.success('Registration successful! Please log in.');
+          toast.success(t('toast.register_success'));
           navigate('/login');
         },
         onError: (err: any) => {
-          toast.error(err.response?.data?.message || 'Registration failed');
+          toast.error(err.response?.data?.message || t('toast.register_failed'));
         }
       }
     );
@@ -102,8 +105,25 @@ export default function Register() {
 
               <div>
                 <Label htmlFor="password">Password</Label>
-                <div className="mt-2">
-                  <Input id="password" name="password" type="password" placeholder="Min. 6 characters" required value={formData.password} onChange={handleChange} />
+                <div className="mt-2 relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Min. 6 characters"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 

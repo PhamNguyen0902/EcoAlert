@@ -16,15 +16,22 @@ export {
 
 const logger = createLogger('ai-service');
 
+export interface IncidentAnalysis {
+  category: AlertCategory;
+  severity: Severity;
+  confidence: number;
+  summary: string;
+  reasoningSummary: string;
+}
+
 const incidentAnalysisSchema = z.object({
-  category: z.nativeEnum(AlertCategory),
-  severity: z.nativeEnum(Severity),
+  category: z.nativeEnum(AlertCategory as any),
+  severity: z.nativeEnum(Severity as any),
   confidence: z.number().min(0).max(1),
   summary: z.string().trim().min(1).max(500),
   reasoningSummary: z.string().trim().min(1).max(500),
 }).strict();
 
-export type IncidentAnalysis = z.infer<typeof incidentAnalysisSchema>;
 export type IncidentAnalysisMode = 'text' | 'vision' | 'text_fallback';
 
 export interface IncidentAnalysisResult extends IncidentAnalysis {
@@ -225,7 +232,7 @@ export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
       'OpenRouter returned an invalid incident analysis payload.',
     );
   }
-  return result.data;
+  return result.data as IncidentAnalysis;
 };
 
 const structuredResponseFormat = {

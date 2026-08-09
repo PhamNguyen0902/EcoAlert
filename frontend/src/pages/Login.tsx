@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Leaf } from "lucide-react";
+import { Leaf, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { getRoleHome } from "../lib/routes";
@@ -19,6 +19,7 @@ export default function Login() {
   const { login, isAuthenticated, role } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   if (isAuthenticated && role) {
     const targetPath = getRoleHome(role);
@@ -35,7 +36,7 @@ export default function Login() {
         onSuccess: (data) => {
           const loginData = data.data;
 
-          toast.success("Successfully logged in", { duration: 2000 });
+          toast.success(t("toast.login_success"), { duration: 2000 });
 
           login({
             token: loginData.token || loginData.accessToken,
@@ -95,17 +96,26 @@ export default function Login() {
 
               <div>
                 <Label htmlFor="password">{t("auth.password")}</Label>
-                <div className="mt-2">
+                <div className="mt-2 relative">
                   <Input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
+                    className="pr-10"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 
