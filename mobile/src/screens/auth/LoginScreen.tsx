@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
-import { Mail, Lock, ShieldAlert, Sun, Moon, Globe } from "lucide-react-native";
+import { Mail, Lock, ShieldAlert, Sun, Moon, Globe, Eye, EyeOff } from "lucide-react-native";
 import { useLogin } from "../../hooks/useAuth";
 import { useFormValidation } from "../../hooks/useFormValidation";
 import { GlassCard } from "../../components/ui/GlassCard";
@@ -28,6 +28,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const loginMutation = useLogin();
   const passwordRef = useRef<TextInput>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { colors, isDark, setThemeMode, themeMode } = useTheme();
   const { language, setLanguage, t } = useLanguage();
@@ -146,7 +147,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             ref={passwordRef}
             label={t("auth.passwordLabel", "Password")}
             placeholder={t("auth.passwordPlaceholder", "••••••••")}
-            secureTextEntry
+            secureTextEntry={!showPassword}
             autoComplete="password"
             returnKeyType="go"
             onSubmitEditing={handleLogin}
@@ -154,6 +155,20 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onChangeText={(v: string) => setField("password", v)}
             error={errors.password}
             leftIcon={<Lock size={20} color={colors.textMuted} />}
+            rightIcon={
+              <TouchableOpacity
+                onPress={() => setShowPassword((prev) => !prev)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.textMuted} />
+                ) : (
+                  <Eye size={20} color={colors.textMuted} />
+                )}
+              </TouchableOpacity>
+            }
           />
 
           <TouchableOpacity

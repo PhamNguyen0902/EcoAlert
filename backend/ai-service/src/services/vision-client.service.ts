@@ -25,7 +25,7 @@ export const safeVisionErrorMetadata = (error: unknown): VisionErrorMetadata => 
     if (error.code) metadata.errorCode = error.code;
   }
   if (error instanceof z.ZodError) {
-    metadata.validationIssues = error.issues.slice(0, 5).map((issue) => ({
+    metadata.validationIssues = (error as z.ZodError).issues.slice(0, 5).map((issue: any) => ({
       path: issue.path.join('.') || '<root>',
       code: issue.code,
       message: issue.message,
@@ -67,8 +67,8 @@ const detectionSchema = z.object({
   wasteType: wasteTypeSchema.nullable().optional(),
   maskAreaPixels: z.number().int().nonnegative().nullable().optional(),
   maskCoverage: z.number().min(0).max(1).nullable().optional(),
-}).strict().superRefine((detection, context) => {
-  if (ECOALERT_CLASS_NAMES[detection.classId] !== detection.label) {
+}).strict().superRefine((detection: any, context: any) => {
+  if (ECOALERT_CLASS_NAMES[detection.classId as keyof typeof ECOALERT_CLASS_NAMES] !== detection.label) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'Vision class ID and label do not match the EcoAlert V1 taxonomy',
@@ -80,7 +80,7 @@ const detectionSchema = z.object({
 const visionResponseSchema = z.object({
   status: z.literal('COMPLETED'),
   detectorModel: z.string().refine(
-    (value) => value.replace(/\\/g, '/').split('/').pop() === ECOALERT_DETECTOR_MODEL,
+    (value: string) => value.replace(/\\/g, '/').split('/').pop() === ECOALERT_DETECTOR_MODEL,
     'Vision Service returned an unexpected detector model',
   ),
   segmenterModel: z.string().min(1).nullable().optional(),
@@ -102,7 +102,7 @@ const visionResponseSchema = z.object({
   segmentationTimeMs: z.number().int().nonnegative(),
   annotationTimeMs: z.number().int().nonnegative(),
   warnings: z.array(z.string()),
-}).strict().superRefine((result, context) => {
+}).strict().superRefine((result: any, context: any) => {
   if (result.totalDetectedObjects !== result.detections.length) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
@@ -234,7 +234,7 @@ export const analyzeImageWithVision = async (
     segmenterModel: parsed.segmenterModel || undefined,
     imageWidth: parsed.imageWidth,
     imageHeight: parsed.imageHeight,
-    detections: parsed.detections.map((item) => ({
+    detections: parsed.detections.map((item: any) => ({
       ...item,
       wasteType: item.wasteType || undefined,
       maskAreaPixels: item.maskAreaPixels ?? undefined,
