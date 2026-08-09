@@ -137,7 +137,7 @@ export default function CreateAlert() {
     const latitude = Number.parseFloat(suggestion.lat);
     const longitude = Number.parseFloat(suggestion.lon);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      toast.error('This address does not include a valid location. Please choose another result.');
+      toast.error(t('toast.invalid_address_location'));
       return;
     }
     confirmLocation({ latitude, longitude, address: suggestion.display_name });
@@ -145,27 +145,27 @@ export default function CreateAlert() {
 
   const handleGetCurrentLocation = () => {
     if (!('geolocation' in navigator)) {
-      toast.error('Your browser does not support location services.');
+      toast.error(t('toast.browser_no_location'));
       return;
     }
 
     setIsLocating(true);
-    toast.loading('Finding your current location…', { id: 'geo' });
+    toast.loading(t('toast.locating_current'), { id: 'geo' });
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
           const locationAddress = await getAddressForCoordinates(coords.latitude, coords.longitude);
           confirmLocation({ latitude: coords.latitude, longitude: coords.longitude, address: locationAddress });
-          toast.success('Current location selected.', { id: 'geo' });
+          toast.success(t('toast.current_location_selected'), { id: 'geo' });
         } catch {
-          toast.error('We could not confirm your current location. Please try again.', { id: 'geo' });
+          toast.error(t('toast.cannot_confirm_location'), { id: 'geo' });
         } finally {
           setIsLocating(false);
         }
       },
       () => {
         setIsLocating(false);
-        toast.error('Location access was unavailable. Check your browser permission and try again.', { id: 'geo' });
+        toast.error(t('toast.location_access_unavailable'), { id: 'geo' });
       },
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
     );
@@ -173,11 +173,11 @@ export default function CreateAlert() {
 
   const handleFileSelect = (selectedFile: File) => {
     if (!selectedFile.type.startsWith('image/')) {
-      toast.error('Please select a JPG, PNG, or WEBP image.');
+      toast.error(t('toast.select_image_format'));
       return;
     }
     if (selectedFile.size > MAX_EVIDENCE_SIZE) {
-      toast.error('The evidence image must be 10 MB or smaller.');
+      toast.error(t('toast.image_max_size'));
       return;
     }
 
@@ -202,12 +202,12 @@ export default function CreateAlert() {
     if (currentStep === 2) {
       const isAddressValid = await trigger('address');
       if (!isAddressValid || !selectedLocation) {
-        toast.error('Select and confirm the incident location before continuing.');
+        toast.error(t('toast.select_location_required'));
         return;
       }
     }
     if (currentStep === 3 && !file) {
-      toast.error('Please add one image as evidence before continuing.');
+      toast.error(t('toast.add_evidence_required'));
       return;
     }
     setCurrentStep((step) => Math.min(step + 1, steps.length));
@@ -221,7 +221,7 @@ export default function CreateAlert() {
       const formData = getValues();
       
       setIsUploadingEvidence(true);
-      toast.loading('Uploading evidence…', { id: 'submit' });
+      toast.loading(t('toast.uploading_evidence'), { id: 'submit' });
       
       const mediaUrl = await alertService.uploadMedia(file);
       toast.loading(t('report_create.submitting'), { id: 'submit' });
@@ -237,10 +237,10 @@ export default function CreateAlert() {
         mediaUrls: [mediaUrl],
       });
 
-      toast.success('Report submitted successfully.', { id: 'submit' });
+      toast.success(t('toast.report_submit_success'), { id: 'submit' });
       navigate('/dashboard');
     } catch (err: any) {
-      toast.error(getErrorMessage(err, 'Unable to submit the report. Please try again.'), { id: 'submit' });
+      toast.error(getErrorMessage(err, t('toast.report_submit_error')), { id: 'submit' });
     } finally {
       submissionInProgressRef.current = false;
       setIsUploadingEvidence(false);

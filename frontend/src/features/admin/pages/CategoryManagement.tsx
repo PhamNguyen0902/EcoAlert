@@ -81,7 +81,7 @@ export default function CategoryManagement() {
           id: editingCategory._id,
           data: { name, code, description, icon, defaultSeverity: defaultSeverity as any },
         });
-        toast.success('Cập nhật danh mục thành công');
+        toast.success(t('toast.category_updated'));
       } else {
         await createCategory.mutateAsync({
           name,
@@ -91,11 +91,11 @@ export default function CategoryManagement() {
           defaultSeverity: defaultSeverity as any,
           isActive: true,
         });
-        toast.success('Tạo danh mục mới thành công');
+        toast.success(t('toast.category_created'));
       }
       setIsModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Có lỗi xảy ra');
+      toast.error(err.response?.data?.message || t('toast.report_update_failed'));
     }
   };
 
@@ -105,9 +105,9 @@ export default function CategoryManagement() {
         id: cat._id,
         data: { isActive: !cat.isActive },
       });
-      toast.success(`Updated status`);
+      toast.success(t('toast.category_status_updated'));
     } catch {
-      toast.error('Error changing status');
+      toast.error(t('toast.category_status_failed'));
     }
   };
 
@@ -115,9 +115,9 @@ export default function CategoryManagement() {
     if (confirm('Delete category?')) {
       try {
         await deleteCategory.mutateAsync(id);
-        toast.success('Category deleted');
+        toast.success(t('toast.category_deleted'));
       } catch {
-        toast.error('Failed to delete category');
+        toast.error(t('toast.category_delete_failed'));
       }
     }
   };

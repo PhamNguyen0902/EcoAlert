@@ -48,7 +48,7 @@ export default function Profile() {
       payload,
       {
         onSuccess: (resData: any) => {
-          toast.success("Profile updated successfully! ✅");
+          toast.success(t("toast.profile_updated"));
           const updatedUser = resData?.data || { ...user, fullName, phone, avatar };
           const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
           localStorage.setItem(
@@ -58,7 +58,7 @@ export default function Profile() {
           setTimeout(() => window.location.reload(), 800);
         },
         onError: (err: any) => {
-          toast.error(err.response?.data?.message || "Profile update failed");
+          toast.error(err.response?.data?.message || t("toast.profile_update_failed"));
         },
       },
     );
@@ -67,11 +67,11 @@ export default function Profile() {
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error("Mật khẩu mới không khớp!");
+      toast.error(t("toast.password_mismatch"));
       return;
     }
     if (newPassword.length < 6) {
-      toast.error("Mật khẩu mới phải từ 6 ký tự trở lên!");
+      toast.error(t("toast.password_min_length"));
       return;
     }
 
@@ -79,13 +79,13 @@ export default function Profile() {
       { oldPassword, newPassword },
       {
         onSuccess: () => {
-          toast.success("Đổi mật khẩu thành công!");
+          toast.success(t("toast.change_password_success"));
           setOldPassword("");
           setNewPassword("");
           setConfirmPassword("");
         },
         onError: (err: any) => {
-          toast.error(err.response?.data?.message || "Đổi mật khẩu thất bại");
+          toast.error(err.response?.data?.message || t("toast.change_password_failed"));
         },
       },
     );

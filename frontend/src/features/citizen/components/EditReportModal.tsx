@@ -33,12 +33,12 @@ export default function EditReportModal({ alert, isOpen, onClose }: EditReportMo
 
     try {
       setIsUploading(true);
-      toast.loading("Uploading image...", { id: "upload" });
+      toast.loading(t("toast.uploading_image"), { id: "upload" });
       const url = await alertService.uploadMedia(file);
       setMediaUrls((prev) => [...prev, url]);
-      toast.success("Image uploaded successfully!", { id: "upload" });
+      toast.success(t("toast.upload_image_success"), { id: "upload" });
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to upload image", { id: "upload" });
+      toast.error(err.response?.data?.message || t("toast.upload_image_failed"), { id: "upload" });
     } finally {
       setIsUploading(false);
     }
@@ -52,11 +52,11 @@ export default function EditReportModal({ alert, isOpen, onClose }: EditReportMo
     e.preventDefault();
 
     if (!title || title.length < 5) {
-      toast.error("Title must be at least 5 characters");
+      toast.error(t("toast.title_min_length"));
       return;
     }
     if (!description || description.length < 10) {
-      toast.error("Description must be at least 10 characters");
+      toast.error(t("toast.desc_min_length"));
       return;
     }
 
@@ -72,12 +72,12 @@ export default function EditReportModal({ alert, isOpen, onClose }: EditReportMo
       },
       {
         onSuccess: () => {
-          toast.success("Report updated!");
+          toast.success(t("toast.report_updated_success"));
           onClose();
         },
         onError: (err: any) => {
           const apiError = err.response?.data;
-          let msg = "Failed to update report";
+          let msg = t("toast.report_update_failed");
           if (typeof apiError === 'object' && apiError?.errors?.length) {
             msg = apiError.errors.join(', ');
           } else if (typeof apiError === 'object' && apiError?.message) {

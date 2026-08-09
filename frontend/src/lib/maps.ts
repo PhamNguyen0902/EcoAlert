@@ -20,8 +20,13 @@ export const googleMapsDirectionsUrl = (latitude: number, longitude: number): st
 type GoogleMapsAction = 'location' | 'navigation';
 type ValidCoordinates = readonly [latitude: number, longitude: number];
 
+const getLang = (): 'en' | 'vi' => {
+  const lang = localStorage.getItem('ecoalert_lang');
+  return lang === 'en' ? 'en' : 'vi';
+};
+
 const locationUnavailable = (): false => {
-  toast.error('Location is unavailable.');
+  toast.error(getLang() === 'en' ? 'Location is unavailable.' : 'Không thể lấy thông tin vị trí.');
   return false;
 };
 
@@ -64,7 +69,7 @@ export const openGoogleMaps = (
       window.location.href = url;
       return true;
     } catch {
-      toast.error('Unable to open Google Maps. Please try again.');
+      toast.error(getLang() === 'en' ? 'Unable to open Google Maps. Please try again.' : 'Không thể mở Google Maps. Vui lòng thử lại.');
       return false;
     }
   }
@@ -84,7 +89,7 @@ export const copyCoordinates = async (latitude: unknown, longitude: unknown): Pr
 
   try {
     await navigator.clipboard.writeText(coordinates);
-    toast.success('Coordinates copied.');
+    toast.success(getLang() === 'en' ? 'Coordinates copied.' : 'Đã sao chép tọa độ.');
     return true;
   } catch {
     const textArea = document.createElement('textarea');
@@ -97,14 +102,14 @@ export const copyCoordinates = async (latitude: unknown, longitude: unknown): Pr
     try {
       const didCopy = document.execCommand('copy');
       if (didCopy) {
-        toast.success('Coordinates copied.');
+        toast.success(getLang() === 'en' ? 'Coordinates copied.' : 'Đã sao chép tọa độ.');
         return true;
       }
 
-      toast.error('Unable to copy coordinates. Please try again.');
+      toast.error(getLang() === 'en' ? 'Unable to copy coordinates. Please try again.' : 'Không thể sao chép tọa độ. Vui lòng thử lại.');
       return false;
     } catch {
-      toast.error('Unable to copy coordinates. Please try again.');
+      toast.error(getLang() === 'en' ? 'Unable to copy coordinates. Please try again.' : 'Không thể sao chép tọa độ. Vui lòng thử lại.');
       return false;
     } finally {
       document.body.removeChild(textArea);

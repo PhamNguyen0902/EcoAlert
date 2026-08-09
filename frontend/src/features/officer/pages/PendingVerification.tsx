@@ -148,7 +148,10 @@ export default function PendingVerification() {
       { id: confirm.id, status: confirm.status },
       {
         onSuccess: () => {
-          toast.success(`Report ${confirm.status === 'verified' ? 'accepted ✅' : 'rejected ❌'} successfully`);
+          const msgKey = confirm.status === 'verified' ? 'toast.report_accepted_success' : 'toast.report_rejected_success';
+          toast.success(t(msgKey), {
+            id: `alert-updated-${confirm.id}`,
+          });
           setConfirm(null);
         },
         onError: () => {

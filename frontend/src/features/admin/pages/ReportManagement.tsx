@@ -87,7 +87,7 @@ export default function ReportManagement() {
                           onClick={() => {
                             if(confirm('Delete report?')) {
                               deleteAlert.mutate(alert._id);
-                              toast.success('Report deleted');
+                              toast.success(t('toast.report_deleted_success'));
                             }
                           }}
                         >

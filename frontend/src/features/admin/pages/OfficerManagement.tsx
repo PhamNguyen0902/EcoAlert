@@ -69,7 +69,7 @@ export default function OfficerManagement() {
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => { toggleStatus.mutate({ id: officer._id, isActive: !officer.isActive }); toast.success('Status updated'); }}
+                    onClick={() => { toggleStatus.mutate({ id: officer._id, isActive: !officer.isActive }); toast.success(t('toast.status_updated')); }}
                   >
                     {officer.isActive ? t('admin_officers.deactivate') : t('admin_officers.activate')}
                   </Button>
