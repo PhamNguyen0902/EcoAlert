@@ -27,6 +27,9 @@ import {
   getWorkflowStatusLabel,
 } from "../../utils/aiAnalysis";
 
+import { useOfflineSync } from "../../hooks/useOfflineSync";
+import { CloudUpload, RefreshCw, WifiOff } from "lucide-react-native";
+
 export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
@@ -34,7 +37,16 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const { data: profile } = useProfile();
   const [editingAlert, setEditingAlert] = useState<AlertItem | null>(null);
 
+  const { offlineDrafts, offlineCount, isSyncing, syncOfflineDrafts, isOffline } = useOfflineSync();
   const deleteAlertMutation = useDeleteAlert();
+
+  const handleSyncOffline = async () => {
+    const res = await syncOfflineDrafts();
+    RNAlert.alert(
+      t("modals.successTitle", "Đồng bộ hoàn tất"),
+      `Đã gửi thành công ${res.successCount} báo cáo ngoại tuyến.${res.errorCount > 0 ? ` Có ${res.errorCount} báo cáo lỗi.` : ""}`,
+    );
+  };
 
   const filterParams = React.useMemo<Record<string, string>>(
     () => {
@@ -175,6 +187,41 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         refreshControl={
           <RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={colors.primary} />
         }
+        ListHeaderComponent={
+          offlineCount > 0 ? (
+            <Card
+              style={[
+                styles.offlineSyncBanner,
+                {
+                  backgroundColor: isDark ? "rgba(245,158,11,0.2)" : "#FEF3C7",
+                  borderColor: isDark ? "rgba(245,158,11,0.4)" : "#F59E0B",
+                },
+              ]}
+            >
+              <View style={styles.offlineSyncHeader}>
+                <CloudUpload size={20} color={isDark ? "#FBBF24" : "#D97706"} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.offlineSyncTitle, { color: isDark ? "#FDE047" : "#92400E" }]}>
+                    Có {offlineCount} báo cáo sự cố đang chờ gửi
+                  </Text>
+                  <Text style={[styles.offlineSyncSub, { color: isDark ? "#FCD34D" : "#B45309" }]}>
+                    Báo cáo được tạo khi ngoại tuyến và sẽ tự động gửi khi có kết nối mạng.
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.syncBtn, { backgroundColor: colors.primary }]}
+                onPress={() => void handleSyncOffline()}
+                disabled={isSyncing || isOffline}
+              >
+                <RefreshCw size={14} color="#FFF" style={isSyncing ? styles.spinIcon : undefined} />
+                <Text style={styles.syncBtnText}>
+                  {isSyncing ? "Đang đồng bộ..." : isOffline ? "Chờ kết nối lại..." : "Đồng bộ ngay"}
+                </Text>
+              </TouchableOpacity>
+            </Card>
+          ) : null
+        }
         ListEmptyComponent={
           !isLoading ? (
             <Card style={styles.emptyCard}>
@@ -255,5 +302,19 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   createBtnText: { fontSize: 14, fontWeight: "700", color: "#FFF" },
+  offlineSyncBanner: { padding: 14, borderWidth: 1, marginBottom: 14 },
+  offlineSyncHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
+  offlineSyncTitle: { fontSize: 14, fontWeight: "700" },
+  offlineSyncSub: { fontSize: 12, marginTop: 2, lineHeight: 16 },
+  syncBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  syncBtnText: { fontSize: 13, fontWeight: "700", color: "#FFF" },
+  spinIcon: { opacity: 0.8 },
 });
 
