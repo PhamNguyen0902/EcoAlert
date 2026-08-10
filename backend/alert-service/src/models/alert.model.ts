@@ -18,6 +18,45 @@ export interface IResolutionEvidence {
   uploadedBy: string;
   uploadedAt: Date;
   type: 'AFTER_TREATMENT';
+  capturedAt?: Date;
+  location?: { type: 'Point'; coordinates: [number, number] };
+  accuracyMeters?: number;
+  distanceFromIncidentMeters?: number;
+}
+
+export type ImageValidationDecision = 'VALID' | 'UNCERTAIN' | 'INVALID' | 'UNAVAILABLE';
+export type ClassificationStatus = 'AI_SUGGESTED' | 'USER_CONFIRMED' | 'USER_CORRECTED' | 'ADMIN_CONFIRMED' | 'ADMIN_CORRECTED' | 'UNCLASSIFIED';
+
+export interface IAlertClassification {
+  status: ClassificationStatus;
+  aiSuggestedCategory?: AlertCategory | null;
+  aiConfidence?: number | null;
+  aiReason?: string | null;
+  finalCategory?: AlertCategory | null;
+  finalCategorySource?: 'AI' | 'CITIZEN' | 'ADMIN' | null;
+  citizenSelectedCategory?: AlertCategory | null;
+  citizenDecisionAt?: Date | null;
+  confirmedBy?: string | null;
+  confirmedAt?: Date | null;
+}
+
+export interface IImageValidation {
+  decision: ImageValidationDecision;
+  isEnvironmentalIncident?: boolean | null;
+  confidence?: number | null;
+  suggestedCategory?: AlertCategory | null;
+  reason: string;
+  model?: string | null;
+  validatedAt: Date;
+}
+
+export interface IOfficerCheckIn {
+  officerId: string;
+  location: { type: 'Point'; coordinates: [number, number] };
+  accuracyMeters: number;
+  distanceFromIncidentMeters: number;
+  checkedInAt: Date;
+  verified: boolean;
 }
 
 export interface IStatusHistoryEntry {
@@ -39,6 +78,7 @@ export interface ITimelineEntry {
   note?: string;
   status?: AlertStatus;
   evidenceUrls?: string[];
+  metadata?: Record<string, unknown>;
   correlationId?: string;
 }
 
@@ -47,6 +87,8 @@ export interface IAlert extends BaseDocument {
   description: string;
   status: AlertStatus;
   category: AlertCategory | 'UNCLASSIFIED';
+  classification?: IAlertClassification;
+  imageValidation?: IImageValidation;
   severity: Severity;
   mediaUrls: string[];
   location: {
@@ -69,6 +111,7 @@ export interface IAlert extends BaseDocument {
     longitude: number;
     accuracy?: number;
   };
+  checkIn?: IOfficerCheckIn;
   aiConfidence?: number;
   aiSuggestedPriority?: Severity;
   aiSummary?: string;
@@ -126,7 +169,43 @@ const resolutionEvidenceSchema = new Schema<IResolutionEvidence>({
   uploadedBy: { type: String, required: true },
   uploadedAt: { type: Date, required: true },
   type: { type: String, enum: ['AFTER_TREATMENT'], required: true },
+  capturedAt: { type: Date },
+  location: { type: { type: String, enum: ['Point'] }, coordinates: { type: [Number] } },
+  accuracyMeters: { type: Number, min: 0 },
+  distanceFromIncidentMeters: { type: Number, min: 0 },
 }, { _id: true });
+
+const classificationSchema = new Schema<IAlertClassification>({
+  status: { type: String, enum: ['AI_SUGGESTED', 'USER_CONFIRMED', 'USER_CORRECTED', 'ADMIN_CONFIRMED', 'ADMIN_CORRECTED', 'UNCLASSIFIED'], required: true },
+  aiSuggestedCategory: { type: String, enum: [...Object.values(AlertCategory), null], default: null },
+  aiConfidence: { type: Number, min: 0, max: 1, default: null },
+  aiReason: { type: String, trim: true, default: null },
+  finalCategory: { type: String, enum: [...Object.values(AlertCategory), null], default: null },
+  finalCategorySource: { type: String, enum: ['AI', 'CITIZEN', 'ADMIN', null], default: null },
+  citizenSelectedCategory: { type: String, enum: [...Object.values(AlertCategory), null], default: null },
+  citizenDecisionAt: { type: Date, default: null },
+  confirmedBy: { type: String, default: null },
+  confirmedAt: { type: Date, default: null },
+}, { _id: false });
+
+const imageValidationSchema = new Schema<IImageValidation>({
+  decision: { type: String, enum: ['VALID', 'UNCERTAIN', 'INVALID', 'UNAVAILABLE'], required: true },
+  isEnvironmentalIncident: { type: Boolean, default: null },
+  confidence: { type: Number, min: 0, max: 1, default: null },
+  suggestedCategory: { type: String, enum: [...Object.values(AlertCategory), null], default: null },
+  reason: { type: String, trim: true, required: true },
+  model: { type: String, trim: true, default: null },
+  validatedAt: { type: Date, required: true },
+}, { _id: false });
+
+const checkInSchema = new Schema<IOfficerCheckIn>({
+  officerId: { type: String, required: true },
+  location: { type: { type: String, enum: ['Point'], required: true }, coordinates: { type: [Number], required: true } },
+  accuracyMeters: { type: Number, required: true, min: 0 },
+  distanceFromIncidentMeters: { type: Number, required: true, min: 0 },
+  checkedInAt: { type: Date, required: true },
+  verified: { type: Boolean, required: true },
+}, { _id: false });
 
 const statusHistorySchema = new Schema<IStatusHistoryEntry>({
   fromStatus: { type: String, enum: Object.values(AlertStatus) },
@@ -147,6 +226,7 @@ const timelineEntrySchema = new Schema<ITimelineEntry>({
   note: { type: String, trim: true },
   status: { type: String, enum: Object.values(AlertStatus) },
   evidenceUrls: [{ type: String }],
+  metadata: { type: Schema.Types.Mixed },
   correlationId: { type: String },
 }, { _id: true });
 
@@ -222,6 +302,8 @@ const alertSchema = new Schema<IAlert>({
     set: (value: unknown) => typeof value === 'string' ? value.toLowerCase() : value,
   },
   category: { type: String, default: 'UNCLASSIFIED' },
+  classification: { type: classificationSchema },
+  imageValidation: { type: imageValidationSchema },
   severity: {
     type: String,
     enum: [...Object.values(Severity), ...Object.values(Severity).map((value) => value.toUpperCase())],
@@ -249,6 +331,7 @@ const alertSchema = new Schema<IAlert>({
     longitude: { type: Number },
     accuracy: { type: Number },
   },
+  checkIn: { type: checkInSchema },
   aiConfidence: { type: Number },
   aiSuggestedPriority: {
     type: String,

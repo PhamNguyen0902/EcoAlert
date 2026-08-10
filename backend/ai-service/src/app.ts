@@ -5,6 +5,7 @@ import assistantRoutes from "./routes/assistant.routes";
 import { AssistantHttpError } from "./assistant/types";
 
 import { analyzeIncidentWithOpenRouter, translateTextWithOpenRouter } from "./services/openrouter.service";
+import { validateIncidentImage } from './services/image-validation.service';
 
 const app = express();
 
@@ -15,7 +16,6 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", service: "ai-service" });
 });
 
-app.use(['/', '/assistant'], assistantRoutes);
 
 // Route phân tích sự cố
 app.post('/analyze', async (req, res) => {
@@ -30,6 +30,15 @@ app.post('/analyze', async (req, res) => {
   } catch {
     res.status(503).json({ success: false, message: 'AI analysis is temporarily unavailable' });
   }
+});
+
+app.post('/validate-image', async (req, res) => {
+  const imageUrl = req.body?.imageUrl;
+  if (!imageUrl || typeof imageUrl !== 'string') {
+    return res.status(400).json({ success: false, message: 'imageUrl is required' });
+  }
+  const result = await validateIncidentImage(imageUrl);
+  return res.status(200).json({ success: true, data: result });
 });
 
 // Route dịch thuật AI (Vietnamese <-> English)
@@ -47,6 +56,10 @@ app.post('/translate', async (req, res) => {
 });
 
 // 2. Middleware xử lý lỗi phải nằm ở CUỐI CÙNG và được đóng ngoặc đầy đủ
+// Assistant endpoints keep their stricter internal-gateway authorization.
+// Operational AI endpoints above are authenticated by the API gateway.
+app.use(['/', '/assistant'], assistantRoutes);
+
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof AssistantHttpError) {
     return res.status(err.statusCode).json(errorResponse(err.message));

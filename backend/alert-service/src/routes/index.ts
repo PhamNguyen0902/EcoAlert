@@ -9,6 +9,7 @@ import {
   confirmArrivalSchema,
   createAlertSchema,
   resolveAlertSchema,
+  reviewClassificationSchema,
   updateAlertSchema,
   updateAlertStatusSchema,
 } from '../dtos/alert.dto';
@@ -40,6 +41,7 @@ router.get('/:id', asyncHandler(alertController.getAlertById));
 router.post('/:id/confirm', asyncHandler(alertController.confirmAlert));
 router.patch('/:id', validate(updateAlertSchema), asyncHandler(alertController.updateAlert));
 router.patch('/:id/status', validate(updateAlertStatusSchema), asyncHandler(alertController.updateStatus));
+router.post('/:id/classification/review', validate(reviewClassificationSchema), asyncHandler(alertController.reviewClassification));
 router.post('/:id/assign', validate(assignOfficerSchema), asyncHandler(alertController.assignOfficer));
 router.post('/:id/start', asyncHandler(alertController.startHandling));
 router.post('/:id/arrival', validate(confirmArrivalSchema), asyncHandler(alertController.confirmArrival));

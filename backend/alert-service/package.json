@@ -6,7 +6,7 @@
     "dev": "nodemon src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "npm run build && node --test dist/tests/ai-analysis.test.js"
+    "test": "npm run build && node --test dist/tests/*.test.js"
   },
   "dependencies": {
     "express": "^4.18.2",

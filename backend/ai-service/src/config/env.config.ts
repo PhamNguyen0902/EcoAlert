@@ -6,6 +6,11 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const booleanValue = (value: string | undefined, fallback = false) =>
   value === undefined ? fallback : value.trim().toLowerCase() === 'true';
 
+const threshold = (value: string | undefined, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 1 ? parsed : fallback;
+};
+
 export const envConfig = {
   port: parseInt(process.env.PORT || '3005', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -27,4 +32,6 @@ export const envConfig = {
   visionServiceUrl: process.env.VISION_SERVICE_URL || 'http://vision-service:3007',
   visionTimeoutMs: parseInt(process.env.VISION_TIMEOUT_MS || '45000', 10),
   mediaServiceUrl: process.env.MEDIA_SERVICE_URL || 'http://media-service:3003',
+  imageValidationHighThreshold: threshold(process.env.AI_IMAGE_VALIDATION_HIGH_THRESHOLD, 0.8),
+  imageValidationLowThreshold: threshold(process.env.AI_IMAGE_VALIDATION_LOW_THRESHOLD, 0.5),
 };

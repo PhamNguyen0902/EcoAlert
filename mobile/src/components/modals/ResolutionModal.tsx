@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { X, CheckCircle2, Camera, UploadCloud } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
@@ -18,8 +19,6 @@ import { useTheme } from "../../context/ThemeContext";
 import {
   useResolveIncident,
   useUploadMedia,
-  useStartHandling,
-  useConfirmArrival,
 } from "../../hooks/useAlerts";
 
 interface ResolutionModalProps {
@@ -27,8 +26,6 @@ interface ResolutionModalProps {
   alertId: string;
   onClose: () => void;
 }
-
-const DEFAULT_PROOF_PHOTO = "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=600&q=80";
 
 const TREATMENT_OPTIONS = [
   { label: "🗑️ Thu gom rác thải", value: "Thu gom & vận chuyển phế thải đến nơi xử lý" },
@@ -57,13 +54,11 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
   const [treatmentMethod, setTreatmentMethod] = useState("Thu gom & vận chuyển phế thải đến nơi xử lý");
   const [materialsUsed, setMaterialsUsed] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
-  const [evidenceUri, setEvidenceUri] = useState<string | null>(DEFAULT_PROOF_PHOTO);
+  const [evidenceUri, setEvidenceUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   const resolveMutation = useResolveIncident();
   const uploadMutation = useUploadMedia();
-  const startHandlingMutation = useStartHandling();
-  const confirmArrivalMutation = useConfirmArrival();
 
   const handleSelectTreatment = (val: string) => {
     setTreatmentMethod(val);
@@ -133,7 +128,8 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
       });
       setEvidenceUri(uploadedUrl);
     } catch (err) {
-      setEvidenceUri(localUri);
+      setEvidenceUri(null);
+      RNAlert.alert("Upload Error", "Could not upload the after-treatment image. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -148,9 +144,13 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
       RNAlert.alert("Validation Error", "Treatment Method is required.");
       return;
     }
+    if (!evidenceUri) {
+      RNAlert.alert("Validation Error", "An after-treatment image is required.");
+      return;
+    }
 
     try {
-      let uploadedUrl: string = evidenceUri || DEFAULT_PROOF_PHOTO;
+      let uploadedUrl: string = evidenceUri;
 
       if (evidenceUri && !evidenceUri.startsWith("http")) {
         uploadedUrl = await uploadMutation.mutateAsync({
@@ -159,16 +159,19 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
         });
       }
 
-      try {
-        await startHandlingMutation.mutateAsync(alertId);
-      } catch (e) {
-        // Ignored if already started
-      }
-
-      try {
-        await confirmArrivalMutation.mutateAsync({ id: alertId });
-      } catch (e) {
-        // Ignored if already confirmed
+      let location: { latitude: number; longitude: number; accuracyMeters: number } | undefined;
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status === "granted") {
+        try {
+          const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+          location = {
+            latitude: current.coords.latitude,
+            longitude: current.coords.longitude,
+            accuracyMeters: current.coords.accuracy ?? Number.MAX_SAFE_INTEGER,
+          };
+        } catch {
+          // GPS context is best-effort; the verified check-in remains mandatory server-side.
+        }
       }
 
       await resolveMutation.mutateAsync({
@@ -178,7 +181,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
           treatmentMethod: treatmentMethod.trim(),
           materialsUsed: materialsUsed.trim() || undefined,
           additionalNotes: additionalNotes.trim() || undefined,
-          evidence: [{ url: uploadedUrl }],
+          evidence: [{ url: uploadedUrl, ...(location ? { location } : {}) }],
         },
       });
 
@@ -355,8 +358,6 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
               loading={
                 resolveMutation.isPending ||
                 uploadMutation.isPending ||
-                startHandlingMutation.isPending ||
-                confirmArrivalMutation.isPending ||
                 isUploading
               }
               style={styles.submitBtn}

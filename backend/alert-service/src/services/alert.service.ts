@@ -6,10 +6,11 @@ import {
   ConfirmArrivalDto,
   CreateAlertDto,
   ResolveAlertDto,
+  ReviewClassificationDto,
   UpdateAlertDto,
   UpdateAlertStatusDto,
 } from '../dtos/alert.dto';
-import { IAlert, ITimelineEntry, IStatusHistoryEntry, WorkflowActorRole } from '../models/alert.model';
+import { IAlert, IAlertClassification, IImageValidation, ITimelineEntry, IStatusHistoryEntry, WorkflowActorRole } from '../models/alert.model';
 import { alertRepository } from '../repositories/alert.repository';
 import {
   AlertCategory,
@@ -24,6 +25,8 @@ import {
 } from '@ecoalert/shared';
 import { rabbitMQService } from './rabbitmq.service';
 import { userDirectoryService } from './user-directory.service';
+import { envConfig } from '../config/env.config';
+import { haversineDistanceMeters } from '../utils/geo-evidence.util';
 
 export interface WorkflowActor {
   id: string;
@@ -45,6 +48,19 @@ const normalizeStatus = (status?: string): AlertStatus =>
 const statusFilter = (status: AlertStatus) => ({
   $regex: new RegExp(`^${status}$`, 'i'),
 });
+
+const AI_SUPPORTED_CATEGORIES = new Set<AlertCategory>([
+  AlertCategory.ILLEGAL_DUMPING,
+  AlertCategory.ILLEGAL_CONSTRUCTION_WASTE,
+  AlertCategory.WATER_POLLUTION,
+  AlertCategory.AIR_POLLUTION,
+  AlertCategory.ILLEGAL_BURNING,
+  AlertCategory.FLOODING,
+  AlertCategory.FALLEN_TREE,
+]);
+
+const validAiSuggestion = (category?: AlertCategory | null, confidence?: number | null) =>
+  Boolean(category && confidence !== null && confidence !== undefined && confidence >= 0.5 && AI_SUPPORTED_CATEGORIES.has(category));
 
 export class AlertService {
   private ensureValidId(id: string) {
@@ -96,7 +112,7 @@ export class AlertService {
     label: string,
     actor: WorkflowActor,
     timestamp: Date,
-    options: Pick<ITimelineEntry, 'note' | 'status' | 'evidenceUrls'> = {},
+    options: Pick<ITimelineEntry, 'note' | 'status' | 'evidenceUrls' | 'metadata'> = {},
   ): ITimelineEntry {
     return {
       eventType,
@@ -134,9 +150,48 @@ export class AlertService {
     );
   }
 
-  async createAlert(citizenId: string, data: CreateAlertDto) {
+  async createAlert(actor: WorkflowActor, data: CreateAlertDto) {
+    this.requireRole(actor, ['CITIZEN']);
+    const citizenId = actor.id;
     const createdAt = new Date();
-    const actor: WorkflowActor = { id: citizenId, role: 'CITIZEN' };
+    const { imageValidation: validation, classification: citizenClassification, ...alertData } = data;
+    if (validation?.decision === 'INVALID') {
+      throw new ConflictError('The selected image is not suitable for an environmental incident report. Please choose another image.');
+    }
+    const aiSuggestedCategory = validAiSuggestion(validation?.suggestedCategory, validation?.confidence)
+      ? validation?.suggestedCategory ?? null
+      : null;
+    const storedImageValidation: IImageValidation | undefined = validation
+      ? { ...validation, suggestedCategory: aiSuggestedCategory, validatedAt: new Date(validation.validatedAt) }
+      : undefined;
+    const selectedCategory = citizenClassification?.selectedCategory || data.category;
+    const citizenConfirmedSuggestion = citizenClassification?.decision === 'CONFIRM'
+      && Boolean(aiSuggestedCategory && selectedCategory === aiSuggestedCategory);
+    const classification: IAlertClassification = selectedCategory
+      ? {
+        status: citizenConfirmedSuggestion ? 'USER_CONFIRMED' : 'USER_CORRECTED',
+        aiSuggestedCategory,
+        aiConfidence: validation?.confidence ?? null,
+        aiReason: validation?.reason ?? null,
+        finalCategory: selectedCategory,
+        finalCategorySource: 'CITIZEN',
+        citizenSelectedCategory: selectedCategory,
+        citizenDecisionAt: createdAt,
+        confirmedBy: citizenId,
+        confirmedAt: createdAt,
+      }
+      : {
+        status: aiSuggestedCategory ? 'AI_SUGGESTED' : 'UNCLASSIFIED',
+        aiSuggestedCategory,
+        aiConfidence: validation?.confidence ?? null,
+        aiReason: validation?.reason ?? null,
+        finalCategory: null,
+        finalCategorySource: null,
+        citizenSelectedCategory: null,
+        citizenDecisionAt: null,
+        confirmedBy: null,
+        confirmedAt: null,
+      };
 
     // Prevent duplicate report creation within 10 seconds for the same citizen
     const recentDuplicate = await alertRepository.findOne({
@@ -150,8 +205,10 @@ export class AlertService {
     }
 
     const alert = await alertRepository.create({
-      ...data,
-      category: (data.category as AlertCategory) || 'UNCLASSIFIED',
+      ...alertData,
+      category: selectedCategory || 'UNCLASSIFIED',
+      classification,
+      ...(storedImageValidation ? { imageValidation: storedImageValidation } : {}),
       severity: (data.severity as Severity) || Severity.LOW,
       citizenId,
       status: AlertStatus.PENDING,
@@ -238,8 +295,8 @@ export class AlertService {
     this.requireRole(actor, ['ADMIN']);
     const alert = await this.requireAlert(id);
     const currentStatus = normalizeStatus(alert.status);
-    if (![AlertStatus.PENDING, AlertStatus.VERIFIED, AlertStatus.AI_ANALYZING].includes(currentStatus)) {
-      throw new ConflictError('Only a pending, AI-analyzing, or verified incident can be assigned');
+    if (currentStatus !== AlertStatus.VERIFIED) {
+      throw new ConflictError('Only a verified incident can be assigned');
     }
     if (!mongoose.isValidObjectId(data.officerId)) {
       throw new NotFoundError('Officer not found');
@@ -322,10 +379,31 @@ export class AlertService {
       throw new ConflictError('Arrival has already been confirmed');
     }
 
+    if (data.accuracyMeters > envConfig.officerMaxGpsAccuracyMeters) {
+      throw new ConflictError(`GPS accuracy is insufficient (${Math.round(data.accuracyMeters)} m). Please retry in a clearer location.`);
+    }
+    const [incidentLongitude, incidentLatitude] = alert.location.coordinates;
+    const distanceFromIncidentMeters = haversineDistanceMeters(
+      incidentLatitude,
+      incidentLongitude,
+      data.latitude,
+      data.longitude,
+    );
+    if (distanceFromIncidentMeters > envConfig.officerCheckinRadiusMeters) {
+      throw new ConflictError(
+        `You are ${Math.round(distanceFromIncidentMeters)} m from the incident. Move within ${envConfig.officerCheckinRadiusMeters} m and retry check-in.`,
+      );
+    }
     const arrivedAt = new Date();
-    const arrivalLocation = data.latitude !== undefined && data.longitude !== undefined
-      ? { latitude: data.latitude, longitude: data.longitude, accuracy: data.accuracy }
-      : undefined;
+    const arrivalLocation = { latitude: data.latitude, longitude: data.longitude, accuracy: data.accuracyMeters };
+    const checkIn = {
+      officerId: actor.id,
+      location: { type: 'Point' as const, coordinates: [data.longitude, data.latitude] as [number, number] },
+      accuracyMeters: data.accuracyMeters,
+      distanceFromIncidentMeters,
+      checkedInAt: arrivedAt,
+      verified: true,
+    };
     const updatedAlert = await alertRepository.findOneAndUpdate(
       {
         _id: id,
@@ -337,7 +415,8 @@ export class AlertService {
         $set: {
           arrivedAt,
           arrivedBy: actor.id,
-          ...(arrivalLocation ? { arrivalLocation } : {}),
+          arrivalLocation,
+          checkIn,
           updatedBy: actor.id,
         },
         $push: {
@@ -346,7 +425,7 @@ export class AlertService {
             'Officer arrived at the scene',
             actor,
             arrivedAt,
-            { status: AlertStatus.IN_PROGRESS },
+            { status: AlertStatus.IN_PROGRESS, metadata: { distanceFromIncidentMeters, accuracyMeters: data.accuracyMeters } },
           ),
         },
       },
@@ -363,17 +442,37 @@ export class AlertService {
     if (normalizeStatus(alert.status) !== AlertStatus.IN_PROGRESS) {
       throw new ConflictError('Only an incident in progress can be resolved');
     }
-    if (!alert.arrivedAt) {
-      throw new ConflictError('Confirm arrival before resolving this incident');
+    if (!alert.checkIn?.verified || alert.checkIn.officerId !== actor.id) {
+      throw new ConflictError('A verified on-site GPS check-in is required before resolving this incident');
     }
 
     const resolvedAt = new Date();
-    const evidence = data.evidence.map((item) => ({
-      ...item,
-      uploadedBy: actor.id,
-      uploadedAt: resolvedAt,
-      type: 'AFTER_TREATMENT' as const,
-    }));
+    const [incidentLongitude, incidentLatitude] = alert.location.coordinates;
+    const evidence = data.evidence.map((item) => {
+      const location = item.location;
+      if (location && location.accuracyMeters > envConfig.officerMaxGpsAccuracyMeters) {
+        throw new ConflictError(`GPS accuracy is insufficient for after-treatment evidence (${Math.round(location.accuracyMeters)} m). Please retry.`);
+      }
+      const distanceFromIncidentMeters = location
+        ? haversineDistanceMeters(incidentLatitude, incidentLongitude, location.latitude, location.longitude)
+        : undefined;
+      if (distanceFromIncidentMeters !== undefined && distanceFromIncidentMeters > envConfig.officerEvidenceRadiusMeters) {
+        throw new ConflictError(`After-treatment evidence is ${Math.round(distanceFromIncidentMeters)} m from the incident and cannot be accepted as on-site evidence.`);
+      }
+      return {
+        mediaId: item.mediaId,
+        url: item.url,
+        uploadedBy: actor.id,
+        uploadedAt: resolvedAt,
+        capturedAt: resolvedAt,
+        ...(location ? {
+          location: { type: 'Point' as const, coordinates: [location.longitude, location.latitude] as [number, number] },
+          accuracyMeters: location.accuracyMeters,
+          distanceFromIncidentMeters,
+        } : {}),
+        type: 'AFTER_TREATMENT' as const,
+      };
+    });
     const evidenceUrls = evidence.map((item) => item.url);
 
     const updatedAlert = await alertRepository.findOneAndUpdate(
@@ -381,7 +480,8 @@ export class AlertService {
         _id: id,
         assignedOfficerId: actor.id,
         status: statusFilter(AlertStatus.IN_PROGRESS),
-        arrivedAt: { $ne: null },
+        'checkIn.verified': true,
+        'checkIn.officerId': actor.id,
       },
       {
         $set: {
@@ -446,6 +546,9 @@ export class AlertService {
     if (normalizeStatus(alert.status) !== AlertStatus.RESOLVED) {
       throw new ConflictError('Only a resolved incident can be closed');
     }
+    if (!alert.assignedOfficerId || !alert.resolvedAt || !alert.resolvedBy || !alert.resolutionEvidence?.length) {
+      throw new ConflictError('Resolution evidence, assigned Officer, and resolution timestamp are required before closing');
+    }
 
     const closedAt = new Date();
     const updatedAlert = await alertRepository.findOneAndUpdate(
@@ -483,7 +586,7 @@ export class AlertService {
   }
 
   async updateStatus(id: string, actor: WorkflowActor, data: UpdateAlertStatusDto) {
-    this.requireRole(actor, ['OFFICER', 'ADMIN']);
+    this.requireRole(actor, ['ADMIN']);
     const alert = await this.requireAlert(id);
     const currentStatus = normalizeStatus(alert.status);
     const newStatus = normalizeStatus(data.status);
@@ -513,7 +616,50 @@ export class AlertService {
       },
     );
     if (!updatedAlert) throw new ConflictError('Incident status changed. Refresh and try again');
-    await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor.correlationId);
+    await this.publishWorkflowEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor);
+    return updatedAlert;
+  }
+
+  async reviewClassification(id: string, actor: WorkflowActor, data: ReviewClassificationDto) {
+    this.requireRole(actor, ['ADMIN']);
+    const alert = await this.requireAlert(id);
+    const currentStatus = normalizeStatus(alert.status);
+    if (![AlertStatus.PENDING, AlertStatus.VERIFIED].includes(currentStatus)) {
+      throw new ConflictError('Classification can only be reviewed before an incident is assigned');
+    }
+    const currentClassification = alert.classification;
+    const finalCategory = data.category || currentClassification?.finalCategory || (alert.category === 'UNCLASSIFIED' ? undefined : alert.category);
+    if (!finalCategory) throw new ConflictError('Select a classification before confirming it');
+
+    const confirmedAt = new Date();
+    const isCorrection = Boolean(data.category && data.category !== (currentClassification?.finalCategory || alert.category));
+    const classification: IAlertClassification = {
+      status: isCorrection ? 'ADMIN_CORRECTED' : 'ADMIN_CONFIRMED',
+      aiSuggestedCategory: currentClassification?.aiSuggestedCategory ?? null,
+      aiConfidence: currentClassification?.aiConfidence ?? alert.aiConfidence ?? null,
+      aiReason: currentClassification?.aiReason ?? alert.aiReasoningSummary ?? null,
+      finalCategory,
+      finalCategorySource: 'ADMIN',
+      citizenSelectedCategory: currentClassification?.citizenSelectedCategory ?? null,
+      citizenDecisionAt: currentClassification?.citizenDecisionAt ?? null,
+      confirmedBy: actor.id,
+      confirmedAt,
+    };
+    const updatedAlert = await alertRepository.findOneAndUpdate(
+      { _id: id, status: statusFilter(currentStatus) },
+      {
+        $set: { category: finalCategory, classification, updatedBy: actor.id },
+        $push: { timeline: this.timelineEntry(
+          isCorrection ? 'ADMIN_CLASSIFICATION_CORRECTED' : 'ADMIN_CLASSIFICATION_CONFIRMED',
+          isCorrection ? 'Admin corrected incident classification' : 'Admin confirmed incident classification',
+          actor,
+          confirmedAt,
+          { status: currentStatus, metadata: { category: finalCategory } },
+        ) },
+      },
+    );
+    if (!updatedAlert) throw new ConflictError('Incident changed. Refresh and try again');
+    await this.publishWorkflowEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor);
     return updatedAlert;
   }
 
@@ -527,13 +673,47 @@ export class AlertService {
     // Theo góp ý của Thầy: AI không tự động duyệt VERIFIED mà giữ PENDING cho con người xác nhận.
     // Nếu độ tin cậy thấp (< 60%), hệ thống gán phân loại là UNCLASSIFIED (Chưa phân loại).
     const newStatus = AlertStatus.PENDING;
-    const finalCategory = analysis.confidence >= 0.60 ? analysis.category : 'UNCLASSIFIED';
+    const aiSuggestedCategory = validAiSuggestion(analysis.category, analysis.confidence)
+      ? analysis.category
+      : null;
+    const existingClassification = alert.classification;
+    const humanFinalCategory = existingClassification?.finalCategory
+      || (alert.category !== 'UNCLASSIFIED' ? alert.category : null);
+    const hasHumanDecision = Boolean(
+      existingClassification?.finalCategorySource === 'CITIZEN'
+      || existingClassification?.finalCategorySource === 'ADMIN'
+      || existingClassification?.status?.startsWith('USER_')
+      || existingClassification?.status?.startsWith('ADMIN_'),
+    );
+    const classification: IAlertClassification = hasHumanDecision
+      ? {
+        ...existingClassification,
+        status: existingClassification?.status || 'USER_CORRECTED',
+        aiSuggestedCategory,
+        aiConfidence: analysis.confidence,
+        aiReason: analysis.reasoningSummary,
+        finalCategory: humanFinalCategory as AlertCategory | null,
+        finalCategorySource: existingClassification?.finalCategorySource || 'CITIZEN',
+      }
+      : {
+        status: aiSuggestedCategory ? 'AI_SUGGESTED' : 'UNCLASSIFIED',
+        aiSuggestedCategory,
+        aiConfidence: analysis.confidence,
+        aiReason: analysis.reasoningSummary,
+        finalCategory: null,
+        finalCategorySource: null,
+        citizenSelectedCategory: null,
+        citizenDecisionAt: null,
+        confirmedBy: null,
+        confirmedAt: null,
+      };
     const analyzedAt = new Date();
     const actor: WorkflowActor = { id: 'ai-service', role: 'SYSTEM' };
     
     const update: Record<string, unknown> = {
       $set: {
-        category: finalCategory,
+        category: hasHumanDecision && humanFinalCategory ? humanFinalCategory : 'UNCLASSIFIED',
+        classification,
         aiConfidence: analysis.confidence,
         aiSuggestedPriority: analysis.severity,
         severity: analysis.severity,
@@ -553,7 +733,7 @@ export class AlertService {
         ...(analysis.totalProcessingTimeMs !== undefined
           ? { aiTotalProcessingTimeMs: analysis.totalProcessingTimeMs }
           : {}),
-        status: newStatus,
+        ...(currentStatus === AlertStatus.PENDING || currentStatus === AlertStatus.AI_ANALYZING ? { status: newStatus } : {}),
       },
       $push: {
         timeline: this.timelineEntry(
@@ -566,7 +746,7 @@ export class AlertService {
             note: `Confidence: ${Math.round(analysis.confidence * 100)}%`,
           },
         ),
-        ...(currentStatus !== newStatus
+        ...((currentStatus === AlertStatus.PENDING || currentStatus === AlertStatus.AI_ANALYZING) && currentStatus !== newStatus
           ? { statusHistory: this.historyEntry(currentStatus, newStatus, actor, analyzedAt) }
           : {}),
       },

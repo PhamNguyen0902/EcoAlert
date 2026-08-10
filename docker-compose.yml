@@ -85,6 +85,9 @@ services:
       - MONGO_URI=${MONGO_URI_ALERT}
       - RABBITMQ_URL=${RABBITMQ_URL}
       - USER_SERVICE_URL=http://user-service:3001
+      - OFFICER_CHECKIN_RADIUS_METERS=${OFFICER_CHECKIN_RADIUS_METERS:-50}
+      - OFFICER_EVIDENCE_RADIUS_METERS=${OFFICER_EVIDENCE_RADIUS_METERS:-50}
+      - OFFICER_MAX_GPS_ACCURACY_METERS=${OFFICER_MAX_GPS_ACCURACY_METERS:-100}
     volumes:
       # Keep the strict Phase 1A event contract synchronized without rebuilding
       # the Node image on this constrained local machine.
@@ -147,7 +150,8 @@ services:
       - MONGO_URI=${MONGO_URI_AI}
       - ALERT_MONGO_URI=${MONGO_URI_ALERT}
       - REDIS_URL=${REDIS_URL}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # The API key lives only in backend/ai-service/.env.  Do not let a stale
+      # root-level migration copy override the service-specific credential.
       - OPENROUTER_ANALYSIS_MODEL=${OPENROUTER_ANALYSIS_MODEL:-openai/gpt-4o-mini}
       - OPENROUTER_CHAT_MODEL=${OPENROUTER_CHAT_MODEL:-meta-llama/llama-3.1-8b-instruct}
       - ASSISTANT_RATE_LIMIT=${ASSISTANT_RATE_LIMIT}
@@ -158,6 +162,8 @@ services:
       - VISION_SERVICE_URL=http://vision-service:3007
       - VISION_TIMEOUT_MS=${VISION_TIMEOUT_MS:-45000}
       - MEDIA_SERVICE_URL=http://media-service:3003
+      - AI_IMAGE_VALIDATION_HIGH_THRESHOLD=${AI_IMAGE_VALIDATION_HIGH_THRESHOLD:-0.80}
+      - AI_IMAGE_VALIDATION_LOW_THRESHOLD=${AI_IMAGE_VALIDATION_LOW_THRESHOLD:-0.50}
     volumes:
       # Resource-safe local Phase 1A deployment: use the locally type-checked
       # service output without rebuilding the Node image.
@@ -202,7 +208,9 @@ services:
       - VISION_MODEL_EAGER_LOAD=${VISION_MODEL_EAGER_LOAD:-false}
       - VISION_SERVICE_PORT=3007
     volumes:
-      - vision_model_cache:/models
+      # The custom detector is intentionally a host-mounted, immutable artifact.
+      # A named Docker volume is laptop-local and is empty after a migration.
+      - ./models:/models:ro
       # Resource-safe local Phase 1A deployment: run the audited source without
       # rebuilding the large ML dependency layers on this constrained machine.
       - ./backend/vision-service/app:/app/app:ro
@@ -237,4 +245,3 @@ networks:
 
 volumes:
   mongo_data:
-  vision_model_cache:
