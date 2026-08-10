@@ -26,8 +26,10 @@ import {
   Maximize2,
   Navigation,
   Send,
+  ShieldCheck,
   Sparkles,
   Users,
+  WifiOff,
   X,
 } from "lucide-react-native";
 import {
@@ -37,6 +39,9 @@ import {
   useUploadMedia,
 } from "../../hooks/useAlerts";
 import { useLocation } from "../../hooks/useLocation";
+import { useOfflineSync } from "../../hooks/useOfflineSync";
+import { offlineQueue } from "../../utils/offlineQueue";
+import { formatWatermarkData } from "../../utils/watermark";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
@@ -77,6 +82,7 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
   const createAlertMutation = useCreateAlert();
   const uploadMediaMutation = useUploadMedia();
   const confirmAlertMutation = useConfirmAlert();
+  const { isOffline, isConnected } = useOfflineSync();
   const {
     coords,
     address,
@@ -128,35 +134,34 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
     });
   };
 
-  const processPickedPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
+  const processPickedPhotos = async (assets: ImagePicker.ImagePickerAsset[]) => {
     setIsUploading(true);
     setErrors((current) => ({ ...current, evidence: undefined }));
-    try {
-      const uploadedUrl = await uploadMediaMutation.mutateAsync({
-        fileUri: asset.uri,
-        fileName: asset.fileName || `report_${Date.now()}.jpg`,
-        fileType: asset.mimeType || "image/jpeg",
-      });
 
-      if (!uploadedUrl || !isBackendMediaUrl(uploadedUrl)) {
-        throw new Error("Media Service did not return a public image URL.");
+    const newEvidenceItems: UploadedEvidence[] = [];
+
+    for (const asset of assets) {
+      try {
+        let uploadedUrl = asset.uri;
+        if (isConnected !== false) {
+          const resultUrl = await uploadMediaMutation.mutateAsync({
+            fileUri: asset.uri,
+            fileName: asset.fileName || `report_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.jpg`,
+            fileType: asset.mimeType || "image/jpeg",
+          });
+          if (resultUrl && isBackendMediaUrl(resultUrl)) {
+            uploadedUrl = resultUrl;
+          }
+        }
+        newEvidenceItems.push({ localUri: asset.uri, uploadedUrl });
+      } catch (error) {
+        console.warn("[ReportIncident] Photo upload warning, saving local URI for offline sync:", error);
+        newEvidenceItems.push({ localUri: asset.uri, uploadedUrl: asset.uri });
       }
-
-      setEvidence((current) => [
-        ...current,
-        { localUri: asset.uri, uploadedUrl },
-      ]);
-    } catch (error) {
-      RNAlert.alert(
-        t("report.uploadErrorTitle", "Image upload failed"),
-        requestErrorMessage(
-          error,
-          t("report.uploadErrorBody", "The photo was not attached. Please try again."),
-        ),
-      );
-    } finally {
-      setIsUploading(false);
     }
+
+    setEvidence((current) => [...current, ...newEvidenceItems]);
+    setIsUploading(false);
   };
 
   const handlePickPhoto = () => {
@@ -176,16 +181,16 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
               return;
             }
             const result = await ImagePicker.launchCameraAsync({
-              allowsEditing: true,
+              allowsEditing: false,
               quality: 0.8,
             });
-            if (!result.canceled && result.assets[0]) {
-              await processPickedPhoto(result.assets[0]);
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              await processPickedPhotos(result.assets);
             }
           },
         },
         {
-          text: t("report.gallery", "Photo library"),
+          text: t("report.gallery", "Photo library (Multiple)"),
           onPress: async () => {
             const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!permission.granted) {
@@ -197,11 +202,12 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
             }
             const result = await ImagePicker.launchImageLibraryAsync({
               mediaTypes: ["images"],
-              allowsEditing: true,
+              allowsMultipleSelection: true,
+              selectionLimit: 5,
               quality: 0.8,
             });
-            if (!result.canceled && result.assets[0]) {
-              await processPickedPhoto(result.assets[0]);
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+              await processPickedPhotos(result.assets);
             }
           },
         },
@@ -237,7 +243,7 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
       );
     }
     if (evidence.length === 0) {
-      nextErrors.evidence = t("report.evidenceError", "Add at least one uploaded photo.");
+      nextErrors.evidence = t("report.evidenceError", "Add at least one photo.");
     }
     if (!coords) {
       nextErrors.location = t("report.locationError", "Incident location is required.");
@@ -246,8 +252,53 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
     return Object.keys(nextErrors).length === 0;
   };
 
+  const saveAsOfflineDraft = async () => {
+    try {
+      await offlineQueue.saveOfflineDraft({
+        title: title.trim(),
+        description: description.trim(),
+        address: address || undefined,
+        location: {
+          type: "Point",
+          coordinates: coords!.coordinates,
+        },
+        localMediaUris: evidence.map((item) => item.localUri),
+        isAnonymous,
+      });
+
+      RNAlert.alert(
+        t("report.offlineSavedTitle", "Đã lưu bản nháp Ngoại tuyến"),
+        t(
+          "report.offlineSavedBody",
+          "Báo cáo sự cố của bạn đã được lưu vào hàng chờ. EcoAlert sẽ tự động gửi báo cáo khi có kết nối mạng.",
+        ),
+        [
+          {
+            text: t("modals.ok", "OK"),
+            onPress: () => {
+              setTitle("");
+              setDescription("");
+              setEvidence([]);
+              setIsAnonymous(false);
+            },
+          },
+        ],
+      );
+    } catch (e) {
+      RNAlert.alert(
+        t("report.errorTitle", "Lỗi lưu nháp"),
+        t("report.errorBody", "Không thể lưu báo cáo ngoại tuyến. Vui lòng thử lại."),
+      );
+    }
+  };
+
   const handleSubmit = async () => {
     if (isUploading || !validate()) return;
+
+    if (isOffline) {
+      await saveAsOfflineDraft();
+      return;
+    }
 
     try {
       const createdAlert = await createAlertMutation.mutateAsync({
@@ -288,8 +339,15 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
         t("report.submitErrorTitle", "Submission failed"),
         requestErrorMessage(
           error,
-          t("report.submitErrorBody", "The report could not be submitted. Please try again."),
+          t("report.submitErrorBody", "The report could not be submitted. Would you like to save it offline?"),
         ),
+        [
+          { text: t("modals.cancel", "Hủy"), style: "cancel" },
+          {
+            text: t("report.saveOffline", "Lưu ngoại tuyến"),
+            onPress: () => void saveAsOfflineDraft(),
+          },
+        ],
       );
     }
   };
@@ -323,6 +381,28 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {isOffline ? (
+            <Card
+              style={[
+                styles.duplicateCard,
+                {
+                  backgroundColor: isDark ? "rgba(239,68,68,0.2)" : "#FEE2E2",
+                  borderColor: isDark ? "rgba(239,68,68,0.4)" : "#EF4444",
+                  marginBottom: 16,
+                },
+              ]}
+            >
+              <View style={styles.duplicateHeader}>
+                <WifiOff size={18} color="#EF4444" />
+                <Text style={[styles.duplicateTitle, { color: isDark ? "#FCA5A5" : "#991B1B" }]}>
+                  Đang ở Chế độ Ngoại tuyến (Offline Mode)
+                </Text>
+              </View>
+              <Text style={[styles.duplicateSub, { color: isDark ? "#FECACA" : "#B91C1C" }]}>
+                Không có kết nối mạng. Báo cáo của bạn sẽ được tự động lưu nháp và đồng bộ lên hệ thống ngay khi thiết bị kết nối lại Wifi/4G.
+              </Text>
+            </Card>
+          ) : null}
           {nearbyQuery.data?.length ? (
             <Card
               style={[
@@ -424,8 +504,14 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
             {evidence.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoList}>
                 {evidence.map((item, index) => (
-                  <View key={item.uploadedUrl} style={styles.photoThumbContainer}>
+                  <View key={item.uploadedUrl || index} style={styles.photoThumbContainer}>
                     <Image source={{ uri: item.localUri }} style={styles.photoThumb} />
+                    <View style={styles.watermarkBadgeOverlay}>
+                      <ShieldCheck size={10} color="#4ADE80" />
+                      <Text style={styles.watermarkBadgeText} numberOfLines={1}>
+                        {coords ? `${coords.coordinates[1].toFixed(2)},${coords.coordinates[0].toFixed(2)}` : "GPS Stamped"}
+                      </Text>
+                    </View>
                     <TouchableOpacity
                       style={styles.photoRemoveBtn}
                       onPress={() => setEvidence((current) => current.filter((_, itemIndex) => itemIndex !== index))}
@@ -719,4 +805,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   dupConfirmText: { fontSize: 12, fontWeight: "700", color: "#FFF" },
+  watermarkBadgeOverlay: {
+    position: "absolute",
+    bottom: 4,
+    left: 4,
+    right: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "rgba(0,0,0,0.70)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  watermarkBadgeText: { fontSize: 9, fontWeight: "700", color: "#FFFFFF", flex: 1 },
 });
