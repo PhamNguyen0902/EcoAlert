@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
 import {
   ArrowLeft,
   MapPin,
@@ -103,9 +104,21 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
     }
 
     try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== "granted") {
+        RNAlert.alert("Cần quyền vị trí", "Hãy cho phép vị trí khi dùng ứng dụng để thực hiện check-in tại hiện trường.");
+        return;
+      }
+      const freshLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
       await confirmArrivalMutation.mutateAsync({
         id: alert._id,
-        location: incidentCoordinates,
+        location: {
+          latitude: freshLocation.coords.latitude,
+          longitude: freshLocation.coords.longitude,
+          accuracyMeters: freshLocation.coords.accuracy ?? Number.MAX_SAFE_INTEGER,
+        },
       });
       RNAlert.alert("Thành công", "Đã ghi nhận thời điểm cán bộ tới hiện trường.");
     } catch (err: any) {
@@ -188,7 +201,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         {/* Workflow Quick Action Buttons */}
         <Text style={[styles.sectionHeading, { color: colors.text }]}>Hành động Xử lý Sự cố</Text>
         <View style={styles.workflowGrid}>
-          {currentStatus === "ASSIGNED" || currentStatus === "VERIFIED" || currentStatus === "PENDING" ? (
+          {currentStatus === "ASSIGNED" ? (
             <Button
               title="Bước 1: Bắt đầu xử lý"
               onPress={handleStartHandling}
@@ -198,7 +211,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             />
           ) : null}
 
-          {currentStatus !== "RESOLVED" && currentStatus !== "CLOSED" ? (
+          {currentStatus === "IN_PROGRESS" ? (
             alert.arrivedAt ? (
               <View style={[styles.arrivedBadge, { backgroundColor: isDark ? "rgba(22,163,74,0.25)" : "#DCFCE7", borderColor: isDark ? "rgba(22,163,74,0.4)" : "#86EFAC" }]}>
                 <CheckCircle size={16} color={isDark ? "#86EFAC" : "#16A34A"} />
@@ -216,7 +229,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             )
           ) : null}
 
-          {currentStatus !== "RESOLVED" && currentStatus !== "CLOSED" ? (
+          {currentStatus === "IN_PROGRESS" && alert.checkIn?.verified ? (
             <Button
               title="Bước 3: Đánh dấu Đã hoàn thành"
               onPress={() => setResolutionModalOpen(true)}

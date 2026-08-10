@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { alertService, WorkflowActor } from '../services/alert.service';
-import { paginatedResponse, successResponse } from '@ecoalert/shared';
+import { ForbiddenError, paginatedResponse, successResponse } from '@ecoalert/shared';
 
 const workflowActor = (req: Request): WorkflowActor => ({
   id: req.headers['x-user-id'] as string,
@@ -15,15 +15,23 @@ const pagination = (req: Request) => ({
 
 export class AlertController {
   async createAlert(req: Request, res: Response) {
-    const citizenId = req.headers['x-user-id'] as string;
-    const result = await alertService.createAlert(citizenId, req.body);
+    const result = await alertService.createAlert(workflowActor(req), req.body);
     res.status(201).json(successResponse(result, 'Alert created successfully'));
   }
 
   async getAlerts(req: Request, res: Response) {
     const { page, limit } = pagination(req);
-    const role = req.headers['x-user-role'] as string;
-    const citizenId = role?.toUpperCase() === 'CITIZEN'
+    const actor = workflowActor(req);
+    const role = actor.role?.toUpperCase();
+    if (role === 'OFFICER') {
+      const result = await alertService.getOfficerTasks(actor, page, limit, req.query.status as string | undefined);
+      res.status(200).json(paginatedResponse(result.items, result.total, page, limit));
+      return;
+    }
+    if (role !== 'CITIZEN' && role !== 'ADMIN') {
+      throw new ForbiddenError('You do not have permission to view incidents');
+    }
+    const citizenId = role === 'CITIZEN'
       ? req.headers['x-user-id'] as string
       : undefined;
     const filters = {
@@ -43,7 +51,7 @@ export class AlertController {
       // trong trường hợp API Gateway quên truyền x-user-role
       const actor = {
         id: req.headers['x-user-id'] as string,
-        role: (req.headers['x-user-role'] as string) || 'OFFICER',
+        role: req.headers['x-user-role'] as string,
       };
 
       // 2. Lấy các tham số phân trang
@@ -102,6 +110,11 @@ export class AlertController {
   async updateStatus(req: Request, res: Response) {
     const result = await alertService.updateStatus(req.params.id, workflowActor(req), req.body);
     res.status(200).json(successResponse(result, 'Alert status updated'));
+  }
+
+  async reviewClassification(req: Request, res: Response) {
+    const result = await alertService.reviewClassification(req.params.id, workflowActor(req), req.body);
+    res.status(200).json(successResponse(result, 'Classification reviewed'));
   }
 
   async deleteAlert(req: Request, res: Response) {

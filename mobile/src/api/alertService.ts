@@ -59,7 +59,7 @@ export const alertService = {
 
   confirmArrival: async (
     id: string,
-    location: { latitude?: number; longitude?: number; accuracy?: number } = {}
+    location: { latitude: number; longitude: number; accuracyMeters: number }
   ): Promise<Alert> => {
     const res = await api.post(`/v1/alerts/${id}/arrival`, location);
     return res.data?.data || res.data;
@@ -72,6 +72,14 @@ export const alertService = {
 
   closeIncident: async (id: string, reviewNote?: string): Promise<Alert> => {
     const res = await api.post(`/v1/alerts/${id}/close`, { reviewNote });
+    return res.data?.data || res.data;
+  },
+  validateImage: async (imageUrl: string) => {
+    const res = await api.post('/v1/ai/validate-image', { imageUrl });
+    return res.data?.data || res.data;
+  },
+  reviewClassification: async (id: string, category?: string): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/classification/review`, { category });
     return res.data?.data || res.data;
   },
 

@@ -22,6 +22,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useAddOfficerNote,
   useAlert,
@@ -43,7 +44,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { IncidentLocationDetails } from '@/components/location/IncidentLocationDetails';
 import { ConfirmActionDialog } from '@/components/incidents/ConfirmActionDialog';
 import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
-import type { ResolutionInput } from '@/types';
+import type { AlertCategory, ResolutionInput } from '@/types';
 import 'leaflet/dist/leaflet.css';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -55,9 +56,9 @@ L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2x, iconUrl: markerIcon, 
 
 const MAX_EVIDENCE_SIZE = 10 * 1024 * 1024;
 const MAX_EVIDENCE_COUNT = 20;
-const ADMIN_ASSIGNABLE_STATUSES = new Set(['pending', 'verified', 'ai_analyzing']);
+const ADMIN_ASSIGNABLE_STATUSES = new Set(['verified']);
 
-type ConfirmAction = 'assign' | 'start' | 'arrival' | 'resolve' | 'close' | null;
+type ConfirmAction = 'verify' | 'assign' | 'start' | 'arrival' | 'resolve' | 'close' | null;
 type UploadState = 'ready' | 'uploading' | 'uploaded' | 'failed';
 
 interface EvidenceDraft {
@@ -84,6 +85,7 @@ export default function OfficerReportDetail() {
   const resolveIncident = useResolveIncident();
   const closeIncident = useCloseIncident();
   const addOfficerNote = useAddOfficerNote();
+  const queryClient = useQueryClient();
 
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [selectedOfficerId, setSelectedOfficerId] = useState('');
@@ -96,6 +98,8 @@ export default function OfficerReportDetail() {
   const [reviewNote, setReviewNote] = useState('');
   const [evidenceDrafts, setEvidenceDrafts] = useState<EvidenceDraft[]>([]);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+  const [classificationCategory, setClassificationCategory] = useState<AlertCategory | ''>('');
+  const [isReviewingClassification, setIsReviewingClassification] = useState(false);
   const evidenceRef = useRef<EvidenceDraft[]>([]);
 
   useEffect(() => {
@@ -129,6 +133,7 @@ export default function OfficerReportDetail() {
   const isAdmin = role === 'ADMIN';
   const normalizedAlertStatus = alert.status.toLowerCase();
   const canAdminAssign = isAdmin && ADMIN_ASSIGNABLE_STATUSES.has(normalizedAlertStatus);
+  const canAdminVerify = isAdmin && normalizedAlertStatus === 'pending';
   const isAssignedToCurrentOfficer = isOfficer && alert.assignedOfficerId === user?._id;
   // The API query is already scoped to OFFICER; keep this boundary guard so only
   // valid assignees can be rendered if an unexpected response is returned.
@@ -146,6 +151,26 @@ export default function OfficerReportDetail() {
   const onWorkflowError = (workflowError: unknown, fallback: string) => {
     toast.error(getApiErrorMessage(workflowError, fallback));
     setConfirmAction(null);
+  };
+
+  const handleVerify = async () => {
+    try {
+      await alertService.updateStatus(id, 'verified');
+      await queryClient.invalidateQueries({ queryKey: ['alert', id] });
+      await queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      toast.success('Báo cáo đã được Admin xác minh.');
+      setConfirmAction(null);
+    } catch (workflowError) { onWorkflowError(workflowError, 'Không thể xác minh báo cáo.'); }
+  };
+
+  const handleReviewClassification = async () => {
+    try {
+      setIsReviewingClassification(true);
+      await alertService.reviewClassification(id, classificationCategory || undefined);
+      await queryClient.invalidateQueries({ queryKey: ['alert', id] });
+      toast.success('Đã cập nhật phân loại.');
+    } catch (workflowError) { toast.error(getApiErrorMessage(workflowError, 'Không thể cập nhật phân loại.')); }
+    finally { setIsReviewingClassification(false); }
   };
 
   const handleAssign = () => {
@@ -177,18 +202,8 @@ export default function OfficerReportDetail() {
   };
 
   const handleArrival = () => {
-    confirmArrival.mutate(
-      { id },
-      {
-        onSuccess: () => {
-          toast.success(t('toast.arrival_confirmed_success'), {
-            id: `alert-updated-${id}`,
-          });
-          setConfirmAction(null);
-        },
-        onError: (mutationError) => onWorkflowError(mutationError, 'Unable to confirm arrival.'),
-      },
-    );
+    toast('GPS check-in requires a fresh foreground location. Please use the EcoAlert mobile officer app on site.', { icon: '📍' });
+    setConfirmAction(null);
   };
 
   const addEvidenceFiles = (fileList: FileList | null) => {
@@ -433,6 +448,15 @@ export default function OfficerReportDetail() {
           <Card>
             <CardHeader><CardTitle className="text-lg">{isAdmin ? 'Admin Duyệt' : 'Hành động Cán bộ'}</CardTitle><CardDescription>Hành động tiếp theo có thể thực hiện.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
+              {isAdmin ? (
+                <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
+                  <div><p className="text-sm font-semibold">Phân loại do con người quyết định</p><p className="mt-1 text-xs text-muted-foreground">AI: {alert.classification?.aiSuggestedCategory || 'UNCLASSIFIED'}{alert.classification?.aiConfidence !== undefined && alert.classification?.aiConfidence !== null ? ` · ${Math.round(alert.classification.aiConfidence * 100)}%` : ''}</p><p className="text-xs text-muted-foreground">Người dân: {alert.classification?.citizenSelectedCategory || 'Chưa chọn'} · {alert.classification?.status || 'UNCLASSIFIED'}</p></div>
+                  <select value={classificationCategory} onChange={(event) => setClassificationCategory(event.target.value as AlertCategory | '')} className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"><option value="">Xác nhận danh mục hiện tại</option><option value="illegal_dumping">Rác thải / đổ trộm</option><option value="water_pollution">Ô nhiễm nước</option><option value="air_pollution">Ô nhiễm không khí</option><option value="illegal_burning">Đốt rác</option><option value="flooding">Ngập lụt</option><option value="fallen_tree">Cây đổ</option><option value="illegal_construction_waste">Chất thải xây dựng</option><option value="noise_pollution">Ô nhiễm tiếng ồn</option><option value="soil_contamination">Ô nhiễm đất</option><option value="wildlife_threat">Đe dọa động vật</option><option value="other">Khác</option></select>
+                  <Button size="sm" variant="outline" className="w-full" onClick={handleReviewClassification} disabled={isReviewingClassification || !['pending', 'verified'].includes(normalizedAlertStatus)}>{isReviewingClassification ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Xác nhận / chỉnh sửa phân loại</Button>
+                </div>
+              ) : null}
+
+              {canAdminVerify ? <Button className="w-full" onClick={() => void handleVerify()}><ShieldCheck className="mr-2 h-4 w-4" />Xác minh báo cáo</Button> : null}
               {canAdminAssign ? (
                 <div className="space-y-3">
                   <label htmlFor="assigned-officer" className="text-sm font-medium">Phân công cho Cán bộ</label>

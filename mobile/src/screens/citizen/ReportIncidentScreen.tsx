@@ -50,6 +50,8 @@ import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import type { CitizenStackParamList, CitizenTabParamList } from "../../navigation/types";
 import { getAiAnalysisState, getWorkflowStatusLabel } from "../../utils/aiAnalysis";
+import type { AlertCategory, ImageValidation } from "../../types";
+import { alertService } from "../../api/alertService";
 
 type Props = BottomTabScreenProps<CitizenTabParamList, "ReportTab">;
 
@@ -104,6 +106,9 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [imageValidation, setImageValidation] = useState<ImageValidation | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<AlertCategory | undefined>();
+  const [classificationDecision, setClassificationDecision] = useState<"CONFIRM" | "CORRECT" | undefined>();
 
   useEffect(() => {
     void fetchLocation();
@@ -151,6 +156,21 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
           });
           if (resultUrl && isBackendMediaUrl(resultUrl)) {
             uploadedUrl = resultUrl;
+          }
+        }
+        if (!imageValidation && isBackendMediaUrl(uploadedUrl)) {
+          const validation = await alertService.validateImage(uploadedUrl) as ImageValidation;
+          setImageValidation(validation);
+          if (validation.decision === "INVALID") {
+            RNAlert.alert(
+              "Hình ảnh không phù hợp với báo cáo sự cố",
+              "Không phát hiện sự cố môi trường rõ ràng trong ảnh. Vui lòng chọn ảnh khác.",
+            );
+            continue;
+          }
+          if (validation.suggestedCategory) {
+            setSelectedCategory(validation.suggestedCategory);
+            setClassificationDecision("CONFIRM");
           }
         }
         newEvidenceItems.push({ localUri: asset.uri, uploadedUrl });
@@ -229,6 +249,20 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
         requestErrorMessage(error, t("report.confirmErrorBody", "Please try again.")),
       );
     }
+  };
+
+  const chooseCategory = () => {
+    const options: Array<{ label: string; value: AlertCategory }> = [
+      { label: "Rác thải / đổ trộm", value: "illegal_dumping" },
+      { label: "Ô nhiễm nước", value: "water_pollution" },
+      { label: "Ngập lụt", value: "flooding" },
+      { label: "Đốt rác", value: "illegal_burning" },
+      { label: "Khác", value: "other" },
+    ];
+    RNAlert.alert("Chọn danh mục", "Danh mục này là quyết định của bạn; AI chỉ hỗ trợ gợi ý.", [
+      ...options.map((option) => ({ text: option.label, onPress: () => { setSelectedCategory(option.value); setClassificationDecision(option.value === imageValidation?.suggestedCategory ? "CONFIRM" : "CORRECT"); } })),
+      { text: "Hủy", style: "cancel" },
+    ]);
   };
 
   const validate = (): boolean => {
@@ -311,6 +345,8 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
         },
         mediaUrls: evidence.map((item) => item.uploadedUrl),
         isAnonymous,
+        ...(selectedCategory ? { category: selectedCategory, classification: { selectedCategory, decision: classificationDecision || "CORRECT" } } : {}),
+        ...(imageValidation ? { imageValidation } : {}),
       });
 
       RNAlert.alert(
@@ -501,6 +537,14 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
             <Text style={[styles.helperText, { color: colors.textMuted }]}>
               {t("report.evidenceHelper", "Photos are uploaded securely before the report is submitted.")}
             </Text>
+            {imageValidation ? (
+              <View style={[styles.aiValidationCard, { backgroundColor: imageValidation.decision === "INVALID" ? "#FEF2F2" : imageValidation.decision === "UNCERTAIN" ? "#FFFBEB" : colors.primaryLight }]}>
+                <Text style={[styles.aiValidationTitle, { color: colors.text }]}>Gợi ý của EcoAlert AI: {imageValidation.decision}</Text>
+                <Text style={[styles.helperText, { color: colors.textMuted }]}>{imageValidation.reason}</Text>
+                {imageValidation.confidence !== null ? <Text style={[styles.helperText, { color: colors.textMuted }]}>Độ tin cậy: {Math.round(imageValidation.confidence * 100)}%</Text> : null}
+                <TouchableOpacity onPress={chooseCategory}><Text style={[styles.categoryChoice, { color: colors.primary }]}>Danh mục: {selectedCategory || "UNCLASSIFIED"} · Chọn / chỉnh sửa</Text></TouchableOpacity>
+              </View>
+            ) : null}
             {evidence.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoList}>
                 {evidence.map((item, index) => (
@@ -721,6 +765,9 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
   },
   addPhotoText: { fontSize: 13, fontWeight: "700" },
+  aiValidationCard: { marginTop: 12, marginBottom: 8, padding: 12, borderRadius: 12 },
+  aiValidationTitle: { fontSize: 13, fontWeight: "800", marginBottom: 4 },
+  categoryChoice: { marginTop: 7, fontSize: 13, fontWeight: "700" },
   sectionLabel: { fontSize: 15, fontWeight: "700" },
   mapHeader: {
     flexDirection: "row",

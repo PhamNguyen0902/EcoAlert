@@ -54,6 +54,30 @@ export interface GeoLocation {
   coordinates: [number, number];
 }
 
+export type ImageValidationDecision = 'VALID' | 'UNCERTAIN' | 'INVALID' | 'UNAVAILABLE';
+export type ClassificationStatus = 'AI_SUGGESTED' | 'USER_CONFIRMED' | 'USER_CORRECTED' | 'ADMIN_CONFIRMED' | 'ADMIN_CORRECTED' | 'UNCLASSIFIED';
+export interface ImageValidation {
+  decision: ImageValidationDecision;
+  isEnvironmentalIncident: boolean | null;
+  confidence: number | null;
+  suggestedCategory: AlertCategory | null;
+  reason: string;
+  model: string | null;
+  validatedAt: string;
+}
+export interface AlertClassification {
+  status: ClassificationStatus;
+  aiSuggestedCategory?: AlertCategory | null;
+  aiConfidence?: number | null;
+  aiReason?: string | null;
+  finalCategory?: AlertCategory | null;
+  finalCategorySource?: 'AI' | 'CITIZEN' | 'ADMIN' | null;
+  citizenSelectedCategory?: AlertCategory | null;
+  citizenDecisionAt?: string | null;
+  confirmedBy?: string | null;
+  confirmedAt?: string | null;
+}
+
 export interface Category {
   _id: string;
   name: string;
@@ -72,6 +96,8 @@ export interface Alert {
   description: string;
   status: AlertStatus;
   category: AlertCategory;
+  classification?: AlertClassification;
+  imageValidation?: ImageValidation;
   severity: Severity;
   mediaUrls: string[];
   location: GeoLocation;
@@ -85,6 +111,7 @@ export interface Alert {
   arrivedAt?: string;
   arrivedBy?: string;
   arrivalLocation?: ArrivalLocation;
+  checkIn?: { accuracyMeters: number; distanceFromIncidentMeters: number; checkedInAt: string; verified: boolean };
   aiConfidence?: number;
   aiSuggestedPriority?: Severity;
   aiSummary?: string;
@@ -130,11 +157,15 @@ export interface ResolutionEvidence {
   uploadedBy: string;
   uploadedAt: string;
   type: 'AFTER_TREATMENT';
+  capturedAt?: string;
+  accuracyMeters?: number;
+  distanceFromIncidentMeters?: number;
 }
 
 export interface ResolutionEvidenceInput {
   mediaId?: string;
   url: string;
+  location?: { latitude: number; longitude: number; accuracyMeters: number };
 }
 
 export interface ResolutionInput {
@@ -269,4 +300,7 @@ export interface CreateAlertData {
   location: GeoLocation;
   address?: string;
   mediaUrls?: string[];
+  category?: AlertCategory;
+  imageValidation?: ImageValidation;
+  classification?: { selectedCategory?: AlertCategory; decision?: 'CONFIRM' | 'CORRECT' };
 }

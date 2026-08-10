@@ -20,6 +20,7 @@ import { SelectedLocationCard } from '@/components/reports/SelectedLocationCard'
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { PickedLocation } from '@/components/location/LocationPickerModal';
 import { reverseGeocoder } from '@/services/reverseGeocoder';
+import type { AlertCategory, ImageValidation } from '@/types';
 
 const LocationPickerModal = lazy(() =>
   import('@/components/location/LocationPickerModal').then(({ LocationPickerModal: Picker }) => ({ default: Picker })),
@@ -41,6 +42,19 @@ interface AddressSuggestion {
 
 const DEFAULT_MAP_POSITION: [number, number] = [10.8494, 106.7537];
 const MAX_EVIDENCE_SIZE = 10 * 1024 * 1024;
+const INCIDENT_CATEGORIES: Array<{ value: AlertCategory; label: string }> = [
+  { value: 'illegal_dumping', label: 'Rác thải / đổ trộm' },
+  { value: 'water_pollution', label: 'Ô nhiễm nước' },
+  { value: 'air_pollution', label: 'Ô nhiễm không khí' },
+  { value: 'illegal_burning', label: 'Đốt rác trái phép' },
+  { value: 'flooding', label: 'Ngập lụt' },
+  { value: 'fallen_tree', label: 'Cây đổ' },
+  { value: 'illegal_construction_waste', label: 'Chất thải xây dựng' },
+  { value: 'noise_pollution', label: 'Ô nhiễm tiếng ồn' },
+  { value: 'soil_contamination', label: 'Ô nhiễm đất' },
+  { value: 'wildlife_threat', label: 'Đe doạ động vật hoang dã' },
+  { value: 'other', label: 'Khác' },
+];
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -65,6 +79,10 @@ export default function CreateAlert() {
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+  const [uploadedMediaUrl, setUploadedMediaUrl] = useState<string | null>(null);
+  const [imageValidation, setImageValidation] = useState<ImageValidation | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<AlertCategory | undefined>();
+  const [classificationDecision, setClassificationDecision] = useState<'CONFIRM' | 'CORRECT' | undefined>();
   const previewUrlRef = useRef<string | null>(null);
   const submissionInProgressRef = useRef(false);
 
@@ -186,6 +204,10 @@ export default function CreateAlert() {
     previewUrlRef.current = nextPreviewUrl;
     setFile(selectedFile);
     setPreviewUrl(nextPreviewUrl);
+    setUploadedMediaUrl(null);
+    setImageValidation(null);
+    setSelectedCategory(undefined);
+    setClassificationDecision(undefined);
   };
 
   const handleRemoveFile = () => {
@@ -193,6 +215,8 @@ export default function CreateAlert() {
     previewUrlRef.current = null;
     setFile(null);
     setPreviewUrl(null);
+    setUploadedMediaUrl(null);
+    setImageValidation(null);
   };
 
   const handleNext = async () => {
@@ -206,9 +230,29 @@ export default function CreateAlert() {
         return;
       }
     }
-    if (currentStep === 3 && !file) {
-      toast.error(t('toast.add_evidence_required'));
-      return;
+    if (currentStep === 3) {
+      if (!file) {
+        toast.error(t('toast.add_evidence_required'));
+        return;
+      }
+      try {
+        setIsUploadingEvidence(true);
+        const mediaUrl = uploadedMediaUrl || await alertService.uploadMedia(file);
+        setUploadedMediaUrl(mediaUrl);
+        const validation = await alertService.validateImage(mediaUrl) as ImageValidation;
+        setImageValidation(validation);
+        if (validation.decision === 'INVALID') {
+          toast.error('Hình ảnh không phù hợp với báo cáo sự cố. Không phát hiện sự cố môi trường rõ ràng trong ảnh. Vui lòng chọn ảnh khác.');
+          return;
+        }
+        if (validation.suggestedCategory) setSelectedCategory(validation.suggestedCategory);
+        if (validation.decision === 'UNCERTAIN') toast('AI chưa xác định rõ nội dung ảnh. Bạn vẫn có thể gửi để nhân viên kiểm tra.', { icon: '⚠️' });
+        if (validation.decision === 'UNAVAILABLE') toast('Không thể kiểm tra hình ảnh tự động. Báo cáo vẫn có thể được gửi để nhân viên kiểm tra.', { icon: 'ℹ️' });
+      } catch {
+        setImageValidation({ decision: 'UNAVAILABLE', isEnvironmentalIncident: null, confidence: null, suggestedCategory: null, reason: 'Không thể kiểm tra hình ảnh tự động. Báo cáo vẫn có thể được gửi để nhân viên kiểm tra.', model: null, validatedAt: new Date().toISOString() });
+      } finally {
+        setIsUploadingEvidence(false);
+      }
     }
     setCurrentStep((step) => Math.min(step + 1, steps.length));
   };
@@ -223,7 +267,7 @@ export default function CreateAlert() {
       setIsUploadingEvidence(true);
       toast.loading(t('toast.uploading_evidence'), { id: 'submit' });
       
-      const mediaUrl = await alertService.uploadMedia(file);
+      const mediaUrl = uploadedMediaUrl || await alertService.uploadMedia(file);
       toast.loading(t('report_create.submitting'), { id: 'submit' });
 
       await createAlertMutation.mutateAsync({
@@ -235,6 +279,8 @@ export default function CreateAlert() {
           coordinates: [selectedLocation.longitude, selectedLocation.latitude],
         },
         mediaUrls: [mediaUrl],
+        ...(selectedCategory ? { category: selectedCategory, classification: { selectedCategory, decision: classificationDecision || 'CORRECT' } } : {}),
+        ...(imageValidation ? { imageValidation } : {}),
       });
 
       toast.success(t('toast.report_submit_success'), { id: 'submit' });
@@ -383,6 +429,18 @@ export default function CreateAlert() {
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">Please verify the information before submitting. You can track the report status after submission.</p>
                     </div>
 
+                    <div className="mb-5 space-y-3 rounded-xl border p-4">
+                      <div className="flex items-center justify-between gap-3"><h3 className="font-semibold">Gợi ý của EcoAlert AI</h3><span className="rounded-full bg-muted px-2 py-1 text-xs font-medium">{imageValidation?.decision || 'UNAVAILABLE'}</span></div>
+                      <p className="text-sm text-muted-foreground">{imageValidation?.reason || 'Không thể kiểm tra hình ảnh tự động. Báo cáo vẫn được nhân viên kiểm tra.'}</p>
+                      {imageValidation?.confidence !== null && imageValidation?.confidence !== undefined ? <p className="text-sm">Độ tin cậy: <strong>{Math.round(imageValidation.confidence * 100)}%</strong></p> : null}
+                      {imageValidation?.decision === 'UNCERTAIN' ? <p className="text-sm text-amber-700">AI chưa xác định rõ nội dung ảnh. Bạn có thể tiếp tục gửi để nhân viên kiểm tra.</p> : null}
+                      <Label htmlFor="citizen-category">Danh mục do bạn xác nhận</Label>
+                      <select id="citizen-category" value={selectedCategory || ''} onChange={(event) => { const category = event.target.value as AlertCategory || undefined; setSelectedCategory(category); setClassificationDecision(category && category === imageValidation?.suggestedCategory ? 'CONFIRM' : 'CORRECT'); }} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <option value="">Chưa phân loại – để Admin kiểm tra</option>
+                        {INCIDENT_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                      </select>
+                      {imageValidation?.suggestedCategory ? <div className="flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" onClick={() => { setSelectedCategory(imageValidation.suggestedCategory || undefined); setClassificationDecision('CONFIRM'); }}>Xác nhận gợi ý AI</Button><Button type="button" size="sm" variant="ghost" onClick={() => setClassificationDecision('CORRECT')}>Chỉnh sửa</Button></div> : null}
+                    </div>
                     <div className="overflow-hidden rounded-xl border divide-y">
                       <section className="p-4 sm:p-5" aria-labelledby="review-information-heading">
                         <div className="flex items-center justify-between gap-3">
