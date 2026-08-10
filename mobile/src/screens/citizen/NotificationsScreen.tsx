@@ -25,12 +25,25 @@ import {
 
 type Props = NativeStackScreenProps<CitizenStackParamList, "Notifications">;
 
+import { pushNotificationService } from "../../services/pushNotificationService";
+import { Send, Sparkles } from "lucide-react-native";
+
 export const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
   const notifications = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+
+  const handleTestLocalPush = async () => {
+    await pushNotificationService.sendLocalTestNotification(
+      language === "vi" ? "Cảnh báo khẩn cấp từ EcoAlert 🚨" : "Emergency Alert from EcoAlert 🚨",
+      language === "vi"
+        ? "Phát hiện sự cố ô nhiễm môi trường gần bạn. Cán bộ đang kiểm tra xử lý."
+        : "Environmental pollution incident detected near your area. Officers are investigating.",
+    );
+  };
+
   const copy = language === "vi"
     ? { title: "Thông báo", allRead: "Đánh dấu đã đọc", empty: "Chưa có thông báo", retry: "Không thể tải thông báo. Kéo xuống để thử lại." }
     : { title: "Notifications", allRead: "Mark all read", empty: "No notifications yet", retry: "Notifications could not be loaded. Pull down to retry." };
@@ -107,6 +120,24 @@ export const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
             tintColor={colors.primary}
           />
         }
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={[
+              styles.testPushBtn,
+              {
+                backgroundColor: isDark ? "rgba(34,197,94,0.18)" : colors.primaryLight,
+                borderColor: colors.primary,
+              },
+            ]}
+            onPress={() => void handleTestLocalPush()}
+          >
+            <Bell size={18} color={colors.primary} />
+            <Text style={[styles.testPushText, { color: colors.primary }]}>
+              {language === "vi" ? "Bấm để Thử nghiệm Thông báo đẩy (Push Notification)" : "Tap to Test Push Notification"}
+            </Text>
+            <Sparkles size={14} color={colors.primary} />
+          </TouchableOpacity>
+        }
         ListEmptyComponent={
           notifications.isLoading ? (
             <View style={styles.emptyState}><ActivityIndicator color={colors.primary} /></View>
@@ -141,4 +172,17 @@ const styles = StyleSheet.create({
   notificationTime: { fontSize: 10, fontWeight: "600", marginTop: 7 },
   emptyState: { flex: 1, minHeight: 360, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 24 },
   emptyTitle: { fontSize: 14, fontWeight: "700", textAlign: "center", lineHeight: 20 },
+  testPushBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    marginBottom: 16,
+  },
+  testPushText: { fontSize: 13, fontWeight: "700", flex: 1, textAlign: "center" },
 });

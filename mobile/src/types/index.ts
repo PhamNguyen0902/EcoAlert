@@ -76,6 +76,7 @@ export interface User {
   fullName: string;
   phone?: string;
   avatar?: string;
+  pushToken?: string;
   role: UserRole;
   isActive: boolean;
   isVerified: boolean;

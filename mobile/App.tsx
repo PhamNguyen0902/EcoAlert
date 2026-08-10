@@ -20,8 +20,28 @@ const queryClient = new QueryClient({
   },
 });
 
+import { pushNotificationService } from "./src/services/pushNotificationService";
+import { useOfflineSync } from "./src/hooks/useOfflineSync";
+
 const AppContent: React.FC = () => {
   const { isDark, colors } = useTheme();
+  useOfflineSync();
+
+  React.useEffect(() => {
+    // Register push notifications
+    void pushNotificationService.registerForPushNotifications();
+
+    // Listen for notification responses (user tapping on push notification)
+    const responseSubscription = pushNotificationService.addNotificationResponseListener(
+      (data) => {
+        console.log("[App] User clicked notification with payload:", data);
+      },
+    );
+
+    return () => {
+      responseSubscription.remove();
+    };
+  }, []);
 
   const customNavigationTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
