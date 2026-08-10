@@ -7,6 +7,7 @@ export const updateProfileSchema = z.object({
   lastName: z.string().min(1).optional(),
   phone: z.string().optional(),
   avatar: z.string().url().or(z.literal('')).optional(),
+  pushToken: z.string().optional(),
 });
 export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;
 

@@ -10,6 +10,7 @@ export interface IUser extends BaseDocument {
   lastName?: string;
   phone?: string;
   avatar?: string;
+  pushToken?: string;
   role: string;
   isActive: boolean;
   isVerified: boolean;
@@ -29,6 +30,7 @@ const userSchema = new Schema<IUser>(
     fullName: { type: String, required: true, trim: true },
     phone: { type: String, trim: true },
     avatar: { type: String },
+    pushToken: { type: String, trim: true },
     role: {
       type: String,
       enum: Object.values(UserRole),
