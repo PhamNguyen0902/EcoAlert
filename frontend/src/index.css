@@ -192,6 +192,13 @@
   color: hsl(var(--foreground));
 }
 
+/* Leaflet panes use internal z-index values up to 1000. Keep every map in a
+   local content-level stacking context so portalled app dialogs stay above it. */
+.leaflet-container {
+  isolation: isolate;
+  z-index: 0;
+}
+
 .ecoalert-map-modal .leaflet-control-zoom {
   border: 0;
   border-radius: 0.875rem;

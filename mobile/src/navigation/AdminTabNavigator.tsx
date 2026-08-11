@@ -2,21 +2,18 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import {
-  LayoutDashboard,
-  ShieldCheck,
-  User as UserIcon,
-  Users,
-  Tag,
-  Activity,
-  Edit2,
-  KeyRound,
-} from "lucide-react-native";
+import { LayoutDashboard, ShieldCheck, User as UserIcon, FileText, Map, UsersRound, MoreHorizontal, Edit2, KeyRound } from "lucide-react-native";
 import { AdminDashboardScreen } from "../screens/admin/AdminDashboardScreen";
+import { AdminIncidentsScreen } from "../screens/admin/AdminIncidentsScreen";
+import { AdminGisScreen } from "../screens/admin/AdminGisScreen";
+import { AdminOfficerAvailabilityScreen } from "../screens/admin/AdminOfficerAvailabilityScreen";
+import { AdminMoreScreen } from "../screens/admin/AdminMoreScreen";
 import { UserManagementScreen } from "../screens/admin/UserManagementScreen";
 import { CategoryManagementScreen } from "../screens/admin/CategoryManagementScreen";
 import { AuditLogsScreen } from "../screens/admin/AuditLogsScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
+import { AssistantScreen } from "../screens/citizen/AssistantScreen";
+import { NotificationsScreen } from "../screens/citizen/NotificationsScreen";
 import { useProfile, useLogout } from "../hooks/useAuth";
 import { EditProfileModal } from "../components/modals/EditProfileModal";
 import { ChangePasswordModal } from "../components/modals/ChangePasswordModal";
@@ -133,14 +130,14 @@ const AdminTabs = () => {
         tabBarIcon: ({ color, size }) => {
           if (route.name === "AdminDashboardTab") {
             return <LayoutDashboard color={color} size={size} />;
-          } else if (route.name === "AdminUsersTab") {
-            return <Users color={color} size={size} />;
-          } else if (route.name === "AdminCategoriesTab") {
-            return <Tag color={color} size={size} />;
-          } else if (route.name === "AdminAuditTab") {
-            return <Activity color={color} size={size} />;
-          } else if (route.name === "AdminProfileTab") {
-            return <UserIcon color={color} size={size} />;
+          } else if (route.name === "AdminIncidentsTab") {
+            return <FileText color={color} size={size} />;
+          } else if (route.name === "AdminGisTab") {
+            return <Map color={color} size={size} />;
+          } else if (route.name === "AdminOfficersTab") {
+            return <UsersRound color={color} size={size} />;
+          } else if (route.name === "AdminMoreTab") {
+            return <MoreHorizontal color={color} size={size} />;
           }
           return null;
         },
@@ -152,24 +149,24 @@ const AdminTabs = () => {
         options={{ tabBarLabel: t("tabs.dashboard", "Dashboard") }}
       />
       <Tab.Screen
-        name="AdminUsersTab"
-        component={UserManagementScreen}
-        options={{ tabBarLabel: t("tabs.users", "Users") }}
+        name="AdminIncidentsTab"
+        component={AdminIncidentsScreen}
+        options={{ tabBarLabel: t("tabs.incidents", "Incidents") }}
       />
       <Tab.Screen
-        name="AdminCategoriesTab"
-        component={CategoryManagementScreen}
-        options={{ tabBarLabel: t("tabs.categories", "Categories") }}
+        name="AdminGisTab"
+        component={AdminGisScreen}
+        options={{ tabBarLabel: t("tabs.gis", "GIS") }}
       />
       <Tab.Screen
-        name="AdminAuditTab"
-        component={AuditLogsScreen}
-        options={{ tabBarLabel: t("tabs.audit", "Audit") }}
+        name="AdminOfficersTab"
+        component={AdminOfficerAvailabilityScreen}
+        options={{ tabBarLabel: t("tabs.officers", "Officers") }}
       />
       <Tab.Screen
-        name="AdminProfileTab"
-        component={AdminProfileScreen}
-        options={{ tabBarLabel: t("tabs.profile", "Profile") }}
+        name="AdminMoreTab"
+        component={AdminMoreScreen}
+        options={{ tabBarLabel: t("tabs.more", "More") }}
       />
     </Tab.Navigator>
   );
@@ -180,6 +177,12 @@ export const AdminTabNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AdminTabs" component={AdminTabs} />
       <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
+      <Stack.Screen name="AdminUsers" component={UserManagementScreen} />
+      <Stack.Screen name="AdminCategories" component={CategoryManagementScreen} />
+      <Stack.Screen name="AdminAudit" component={AuditLogsScreen} />
+      <Stack.Screen name="AdminAssistant" component={AssistantScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="AdminProfile" component={AdminProfileScreen} />
     </Stack.Navigator>
   );
 };
