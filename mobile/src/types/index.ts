@@ -1,5 +1,4 @@
 export type UserRole = "ADMIN" | "OFFICER" | "CITIZEN";
-export type WorkflowActorRole = UserRole | "SYSTEM";
 
 export type AlertStatus =
   | "PENDING"
@@ -186,8 +185,6 @@ export interface Alert {
   confirmationsCount?: number;
   confirmations?: Array<{ citizenId: string; confirmedAt: string }>;
   voiceNoteUrl?: string;
-  statusHistory?: StatusHistoryEntry[];
-  timeline?: TimelineEntry[];
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -372,75 +369,6 @@ export interface OfficerShift {
   endedAt?: string;
   startLocation: { type: "Point"; coordinates: [number, number]; accuracyMeters: number };
   endLocation?: { type: "Point"; coordinates: [number, number]; accuracyMeters: number };
-}
-
-export interface StatusHistoryEntry {
-  _id?: string;
-  fromStatus?: AlertStatus;
-  toStatus: AlertStatus;
-  changedBy: string;
-  changedByRole: WorkflowActorRole;
-  changedAt: string;
-  note?: string;
-  correlationId?: string;
-}
-
-export interface TimelineEntry {
-  _id?: string;
-  eventType: string;
-  label: string;
-  timestamp: string;
-  actorId: string;
-  actorRole: WorkflowActorRole;
-  note?: string;
-  status?: AlertStatus;
-  evidenceUrls?: string[];
-  correlationId?: string;
-}
-
-/** Read model returned to administrators by the existing alert-service API. */
-export interface OfficerAvailability {
-  officer: Pick<User, "_id" | "fullName" | "email" | "role">;
-  shiftStatus: "ON_SHIFT" | "OFF_SHIFT";
-  activeTaskCount: number;
-  assignedCount: number;
-  inProgressCount: number;
-  workloadLevel: "NORMAL" | "MODERATE" | "HIGH";
-  currentShift?: OfficerShift | null;
-}
-
-export interface IncidentDensityPoint {
-  lat: number;
-  lng: number;
-  weight: number;
-  incidentId: string;
-  title?: string;
-  address?: string;
-  category?: string;
-  severity?: Severity | null;
-  status?: AlertStatus | string;
-  createdAt?: string;
-}
-
-export interface IncidentDensitySummary {
-  total: number;
-  open: number;
-  resolved: number;
-  closed: number;
-  byCategory: Record<string, number>;
-  bySeverity: Record<string, number>;
-}
-
-export interface IncidentDensityResult {
-  points: IncidentDensityPoint[];
-  summary: IncidentDensitySummary;
-}
-
-export interface IncidentDensityDrilldown {
-  center: { lat: number; lng: number };
-  radiusMeters: number;
-  summary: IncidentDensitySummary;
-  incidents: Array<IncidentDensityPoint & { distanceMeters?: number }>;
 }
 
 

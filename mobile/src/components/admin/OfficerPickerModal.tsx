@@ -12,7 +12,7 @@ import { X, UserCheck, ShieldCheck, RefreshCw, AlertCircle, Check } from "lucide
 import { Button } from "../ui/Button";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
-import type { OfficerAvailability, User } from "../../types";
+import type { User } from "../../types";
 
 interface OfficerPickerModalProps {
   visible: boolean;
@@ -21,7 +21,6 @@ interface OfficerPickerModalProps {
   isRefreshing?: boolean;
   isAssigning?: boolean;
   errorMessage?: string;
-  availability?: OfficerAvailability[];
   onClose: () => void;
   onRetry?: () => void;
   onAssign: (officer: User) => void;
@@ -34,7 +33,6 @@ export const OfficerPickerModal: React.FC<OfficerPickerModalProps> = ({
   isRefreshing = false,
   isAssigning = false,
   errorMessage,
-  availability = [],
   onClose,
   onRetry,
   onAssign,
@@ -50,7 +48,6 @@ export const OfficerPickerModal: React.FC<OfficerPickerModalProps> = ({
   }, [visible, officers, selectedOfficerId]);
 
   const selectedOfficer = officers.find((o) => o._id === selectedOfficerId) || null;
-  const availabilityByOfficerId = new Map(availability.map((item) => [item.officer._id, item]));
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -110,7 +107,6 @@ export const OfficerPickerModal: React.FC<OfficerPickerModalProps> = ({
                 renderItem={({ item }) => {
                   const selected = selectedOfficerId === item._id;
                   const inactive = item.isActive === false;
-                  const operationalState = availabilityByOfficerId.get(item._id);
 
                   return (
                     <TouchableOpacity
@@ -130,11 +126,6 @@ export const OfficerPickerModal: React.FC<OfficerPickerModalProps> = ({
                       <View style={styles.officerMeta}>
                         <Text style={[styles.officerName, { color: colors.text }]}>{item.fullName}</Text>
                         <Text style={[styles.officerEmail, { color: colors.textMuted }]}>{item.email}</Text>
-                        {operationalState ? (
-                          <Text style={[styles.availabilityLabel, { color: operationalState.workloadLevel === "HIGH" ? colors.destructive : colors.textMuted }]}>
-                            {operationalState.shiftStatus === "ON_SHIFT" ? "ON SHIFT" : "OFF SHIFT"} · {operationalState.activeTaskCount} active · {operationalState.workloadLevel} workload
-                          </Text>
-                        ) : null}
                         {inactive ? <Text style={[styles.inactiveLabel, { color: colors.destructive }]}>Vô hiệu hóa</Text> : null}
                       </View>
                       <View style={[styles.radioOuter, { borderColor: selected ? colors.primary : colors.border }]}>
@@ -217,7 +208,6 @@ const styles = StyleSheet.create({
   officerMeta: { flex: 1 },
   officerName: { fontSize: 14, fontWeight: "700" },
   officerEmail: { marginTop: 2, fontSize: 12 },
-  availabilityLabel: { marginTop: 3, fontSize: 10, fontWeight: "700" },
   inactiveLabel: { marginTop: 3, fontSize: 11, fontWeight: "700" },
   radioOuter: {
     width: 22,

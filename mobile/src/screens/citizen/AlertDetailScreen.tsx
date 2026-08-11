@@ -25,7 +25,7 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react-native";
-import { useAlert, useAssignOfficer, useDeleteAlert, useOfficerAvailability, useRestoreAlert, useReviewClassification } from "../../hooks/useAlerts";
+import { useAlert, useAssignOfficer, useDeleteAlert, useRestoreAlert } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
 import { useOfficers, useUser } from "../../hooks/useUsers";
 import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
@@ -37,7 +37,6 @@ import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
-import { IncidentTimeline } from "../../components/incidents/IncidentTimeline";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
@@ -71,7 +70,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
   const assignOfficer = useAssignOfficer();
   const deleteAlertMutation = useDeleteAlert();
   const restoreAlertMutation = useRestoreAlert();
-  const reviewClassificationMutation = useReviewClassification();
 
   const [isOfficerPickerOpen, setOfficerPickerOpen] = useState(false);
   const [isCloseModalOpen, setCloseModalOpen] = useState(false);
@@ -88,7 +86,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     normalizedStatus !== "CLOSED" &&
     normalizedStatus !== "REJECTED";
   const canClose = isAdmin && normalizedStatus === "RESOLVED";
-  const canReviewClassification = isAdmin && Boolean(alert?.aiOverallAnalysis || alert?.aiFusion || alert?.aiVision || alert?.aiSummary) && !alert?.isDeleted && normalizedStatus !== "CLOSED" && normalizedStatus !== "REJECTED";
   const isPendingAdminReview = !isAdmin && normalizedStatus === "RESOLVED";
   const canEdit =
     (isOwnReport || isAdmin) &&
@@ -108,7 +105,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     error: officersError,
     refetch: refetchOfficers,
   } = useOfficers(Boolean(canAssign));
-  const officerAvailability = useOfficerAvailability(Boolean(canAssign && isOfficerPickerOpen));
 
   const assignedOfficerObj = typeof alert?.assignedOfficerId === "object"
     ? alert.assignedOfficerId
@@ -184,17 +180,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     } catch (err: any) {
       ReactNativeAlert.alert("Restore Error", getRequestErrorMessage(err, "Failed to restore report."));
     }
-  };
-
-  const handleConfirmClassification = () => {
-    if (!alert || !canReviewClassification) return;
-    reviewClassificationMutation.mutate(
-      { id: alert._id, category: alert.category || undefined },
-      {
-        onSuccess: () => ReactNativeAlert.alert("Classification verified", "The AI classification has been recorded for human review."),
-        onError: (mutationError) => ReactNativeAlert.alert("Unable to verify classification", getRequestErrorMessage(mutationError, "Please refresh the incident and try again.")),
-      },
-    );
   };
 
   if (isLoading) {
@@ -287,19 +272,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
 
         {/* Title & Description */}
         <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
-
-        {canReviewClassification ? (
-          <GlassCard style={[styles.classificationReviewCard, { backgroundColor: isDark ? "rgba(124,58,237,0.16)" : "#F5F3FF", borderColor: isDark ? "rgba(196,181,253,0.34)" : "#DDD6FE" }]}>
-            <View style={styles.classificationReviewHeader}>
-              <Sparkles size={19} color="#7C3AED" />
-              <View style={styles.classificationReviewCopy}>
-                <Text style={[styles.classificationReviewTitle, { color: colors.text }]}>AI classification review</Text>
-                <Text style={[styles.classificationReviewBody, { color: colors.textMuted }]}>Confirm the suggested category after reviewing the evidence. AI never verifies an incident by itself.</Text>
-              </View>
-            </View>
-            <Button title="Confirm AI classification" onPress={handleConfirmClassification} loading={reviewClassificationMutation.isPending} disabled={reviewClassificationMutation.isPending} style={styles.classificationReviewButton} />
-          </GlassCard>
-        ) : null}
 
         {/* Close Incident Action Banner for Admin */}
         {canClose ? (
@@ -569,19 +541,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
           </GlassCard>
         ) : null}
 
-        {alert.resolutionEvidence?.length ? (
-          <View style={styles.sectionBox}>
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>Resolution evidence</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
-              {alert.resolutionEvidence.map((evidence, index) => (
-                <Image key={evidence._id || `${evidence.url}-${index}`} source={{ uri: evidence.url }} style={styles.evidenceImage} accessibilityLabel="After-treatment evidence" />
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
-
-        <IncidentTimeline alert={alert} />
-
         {/* Report Metadata */}
         <Card style={styles.metaCard}>
           <View style={styles.metaRow}>
@@ -613,7 +572,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
             ? getRequestErrorMessage(officersError, "Please check your connection and try again.")
             : undefined
         }
-        availability={officerAvailability.data}
         onClose={() => setOfficerPickerOpen(false)}
         onRetry={() => refetchOfficers()}
         onAssign={handleAssignOfficer}
@@ -662,12 +620,6 @@ const styles = StyleSheet.create({
   sevBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
   title: { fontSize: 22, fontWeight: "800", marginBottom: 16, lineHeight: 28 },
   closeCard: { padding: 18, marginBottom: 20, borderRadius: 20, backgroundColor: "#DCFCE7" },
-  classificationReviewCard: { padding: 16, marginBottom: 20, borderRadius: 18, borderWidth: 1 },
-  classificationReviewHeader: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
-  classificationReviewCopy: { flex: 1 },
-  classificationReviewTitle: { fontSize: 15, fontWeight: "800" },
-  classificationReviewBody: { marginTop: 3, fontSize: 12, lineHeight: 18 },
-  classificationReviewButton: { marginTop: 13, backgroundColor: "#7C3AED" },
   closeHeader: { flexDirection: "row", gap: 12, marginBottom: 12 },
   closeTitle: { fontSize: 16, fontWeight: "800", color: "#15803D" },
   closeSub: { fontSize: 13, color: "#166534", marginTop: 2, lineHeight: 18 },

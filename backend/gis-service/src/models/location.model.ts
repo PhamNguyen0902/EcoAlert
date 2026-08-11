@@ -8,8 +8,6 @@ export interface ILocation extends Document {
   title?: string;
   address?: string;
   isDeleted?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
   location: {
     type: 'Point';
     coordinates: [number, number]; // [longitude, latitude]

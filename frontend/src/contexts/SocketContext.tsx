@@ -74,8 +74,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       queryClient.refetchQueries({ type: 'active' });
     };
 
+    const isSelfAction = (data: any) => {
+      const currentUserId = userRef.current?._id || (userRef.current as any)?.id;
+      if (!currentUserId || !data) return false;
+      const actorId = data.actorId || data.updatedBy || data.deletedBy || data.userId || data.citizenId || data.createdBy;
+      return Boolean(actorId && String(actorId) === String(currentUserId));
+    };
+
     socketInstance.on('alert:created', (data: any) => {
       console.log('[Web Socket] New alert created:', data);
+      refreshActiveData();
+
+      if (isSelfAction(data)) return;
+
       playNotificationSound('alert');
       const alertId = data._id || data.alertId || 'new';
       const titleStr = data.title ? ` ${data.title}` : '';
@@ -84,11 +95,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         duration: 5000,
         position: 'top-right',
       });
-      refreshActiveData();
     });
 
     socketInstance.on('alert:updated', (data: any) => {
       console.log('[Web Socket] Alert updated:', data);
+      refreshActiveData();
+
+      if (isSelfAction(data)) return;
+
       playNotificationSound('info');
       const alertId = data._id || data.alertId || 'update';
       if (data.isDeleted || data.status === 'deleted') {
@@ -106,7 +120,6 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           position: 'top-right',
         });
       }
-      refreshActiveData();
     });
 
     socketInstance.on('image:analyzed', (data: any) => {

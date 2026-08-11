@@ -227,12 +227,6 @@ export interface HeatmapPoint {
   lng: number;
   weight: number;
   incidentId: string;
-  title?: string;
-  address?: string;
-  category: string;
-  severity: string | null;
-  status: string;
-  createdAt?: string;
 }
 
 export interface HeatmapSummary {
@@ -253,7 +247,7 @@ export interface HeatmapDrilldown {
   center: { lat: number; lng: number };
   radiusMeters: number;
   summary: HeatmapSummary;
-  incidents: Array<{ alertId: string; title?: string; address?: string; category: string; severity: string | null; status: string; createdAt?: string; distanceMeters: number }>;
+  incidents: Array<{ alertId: string; title?: string; address?: string; category: string; severity: string; status: string; distanceMeters: number }>;
 }
 
 export interface StatusHistoryEntry {
@@ -359,62 +353,6 @@ export interface WeatherData {
   sunrise: string;
   sunset: string;
   lastUpdated: string;
-}
-
-export interface WeatherForecastPeriod {
-  timestamp: string;
-  temperature: number;
-  feelsLike: number;
-  temperatureMin: number;
-  temperatureMax: number;
-  condition: string;
-  description: string;
-  icon: string;
-  precipitationProbability: number;
-}
-
-export interface DailyWeatherForecast {
-  date: string;
-  minTemperature: number;
-  maxTemperature: number;
-  condition: string;
-  description: string;
-  icon: string;
-  precipitationProbability: number;
-}
-
-export interface WeatherAirQuality {
-  aqi: number;
-  aqiLabel: string;
-  pm2_5: number | null;
-  pm10: number | null;
-  co: number | null;
-  no2: number | null;
-  o3: number | null;
-}
-
-export interface WeatherDetails {
-  location: {
-    name: string;
-    country: string;
-    latitude: number;
-    longitude: number;
-    timezoneOffsetSeconds: number;
-  };
-  current: WeatherData & {
-    condition: string;
-    pressure: number | null;
-    visibilityKm: number | null;
-    cloudiness: number | null;
-  };
-  hourly: WeatherForecastPeriod[];
-  daily: DailyWeatherForecast[];
-  airQuality: WeatherAirQuality | null;
-  availability: {
-    forecast: boolean;
-    airQuality: boolean;
-  };
-  fetchedAt: string;
 }
 
 export interface LoginCredentials {

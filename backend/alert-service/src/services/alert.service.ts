@@ -811,6 +811,8 @@ export class AlertService {
       status: 'deleted',
       isDeleted: true,
       deletedAt: new Date(),
+      actorId: actor.id,
+      updatedBy: actor.id,
     };
     await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, deletedAlertData, actor.correlationId);
 

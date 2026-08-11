@@ -37,7 +37,6 @@ import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
-import { IncidentTimeline } from "../../components/incidents/IncidentTimeline";
 import { useTheme } from "../../context/ThemeContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../utils/maps";
@@ -358,19 +357,6 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             <Text style={[styles.savedNoteText, { color: colors.text }]}>{alert.officerNote}</Text>
           </GlassCard>
         ) : null}
-
-        {alert.resolutionEvidence?.length ? (
-          <View style={styles.sectionBox}>
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>Resolution evidence</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
-              {alert.resolutionEvidence.map((evidence, index) => (
-                <Image key={evidence._id || `${evidence.url}-${index}`} source={{ uri: evidence.url }} style={styles.evidenceImage} accessibilityLabel="After-treatment evidence" />
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
-
-        <IncidentTimeline alert={alert} />
       </ScrollView>
 
       <ResolutionModal
