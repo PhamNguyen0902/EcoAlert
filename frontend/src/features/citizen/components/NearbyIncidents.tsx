@@ -108,8 +108,8 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
                   </div>
                 )}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-md", getSeverityColor(alert.severity))}>
-                    {alert.severity.toUpperCase()}
+                  <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-md", getSeverityColor(alert.severity ?? 'low'))}>
+                    {alert.severity?.toUpperCase() ?? 'UNAVAILABLE'}
                   </span>
                 </div>
               </div>

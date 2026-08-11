@@ -25,15 +25,33 @@ export interface AiVisionAnalysis {
 }
 
 export interface AiFusionAnalysis {
-  version: 'vision-fusion-v1';
+  version: 'vision-fusion-v1' | 'vision-fusion-v2';
   mode: 'FULL_MULTIMODAL' | 'SEMANTIC_ONLY' | 'VISION_ONLY' | 'FAILED';
   wasteType?: AiWasteType;
-  severityScore: number;
+  severityScore: number | null;
   explanations: string[];
   semanticConfidence: number | null;
   visionConfidence: number | null;
-  fusionConfidence: number;
+  fusionConfidence: number | null;
+  visionSupport?: 'STRONG' | 'PARTIAL' | 'NONE' | 'NOT_APPLICABLE';
   processingTimeMs: number;
+}
+
+export interface AiOverallAnalysis {
+  isIncident: boolean;
+  incidentConfidence: number;
+  categorySuggestion: AlertCategory | null;
+  categoryConfidence: number;
+  classificationStatus: 'AI_SUGGESTED' | 'UNCLASSIFIED';
+  confidenceTier: 'HIGH_CONFIDENCE' | 'REVIEW_REQUIRED' | 'UNCLASSIFIED';
+  severity: Severity;
+  severityScore: number;
+  severityConfidence: number;
+  overallSummary: string;
+  shortReason: string;
+  visionEvidenceUsed: string[];
+  semanticModel: string;
+  pipelineVersion: 'multimodal-v2';
 }
 
 export interface User {
@@ -98,7 +116,7 @@ export interface Alert {
   category: AlertCategory;
   classification?: AlertClassification;
   imageValidation?: ImageValidation;
-  severity: Severity;
+  severity: Severity | null;
   mediaUrls: string[];
   location: GeoLocation;
   address: string;
@@ -112,18 +130,20 @@ export interface Alert {
   arrivedBy?: string;
   arrivalLocation?: ArrivalLocation;
   checkIn?: { accuracyMeters: number; distanceFromIncidentMeters: number; checkedInAt: string; verified: boolean };
-  aiConfidence?: number;
-  aiSuggestedPriority?: Severity;
-  aiSummary?: string;
-  aiReasoningSummary?: string;
+  aiConfidence?: number | null;
+  aiConfidenceSource?: 'FUSION' | 'CATEGORY' | 'SEMANTIC' | 'NONE';
+  aiSuggestedPriority?: Severity | null;
+  aiSummary?: string | null;
+  aiReasoningSummary?: string | null;
   aiAnalysisMode?: AiAnalysisMode;
   aiAnalysisProvider?: 'openrouter' | 'vision-service';
   aiAnalysisModel?: string;
   aiAnalysisId?: string;
   aiAnalyzedAt?: string;
-  aiPipelineVersion?: 'multimodal-v1';
+  aiPipelineVersion?: 'multimodal-v1' | 'multimodal-v2';
   aiVision?: AiVisionAnalysis;
   aiFusion?: AiFusionAnalysis;
+  aiOverallAnalysis?: AiOverallAnalysis;
   aiSemanticProcessingTimeMs?: number;
   aiTotalProcessingTimeMs?: number;
   officerNote?: string;
@@ -174,6 +194,60 @@ export interface ResolutionInput {
   materialsUsed?: string;
   additionalNotes?: string;
   evidence: ResolutionEvidenceInput[];
+}
+
+export interface ShiftLocationInput {
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number;
+}
+
+export interface OfficerShift {
+  _id: string;
+  officerId: string;
+  status: 'ACTIVE' | 'COMPLETED';
+  startedAt: string;
+  endedAt?: string;
+  startLocation: { type: 'Point'; coordinates: [number, number]; accuracyMeters: number };
+  endLocation?: { type: 'Point'; coordinates: [number, number]; accuracyMeters: number };
+}
+
+export interface OfficerAvailability {
+  officer: Pick<User, '_id' | 'fullName' | 'email' | 'role'>;
+  shiftStatus: 'ON_SHIFT' | 'OFF_SHIFT';
+  activeTaskCount: number;
+  assignedCount: number;
+  inProgressCount: number;
+  workloadLevel: 'NORMAL' | 'MODERATE' | 'HIGH';
+  currentShift?: OfficerShift | null;
+}
+
+export interface HeatmapPoint {
+  lat: number;
+  lng: number;
+  weight: number;
+  incidentId: string;
+}
+
+export interface HeatmapSummary {
+  total: number;
+  open: number;
+  resolved: number;
+  closed: number;
+  byCategory: Record<string, number>;
+  bySeverity: Record<string, number>;
+}
+
+export interface IncidentHeatmap {
+  points: HeatmapPoint[];
+  summary: HeatmapSummary;
+}
+
+export interface HeatmapDrilldown {
+  center: { lat: number; lng: number };
+  radiusMeters: number;
+  summary: HeatmapSummary;
+  incidents: Array<{ alertId: string; title?: string; address?: string; category: string; severity: string; status: string; distanceMeters: number }>;
 }
 
 export interface StatusHistoryEntry {

@@ -31,20 +31,23 @@ import {
   useConfirmArrival,
   useResolveIncident,
   useStartHandling,
-  useUsers,
+  useOfficerAvailability,
 } from '@/hooks/hooks';
 import { alertService } from '@/services/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { hasValidCoordinates } from '@/lib/maps';
+import { getAlertDisplaySeverity } from '@/lib/ai-confidence';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IncidentLocationDetails } from '@/components/location/IncidentLocationDetails';
 import { ConfirmActionDialog } from '@/components/incidents/ConfirmActionDialog';
 import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
-import type { AlertCategory, ResolutionInput } from '@/types';
+import { OverallAiAnalysisCard } from '@/components/incidents/OverallAiAnalysisCard';
+import { VisionAnalysisCard } from '@/components/incidents/VisionAnalysisCard';
+import type { AlertCategory, OfficerAvailability, ResolutionInput } from '@/types';
 import 'leaflet/dist/leaflet.css';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -78,7 +81,7 @@ export default function OfficerReportDetail() {
   const { user, role } = useAuth();
   const { t } = useLanguage();
   const { data: alert, isLoading, isError, error } = useAlert(id);
-  const { data: officerData } = useUsers(1, 100, 'OFFICER', undefined, role === 'ADMIN');
+  const { data: officerAvailability } = useOfficerAvailability(role === 'ADMIN');
   const assignOfficer = useAssignOfficer();
   const startHandling = useStartHandling();
   const confirmArrival = useConfirmArrival();
@@ -137,7 +140,12 @@ export default function OfficerReportDetail() {
   const isAssignedToCurrentOfficer = isOfficer && alert.assignedOfficerId === user?._id;
   // The API query is already scoped to OFFICER; keep this boundary guard so only
   // valid assignees can be rendered if an unexpected response is returned.
-  const officers = (officerData?.items ?? []).filter((user) => user.role === 'OFFICER');
+  const availability = (officerAvailability ?? []) as OfficerAvailability[];
+  const officers = availability.map((item) => item.officer);
+  const selectedAvailability = availability.find((item) => item.officer._id === selectedOfficerId);
+  const assignmentWarning = selectedAvailability && (selectedAvailability.shiftStatus === 'OFF_SHIFT' || selectedAvailability.workloadLevel === 'HIGH')
+    ? `${selectedAvailability.officer.fullName} is ${selectedAvailability.shiftStatus === 'OFF_SHIFT' ? 'off shift' : 'at high workload'} (${selectedAvailability.activeTaskCount} active tasks). Admin confirmation is required to continue.`
+    : undefined;
   const assignedOfficer = officers.find((officer) => officer._id === alert.assignedOfficerId);
   const assignedOfficerLabel = alert.assignedOfficerId
     ? assignedOfficer?.fullName || (alert.assignedOfficerId === user?._id ? user.fullName : alert.assignedOfficerId)
@@ -334,6 +342,8 @@ export default function OfficerReportDetail() {
     );
   };
 
+  const displaySeverity = getAlertDisplaySeverity(alert);
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -341,7 +351,7 @@ export default function OfficerReportDetail() {
           <Link to={isAdmin ? '/admin/reports' : '/officer/assigned'}><ChevronLeft className="mr-2 h-4 w-4" />Quay lại danh sách</Link>
         </Button>
         <div className="flex gap-2">
-          <Badge variant="outline" className="capitalize">{alert.severity}</Badge>
+          <Badge variant="outline" className="capitalize">{displaySeverity ?? 'unavailable'}</Badge>
           <Badge className="capitalize">{alert.status.replace(/_/g, ' ')}</Badge>
         </div>
       </div>
@@ -355,7 +365,7 @@ export default function OfficerReportDetail() {
                   <CardTitle className="text-2xl">{alert.title}</CardTitle>
                   <CardDescription className="mt-2 capitalize">{alert.category.replace(/_/g, ' ')}</CardDescription>
                 </div>
-                <Badge variant="outline" className="capitalize">Mức độ {alert.severity}</Badge>
+                <Badge variant="outline" className="capitalize">Mức độ {displaySeverity ?? 'chưa xác định'}</Badge>
               </div>
               <div className="flex flex-wrap gap-4 pt-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{format(new Date(alert.createdAt), 'PP')}</span>
@@ -378,6 +388,9 @@ export default function OfficerReportDetail() {
               </div>
             </CardContent>
           </Card>
+
+          <OverallAiAnalysisCard alert={alert} />
+          <VisionAnalysisCard alert={alert} />
 
           {(alert.resolutionSummary || resolutionEvidence.length > 0) ? (
             <Card className="border-emerald-500/30">
@@ -407,7 +420,7 @@ export default function OfficerReportDetail() {
             </Card>
           ) : null}
 
-          <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} />
+          <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} analysisMode={alert.aiAnalysisMode} vision={alert.aiVision} />
 
           <Card>
             <CardHeader><CardTitle className="text-lg">Lịch sử trạng thái</CardTitle><CardDescription>Nhật ký chuyển đổi trạng thái do máy chủ lưu trữ.</CardDescription></CardHeader>
@@ -462,8 +475,9 @@ export default function OfficerReportDetail() {
                   <label htmlFor="assigned-officer" className="text-sm font-medium">Phân công cho Cán bộ</label>
                   <select id="assigned-officer" value={selectedOfficerId} onChange={(event) => setSelectedOfficerId(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
                     <option value="">Chọn Cán bộ</option>
-                    {officers.map((officer) => <option key={officer._id} value={officer._id}>{officer.fullName} · {officer.email}</option>)}
+                    {availability.map((item) => <option key={item.officer._id} value={item.officer._id}>{item.officer.fullName} · {item.shiftStatus === 'ON_SHIFT' ? 'On shift' : 'Off shift'} · {item.activeTaskCount} active</option>)}
                   </select>
+                  {assignmentWarning ? <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-800 dark:text-amber-200">{assignmentWarning}</p> : null}
                   <Button className="w-full" disabled={!selectedOfficerId} onClick={() => setConfirmAction('assign')}><UserCheck className="mr-2 h-4 w-4" />Xác nhận Phân công</Button>
                 </div>
               ) : null}
@@ -547,7 +561,7 @@ export default function OfficerReportDetail() {
         </aside>
       </div>
 
-      <ConfirmActionDialog open={confirmAction === 'assign'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Phân công sự cố này?" description="Cán bộ được chọn sẽ nhận sự cố này làm nhiệm vụ mới." confirmLabel="Phân công Cán bộ" isPending={assignOfficer.isPending} onConfirm={handleAssign} />
+      <ConfirmActionDialog open={confirmAction === 'assign'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Phân công sự cố này?" description={assignmentWarning || "Cán bộ được chọn sẽ nhận sự cố này làm nhiệm vụ mới."} confirmLabel="Phân công Cán bộ" isPending={assignOfficer.isPending} onConfirm={handleAssign} />
       <ConfirmActionDialog open={confirmAction === 'start'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Bắt đầu xử lý sự cố?" description="Người dân sẽ nhận được thông báo và trạng thái chuyển sang Đang xử lý." confirmLabel="Bắt đầu Xử lý" pendingLabel="Đang khởi tạo..." isPending={startHandling.isPending} onConfirm={handleStart} />
       <ConfirmActionDialog open={confirmAction === 'arrival'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Xác nhận đã tới hiện trường?" description="Thời gian tới hiện trường của bạn sẽ được ghi lại hệ thống." confirmLabel="Xác nhận Đã tới" pendingLabel="Đang xác nhận..." isPending={confirmArrival.isPending} onConfirm={handleArrival} />
       <ConfirmActionDialog open={confirmAction === 'resolve'} onOpenChange={(open) => !open && setConfirmAction(null)} title="Đánh dấu đã hoàn thành xử lý?" description="Hồ sơ kết quả và minh chứng sau xử lý sẽ được gửi để Admin xem xét." confirmLabel="Đánh dấu Hoàn thành" pendingLabel="Đang gửi..." isPending={resolveIncident.isPending} onConfirm={handleResolve} />

@@ -49,10 +49,24 @@ const deriveWasteType = (
   return undefined;
 };
 
+const isWasteCategory = (category?: AlertCategory | 'UNCLASSIFIED') =>
+  category === AlertCategory.ILLEGAL_DUMPING || category === AlertCategory.ILLEGAL_CONSTRUCTION_WASTE;
+
+const determineVisionSupport = (
+  semantic?: IncidentAnalysisResult,
+  vision?: IAiVisionAnalysis,
+): IAiFusionAnalysis['visionSupport'] => {
+  if (!semantic || !vision || vision.status !== 'COMPLETED') return 'NOT_APPLICABLE';
+  if (!isWasteCategory(semantic.category)) return 'NOT_APPLICABLE';
+  if (vision.totalDetectedObjects >= 3) return 'STRONG';
+  if (vision.totalDetectedObjects > 0) return 'PARTIAL';
+  return 'NONE';
+};
+
 export const fuseIncidentEvidence = (
   semantic: IncidentAnalysisResult | undefined,
   vision: IAiVisionAnalysis | undefined,
-): { severity: Severity; confidence: number; fusion: IAiFusionAnalysis } => {
+): { severity: Severity | null; fusion: IAiFusionAnalysis } => {
   const startedAt = Date.now();
   const factors: IAiSeverityFactor[] = [];
   let score = 0;
@@ -105,23 +119,17 @@ export const fuseIncidentEvidence = (
   }
 
   score = Math.round(clamp(score, 0, 100));
-  const semanticConfidence = semantic?.confidence ?? null;
+  const semanticConfidence = semantic?.incidentConfidence ?? null;
   const visionConfidence = vision?.detectorConfidence ?? null;
-  let fusionConfidence: number;
+  let fusionConfidence: number | null = null;
   let mode: IAiFusionAnalysis['mode'];
   if (semantic && vision) {
-    // Detector confidence is supporting evidence rather than incident-level certainty.
-    // Keep semantic context dominant and bound detector influence conservatively.
-    fusionConfidence = clamp(semantic.confidence * 0.85 + Math.min(visionConfidence || 0, 0.75) * 0.15);
     mode = 'FULL_MULTIMODAL';
   } else if (semantic) {
-    fusionConfidence = semantic.confidence;
     mode = 'SEMANTIC_ONLY';
   } else if (vision) {
-    fusionConfidence = Math.min(visionConfidence || 0, 0.6);
     mode = 'VISION_ONLY';
   } else {
-    fusionConfidence = 0;
     mode = 'FAILED';
   }
 
@@ -129,19 +137,27 @@ export const fuseIncidentEvidence = (
   if (vision && vision.visibleWasteCoverage === null) {
     explanations.push('Pixel coverage was not scored because segmentation evidence is unavailable.');
   }
+  const visionSupport = determineVisionSupport(semantic, vision);
+  if (visionSupport === 'STRONG') explanations.push('Detected EcoAlert waste objects strongly support the semantic waste interpretation.');
+  if (visionSupport === 'PARTIAL') explanations.push('Detected EcoAlert waste objects provide partial support for the semantic waste interpretation.');
+  if (visionSupport === 'NONE') explanations.push('No EcoAlert waste objects were detected; the semantic waste interpretation remains advisory and requires human review.');
   return {
-    severity: severityFromScore(score),
-    confidence: Number(fusionConfidence.toFixed(4)),
+    // Vision evidence can support review, but does not independently establish
+    // an incident-level severity without semantic analysis.
+    severity: semantic ? severityFromScore(score) : null,
     fusion: {
-      version: 'vision-fusion-v1',
+      version: 'vision-fusion-v2',
       mode,
       wasteType,
-      severityScore: score,
+      severityScore: semantic ? score : null,
       severityFactors: factors,
       explanations,
       semanticConfidence,
       visionConfidence,
-      fusionConfidence: Number(fusionConfidence.toFixed(4)),
+      // The current fusion layer reconciles severity/evidence only; it does
+      // not calculate a distinct cross-signal confidence metric.
+      fusionConfidence,
+      visionSupport,
       processingTimeMs: Date.now() - startedAt,
     },
   };

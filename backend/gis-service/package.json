@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "tsc",
-    "test": "npm run build && node --test dist/tests/weather-normalization.test.js",
+    "test": "npm run build && node --test dist/tests/*.test.js",
     "start": "node dist/server.js"
   },
   "dependencies": {

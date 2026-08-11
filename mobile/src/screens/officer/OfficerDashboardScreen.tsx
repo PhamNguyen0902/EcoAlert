@@ -6,7 +6,9 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Alert as NativeAlert,
 } from "react-native";
+import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ShieldAlert,
@@ -17,7 +19,7 @@ import {
   ChevronRight,
   UserCheck,
 } from "lucide-react-native";
-import { useAlerts } from "../../hooks/useAlerts";
+import { useAlerts, useCurrentShift, useEndShift, useStartShift } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
 import { StatCard } from "../../components/ui/StatCard";
 import { GlassCard } from "../../components/ui/GlassCard";
@@ -43,6 +45,9 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
   const { t } = useLanguage();
   const { data: profile } = useProfile();
   const { data: alertsData, isLoading, refetch, isRefetching } = useAlerts(1, 50);
+  const { data: currentShift, refetch: refetchShift } = useCurrentShift();
+  const startShift = useStartShift();
+  const endShift = useEndShift();
   const [refreshing, setRefreshing] = useState(false);
 
   const alerts = alertsData?.items ?? [];
@@ -81,9 +86,42 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await refetch();
+      await Promise.all([refetch(), refetchShift()]);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleShiftToggle = async () => {
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== "granted") {
+        NativeAlert.alert("Location required", "Allow foreground location to record a shift boundary.");
+        return;
+      }
+      // This is an explicit, one-time foreground event. The app never starts a
+      // watcher or background task for shift tracking.
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+      const accuracyMeters = position.coords.accuracy;
+      if (accuracyMeters === null || !Number.isFinite(accuracyMeters)) {
+        NativeAlert.alert("Location unavailable", "A GPS accuracy value is required. Please retry outdoors.");
+        return;
+      }
+      const location = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracyMeters,
+      };
+      if (currentShift) {
+        await endShift.mutateAsync(location);
+        NativeAlert.alert("Shift ended", "Your shift end was recorded with this foreground GPS event.");
+      } else {
+        await startShift.mutateAsync(location);
+        NativeAlert.alert("Shift started", "Your shift start was recorded with this foreground GPS event.");
+      }
+      await refetchShift();
+    } catch (error: any) {
+      NativeAlert.alert("Shift update failed", error?.response?.data?.message || error?.message || "Please retry with a clearer GPS signal.");
     }
   };
 
@@ -124,6 +162,22 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
             </View>
           </View>
         </GlassCard>
+
+        <Card style={[styles.shiftCard, { borderColor: currentShift ? "#14B8A6" : colors.border }]}>
+          <View style={styles.shiftHeader}>
+            <View>
+              <Text style={[styles.shiftTitle, { color: colors.text }]}>Shift availability</Text>
+              <Text style={[styles.shiftDescription, { color: colors.textMuted }]}>
+                {currentShift ? `On shift since ${new Date(currentShift.startedAt).toLocaleTimeString()}` : "Off shift — start when you are ready to accept work."}
+              </Text>
+            </View>
+            <Badge label={currentShift ? "ON SHIFT" : "OFF SHIFT"} type="custom" bgColor={currentShift ? "#CCFBF1" : (isDark ? "#334155" : "#E2E8F0")} textColor={currentShift ? "#0F766E" : colors.textMuted} />
+          </View>
+          <Text style={[styles.shiftPrivacy, { color: colors.textMuted }]}>GPS is recorded only when you tap Start Shift or End Shift. Background tracking is disabled.</Text>
+          <TouchableOpacity disabled={startShift.isPending || endShift.isPending} onPress={handleShiftToggle} style={[styles.shiftButton, { backgroundColor: currentShift ? "#0F766E" : colors.secondary, opacity: startShift.isPending || endShift.isPending ? 0.65 : 1 }]}>
+            <Text style={styles.shiftButtonText}>{startShift.isPending || endShift.isPending ? "Recording…" : currentShift ? "End Shift" : "Start Shift"}</Text>
+          </TouchableOpacity>
+        </Card>
 
         {/* Task Metrics Grid */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("officer.taskMetrics", "Task Metrics")}</Text>
@@ -268,6 +322,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginLeft: 12,
   },
+  shiftCard: { marginBottom: 16, padding: 16, borderWidth: 1 },
+  shiftHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  shiftTitle: { fontSize: 16, fontWeight: "800" },
+  shiftDescription: { fontSize: 12, marginTop: 4, maxWidth: 220 },
+  shiftPrivacy: { fontSize: 11, lineHeight: 16, marginTop: 12 },
+  shiftButton: { marginTop: 12, minHeight: 44, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  shiftButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12, marginTop: 8 },
   sectionHeader: {
     flexDirection: "row",

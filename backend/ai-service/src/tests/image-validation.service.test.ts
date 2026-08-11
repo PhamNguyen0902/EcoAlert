@@ -14,10 +14,10 @@ test('clearly unrelated evidence is invalid', () => {
   assert.equal(result.decision, 'INVALID');
 });
 
-test('ambiguous and unsupported results remain unclassified suggestions', () => {
+test('ambiguous and low-confidence results remain unclassified suggestions', () => {
   const ambiguous = deriveImageValidation({ isEnvironmentalIncident: null, confidence: 0.55, suggestedCategory: AlertCategory.NOISE_POLLUTION, reason: 'The visible evidence is unclear.' }, 'test-model');
   assert.equal(ambiguous.decision, 'UNCERTAIN');
-  assert.equal(ambiguous.suggestedCategory, null);
+  assert.equal(ambiguous.suggestedCategory, AlertCategory.NOISE_POLLUTION);
   const lowConfidence = deriveImageValidation({ isEnvironmentalIncident: true, confidence: 0.32, suggestedCategory: AlertCategory.ILLEGAL_DUMPING, reason: 'The evidence is weak.' }, 'test-model');
   assert.equal(lowConfidence.suggestedCategory, null);
 });

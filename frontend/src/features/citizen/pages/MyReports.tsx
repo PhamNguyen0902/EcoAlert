@@ -145,9 +145,9 @@ export default function MyReports() {
                           </Link>
                           <div className="flex gap-1.5 shrink-0">
                             <Badge
-                              variant={severityColor[alert.severity] as any}
+                              variant={severityColor[alert.severity ?? 'low'] as any}
                             >
-                              {alert.severity?.toUpperCase()}
+                              {alert.severity?.toUpperCase() ?? 'UNAVAILABLE'}
                             </Badge>
                             <Badge variant={statusColor(alert.status)}>
                               {t(`status.${alert.status}`) !== `status.${alert.status}`

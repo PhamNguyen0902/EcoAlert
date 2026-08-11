@@ -45,6 +45,13 @@ export const assignOfficerSchema = z.object({
 });
 export type AssignOfficerDto = z.infer<typeof assignOfficerSchema>;
 
+export const shiftLocationSchema = z.object({
+  latitude: z.number().finite().min(-90).max(90),
+  longitude: z.number().finite().min(-180).max(180),
+  accuracyMeters: z.number().finite().nonnegative(),
+});
+export type ShiftLocationDto = z.infer<typeof shiftLocationSchema>;
+
 export const confirmArrivalSchema = z.object({
   latitude: z.number().finite().min(-90).max(90),
   longitude: z.number().finite().min(-180).max(180),

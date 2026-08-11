@@ -9,6 +9,12 @@ export type AiAnalysisMode =
   | 'VISION_ONLY'
   | 'FAILED';
 
+export type AiPipelineVersion = 'multimodal-v1' | 'multimodal-v2';
+export type AiClassificationStatus = 'AI_SUGGESTED' | 'UNCLASSIFIED';
+export type AiSuggestionConfidenceTier = 'HIGH_CONFIDENCE' | 'REVIEW_REQUIRED' | 'UNCLASSIFIED';
+export type AiVisionSupport = 'STRONG' | 'PARTIAL' | 'NONE' | 'NOT_APPLICABLE';
+export type AiDisplayConfidenceSource = 'FUSION' | 'CATEGORY' | 'SEMANTIC' | 'NONE';
+
 export type AiVisionStatus = 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'UNAVAILABLE';
 
 export type AiWasteType =
@@ -74,30 +80,55 @@ export interface IAiSeverityFactor {
 }
 
 export interface IAiFusionAnalysis {
-  version: 'vision-fusion-v1';
+  version: 'vision-fusion-v1' | 'vision-fusion-v2';
   mode: Extract<AiAnalysisMode, 'FULL_MULTIMODAL' | 'SEMANTIC_ONLY' | 'VISION_ONLY' | 'FAILED'>;
   wasteType?: AiWasteType;
-  severityScore: number;
+  severityScore: number | null;
   severityFactors: IAiSeverityFactor[];
   explanations: string[];
   semanticConfidence: number | null;
   visionConfidence: number | null;
-  fusionConfidence: number;
+  fusionConfidence: number | null;
+  visionSupport?: AiVisionSupport;
   processingTimeMs: number;
+}
+
+/**
+ * Concise, user-visible semantic interpretation. Vision detections remain in
+ * IAiVisionAnalysis so object-level evidence is never confused with incident
+ * classification.
+ */
+export interface IAiOverallAnalysis {
+  isIncident: boolean;
+  incidentConfidence: number;
+  categorySuggestion: AlertCategory | null;
+  categoryConfidence: number;
+  classificationStatus: AiClassificationStatus;
+  confidenceTier: AiSuggestionConfidenceTier;
+  severity: Severity;
+  severityScore: number;
+  severityConfidence: number;
+  overallSummary: string;
+  shortReason: string;
+  visionEvidenceUsed: string[];
+  semanticModel: string;
+  pipelineVersion: 'multimodal-v2';
 }
 
 export interface IAiAnalysisCompletedData {
   alertId: string;
   analysisId: string;
-  category: AlertCategory;
-  severity: Severity;
-  confidence: number;
-  summary: string;
-  reasoningSummary: string;
+  category: AlertCategory | 'UNCLASSIFIED';
+  severity: Severity | null;
+  confidence: number | null;
+  displayConfidenceSource?: AiDisplayConfidenceSource;
+  summary: string | null;
+  reasoningSummary: string | null;
   analysisMode: AiAnalysisMode;
   provider: 'openrouter' | 'vision-service';
   model: string;
-  pipelineVersion?: 'multimodal-v1';
+  pipelineVersion?: AiPipelineVersion;
+  overallAnalysis?: IAiOverallAnalysis;
   vision?: IAiVisionAnalysis;
   fusion?: IAiFusionAnalysis;
   semanticProcessingTimeMs?: number;

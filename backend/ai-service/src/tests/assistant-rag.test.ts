@@ -47,6 +47,17 @@ test('officer-only workflow guidance is not retrieved for citizens', () => {
   assert.ok(!results.some((result) => result.id === 'officer-task-workflow'));
 });
 
+test('operational next-step prompts select the read-only guidance intent', () => {
+  assert.equal(
+    detectAssistantIntent('What should I do next on my assigned incident?', 'OFFICER'),
+    'OPERATIONAL_GUIDANCE',
+  );
+  assert.equal(
+    detectAssistantIntent('What should I do next with incident density and workload?', 'ADMIN'),
+    'OPERATIONAL_GUIDANCE',
+  );
+});
+
 test('authorized alert filters never use a client-supplied ownership scope', () => {
   assert.deepEqual(
     buildAlertAccessFilter({ userId: 'citizen-1', role: 'CITIZEN' }),

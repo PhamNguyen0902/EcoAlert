@@ -9,6 +9,16 @@ const semantic = {
   confidence: 0.9,
   summary: 'Dumped waste.',
   reasoningSummary: 'The report describes dumped waste.',
+  isIncident: true,
+  incidentConfidence: 0.9,
+  categoryConfidence: 0.9,
+  classificationStatus: 'AI_SUGGESTED' as const,
+  confidenceTier: 'HIGH_CONFIDENCE' as const,
+  severityScore: 45,
+  severityConfidence: 0.9,
+  overallSummary: 'Dumped waste is visible.',
+  shortReason: 'The report describes dumped waste.',
+  visionEvidenceUsed: [],
   analysisMode: 'vision' as const,
   provider: 'openrouter' as const,
   model: 'openai/gpt-4o-mini',
@@ -48,7 +58,7 @@ test('full multimodal fusion preserves separate confidence and exact factors', (
   assert.equal(result.severity, Severity.HIGH);
   assert.equal(result.fusion.semanticConfidence, 0.9);
   assert.equal(result.fusion.visionConfidence, 0.8);
-  assert.equal(result.fusion.fusionConfidence, 0.8775);
+  assert.equal(result.fusion.fusionConfidence, null);
   assert.deepEqual(result.fusion.severityFactors.map((item) => item.score), [40, 6, 5]);
 });
 
@@ -58,10 +68,12 @@ test('box area is never substituted when segmentation coverage is unavailable', 
   assert.ok(result.fusion.explanations.some((text) => text.includes('not scored')));
 });
 
-test('vision-only confidence remains bounded for cautious human review', () => {
+test('vision-only evidence does not fabricate incident confidence or severity', () => {
   const result = fuseIncidentEvidence(undefined, vision({ detectorConfidence: 0.99 }));
   assert.equal(result.fusion.mode, 'VISION_ONLY');
-  assert.equal(result.confidence, 0.6);
+  assert.equal(result.fusion.fusionConfidence, null);
+  assert.equal(result.fusion.severityScore, null);
+  assert.equal(result.severity, null);
 });
 
 test('dominant waste type uses detector evidence without altering exact object counts', () => {

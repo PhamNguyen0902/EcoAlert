@@ -29,8 +29,10 @@ import {
 } from '@/components/incidents/incident-status';
 import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
 import { VisionAnalysisCard } from '@/components/incidents/VisionAnalysisCard';
+import { OverallAiAnalysisCard } from '@/components/incidents/OverallAiAnalysisCard';
 import { IncidentLocationDetails } from '@/components/location/IncidentLocationDetails';
 import { hasValidCoordinates } from '@/lib/maps';
+import { getAlertDisplayConfidence, getAlertDisplaySeverity } from '@/lib/ai-confidence';
 import 'leaflet/dist/leaflet.css';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -73,8 +75,9 @@ export default function AlertDetail() {
   const originalEvidence = alert.mediaUrls ?? [];
   const resolutionEvidence = (alert.resolutionEvidence ?? []).map((item) => item.url).filter(Boolean);
   const hasTreatmentResult = Boolean(alert.resolutionSummary || alert.treatmentMethod || alert.resolutionNotes || resolutionEvidence.length);
-  const hasAiConfidence = alert.aiConfidence !== undefined && alert.aiConfidence !== null && Number.isFinite(alert.aiConfidence);
-  const confidence = hasAiConfidence ? Math.max(0, Math.min(1, alert.aiConfidence ?? 0)) : null;
+  const displayConfidence = getAlertDisplayConfidence(alert);
+  const confidence = displayConfidence.value;
+  const displaySeverity = getAlertDisplaySeverity(alert);
   const shortId = alert._id.slice(-8).toUpperCase();
 
   return (
@@ -93,7 +96,7 @@ export default function AlertDetail() {
           </div>
           <div className="flex flex-wrap gap-2 lg:justify-end">
             <StatusBadge status={status} />
-            <SeverityBadge severity={alert.severity} />
+            <SeverityBadge severity={displaySeverity} />
           </div>
         </div>
       </header>
@@ -153,7 +156,7 @@ export default function AlertDetail() {
           ) : null}
 
           <div className="border-t pt-8">
-            <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} />
+            <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} analysisMode={alert.aiAnalysisMode} vision={alert.aiVision} />
           </div>
         </main>
 
@@ -187,14 +190,15 @@ export default function AlertDetail() {
               <div className="flex items-center gap-2"><Bot className="h-4 w-4 text-primary" aria-hidden="true" /><h2 className="font-semibold">{t('alert_detail.ai_analysis')}</h2></div>
               <div className="mt-5 space-y-4 text-sm">
                 <div className="flex items-start justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.detected_category')}</span><span className="text-right font-medium">{formatIncidentCategory(alert.category)}</span></div>
-                <div className="flex items-start justify-between gap-4"><span className="text-muted-foreground">Mức độ gợi ý</span><SeverityBadge severity={alert.aiSuggestedPriority ?? alert.severity} /></div>
+                <div className="flex items-start justify-between gap-4"><span className="text-muted-foreground">Mức độ gợi ý</span><SeverityBadge severity={displaySeverity} /></div>
                 {confidence !== null ? (
                   <div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.confidence')}</span><span className="font-medium tabular-nums">{Math.round(confidence * 100)}%</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.confidence')} · {displayConfidence.source === 'FUSION' ? 'Fusion' : displayConfidence.source === 'SEMANTIC' ? 'Ngữ nghĩa' : 'Danh mục'}</span><span className="font-medium tabular-nums">{Math.round(confidence * 100)}%</span></div>
                     <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Độ tin cậy AI" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(confidence * 100)}><div className="h-full bg-primary transition-[width]" style={{ width: `${confidence * 100}%` }} /></div>
                   </div>
-                ) : <p className="text-sm text-muted-foreground">Chưa có chỉ số độ tin cậy AI.</p>}
+                ) : <p className="text-sm text-muted-foreground">Độ tin cậy AI: Không khả dụng.</p>}
                 <p className="rounded-lg border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">Phân tích AI hỗ trợ phân loại và được Cán bộ kiểm tra trước khi đưa ra quyết định cuối cùng.</p>
+                <OverallAiAnalysisCard alert={alert} />
                 <VisionAnalysisCard alert={alert} />
               </div>
             </CardContent>

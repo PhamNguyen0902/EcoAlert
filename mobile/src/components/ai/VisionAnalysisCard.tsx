@@ -25,16 +25,16 @@ export const VisionAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
   const explanations = Array.isArray(fusion?.explanations) ? fusion.explanations : [];
   const detectorStatus = !visionSucceeded
     ? "N/A"
-    : fusion?.visionConfidence === null || fusion?.visionConfidence === undefined
+    : vision?.detectorConfidence === null || vision?.detectorConfidence === undefined
       ? "Available"
-      : percentage(fusion.visionConfidence);
+      : percentage(vision.detectorConfidence);
 
   return (
     <Card style={[styles.card, { borderColor: colors.border, backgroundColor: colors.surface }]}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <ScanSearch size={18} color={colors.primary} />
-          <Text style={[styles.title, { color: colors.text }]}>Vision evidence</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Vision nhận diện vật thể</Text>
         </View>
         <Text style={[styles.mode, { color: colors.textMuted, borderColor: colors.border }]}>
           {humanize(fusion?.mode || vision?.status)}
@@ -42,10 +42,10 @@ export const VisionAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
       </View>
 
       <View style={styles.grid}>
-        <Metric label="Waste type" value={humanize(fusion?.wasteType)} colors={colors} />
-        <Metric label="Objects" value={visionSucceeded ? String(vision.totalDetectedObjects) : "N/A"} colors={colors} />
-        <Metric label="Severity" value={humanize(alert.severity ?? undefined)} colors={colors} />
-        <Metric label="Severity score" value={Number.isFinite(fusion?.severityScore) ? `${fusion!.severityScore}/100` : "N/A"} colors={colors} />
+        <Metric label="Loại vật thể" value={humanize(fusion?.wasteType)} colors={colors} />
+        <Metric label="Số vật thể" value={visionSucceeded ? String(vision.totalDetectedObjects) : "N/A"} colors={colors} />
+        <Metric label="Độ tin cậy detector" value={detectorStatus} colors={colors} />
+        <Metric label="Mức hỗ trợ Vision" value={humanize(fusion?.visionSupport)} colors={colors} />
       </View>
 
       {objectCounts.length ? (
@@ -64,7 +64,7 @@ export const VisionAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
           ))}
         </View>
       ) : visionSucceeded ? (
-        <Text style={[styles.noDetections, { color: colors.textMuted }]}>No EcoAlert waste objects were detected.</Text>
+        <Text style={[styles.noDetections, { color: colors.textMuted }]}>Không phát hiện vật thể rác thuộc sáu lớp EcoAlert. Điều này không tự động phủ nhận sự cố.</Text>
       ) : vision ? (
         <Text style={[styles.noDetections, { color: colors.textMuted }]}>Detector not available for this analysis.</Text>
       ) : null}
@@ -95,7 +95,7 @@ export const VisionAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
         </>
       ) : null}
 
-      <Text style={[styles.disclaimer, { color: colors.textMuted }]}>Triage evidence only. Verify against the original image.</Text>
+      <Text style={[styles.disclaimer, { color: colors.textMuted }]}>Bằng chứng vật thể tách biệt với phân tích tổng quan. Hãy kiểm tra ảnh gốc trước khi xác nhận.</Text>
     </Card>
   );
 };

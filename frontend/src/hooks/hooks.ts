@@ -83,6 +83,13 @@ export const useAssignOfficer = () => {
   });
 };
 
+export const useOfficerAvailability = (enabled = true) => useQuery({
+  queryKey: ['officer-availability'],
+  queryFn: () => alertService.getOfficerAvailability(),
+  enabled,
+  staleTime: 30_000,
+});
+
 export const useStartHandling = () => {
   const queryClient = useQueryClient();
   return useMutation({

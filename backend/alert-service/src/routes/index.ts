@@ -10,6 +10,7 @@ import {
   createAlertSchema,
   resolveAlertSchema,
   reviewClassificationSchema,
+  shiftLocationSchema,
   updateAlertSchema,
   updateAlertStatusSchema,
 } from '../dtos/alert.dto';
@@ -34,6 +35,11 @@ router.delete('/categories/:id', asyncHandler(categoryController.deleteCategory)
 
 // Alert Routes
 router.get('/nearby-check', asyncHandler(alertController.checkNearbyAlerts));
+router.post('/officer/shifts/start', validate(shiftLocationSchema), asyncHandler(alertController.startShift));
+router.post('/officer/shifts/end', validate(shiftLocationSchema), asyncHandler(alertController.endShift));
+router.get('/officer/shifts/current', asyncHandler(alertController.getCurrentShift));
+router.get('/officer/shifts/history', asyncHandler(alertController.getShiftHistory));
+router.get('/officers/availability', asyncHandler(alertController.getOfficerAvailability));
 router.post('/', validate(createAlertSchema), asyncHandler(alertController.createAlert));
 router.get('/', asyncHandler(alertController.getAlerts));
 router.get('/officer/tasks', asyncHandler(alertController.getOfficerTasks));

@@ -80,7 +80,22 @@ export const getCategoryLabel = (
 };
 
 export const getSeverityLabel = (severity?: Severity | null): string =>
-  severity?.toUpperCase() || "—";
+  severity?.toUpperCase() || "Không khả dụng";
+
+export const getAlertDisplayConfidence = (alert?: Alert | null): { value: number | null; source: "FUSION" | "CATEGORY" | "SEMANTIC" | "NONE" } => {
+  if (!alert || (alert.aiAnalysisMode === "VISION_ONLY" && !alert.aiOverallAnalysis)) {
+    return { value: null, source: "NONE" };
+  }
+  if (alert.aiConfidence !== null && alert.aiConfidence !== undefined && Number.isFinite(alert.aiConfidence) && alert.aiConfidence >= 0 && alert.aiConfidence <= 1) {
+    return { value: alert.aiConfidence, source: alert.aiConfidenceSource ?? "CATEGORY" };
+  }
+  return { value: null, source: "NONE" };
+};
+
+export const getAlertDisplaySeverity = (alert?: Alert | null): Severity | null =>
+  alert?.aiAnalysisMode === "VISION_ONLY" && !alert.aiOverallAnalysis
+    ? null
+    : alert?.aiSuggestedPriority ?? alert?.severity ?? null;
 
 export const getWorkflowStatusLabel = (
   status?: string | null,

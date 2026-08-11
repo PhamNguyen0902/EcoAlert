@@ -82,6 +82,7 @@ export const AssistantScreen: React.FC<Props> = ({ navigation }) => {
         suggestions: [
           "Báo cáo mới nhất của tôi",
           "Báo cáo nào đang được xử lý?",
+          "Tôi cần làm gì tiếp với báo cáo gần nhất?",
           "Giải thích các trạng thái",
           "Làm sao gửi báo cáo?",
           "AI phân tích sự cố như thế nào?",
@@ -101,6 +102,7 @@ export const AssistantScreen: React.FC<Props> = ({ navigation }) => {
         suggestions: [
           "My latest report",
           "Which reports are being processed?",
+          "What should I do next with my latest report?",
           "Explain report statuses",
           "How do I submit a report?",
           "How does incident AI analysis work?",

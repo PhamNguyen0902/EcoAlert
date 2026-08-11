@@ -15,4 +15,6 @@ export const envConfig = {
   officerCheckinRadiusMeters: positiveNumber(process.env.OFFICER_CHECKIN_RADIUS_METERS, 50),
   officerEvidenceRadiusMeters: positiveNumber(process.env.OFFICER_EVIDENCE_RADIUS_METERS, 50),
   officerMaxGpsAccuracyMeters: positiveNumber(process.env.OFFICER_MAX_GPS_ACCURACY_METERS, 100),
+  officerWorkloadModerateThreshold: positiveNumber(process.env.OFFICER_WORKLOAD_MODERATE_THRESHOLD, 3),
+  officerWorkloadHighThreshold: positiveNumber(process.env.OFFICER_WORKLOAD_HIGH_THRESHOLD, 5),
 };

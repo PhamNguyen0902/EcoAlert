@@ -82,6 +82,22 @@ export const alertService = {
     const res = await api.post(`/v1/alerts/${id}/classification/review`, { category });
     return res.data?.data || res.data;
   },
+  getCurrentShift: async () => {
+    const res = await api.get('/v1/alerts/officer/shifts/current');
+    return res.data?.data || res.data;
+  },
+  getShiftHistory: async () => {
+    const res = await api.get('/v1/alerts/officer/shifts/history');
+    return res.data?.data || res.data;
+  },
+  startShift: async (location: { latitude: number; longitude: number; accuracyMeters: number }) => {
+    const res = await api.post('/v1/alerts/officer/shifts/start', location);
+    return res.data?.data || res.data;
+  },
+  endShift: async (location: { latitude: number; longitude: number; accuracyMeters: number }) => {
+    const res = await api.post('/v1/alerts/officer/shifts/end', location);
+    return res.data?.data || res.data;
+  },
 
   uploadMedia: async (fileUri: string, fileName = "photo.jpg", fileType = "image/jpeg"): Promise<string> => {
     const formData = new FormData();

@@ -36,12 +36,15 @@ import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
+import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import type { User } from "../../types";
 import {
   getAiAnalysisState,
+  getAlertDisplayConfidence,
+  getAlertDisplaySeverity,
   getCategoryLabel,
   getConfidencePercentage,
   getSeverityLabel,
@@ -207,8 +210,10 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
   const latitude = coords ? coords[1] : 10.762622;
   const longitude = coords ? coords[0] : 106.660172;
   const aiState = getAiAnalysisState(alert);
-  const sevColor = SEVERITY_COLORS[alert.severity ?? "low"] || { bg: "#F1F5F9", text: "#475569" };
-  const confidencePercentage = getConfidencePercentage(alert.aiConfidence);
+  const displaySeverity = getAlertDisplaySeverity(alert);
+  const sevColor = displaySeverity ? (SEVERITY_COLORS[displaySeverity] || { bg: "#F1F5F9", text: "#475569" }) : { bg: "#F1F5F9", text: "#475569" };
+  const displayConfidence = getAlertDisplayConfidence(alert);
+  const confidencePercentage = getConfidencePercentage(displayConfidence.value);
   const workflowStatusLabel = getWorkflowStatusLabel(alert.status, language);
 
   return (
@@ -248,7 +253,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               />
               <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
                 <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-                  {getSeverityLabel(alert.severity)} · {t("aiAnalysis.aiAssessed", "AI assessed")}
+                  {getSeverityLabel(displaySeverity)} · {t("aiAnalysis.aiAssessed", "AI assessed")}
                 </Text>
               </View>
             </>
@@ -370,20 +375,20 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
                 </Text>
                 <View style={[styles.aiSeverityPill, { backgroundColor: sevColor.bg, borderColor: sevColor.border || sevColor.bg }]}>
                   <Text style={[styles.aiSeverityText, { color: sevColor.text }]}>
-                    {getSeverityLabel(alert.severity)}
+                    {getSeverityLabel(displaySeverity)}
                   </Text>
                 </View>
               </View>
-              {confidencePercentage !== null ? (
-                <View style={styles.confidenceBlock}>
-                  <View style={styles.aiMetricRow}>
-                    <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
-                      {t("aiAnalysis.confidence", "Confidence")}
-                    </Text>
-                    <Text style={[styles.confidenceValue, { color: colors.text }]}>
-                      {confidencePercentage}%
-                    </Text>
-                  </View>
+              <View style={styles.confidenceBlock}>
+                <View style={styles.aiMetricRow}>
+                  <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
+                    {t("aiAnalysis.confidence", "Confidence")}{confidencePercentage === null ? "" : displayConfidence.source === "FUSION" ? " · Fusion" : displayConfidence.source === "SEMANTIC" ? " · Ngữ nghĩa" : " · Danh mục"}
+                  </Text>
+                  <Text style={[styles.confidenceValue, { color: colors.text }]}>
+                    {confidencePercentage === null ? "Không khả dụng" : `${confidencePercentage}%`}
+                  </Text>
+                </View>
+                {confidencePercentage !== null ? (
                   <View
                     style={[styles.confidenceTrack, { backgroundColor: colors.border }]}
                     accessibilityRole="progressbar"
@@ -396,8 +401,8 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
                       ]}
                     />
                   </View>
-                </View>
-              ) : null}
+                ) : null}
+              </View>
               {alert.aiSummary ? (
                 <View style={[styles.aiSummaryBox, { backgroundColor: isDark ? "rgba(15,23,42,0.45)" : "#FFFFFF" }]}>
                   <Text style={[styles.aiSummaryLabel, { color: colors.textMuted }]}>
@@ -437,6 +442,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
           ) : null}
         </Card>
 
+        <OverallAiAnalysisCard alert={alert} />
         <VisionAnalysisCard alert={alert} />
 
         {alert.assignedOfficerId ? (
