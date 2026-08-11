@@ -254,75 +254,18 @@ const currentWeatherFromProvider = (
   };
 };
 
+const weatherUnavailableError = () =>
+  new AppError('Weather data is temporarily unavailable', 503);
+
 export class WeatherService {
   private getApiKey(): string | null {
     return envConfig.openWeatherApiKey || null;
   }
 
-  private getMockCurrentWeather(lat: number, lng: number): CurrentWeather {
-    return {
-      temperature: 31.5,
-      feelsLike: 34.8,
-      humidity: 75,
-      windSpeed: 12.6,
-      windDirection: 140,
-      description: 'Nhiều mây, thời tiết dịu nhẹ',
-      icon: 'https://openweathermap.org/img/wn/04d@2x.png',
-      sunrise: '05:45',
-      sunset: '18:15',
-      aqi: 2,
-      aqiLabel: 'Tốt (Good)',
-      lastUpdated: new Date().toISOString(),
-    };
-  }
-
-  private getMockWeatherDetails(lat: number, lng: number): WeatherDetails {
-    const current = this.getMockCurrentWeather(lat, lng);
-    return {
-      location: {
-        name: 'Thành phố Hồ Chí Minh',
-        country: 'VN',
-        latitude: lat,
-        longitude: lng,
-        timezoneOffsetSeconds: 25200,
-      },
-      current: {
-        ...current,
-        condition: 'Clouds',
-        pressure: 1010,
-        visibilityKm: 10.0,
-        cloudiness: 75,
-      },
-      hourly: [
-        { timestamp: new Date().toISOString(), temperature: 31.5, feelsLike: 34.8, temperatureMin: 28, temperatureMax: 33, condition: 'Clouds', description: 'Nhiều mây', icon: 'https://openweathermap.org/img/wn/04d@2x.png', precipitationProbability: 20 },
-        { timestamp: new Date(Date.now() + 3600000).toISOString(), temperature: 32.0, feelsLike: 35.5, temperatureMin: 28, temperatureMax: 33, condition: 'Rain', description: 'Mưa rào nhẹ', icon: 'https://openweathermap.org/img/wn/10d@2x.png', precipitationProbability: 50 },
-        { timestamp: new Date(Date.now() + 7200000).toISOString(), temperature: 30.0, feelsLike: 33.5, temperatureMin: 27, temperatureMax: 32, condition: 'Clouds', description: 'Nhiều mây', icon: 'https://openweathermap.org/img/wn/04d@2x.png', precipitationProbability: 30 },
-      ],
-      daily: [
-        { date: new Date().toISOString().split('T')[0], minTemperature: 25, maxTemperature: 33, condition: 'Clouds', description: 'Nhiều mây, mưa dông rải rác', icon: 'https://openweathermap.org/img/wn/10d@2x.png', precipitationProbability: 40 },
-        { date: new Date(Date.now() + 86400000).toISOString().split('T')[0], minTemperature: 26, maxTemperature: 34, condition: 'Sun', description: 'Nắng gián đoạn', icon: 'https://openweathermap.org/img/wn/02d@2x.png', precipitationProbability: 20 },
-      ],
-      airQuality: {
-        aqi: 2,
-        aqiLabel: 'Tốt (Good)',
-        pm2_5: 18.5,
-        pm10: 32.1,
-        co: 210.0,
-        no2: 12.4,
-        o3: 45.2,
-      },
-      availability: {
-        forecast: true,
-        airQuality: true,
-      },
-      fetchedAt: new Date().toISOString(),
-    };
-  }
-
   async getCurrentWeather(lat: number, lng: number): Promise<CurrentWeather> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      return this.getMockCurrentWeather(lat, lng);
+      throw weatherUnavailableError();
     }
 
     try {
@@ -351,14 +294,14 @@ export class WeatherService {
       );
     } catch (error) {
       logProviderFailure('current-weather', error);
-      return this.getMockCurrentWeather(lat, lng);
+      throw weatherUnavailableError();
     }
   }
 
   async getWeatherDetails(lat: number, lng: number): Promise<WeatherDetails> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      return this.getMockWeatherDetails(lat, lng);
+      throw weatherUnavailableError();
     }
 
     try {
@@ -444,7 +387,7 @@ export class WeatherService {
       };
     } catch (error) {
       logProviderFailure('weather-details', error);
-      return this.getMockWeatherDetails(lat, lng);
+      throw weatherUnavailableError();
     }
   }
 }

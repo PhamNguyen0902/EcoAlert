@@ -12,8 +12,6 @@ import { ArrowLeft, Bell, CheckCheck } from "lucide-react-native";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, vi } from "date-fns/locale";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { CitizenStackParamList } from "../../navigation/types";
 import type { Notification } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -23,10 +21,10 @@ import {
   useNotifications,
 } from "../../hooks/useNotifications";
 
-type Props = NativeStackScreenProps<CitizenStackParamList, "Notifications">;
+type Props = { navigation: any };
 
 import { pushNotificationService } from "../../services/pushNotificationService";
-import { Send, Sparkles } from "lucide-react-native";
+import { Sparkles } from "lucide-react-native";
 
 export const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
   const { colors, isDark } = useTheme();

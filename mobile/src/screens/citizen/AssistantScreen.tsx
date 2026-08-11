@@ -13,19 +13,17 @@ import {
 import { AxiosError } from "axios";
 import { Bot, ChevronRight, MessageCirclePlus, Send, Sparkles } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AssistantMessage, AssistantSource } from "../../types";
-import type { CitizenStackParamList, CitizenTabParamList } from "../../navigation/types";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { useProfile } from "../../hooks/useAuth";
 import {
   useAssistantConversations,
   useAssistantMessages,
   useSendAssistantMessage,
 } from "../../hooks/useAssistant";
 
-type Props = BottomTabScreenProps<CitizenTabParamList, "AssistantTab">;
+type Props = { navigation: any };
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -63,6 +61,7 @@ const getAssistantErrorMessage = (error: unknown, language: "vi" | "en"): string
 export const AssistantScreen: React.FC<Props> = ({ navigation }) => {
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
+  const { data: profile } = useProfile();
   const conversations = useAssistantConversations();
   const [activeConversationId, setActiveConversationId] = useState<string>();
   const [draft, setDraft] = useState("");
@@ -72,6 +71,7 @@ export const AssistantScreen: React.FC<Props> = ({ navigation }) => {
   const messages = useAssistantMessages(activeConversationId);
   const sendMessage = useSendAssistantMessage();
 
+  const role = profile?.role?.toUpperCase() || "CITIZEN";
   const copy = language === "vi"
     ? {
         subtitle: "Trợ lý thông minh",
@@ -114,6 +114,16 @@ export const AssistantScreen: React.FC<Props> = ({ navigation }) => {
         emptyHistory: "No conversations yet",
       };
 
+  const roleSuggestions = role === "OFFICER"
+    ? (language === "vi"
+      ? ["Nhiệm vụ nào đang được phân công cho tôi?", "Tôi cần làm gì khi tới hiện trường?", "Giải thích quy trình check-in GPS", "Hướng dẫn ghi nhận báo cáo đã xử lý"]
+      : ["Which tasks are assigned to me?", "What should I do when I arrive on site?", "Explain the GPS check-in workflow", "How do I record a resolution?"])
+    : role === "ADMIN"
+      ? (language === "vi"
+        ? ["Sự cố nào cần xem xét?", "Cách phân công Cán bộ phù hợp?", "Màu nhiệt bản đồ thể hiện điều gì?", "Khi nào có thể đóng sự cố?"]
+        : ["Which incidents need review?", "How should I assign an Officer?", "What does the incident density map show?", "When can an incident be closed?"])
+      : copy.suggestions;
+
   useEffect(() => {
     if (initializedRef.current || !conversations.data) return;
     initializedRef.current = true;
@@ -141,8 +151,8 @@ export const AssistantScreen: React.FC<Props> = ({ navigation }) => {
     const alertId = getAlertIdFromSource(source);
     if (!alertId) return;
     navigation
-      .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
-      ?.navigate("AlertDetail", { id: alertId });
+      .getParent?.()
+      ?.navigate(role === "OFFICER" ? "OfficerAlertDetail" : "AlertDetail", { id: alertId });
   };
 
   const submit = (suggestedMessage?: string) => {
@@ -233,7 +243,7 @@ export const AssistantScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={[styles.welcomeTitle, { color: colors.text }]}>EcoAlert AI</Text>
       <Text style={[styles.welcomeText, { color: colors.textMuted }]}>{copy.welcome}</Text>
       <View style={styles.suggestions}>
-        {copy.suggestions.map((suggestion) => (
+        {roleSuggestions.map((suggestion) => (
           <TouchableOpacity
             key={suggestion}
             onPress={() => submit(suggestion)}

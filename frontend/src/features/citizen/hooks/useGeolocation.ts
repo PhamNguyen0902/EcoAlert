@@ -11,7 +11,7 @@ interface GeolocationState {
 const FALLBACK_LAT = 10.8231;
 const FALLBACK_LNG = 106.6297;
 
-export function useGeolocation() {
+export function useGeolocation(enabled = true) {
   const [state, setState] = useState<GeolocationState>({
     latitude: null,
     longitude: null,
@@ -79,8 +79,8 @@ export function useGeolocation() {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (enabled) refresh();
+  }, [enabled, refresh]);
 
   return { ...state, refresh };
 }

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { alertService } from "../api/alertService";
-import { CreateAlertData, OfficerShift, ResolutionInput, ShiftLocationInput } from "../types";
+import { CreateAlertData, OfficerAvailability, OfficerShift, ResolutionInput, ShiftLocationInput } from "../types";
 import { AI_POLL_INTERVAL_MS, shouldPollAiAnalysis } from "../utils/aiAnalysis";
 
 const EMPTY_FILTERS: Record<string, string> = {};
@@ -39,6 +39,13 @@ export const useOfficerTasks = (page = 1, limit = 20, status?: string) => {
 export const useCurrentShift = () => useQuery<OfficerShift | null>({
   queryKey: ['officer-shift', 'current'],
   queryFn: () => alertService.getCurrentShift(),
+  staleTime: 30_000,
+});
+
+export const useOfficerAvailability = (enabled = true) => useQuery<OfficerAvailability[]>({
+  queryKey: ["officer-availability"],
+  queryFn: alertService.getOfficerAvailability,
+  enabled,
   staleTime: 30_000,
 });
 
@@ -223,6 +230,18 @@ export const useAssignOfficer = () => {
       queryClient.setQueryData(["alert", variables.id], updatedAlert);
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
+    },
+  });
+};
+
+export const useReviewClassification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, category }: { id: string; category?: string }) =>
+      alertService.reviewClassification(id, category),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
     },
   });
 };

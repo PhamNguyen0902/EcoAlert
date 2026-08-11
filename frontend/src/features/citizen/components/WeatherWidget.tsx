@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWeather } from '../hooks/useWeather';
+import { weatherAqiLabelKey, weatherDetailsSearch } from '@/lib/weather-details';
+import { WeatherConditionIcon } from './WeatherConditionIcon';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Droplets, Wind, Activity, Sun, Sunrise, Sunset, AlertCircle } from 'lucide-react';
+import { Droplets, Wind, Activity, Sunrise, Sunset, AlertCircle, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -15,6 +18,7 @@ interface WeatherWidgetProps {
 
 export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitude }) => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const { data: weather, isLoading, isError, refetch } = useWeather(latitude, longitude);
 
   if (isLoading || (!weather && !isError)) {
@@ -61,7 +65,16 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
   };
 
   return (
-    <div className="w-full relative overflow-hidden rounded-xl border border-border/50 shadow-xl transition-all duration-300 hover:shadow-2xl">
+    <button
+      type="button"
+      className="w-full relative overflow-hidden rounded-xl border border-border/50 bg-transparent p-0 text-left shadow-xl transition-all duration-300 hover:shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      onClick={() => {
+        if (latitude !== null && longitude !== null) {
+          navigate('/weather' + weatherDetailsSearch({ lat: latitude, lng: longitude }));
+        }
+      }}
+      aria-label={t('weather.view_details')}
+    >
       {/* Background with dynamic gradient based on time of day could go here, for now using a subtle glass gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 to-blue-100/50 dark:from-slate-900/80 dark:to-slate-800/80 backdrop-blur-xl -z-10" />
       
@@ -72,7 +85,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               <span className="text-5xl font-bold tracking-tighter">
                 {Math.round(weather.temperature)}°
               </span>
-              <img src={weather.icon} alt={weather.description} className="w-16 h-16 drop-shadow-md" />
+              <WeatherConditionIcon condition={weather.description} icon={weather.icon} className="h-16 w-16 shrink-0 text-sky-500 drop-shadow-md" aria-label={weather.description} />
             </div>
             <p className="text-lg font-medium capitalize mt-1 text-slate-700 dark:text-slate-200">
               {weather.description}
@@ -120,18 +133,8 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-0.5">{t('weather.air_quality')}</p>
               <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 border leading-none', getAqiColor(weather.aqi || 0))}>
-                {weather.aqiLabel}
+                {t(weatherAqiLabelKey(weather.aqi || 0))}
               </Badge>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/50 dark:bg-slate-800/50 rounded-lg shadow-sm">
-              <Sun className="w-4 h-4 text-yellow-500" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t('weather.uv_index')}</p>
-              <p className="font-semibold text-sm">--</p> {/* OpenWeatherMap free doesn't include UV in current weather */}
             </div>
           </div>
 
@@ -155,7 +158,11 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
             </div>
           </div>
         </div>
+        <div className="mt-5 flex items-center justify-end gap-1 text-sm font-medium text-primary">
+          <span>{t('weather.view_details')}</span>
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </div>
       </div>
-    </div>
+    </button>
   );
 };

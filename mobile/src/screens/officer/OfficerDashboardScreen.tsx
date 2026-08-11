@@ -18,6 +18,8 @@ import {
   MapPin,
   ChevronRight,
   UserCheck,
+  Bell,
+  Bot,
 } from "lucide-react-native";
 import { useAlerts, useCurrentShift, useEndShift, useStartShift } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
@@ -135,9 +137,17 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
           </Text>
           <Text style={[styles.subGreeting, { color: colors.textMuted }]}>{t("officer.environmentalResponse", "Environmental Command & Response")}</Text>
         </View>
-        <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE" }]} onPress={onRefresh}>
-          <RefreshCw size={18} color={isDark ? "#60A5FA" : colors.secondary} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE" }]} onPress={() => navigation.getParent?.()?.navigate("Notifications")} accessibilityRole="button" accessibilityLabel={t("tabs.notifications", "Notifications")}>
+            <Bell size={18} color={isDark ? "#60A5FA" : colors.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE" }]} onPress={() => navigation.navigate("OfficerAssistantTab")} accessibilityRole="button" accessibilityLabel={t("tabs.assistant", "Assistant")}>
+            <Bot size={18} color={isDark ? "#60A5FA" : colors.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE" }]} onPress={onRefresh} accessibilityRole="button" accessibilityLabel={t("common.refresh", "Refresh")}>
+            <RefreshCw size={18} color={isDark ? "#60A5FA" : colors.secondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -301,6 +311,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   headerTextContainer: { flex: 1, marginRight: 12 },
+  headerActions: { flexDirection: "row", gap: 7 },
   greeting: { fontSize: 22, fontWeight: "800" },
   subGreeting: { fontSize: 13, marginTop: 2 },
   refreshBtn: {

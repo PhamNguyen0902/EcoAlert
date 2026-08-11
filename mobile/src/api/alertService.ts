@@ -1,5 +1,5 @@
 import { api } from "./client";
-import { Alert, PaginatedResult, CreateAlertData, Category, ResolutionInput } from "../types";
+import { Alert, PaginatedResult, CreateAlertData, Category, OfficerAvailability, ResolutionInput } from "../types";
 
 export const alertService = {
   getAlerts: async (
@@ -89,6 +89,10 @@ export const alertService = {
   getShiftHistory: async () => {
     const res = await api.get('/v1/alerts/officer/shifts/history');
     return res.data?.data || res.data;
+  },
+  getOfficerAvailability: async (): Promise<OfficerAvailability[]> => {
+    const res = await api.get('/v1/alerts/officers/availability');
+    return res.data?.data || res.data || [];
   },
   startShift: async (location: { latitude: number; longitude: number; accuracyMeters: number }) => {
     const res = await api.post('/v1/alerts/officer/shifts/start', location);
