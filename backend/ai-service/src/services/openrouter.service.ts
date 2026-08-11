@@ -7,6 +7,14 @@ import {
   readOpenRouterConfig,
 } from '../config/openrouter.config';
 import { AiTask, resolveModel } from './ai-task-router';
+import { envConfig } from '../config/env.config';
+import {
+  ClassifiedAlertCategory,
+  normalizeIncidentCategory,
+  normalizeIncidentSeverity,
+  UNCLASSIFIED_CATEGORY,
+} from './category-normalizer.service';
+import { CompactVisionEvidence, formatVisionEvidenceLines } from './vision-evidence.service';
 
 export {
   OpenRouterConfig,
@@ -17,19 +25,39 @@ export {
 const logger = createLogger('ai-service');
 
 export interface IncidentAnalysis {
-  category: AlertCategory;
+  category: ClassifiedAlertCategory;
   severity: Severity;
   confidence: number;
   summary: string;
   reasoningSummary: string;
+  isIncident: boolean;
+  incidentConfidence: number;
+  categoryConfidence: number;
+  classificationStatus: 'AI_SUGGESTED' | 'UNCLASSIFIED';
+  confidenceTier: 'HIGH_CONFIDENCE' | 'REVIEW_REQUIRED' | 'UNCLASSIFIED';
+  severityScore: number;
+  severityConfidence: number;
+  overallSummary: string;
+  shortReason: string;
+  visionEvidenceUsed: string[];
 }
 
-const incidentAnalysisSchema = z.object({
-  category: z.nativeEnum(AlertCategory as any),
-  severity: z.nativeEnum(Severity as any),
-  confidence: z.number().min(0).max(1),
-  summary: z.string().trim().min(1).max(500),
-  reasoningSummary: z.string().trim().min(1).max(500),
+const rawIncidentAnalysisSchema = z.object({
+  isIncident: z.boolean().optional(),
+  incidentConfidence: z.number().min(0).max(1).optional(),
+  category: z.string().trim().min(1).max(100).nullable(),
+  categoryConfidence: z.number().min(0).max(1).optional(),
+  severity: z.string().trim().min(1).max(30),
+  severityScore: z.number().min(0).max(100).optional(),
+  severityConfidence: z.number().min(0).max(1).optional(),
+  overallSummary: z.string().trim().min(1).max(800).optional(),
+  shortReason: z.string().trim().min(1).max(500).optional(),
+  visionEvidenceUsed: z.array(z.string().trim().min(1).max(120)).max(6).optional(),
+  // Backward-compatible parsing protects in-flight v1 messages while every
+  // newly requested OpenRouter response uses the v2 schema below.
+  confidence: z.number().min(0).max(1).optional(),
+  summary: z.string().trim().min(1).max(800).optional(),
+  reasoningSummary: z.string().trim().min(1).max(500).optional(),
 }).strict();
 
 export type IncidentAnalysisMode = 'text' | 'vision' | 'text_fallback';
@@ -45,6 +73,7 @@ export interface IncidentAnalysisInput {
   title?: string;
   description: string;
   imageUrl?: string;
+  visionEvidence?: CompactVisionEvidence;
 }
 
 type OpenRouterClientOptions = ConstructorParameters<typeof OpenAI>[0];
@@ -226,14 +255,66 @@ export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
     throw new OpenRouterResponseError('OpenRouter returned malformed JSON.');
   }
 
-  const result = incidentAnalysisSchema.safeParse(parsed);
+  const result = rawIncidentAnalysisSchema.safeParse(parsed);
   if (!result.success) {
     throw new OpenRouterResponseError(
       'OpenRouter returned an invalid incident analysis payload.',
     );
   }
-  return result.data as IncidentAnalysis;
+  const raw = result.data;
+  const categoryConfidence = raw.categoryConfidence ?? raw.confidence;
+  const incidentConfidence = raw.incidentConfidence ?? raw.confidence;
+  const severityConfidence = raw.severityConfidence ?? raw.confidence;
+  const summary = raw.overallSummary ?? raw.summary;
+  const reason = raw.shortReason ?? raw.reasoningSummary;
+  const severity = normalizeIncidentSeverity(raw.severity);
+  if (
+    categoryConfidence === undefined ||
+    incidentConfidence === undefined ||
+    severityConfidence === undefined ||
+    !summary ||
+    !reason ||
+    !severity
+  ) {
+    throw new OpenRouterResponseError('OpenRouter returned an incomplete incident analysis payload.');
+  }
+
+  const rawCategory = normalizeIncidentCategory(raw.category);
+  const isIncident = raw.isIncident ?? incidentConfidence >= envConfig.aiCategoryUnclassifiedThreshold;
+  const canSuggest = isIncident
+    && rawCategory !== UNCLASSIFIED_CATEGORY
+    && categoryConfidence >= envConfig.aiCategoryUnclassifiedThreshold;
+  const category = canSuggest ? rawCategory : UNCLASSIFIED_CATEGORY;
+  const confidenceTier = !canSuggest
+    ? 'UNCLASSIFIED' as const
+    : categoryConfidence >= envConfig.aiCategorySuggestionThreshold
+      ? 'HIGH_CONFIDENCE' as const
+      : 'REVIEW_REQUIRED' as const;
+  return {
+    category,
+    severity,
+    confidence: categoryConfidence,
+    summary,
+    reasoningSummary: reason,
+    isIncident,
+    incidentConfidence,
+    categoryConfidence,
+    classificationStatus: canSuggest ? 'AI_SUGGESTED' : 'UNCLASSIFIED',
+    confidenceTier,
+    severityScore: raw.severityScore ?? severityScoreFor(severity),
+    severityConfidence,
+    overallSummary: summary,
+    shortReason: reason,
+    visionEvidenceUsed: raw.visionEvidenceUsed ?? [],
+  };
 };
+
+const severityScoreFor = (severity: Severity): number => ({
+  [Severity.LOW]: 20,
+  [Severity.MEDIUM]: 45,
+  [Severity.HIGH]: 70,
+  [Severity.CRITICAL]: 90,
+}[severity]);
 
 const structuredResponseFormat = {
   type: 'json_schema',
@@ -244,27 +325,49 @@ const structuredResponseFormat = {
       type: 'object',
       additionalProperties: false,
       required: [
+        'isIncident',
+        'incidentConfidence',
         'category',
+        'categoryConfidence',
         'severity',
-        'confidence',
-        'summary',
-        'reasoningSummary',
+        'severityScore',
+        'severityConfidence',
+        'overallSummary',
+        'shortReason',
+        'visionEvidenceUsed',
       ],
       properties: {
-        category: { type: 'string', enum: Object.values(AlertCategory) },
+        isIncident: { type: 'boolean' },
+        incidentConfidence: { type: 'number', minimum: 0, maximum: 1 },
+        category: { type: 'string', enum: [...Object.values(AlertCategory), UNCLASSIFIED_CATEGORY] },
+        categoryConfidence: { type: 'number', minimum: 0, maximum: 1 },
         severity: { type: 'string', enum: Object.values(Severity) },
-        confidence: { type: 'number', minimum: 0, maximum: 1 },
-        summary: { type: 'string', minLength: 1, maxLength: 500 },
-        reasoningSummary: { type: 'string', minLength: 1, maxLength: 500 },
+        severityScore: { type: 'number', minimum: 0, maximum: 100 },
+        severityConfidence: { type: 'number', minimum: 0, maximum: 1 },
+        overallSummary: { type: 'string', minLength: 1, maxLength: 800 },
+        shortReason: { type: 'string', minLength: 1, maxLength: 500 },
+        visionEvidenceUsed: { type: 'array', maxItems: 6, items: { type: 'string', minLength: 1, maxLength: 120 } },
       },
     },
   },
 };
 
 const buildUserContent = (input: IncidentAnalysisInput, includeImage: boolean) => {
+  const visionEvidence = input.visionEvidence;
+  const visionText = !visionEvidence
+    ? 'Vision evidence: not requested for this analysis.'
+    : !visionEvidence.detectorAvailable
+      ? 'Vision evidence: detector unavailable. This does not mean there is no incident.'
+      : [
+        `Vision evidence: custom EcoAlert detector ${visionEvidence.model || 'unknown model'} completed.`,
+        `Detected objects: ${visionEvidence.totalObjects}.`,
+        `Objects: ${formatVisionEvidenceLines(visionEvidence).join('; ') || 'none'}.`,
+        `Detector confidence: ${visionEvidence.detectorConfidence === null ? 'not available' : visionEvidence.detectorConfidence}.`,
+      ].join('\n');
   const text = [
     `Title: ${input.title?.trim() || 'Not provided'}`,
     `Description: ${input.description.trim() || 'Not provided'}`,
+    visionText,
   ].join('\n');
 
   if (!includeImage || !input.imageUrl) return text;
@@ -282,12 +385,15 @@ const incidentCompletionRequest = (
     {
       role: 'system',
       content: [
-        'You classify environmental incident reports for EcoAlert.',
-        `Use exactly one category from: ${Object.values(AlertCategory).join(', ')}.`,
+        'You are EcoAlert’s environmental incident classification assistant.',
+        'Perform an incident-level interpretation only from the report image, citizen title/description, and supplied Vision evidence.',
+        'Vision evidence is object-level supporting evidence only. The custom detector recognizes only plastic_bottle, plastic_bag, plastic_cup, metal_can, cardboard, and glass_bottle.',
+        'Zero Vision detections does not mean there is no incident; flooding and other categories can still be supported by the report image and description.',
+        'Do not invent objects that are not visible in the image or supplied Vision evidence. Do not expose hidden reasoning.',
+        `Use exactly one canonical category from: ${Object.values(AlertCategory).join(', ')}, or ${UNCLASSIFIED_CATEGORY} when the evidence is insufficient or unsupported.`,
         `Use exactly one severity from: ${Object.values(Severity).join(', ')}.`,
-        'Return confidence as a number from 0 to 1, including 0 when warranted.',
-        'Return a concise factual summary and a concise evidence-based reasoningSummary.',
-        'Do not provide hidden chain-of-thought or step-by-step internal reasoning.',
+        'Use calibrated confidence values from 0 to 1. overallSummary must be 2–4 concise human-readable sentences; shortReason must be a short evidence-based explanation.',
+        'List only concise supplied Vision evidence strings in visionEvidenceUsed. AI is decision support only and never verifies, assigns, resolves, or closes an incident.',
       ].join(' '),
     },
     { role: 'user', content: buildUserContent(input, includeImage) },

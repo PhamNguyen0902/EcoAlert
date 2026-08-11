@@ -59,15 +59,33 @@ export interface AiVisionAnalysis {
 }
 
 export interface AiFusionAnalysis {
-  version: "vision-fusion-v1";
+  version: "vision-fusion-v1" | "vision-fusion-v2";
   mode: "FULL_MULTIMODAL" | "SEMANTIC_ONLY" | "VISION_ONLY" | "FAILED";
   wasteType?: AiWasteType;
-  severityScore: number;
+  severityScore: number | null;
   explanations: string[];
   semanticConfidence: number | null;
   visionConfidence: number | null;
-  fusionConfidence: number;
+  fusionConfidence: number | null;
+  visionSupport?: "STRONG" | "PARTIAL" | "NONE" | "NOT_APPLICABLE";
   processingTimeMs: number;
+}
+
+export interface AiOverallAnalysis {
+  isIncident: boolean;
+  incidentConfidence: number;
+  categorySuggestion: AlertCategory | null;
+  categoryConfidence: number;
+  classificationStatus: "AI_SUGGESTED" | "UNCLASSIFIED";
+  confidenceTier: "HIGH_CONFIDENCE" | "REVIEW_REQUIRED" | "UNCLASSIFIED";
+  severity: Severity;
+  severityScore: number;
+  severityConfidence: number;
+  overallSummary: string;
+  shortReason: string;
+  visionEvidenceUsed: string[];
+  semanticModel: string;
+  pipelineVersion: "multimodal-v2";
 }
 
 export interface User {
@@ -142,6 +160,7 @@ export interface Alert {
   assignedOfficerName?: string;
   assignedOfficerEmail?: string;
   aiConfidence?: number | null;
+  aiConfidenceSource?: "FUSION" | "CATEGORY" | "SEMANTIC" | "NONE";
   aiSuggestedPriority?: Severity | null;
   aiSummary?: string | null;
   aiReasoningSummary?: string | null;
@@ -150,9 +169,10 @@ export interface Alert {
   aiAnalysisModel?: string | null;
   aiAnalysisId?: string | null;
   aiAnalyzedAt?: string | null;
-  aiPipelineVersion?: "multimodal-v1" | null;
+  aiPipelineVersion?: "multimodal-v1" | "multimodal-v2" | null;
   aiVision?: AiVisionAnalysis | null;
   aiFusion?: AiFusionAnalysis | null;
+  aiOverallAnalysis?: AiOverallAnalysis | null;
   aiSemanticProcessingTimeMs?: number | null;
   aiTotalProcessingTimeMs?: number | null;
   officerNote?: string;
@@ -333,6 +353,22 @@ export interface ResolutionInput {
   materialsUsed?: string;
   additionalNotes?: string;
   evidence: ResolutionEvidenceInput[];
+}
+
+export interface ShiftLocationInput {
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number;
+}
+
+export interface OfficerShift {
+  _id: string;
+  officerId: string;
+  status: "ACTIVE" | "COMPLETED";
+  startedAt: string;
+  endedAt?: string;
+  startLocation: { type: "Point"; coordinates: [number, number]; accuracyMeters: number };
+  endLocation?: { type: "Point"; coordinates: [number, number]; accuracyMeters: number };
 }
 
 

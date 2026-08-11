@@ -108,6 +108,10 @@ export const alertService = {
     const res = await api.post(`/v1/alerts/${id}/classification/review`, { category });
     return res.data.data;
   },
+  getOfficerAvailability: async () => {
+    const res = await api.get('/v1/alerts/officers/availability');
+    return res.data.data;
+  },
   createAlert: async (data: CreateAlertData) => {
     const res = await api.post("/v1/alerts", data);
     return res.data.data;
@@ -232,6 +236,16 @@ export const gisService = {
     const res = await api.get(
       `/v1/gis/radius?lng=${lng}&lat=${lat}&radius=${radius}`,
     );
+    return res.data.data;
+  },
+  getIncidentHeatmap: async (filters: Record<string, string> = {}) => {
+    const params = new URLSearchParams(filters);
+    const res = await api.get(`/v1/gis/incidents/heatmap?${params}`);
+    return res.data.data;
+  },
+  getIncidentDrilldown: async (lat: number, lng: number, radius = 500, filters: Record<string, string> = {}) => {
+    const params = new URLSearchParams({ lat: String(lat), lng: String(lng), radius: String(radius), ...filters });
+    const res = await api.get(`/v1/gis/incidents/nearby?${params}`);
     return res.data.data;
   },
 };

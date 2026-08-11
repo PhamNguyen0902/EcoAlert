@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { alertService } from "../api/alertService";
-import { CreateAlertData, ResolutionInput } from "../types";
+import { CreateAlertData, OfficerShift, ResolutionInput, ShiftLocationInput } from "../types";
 import { AI_POLL_INTERVAL_MS, shouldPollAiAnalysis } from "../utils/aiAnalysis";
 
 const EMPTY_FILTERS: Record<string, string> = {};
@@ -33,6 +33,28 @@ export const useOfficerTasks = (page = 1, limit = 20, status?: string) => {
     queryKey: ["officer-tasks", page, limit, status],
     queryFn: () => alertService.getOfficerTasks(page, limit, status),
     staleTime: 1000 * 60 * 2,
+  });
+};
+
+export const useCurrentShift = () => useQuery<OfficerShift | null>({
+  queryKey: ['officer-shift', 'current'],
+  queryFn: () => alertService.getCurrentShift(),
+  staleTime: 30_000,
+});
+
+export const useStartShift = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (location: ShiftLocationInput) => alertService.startShift(location),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['officer-shift'] }),
+  });
+};
+
+export const useEndShift = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (location: ShiftLocationInput) => alertService.endShift(location),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['officer-shift'] }),
   });
 };
 

@@ -12,6 +12,10 @@ export interface IReadOnlyAlert {
   createdAt: Date;
   updatedAt: Date;
   resolvedAt?: Date;
+  assignedAt?: Date;
+  startedAt?: Date;
+  arrivedAt?: Date;
+  resolutionEvidence?: string[];
   isDeleted?: boolean;
 }
 
@@ -28,6 +32,10 @@ const readOnlyAlertSchema = new Schema<IReadOnlyAlert>(
     createdAt: Date,
     updatedAt: Date,
     resolvedAt: Date,
+    assignedAt: Date,
+    startedAt: Date,
+    arrivedAt: Date,
+    resolutionEvidence: [String],
     isDeleted: Boolean,
   },
   { strict: true, collection: 'alerts' },

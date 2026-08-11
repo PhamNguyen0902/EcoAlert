@@ -73,7 +73,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
   const severityCounts = useMemo(() => {
     const counts = { all: alerts.length, critical: 0, high: 0, medium: 0, low: 0 };
     alerts.forEach((a) => {
-      if (counts[a.severity] !== undefined) {
+      if (a.severity && counts[a.severity] !== undefined) {
         counts[a.severity]++;
       }
     });
@@ -97,7 +97,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
             <Marker
               key={alert._id}
               position={[alert.location.coordinates[1], alert.location.coordinates[0]]}
-              icon={createMarkerIcon(alert.severity)}
+              icon={createMarkerIcon(alert.severity ?? 'low')}
             >
               <Popup className="incident-popup">
                 <div className="w-64">
@@ -117,12 +117,12 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                     </Badge>
                     <Badge
                       style={{
-                        backgroundColor: severityColors[alert.severity],
+                        backgroundColor: severityColors[alert.severity ?? 'low'],
                         color: 'white',
                       }}
                       className="text-xs capitalize"
                     >
-                      {alert.severity}
+                      {alert.severity ?? 'unavailable'}
                     </Badge>
                     <Badge variant="secondary" className="text-xs capitalize">
                       {alert.status}

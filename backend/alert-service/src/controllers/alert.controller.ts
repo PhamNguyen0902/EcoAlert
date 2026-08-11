@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { alertService, WorkflowActor } from '../services/alert.service';
+import { officerShiftService } from '../services/officer-shift.service';
 import { ForbiddenError, paginatedResponse, successResponse } from '@ecoalert/shared';
 
 const workflowActor = (req: Request): WorkflowActor => ({
@@ -155,6 +156,32 @@ export class AlertController {
     const citizenId = req.headers['x-user-id'] as string;
     const result = await alertService.confirmAlert(req.params.id, citizenId);
     res.status(200).json(successResponse(result, 'Alert confirmed successfully'));
+  }
+
+  async startShift(req: Request, res: Response) {
+    const result = await officerShiftService.startShift(workflowActor(req), req.body);
+    res.status(201).json(successResponse(result, 'Shift started'));
+  }
+
+  async endShift(req: Request, res: Response) {
+    const result = await officerShiftService.endShift(workflowActor(req), req.body);
+    res.status(200).json(successResponse(result, 'Shift ended'));
+  }
+
+  async getCurrentShift(req: Request, res: Response) {
+    const result = await officerShiftService.getCurrentShift(workflowActor(req));
+    res.status(200).json(successResponse(result));
+  }
+
+  async getShiftHistory(req: Request, res: Response) {
+    const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit as string, 10) || 20));
+    const result = await officerShiftService.getShiftHistory(workflowActor(req), limit);
+    res.status(200).json(successResponse(result));
+  }
+
+  async getOfficerAvailability(req: Request, res: Response) {
+    const result = await officerShiftService.getAvailability(workflowActor(req));
+    res.status(200).json(successResponse(result));
   }
 }
 

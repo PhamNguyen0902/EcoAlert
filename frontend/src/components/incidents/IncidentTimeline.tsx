@@ -12,12 +12,14 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { TimelineEntry } from '@/types';
+import type { AiAnalysisMode, AiVisionAnalysis, TimelineEntry } from '@/types';
 
 interface IncidentTimelineProps {
   entries?: TimelineEntry[];
   createdAt: string;
   citizenId?: string;
+  analysisMode?: AiAnalysisMode | null;
+  vision?: AiVisionAnalysis | null;
 }
 
 const iconForEvent = (eventType: string) => {
@@ -32,7 +34,7 @@ const iconForEvent = (eventType: string) => {
   return CircleDot;
 };
 
-export function IncidentTimeline({ entries = [], createdAt, citizenId }: IncidentTimelineProps) {
+export function IncidentTimeline({ entries = [], createdAt, citizenId, analysisMode, vision }: IncidentTimelineProps) {
   const normalizedEntries: TimelineEntry[] = entries.length > 0
     ? entries
     : [{
@@ -56,6 +58,11 @@ export function IncidentTimeline({ entries = [], createdAt, citizenId }: Inciden
         <ol className="relative ml-3 border-l border-border">
           {sortedEntries.map((entry, index) => {
             const Icon = iconForEvent(entry.eventType);
+            const legacyVisionOnly = entry.eventType === 'AI_ANALYSIS_COMPLETED' && analysisMode === 'VISION_ONLY';
+            const label = legacyVisionOnly ? 'Vision analysis completed' : entry.label;
+            const note = legacyVisionOnly
+              ? `Semantic confidence: Not available${vision ? ` · Detected objects: ${vision.totalDetectedObjects}${vision.detectorConfidence !== null ? ` · Detector confidence: ${Math.round(vision.detectorConfidence * 100)}%` : ''}` : ''}`
+              : entry.note;
             return (
               <li key={entry._id || `${entry.eventType}-${entry.timestamp}-${index}`} className="relative mb-7 ml-7 last:mb-0">
                 <span className="absolute -left-[2.35rem] flex h-8 w-8 items-center justify-center rounded-full border bg-background text-primary shadow-sm">
@@ -63,7 +70,7 @@ export function IncidentTimeline({ entries = [], createdAt, citizenId }: Inciden
                 </span>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium">{entry.label}</p>
+                    <p className="font-medium">{label}</p>
                     <p className="text-xs text-muted-foreground">
                       {entry.actorRole === 'SYSTEM' ? 'System' : entry.actorRole.toLowerCase()}
                       {entry.actorId ? ` · ${entry.actorId}` : ''}
@@ -78,7 +85,7 @@ export function IncidentTimeline({ entries = [], createdAt, citizenId }: Inciden
                     {entry.status.replace(/_/g, ' ')}
                   </Badge>
                 ) : null}
-                {entry.note ? <p className="mt-2 text-sm text-muted-foreground">{entry.note}</p> : null}
+                {note ? <p className="mt-2 text-sm text-muted-foreground">{note}</p> : null}
                 {entry.evidenceUrls?.length ? (
                   <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                     {entry.evidenceUrls.map((url) => (

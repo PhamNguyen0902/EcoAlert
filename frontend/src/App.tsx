@@ -72,6 +72,9 @@ const AuditLogs = lazy(() => import("./features/admin/pages/AuditLogs"));
 const AdminSettings = lazy(
   () => import("./features/admin/pages/AdminSettings"),
 );
+const AdminIncidentHeatmap = lazy(
+  () => import("./features/admin/pages/AdminIncidentHeatmap"),
+);
 
 const ProtectedRoute = lazy(() =>
   import("./components/auth/ProtectedRoute").then((m) => ({
@@ -162,6 +165,7 @@ function App() {
               />
               <Route path="/admin/monitoring" element={<SystemMonitoring />} />
               <Route path="/admin/analytics" element={<Analytics />} />
+              <Route path="/admin/incident-density" element={<AdminIncidentHeatmap />} />
               <Route path="/admin/audit" element={<AuditLogs />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
               <Route path="/admin/profile" element={<CitizenProfile />} />

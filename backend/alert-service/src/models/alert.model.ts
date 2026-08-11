@@ -2,10 +2,12 @@ import mongoose, { Schema } from 'mongoose';
 import { baseSchemaPlugin, BaseDocument } from './base.model';
 import {
   AiAnalysisMode,
+  AiDisplayConfidenceSource,
   AiWasteType,
   AlertStatus,
   AlertCategory,
   IAiFusionAnalysis,
+  IAiOverallAnalysis,
   IAiVisionAnalysis,
   Severity,
 } from '@ecoalert/shared';
@@ -89,7 +91,7 @@ export interface IAlert extends BaseDocument {
   category: AlertCategory | 'UNCLASSIFIED';
   classification?: IAlertClassification;
   imageValidation?: IImageValidation;
-  severity: Severity;
+  severity: Severity | null;
   mediaUrls: string[];
   location: {
     type: 'Point';
@@ -112,18 +114,20 @@ export interface IAlert extends BaseDocument {
     accuracy?: number;
   };
   checkIn?: IOfficerCheckIn;
-  aiConfidence?: number;
-  aiSuggestedPriority?: Severity;
-  aiSummary?: string;
-  aiReasoningSummary?: string;
+  aiConfidence?: number | null;
+  aiConfidenceSource?: AiDisplayConfidenceSource;
+  aiSuggestedPriority?: Severity | null;
+  aiSummary?: string | null;
+  aiReasoningSummary?: string | null;
   aiAnalysisMode?: AiAnalysisMode;
   aiAnalysisProvider?: 'openrouter' | 'vision-service';
   aiAnalysisModel?: string;
   aiAnalysisId?: string;
   aiAnalyzedAt?: Date;
-  aiPipelineVersion?: 'multimodal-v1';
+  aiPipelineVersion?: 'multimodal-v1' | 'multimodal-v2';
   aiVision?: IAiVisionAnalysis;
   aiFusion?: IAiFusionAnalysis;
+  aiOverallAnalysis?: IAiOverallAnalysis;
   aiSemanticProcessingTimeMs?: number;
   aiTotalProcessingTimeMs?: number;
   aiVerified?: boolean;
@@ -272,13 +276,14 @@ const visionAnalysisSchema = new Schema({
 }, { _id: false });
 
 const fusionAnalysisSchema = new Schema({
-  version: { type: String, enum: ['vision-fusion-v1'], required: true },
+  version: { type: String, enum: ['vision-fusion-v1', 'vision-fusion-v2'], required: true },
   mode: { type: String, enum: ['FULL_MULTIMODAL', 'SEMANTIC_ONLY', 'VISION_ONLY', 'FAILED'], required: true },
   wasteType: {
     type: String,
     enum: ['PLASTIC_WASTE', 'ORGANIC_WASTE', 'CONSTRUCTION_WASTE', 'HAZARDOUS_WASTE', 'METAL_WASTE', 'GLASS_WASTE', 'PAPER_WASTE', 'E_WASTE', 'MIXED_WASTE', 'OTHER'],
   },
-  severityScore: { type: Number, required: true, min: 0, max: 100 },
+  // VISION_ONLY deliberately withholds a semantic-derived severity score.
+  severityScore: { type: Number, min: 0, max: 100, default: null },
   severityFactors: { type: [{
     factor: String,
     score: Number,
@@ -288,8 +293,26 @@ const fusionAnalysisSchema = new Schema({
   explanations: { type: [String], default: [] },
   semanticConfidence: { type: Number, min: 0, max: 1, default: null },
   visionConfidence: { type: Number, min: 0, max: 1, default: null },
-  fusionConfidence: { type: Number, required: true, min: 0, max: 1 },
+  fusionConfidence: { type: Number, min: 0, max: 1, default: null },
+  visionSupport: { type: String, enum: ['STRONG', 'PARTIAL', 'NONE', 'NOT_APPLICABLE'] },
   processingTimeMs: { type: Number, required: true, min: 0 },
+}, { _id: false });
+
+const overallAnalysisSchema = new Schema<IAiOverallAnalysis>({
+  isIncident: { type: Boolean, required: true },
+  incidentConfidence: { type: Number, required: true, min: 0, max: 1 },
+  categorySuggestion: { type: String, enum: [...Object.values(AlertCategory), null], default: null },
+  categoryConfidence: { type: Number, required: true, min: 0, max: 1 },
+  classificationStatus: { type: String, enum: ['AI_SUGGESTED', 'UNCLASSIFIED'], required: true },
+  confidenceTier: { type: String, enum: ['HIGH_CONFIDENCE', 'REVIEW_REQUIRED', 'UNCLASSIFIED'], required: true },
+  severity: { type: String, enum: Object.values(Severity), required: true },
+  severityScore: { type: Number, min: 0, max: 100, default: null },
+  severityConfidence: { type: Number, required: true, min: 0, max: 1 },
+  overallSummary: { type: String, trim: true, required: true, maxlength: 800 },
+  shortReason: { type: String, trim: true, required: true, maxlength: 500 },
+  visionEvidenceUsed: { type: [String], default: [] },
+  semanticModel: { type: String, trim: true, required: true },
+  pipelineVersion: { type: String, enum: ['multimodal-v2'], required: true },
 }, { _id: false });
 
 const alertSchema = new Schema<IAlert>({
@@ -306,7 +329,7 @@ const alertSchema = new Schema<IAlert>({
   imageValidation: { type: imageValidationSchema },
   severity: {
     type: String,
-    enum: [...Object.values(Severity), ...Object.values(Severity).map((value) => value.toUpperCase())],
+    enum: [...Object.values(Severity), ...Object.values(Severity).map((value) => value.toUpperCase()), null],
     default: Severity.LOW,
     set: (value: unknown) => typeof value === 'string' ? value.toLowerCase() : value,
   },
@@ -332,10 +355,11 @@ const alertSchema = new Schema<IAlert>({
     accuracy: { type: Number },
   },
   checkIn: { type: checkInSchema },
-  aiConfidence: { type: Number },
+  aiConfidence: { type: Number, min: 0, max: 1, default: null },
+  aiConfidenceSource: { type: String, enum: ['FUSION', 'CATEGORY', 'SEMANTIC', 'NONE'], default: 'NONE' },
   aiSuggestedPriority: {
     type: String,
-    enum: [...Object.values(Severity), ...Object.values(Severity).map((value) => value.toUpperCase())],
+    enum: [...Object.values(Severity), ...Object.values(Severity).map((value) => value.toUpperCase()), null],
     set: (value: unknown) => typeof value === 'string' ? value.toLowerCase() : value,
   },
   aiSummary: { type: String, trim: true },
@@ -345,9 +369,10 @@ const alertSchema = new Schema<IAlert>({
   aiAnalysisModel: { type: String, trim: true },
   aiAnalysisId: { type: String, index: true },
   aiAnalyzedAt: { type: Date },
-  aiPipelineVersion: { type: String, enum: ['multimodal-v1'] },
+  aiPipelineVersion: { type: String, enum: ['multimodal-v1', 'multimodal-v2'] },
   aiVision: { type: visionAnalysisSchema },
   aiFusion: { type: fusionAnalysisSchema },
+  aiOverallAnalysis: { type: overallAnalysisSchema },
   aiSemanticProcessingTimeMs: { type: Number, min: 0 },
   aiTotalProcessingTimeMs: { type: Number, min: 0 },
   aiVerified: { type: Boolean },

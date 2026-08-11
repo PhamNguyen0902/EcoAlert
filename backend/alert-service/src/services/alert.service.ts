@@ -21,6 +21,7 @@ import {
   ForbiddenError,
   IAiAnalysisCompletedData,
   NotFoundError,
+  resolveOverallAiConfidence,
   Severity,
 } from '@ecoalert/shared';
 import { rabbitMQService } from './rabbitmq.service';
@@ -49,18 +50,15 @@ const statusFilter = (status: AlertStatus) => ({
   $regex: new RegExp(`^${status}$`, 'i'),
 });
 
-const AI_SUPPORTED_CATEGORIES = new Set<AlertCategory>([
-  AlertCategory.ILLEGAL_DUMPING,
-  AlertCategory.ILLEGAL_CONSTRUCTION_WASTE,
-  AlertCategory.WATER_POLLUTION,
-  AlertCategory.AIR_POLLUTION,
-  AlertCategory.ILLEGAL_BURNING,
-  AlertCategory.FLOODING,
-  AlertCategory.FALLEN_TREE,
-]);
-
-const validAiSuggestion = (category?: AlertCategory | null, confidence?: number | null) =>
-  Boolean(category && confidence !== null && confidence !== undefined && confidence >= 0.5 && AI_SUPPORTED_CATEGORIES.has(category));
+const validAiSuggestion = (category?: AlertCategory | 'UNCLASSIFIED' | null, confidence?: number | null) =>
+  Boolean(
+    category &&
+    category !== 'UNCLASSIFIED' &&
+    confidence !== null &&
+    confidence !== undefined &&
+    confidence >= 0.5 &&
+    Object.values(AlertCategory).includes(category as AlertCategory),
+  );
 
 export class AlertService {
   private ensureValidId(id: string) {
@@ -673,9 +671,20 @@ export class AlertService {
     // Theo góp ý của Thầy: AI không tự động duyệt VERIFIED mà giữ PENDING cho con người xác nhận.
     // Nếu độ tin cậy thấp (< 60%), hệ thống gán phân loại là UNCLASSIFIED (Chưa phân loại).
     const newStatus = AlertStatus.PENDING;
-    const aiSuggestedCategory = validAiSuggestion(analysis.category, analysis.confidence)
-      ? analysis.category
-      : null;
+    const displayConfidence = resolveOverallAiConfidence({
+      analysisMode: analysis.analysisMode,
+      confidence: analysis.confidence,
+      fusion: analysis.fusion,
+      overallAnalysis: analysis.overallAnalysis,
+    });
+    const semanticCategoryConfidence = analysis.overallAnalysis?.categoryConfidence
+      ?? (analysis.analysisMode === 'VISION_ONLY' ? null : analysis.confidence);
+    const aiSuggestedCategory = analysis.overallAnalysis?.classificationStatus === 'AI_SUGGESTED'
+      && validAiSuggestion(analysis.overallAnalysis.categorySuggestion, analysis.overallAnalysis.categoryConfidence)
+      ? analysis.overallAnalysis.categorySuggestion
+      : validAiSuggestion(analysis.category, analysis.confidence)
+        ? analysis.category as AlertCategory
+        : null;
     const existingClassification = alert.classification;
     const humanFinalCategory = existingClassification?.finalCategory
       || (alert.category !== 'UNCLASSIFIED' ? alert.category : null);
@@ -690,16 +699,16 @@ export class AlertService {
         ...existingClassification,
         status: existingClassification?.status || 'USER_CORRECTED',
         aiSuggestedCategory,
-        aiConfidence: analysis.confidence,
-        aiReason: analysis.reasoningSummary,
+        aiConfidence: semanticCategoryConfidence,
+        aiReason: analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
         finalCategory: humanFinalCategory as AlertCategory | null,
         finalCategorySource: existingClassification?.finalCategorySource || 'CITIZEN',
       }
       : {
         status: aiSuggestedCategory ? 'AI_SUGGESTED' : 'UNCLASSIFIED',
         aiSuggestedCategory,
-        aiConfidence: analysis.confidence,
-        aiReason: analysis.reasoningSummary,
+        aiConfidence: semanticCategoryConfidence,
+        aiReason: analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
         finalCategory: null,
         finalCategorySource: null,
         citizenSelectedCategory: null,
@@ -714,11 +723,12 @@ export class AlertService {
       $set: {
         category: hasHumanDecision && humanFinalCategory ? humanFinalCategory : 'UNCLASSIFIED',
         classification,
-        aiConfidence: analysis.confidence,
+        aiConfidence: displayConfidence.value,
+        aiConfidenceSource: displayConfidence.source,
         aiSuggestedPriority: analysis.severity,
         severity: analysis.severity,
-        aiSummary: analysis.summary,
-        aiReasoningSummary: analysis.reasoningSummary,
+        aiSummary: analysis.overallAnalysis?.overallSummary ?? analysis.summary,
+        aiReasoningSummary: analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
         aiAnalysisMode: analysis.analysisMode,
         aiAnalysisProvider: analysis.provider,
         aiAnalysisModel: analysis.model,
@@ -727,6 +737,7 @@ export class AlertService {
         ...(analysis.pipelineVersion ? { aiPipelineVersion: analysis.pipelineVersion } : {}),
         ...(analysis.vision ? { aiVision: analysis.vision } : {}),
         ...(analysis.fusion ? { aiFusion: analysis.fusion } : {}),
+        ...(analysis.overallAnalysis ? { aiOverallAnalysis: analysis.overallAnalysis } : {}),
         ...(analysis.semanticProcessingTimeMs !== undefined
           ? { aiSemanticProcessingTimeMs: analysis.semanticProcessingTimeMs }
           : {}),
@@ -738,12 +749,22 @@ export class AlertService {
       $push: {
         timeline: this.timelineEntry(
           'AI_ANALYSIS_COMPLETED',
-          'AI analysis completed',
+          analysis.analysisMode === 'VISION_ONLY' ? 'Vision analysis completed' : 'AI analysis completed',
           actor,
           analyzedAt,
           {
             status: newStatus,
-            note: `Confidence: ${Math.round(analysis.confidence * 100)}%`,
+            note: analysis.analysisMode === 'VISION_ONLY'
+              ? `Semantic confidence: Not available${analysis.vision ? ` · Detected objects: ${analysis.vision.totalDetectedObjects}${analysis.vision.detectorConfidence !== null ? ` · Detector confidence: ${Math.round(analysis.vision.detectorConfidence * 100)}%` : ''}` : ''}`
+              : displayConfidence.value === null
+                ? 'Semantic confidence: Not available'
+                : `Confidence: ${Math.round(displayConfidence.value * 100)}% (${displayConfidence.source.toLowerCase()})`,
+            metadata: {
+              analysisMode: analysis.analysisMode,
+              displayConfidence: displayConfidence.value,
+              displayConfidenceSource: displayConfidence.source,
+              detectorConfidence: analysis.vision?.detectorConfidence ?? null,
+            },
           },
         ),
         ...((currentStatus === AlertStatus.PENDING || currentStatus === AlertStatus.AI_ANALYZING) && currentStatus !== newStatus

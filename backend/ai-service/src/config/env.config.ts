@@ -34,4 +34,6 @@ export const envConfig = {
   mediaServiceUrl: process.env.MEDIA_SERVICE_URL || 'http://media-service:3003',
   imageValidationHighThreshold: threshold(process.env.AI_IMAGE_VALIDATION_HIGH_THRESHOLD, 0.8),
   imageValidationLowThreshold: threshold(process.env.AI_IMAGE_VALIDATION_LOW_THRESHOLD, 0.5),
+  aiCategorySuggestionThreshold: threshold(process.env.AI_CATEGORY_SUGGESTION_THRESHOLD, 0.8),
+  aiCategoryUnclassifiedThreshold: threshold(process.env.AI_CATEGORY_UNCLASSIFIED_THRESHOLD, 0.5),
 };

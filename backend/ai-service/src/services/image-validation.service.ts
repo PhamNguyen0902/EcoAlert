@@ -4,15 +4,7 @@ import { envConfig } from '../config/env.config';
 import { AiTask } from './ai-task-router';
 import { getOpenRouterProvider, OpenRouterResponseError } from './openrouter.service';
 
-const AI_SUPPORTED_CATEGORIES = [
-  AlertCategory.ILLEGAL_DUMPING,
-  AlertCategory.ILLEGAL_CONSTRUCTION_WASTE,
-  AlertCategory.WATER_POLLUTION,
-  AlertCategory.AIR_POLLUTION,
-  AlertCategory.ILLEGAL_BURNING,
-  AlertCategory.FLOODING,
-  AlertCategory.FALLEN_TREE,
-] as const;
+const AI_SUPPORTED_CATEGORIES = Object.values(AlertCategory);
 
 export type ImageValidationDecision = 'VALID' | 'UNCERTAIN' | 'INVALID' | 'UNAVAILABLE';
 export interface ImageValidationResult {
@@ -59,7 +51,7 @@ export const deriveImageValidation = (
   result: z.infer<typeof responseSchema>,
   model: string,
 ): ImageValidationResult => {
-  const isSupported = result.suggestedCategory !== null && AI_SUPPORTED_CATEGORIES.includes(result.suggestedCategory as typeof AI_SUPPORTED_CATEGORIES[number]);
+  const isSupported = result.suggestedCategory !== null && AI_SUPPORTED_CATEGORIES.includes(result.suggestedCategory);
   const suggestedCategory = result.confidence >= envConfig.imageValidationLowThreshold && isSupported
     ? result.suggestedCategory : null;
   const decision: ImageValidationDecision = result.isEnvironmentalIncident === false && result.confidence >= envConfig.imageValidationHighThreshold

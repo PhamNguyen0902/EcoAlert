@@ -88,10 +88,13 @@ services:
       - OFFICER_CHECKIN_RADIUS_METERS=${OFFICER_CHECKIN_RADIUS_METERS:-50}
       - OFFICER_EVIDENCE_RADIUS_METERS=${OFFICER_EVIDENCE_RADIUS_METERS:-50}
       - OFFICER_MAX_GPS_ACCURACY_METERS=${OFFICER_MAX_GPS_ACCURACY_METERS:-100}
+      - OFFICER_WORKLOAD_MODERATE_THRESHOLD=${OFFICER_WORKLOAD_MODERATE_THRESHOLD:-3}
+      - OFFICER_WORKLOAD_HIGH_THRESHOLD=${OFFICER_WORKLOAD_HIGH_THRESHOLD:-5}
     volumes:
       # Keep the strict Phase 1A event contract synchronized without rebuilding
       # the Node image on this constrained local machine.
       - ./backend/alert-service/dist:/app/alert-service/dist:ro
+      - ./backend/shared/dist:/app/shared/dist:ro
     depends_on:
       - mongodb
       - rabbitmq
@@ -133,6 +136,10 @@ services:
     depends_on:
       - mongodb
       - rabbitmq
+    volumes:
+      # Run the locally type-checked GIS read model without rebuilding the
+      # shared Node image on this constrained workstation.
+      - ./backend/gis-service/dist:/app/gis-service/dist:ro
     networks:
       - ecoalert_network
 
@@ -164,10 +171,13 @@ services:
       - MEDIA_SERVICE_URL=http://media-service:3003
       - AI_IMAGE_VALIDATION_HIGH_THRESHOLD=${AI_IMAGE_VALIDATION_HIGH_THRESHOLD:-0.80}
       - AI_IMAGE_VALIDATION_LOW_THRESHOLD=${AI_IMAGE_VALIDATION_LOW_THRESHOLD:-0.50}
+      - AI_CATEGORY_SUGGESTION_THRESHOLD=${AI_CATEGORY_SUGGESTION_THRESHOLD:-0.80}
+      - AI_CATEGORY_UNCLASSIFIED_THRESHOLD=${AI_CATEGORY_UNCLASSIFIED_THRESHOLD:-0.50}
     volumes:
       # Resource-safe local Phase 1A deployment: use the locally type-checked
       # service output without rebuilding the Node image.
       - ./backend/ai-service/dist:/app/ai-service/dist:ro
+      - ./backend/shared/dist:/app/shared/dist:ro
     depends_on:
       - mongodb
       - redis

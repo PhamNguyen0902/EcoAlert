@@ -139,8 +139,8 @@ export default function AssignedReports() {
                 <Badge className={`absolute left-3 top-3 border-0 capitalize ${statusClasses[task.status] || ''}`}>
                   {task.status.replace(/_/g, ' ')}
                 </Badge>
-                <Badge variant="outline" className={`absolute right-3 top-3 capitalize backdrop-blur ${severityClasses[task.severity] || ''}`}>
-                  {task.severity}
+                <Badge variant="outline" className={`absolute right-3 top-3 capitalize backdrop-blur ${severityClasses[task.severity ?? 'low'] || ''}`}>
+                  {task.severity ?? 'unavailable'}
                 </Badge>
               </div>
               <CardContent className="space-y-4 p-5">

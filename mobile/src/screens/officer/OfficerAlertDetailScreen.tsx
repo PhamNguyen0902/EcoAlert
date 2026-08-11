@@ -36,9 +36,11 @@ import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
+import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
 import { useTheme } from "../../context/ThemeContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../utils/maps";
+import { getAlertDisplaySeverity, getSeverityLabel } from "../../utils/aiAnalysis";
 
 export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
@@ -84,7 +86,8 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
   const incidentCoordinates = getGeoJsonMapCoordinates(alert.location?.coordinates);
 
-  const sevColor = SEVERITY_COLORS[alert.severity ?? "low"] || { bg: "#F1F5F9", text: "#475569" };
+  const displaySeverity = getAlertDisplaySeverity(alert);
+  const sevColor = displaySeverity ? (SEVERITY_COLORS[displaySeverity] || { bg: "#F1F5F9", text: "#475569" }) : { bg: "#F1F5F9", text: "#475569" };
   const currentStatus = alert.status?.toUpperCase();
 
   const handleStartHandling = async () => {
@@ -190,7 +193,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           />
           <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
             <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-              MỨC ĐỘ {alert.severity?.toUpperCase()}
+              MỨC ĐỘ {getSeverityLabel(displaySeverity)}
             </Text>
           </View>
           <Badge label={alert.status || "PENDING"} type="status" />
@@ -266,6 +269,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           <Text style={[styles.descriptionText, { color: colors.text }]}>{alert.description}</Text>
         </GlassCard>
 
+        <OverallAiAnalysisCard alert={alert} />
         <VisionAnalysisCard alert={alert} />
 
         {/* Evidence Photos */}

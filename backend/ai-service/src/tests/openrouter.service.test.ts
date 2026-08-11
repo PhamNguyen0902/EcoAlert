@@ -177,23 +177,20 @@ test('configured model is used and confidence zero is preserved', async () => {
 
   assert.equal(capturedRequest?.model, 'openai/gpt-4o-mini');
   assert.equal(result.confidence, 0);
-  assert.equal(result.category, 'illegal_dumping');
+  assert.equal(result.category, 'UNCLASSIFIED');
   assert.equal(result.severity, 'high');
   assert.equal(result.analysisMode, 'text');
 });
 
-test('malformed or out-of-schema AI JSON is rejected', () => {
+test('malformed AI JSON is rejected and unsupported categories are normalized safely', () => {
   assert.throws(() => parseIncidentAnalysis('not-json'), OpenRouterResponseError);
-  assert.throws(
-    () => parseIncidentAnalysis(JSON.stringify({
-      category: 'invented_category',
-      severity: 'low',
-      confidence: 0.5,
-      summary: 'Invalid category.',
-      reasoningSummary: 'Invalid category.',
-    })),
-    OpenRouterResponseError,
-  );
+  assert.equal(parseIncidentAnalysis(JSON.stringify({
+    category: 'invented_category',
+    severity: 'low',
+    confidence: 0.5,
+    summary: 'Invalid category.',
+    reasoningSummary: 'Invalid category.',
+  })).category, 'UNCLASSIFIED');
 });
 
 test('401 errors are mapped without retaining a key or authorization value', () => {

@@ -5,6 +5,9 @@ export interface ILocation extends Document {
   category: string;
   severity: string;
   status: string;
+  title?: string;
+  address?: string;
+  isDeleted?: boolean;
   location: {
     type: 'Point';
     coordinates: [number, number]; // [longitude, latitude]
@@ -16,6 +19,9 @@ const locationSchema = new Schema<ILocation>({
   category: { type: String },
   severity: { type: String },
   status: { type: String },
+  title: { type: String, trim: true },
+  address: { type: String, trim: true },
+  isDeleted: { type: Boolean, default: false },
   location: {
     type: { type: String, enum: ['Point'], required: true },
     coordinates: { type: [Number], required: true },

@@ -406,14 +406,14 @@ export default function OfficerMap() {
                   <Marker
                     key={alert._id}
                     position={coordinates}
-                    icon={createCustomIcon(alert.severity)}
+                    icon={createCustomIcon(alert.severity ?? 'low')}
                   >
                     <Popup className="rounded-lg">
                       <div className="max-w-xs p-1">
                         <h3 className="mb-1 line-clamp-1 text-sm font-semibold">{alert.title}</h3>
                         <div className="mb-2 flex gap-2">
                           <Badge variant="outline" className="text-[10px] uppercase">
-                            {alert.severity}
+                            {alert.severity ?? 'unavailable'}
                           </Badge>
                           <Badge variant="secondary" className="text-[10px] uppercase">
                             {alert.status}

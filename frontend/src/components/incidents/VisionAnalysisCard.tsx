@@ -23,16 +23,16 @@ export function VisionAnalysisCard({ alert }: { alert: Alert }) {
   const explanations = Array.isArray(fusion?.explanations) ? fusion.explanations : [];
   const detectorStatus = !visionSucceeded
     ? 'Not available'
-    : fusion?.visionConfidence === null || fusion?.visionConfidence === undefined
+    : vision?.detectorConfidence === null || vision?.detectorConfidence === undefined
       ? 'Available'
-      : percentage(fusion.visionConfidence);
+      : percentage(vision.detectorConfidence);
 
   return (
     <section className="rounded-lg border bg-muted/20 p-4" aria-labelledby="vision-analysis-heading">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <ScanSearch className="h-4 w-4 text-primary" aria-hidden="true" />
-          <h3 id="vision-analysis-heading" className="text-sm font-semibold">Vision evidence</h3>
+          <h3 id="vision-analysis-heading" className="text-sm font-semibold">Vision nhận diện vật thể</h3>
         </div>
         <span className="rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">
           {humanize(fusion?.mode || vision?.status)}
@@ -40,10 +40,10 @@ export function VisionAnalysisCard({ alert }: { alert: Alert }) {
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-        <div><dt className="text-muted-foreground">Potential waste type</dt><dd className="mt-1 font-medium">{humanize(fusion?.wasteType)}</dd></div>
-        <div><dt className="text-muted-foreground">Detected objects</dt><dd className="mt-1 font-medium tabular-nums">{visionSucceeded ? vision.totalDetectedObjects : 'Not available'}</dd></div>
-        <div><dt className="text-muted-foreground">Severity</dt><dd className="mt-1 font-medium">{humanize(alert.severity)}</dd></div>
-        <div><dt className="text-muted-foreground">Severity score</dt><dd className="mt-1 font-medium tabular-nums">{Number.isFinite(fusion?.severityScore) ? `${fusion!.severityScore}/100` : 'Not available'}</dd></div>
+        <div><dt className="text-muted-foreground">Loại vật thể</dt><dd className="mt-1 font-medium">{humanize(fusion?.wasteType)}</dd></div>
+        <div><dt className="text-muted-foreground">Số vật thể phát hiện</dt><dd className="mt-1 font-medium tabular-nums">{visionSucceeded ? vision.totalDetectedObjects : 'Không có'}</dd></div>
+        <div><dt className="text-muted-foreground">Độ tin cậy detector</dt><dd className="mt-1 font-medium">{detectorStatus}</dd></div>
+        <div><dt className="text-muted-foreground">Mức hỗ trợ Vision</dt><dd className="mt-1 font-medium">{humanize(fusion?.visionSupport)}</dd></div>
       </dl>
 
       {objectCounts.length ? (
@@ -62,9 +62,9 @@ export function VisionAnalysisCard({ alert }: { alert: Alert }) {
           ))}
         </ul>
       ) : visionSucceeded ? (
-        <p className="mt-3 text-xs text-muted-foreground">No EcoAlert waste objects were detected.</p>
+        <p className="mt-3 text-xs text-muted-foreground">Không phát hiện vật thể rác thuộc sáu lớp EcoAlert. Điều này không tự động phủ nhận sự cố.</p>
       ) : vision ? (
-        <p className="mt-3 text-xs text-muted-foreground">Detector not available for this analysis.</p>
+        <p className="mt-3 text-xs text-muted-foreground">Vision không khả dụng cho lần phân tích này.</p>
       ) : null}
 
       {fusion ? (
@@ -95,7 +95,7 @@ export function VisionAnalysisCard({ alert }: { alert: Alert }) {
       ) : null}
 
       <p className="mt-3 text-[10px] leading-4 text-muted-foreground">
-        Vision evidence supports triage and may be incomplete. Officers should verify the original image.
+        Đây là bằng chứng ở cấp độ vật thể, tách biệt với phân tích tổng quan. Con người phải kiểm tra ảnh gốc trước khi xác nhận.
       </p>
     </section>
   );

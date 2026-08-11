@@ -73,6 +73,15 @@ export const KNOWLEDGE_BASE: KnowledgeChunk[] = [
     keywords: ['assigned', 'task', 'arrival', 'resolve', 'workflow', 'officer', 'treatment'],
   },
   {
+    id: 'officer-shift-and-workload',
+    title: 'Officer shift and workload guidance',
+    content:
+      'Officers start or end a shift with an explicit foreground GPS event. EcoAlert does not perform background tracking. Admins see on-shift/off-shift availability and active assigned plus in-progress workload, then make the final assignment decision.',
+    href: '/officer/dashboard',
+    roles: ['OFFICER', 'ADMIN'],
+    keywords: ['shift', 'workload', 'availability', 'gps', 'on shift', 'off shift', 'task'],
+  },
+  {
     id: 'admin-operations',
     title: 'Admin operations overview',
     content:
@@ -80,6 +89,15 @@ export const KNOWLEDGE_BASE: KnowledgeChunk[] = [
     href: '/admin/dashboard',
     roles: ['ADMIN'],
     keywords: ['admin', 'dashboard', 'analytics', 'queue', 'trend', 'audit', 'assign'],
+  },
+  {
+    id: 'admin-incident-density',
+    title: 'Incident density operations',
+    content:
+      'The Admin Incident Density map visualizes real GIS incident locations. Its colors represent incident concentration, not temperature and not a prediction. Apply filters, click a map area for drilldown, and make any operational decision manually.',
+    href: '/admin/incident-density',
+    roles: ['ADMIN'],
+    keywords: ['incident density', 'heatmap', 'map', 'gis', 'density', 'temperature', 'drilldown'],
   },
   {
     id: 'assistant-boundaries',

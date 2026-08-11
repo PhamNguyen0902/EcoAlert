@@ -13,16 +13,19 @@ const suggestions: Record<UserRole, string[]> = {
     'How do I report an incident safely?',
     'What do my report statuses mean?',
     'What is the status of my reports?',
+    'What should I do next with my latest report?',
   ],
   OFFICER: [
     'What tasks are assigned to me?',
     'Explain the arrival and resolution workflow.',
     'How should treatment evidence be recorded?',
+    'What should I do next on my assigned incident?',
   ],
   ADMIN: [
     'Give me an incident status overview.',
     'Where can I review analytics and audit activity?',
     'What can the assistant access for administrators?',
+    'What should I do next with incident density and workload?',
   ],
 };
 

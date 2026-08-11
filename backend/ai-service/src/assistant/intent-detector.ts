@@ -11,6 +11,16 @@ export const detectAssistantIntent = (
 
   if (
     containsAny(normalized, [
+      'what should i do next', 'next step', 'how do i proceed', 'what do i do now',
+      'tôi cần làm gì tiếp', 'bước tiếp theo', 'cần làm gì tiếp', 'tiếp theo làm gì',
+      'incident density', 'heatmap', 'workload', 'shift availability',
+    ])
+  ) {
+    return 'OPERATIONAL_GUIDANCE';
+  }
+
+  if (
+    containsAny(normalized, [
       'create', 'submit', 'update', 'edit', 'delete', 'assign', 'close', 'resolve',
       'start handling', 'confirm arrival', 'change status', 'tạo', 'gửi', 'cập nhật',
       'chỉnh sửa', 'xóa', 'phân công', 'đóng', 'giải quyết',

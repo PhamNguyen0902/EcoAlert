@@ -11,6 +11,7 @@ export type AssistantIntent =
   | 'REPORT_STATUS'
   | 'ASSIGNED_TASKS'
   | 'SYSTEM_OVERVIEW'
+  | 'OPERATIONAL_GUIDANCE'
   | 'WRITE_REQUEST'
   | 'GENERAL';
 
