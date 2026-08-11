@@ -112,7 +112,7 @@ export default function CategoryManagement() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Delete category?')) {
+    if (confirm('Xóa danh mục?')) {
       try {
         await deleteCategory.mutateAsync(id);
         toast.success(t('toast.category_deleted'));

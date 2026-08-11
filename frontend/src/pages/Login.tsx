@@ -112,7 +112,7 @@ export default function Login() {
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>

@@ -45,11 +45,11 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
 
   const handleUpdate = async () => {
     if (!title.trim() || title.length < 5) {
-      RNAlert.alert("Validation Error", "Title must be at least 5 characters long.");
+      RNAlert.alert("Lỗi xác thực", "Tiêu đề phải dài ít nhất 5 ký tự.");
       return;
     }
     if (!description.trim() || description.length < 15) {
-      RNAlert.alert("Validation Error", "Description must be at least 15 characters long.");
+      RNAlert.alert("Lỗi xác thực", "Mô tả phải dài ít nhất 15 ký tự.");
       return;
     }
 
@@ -62,12 +62,12 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
         },
       });
 
-      RNAlert.alert("Success", "Incident report updated successfully.");
+      RNAlert.alert("Thành công", "Cập nhật báo cáo sự cố thành công.");
       onClose();
     } catch (error: unknown) {
       const requestError = error as { response?: { data?: { message?: string } }; message?: string };
       const msg = requestError.response?.data?.message || requestError.message || "Failed to update incident.";
-      RNAlert.alert("Update Error", msg);
+      RNAlert.alert("Lỗi cập nhật", msg);
     }
   };
 
@@ -78,7 +78,7 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <Edit3 size={22} color={colors.primary} />
-              <Text style={[styles.title, { color: colors.text }]}>Edit Incident Report</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Chỉnh sửa báo cáo sự cố</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.textMuted} />
@@ -87,15 +87,15 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
 
           <ScrollView style={styles.formContent} showsVerticalScrollIndicator={false}>
             <Input
-              label="Title *"
-              placeholder="Incident title"
+              label="Tiêu đề *"
+              placeholder="Tiêu đề sự cố"
               value={title}
               onChangeText={setTitle}
             />
 
             <Input
-              label="Description *"
-              placeholder="Detailed description"
+              label="Mô tả *"
+              placeholder="Mô tả chi tiết"
               multiline
               numberOfLines={4}
               style={styles.textArea}
@@ -122,7 +122,7 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
             </View>
 
             <Button
-              title="Save Incident Changes"
+              title="Lưu thay đổi sự cố"
               onPress={handleUpdate}
               loading={updateMutation.isPending}
               style={styles.submitBtn}

@@ -165,10 +165,10 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
           onPress: async () => {
             try {
               await deleteAlertMutation.mutateAsync(alert._id);
-              ReactNativeAlert.alert("Deleted", "Incident report has been removed.");
+              ReactNativeAlert.alert("Đã xóa", "Báo cáo sự cố đã bị gỡ.");
               navigation.goBack();
             } catch (err: any) {
-              ReactNativeAlert.alert("Delete Error", getRequestErrorMessage(err, "Failed to delete report."));
+              ReactNativeAlert.alert("Lỗi xóa", getRequestErrorMessage(err, "Không thể xóa báo cáo."));
             }
           },
         },
@@ -180,7 +180,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     if (!alert) return;
     try {
       await restoreAlertMutation.mutateAsync(alert._id);
-      ReactNativeAlert.alert("Restored", "Incident report restored successfully.");
+      ReactNativeAlert.alert("Đã khôi phục", "Khôi phục báo cáo sự cố thành công.");
     } catch (err: any) {
       ReactNativeAlert.alert("Restore Error", getRequestErrorMessage(err, "Failed to restore report."));
     }
@@ -201,7 +201,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Loading incident details...</Text>
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Đang tải chi tiết sự cố...</Text>
       </View>
     );
   }
@@ -210,12 +210,12 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     return (
       <View style={[styles.errorContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <AlertTriangle size={48} color={colors.destructive} />
-        <Text style={[styles.errorTitle, { color: colors.text }]}>Report Not Found</Text>
+        <Text style={[styles.errorTitle, { color: colors.text }]}>Không tìm thấy báo cáo</Text>
         <Text style={[styles.errorSub, { color: colors.textMuted }]}>
           Could not fetch details for this alert. It may have been removed or unavailable.
         </Text>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? "rgba(22, 163, 74, 0.25)" : colors.primaryLight }]} onPress={() => navigation.goBack()}>
-          <Text style={[styles.backBtnText, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>Go Back</Text>
+          <Text style={[styles.backBtnText, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>Quay lại</Text>
         </TouchableOpacity>
       </View>
     );
@@ -281,7 +281,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
             <Badge label={`${alert.confirmationsCount} XÁC NHẬN 👍`} type="custom" bgColor={isDark ? "rgba(22,163,74,0.25)" : "#DCFCE7"} textColor={isDark ? "#86EFAC" : "#166534"} />
           ) : null}
           {alert.isDeleted ? (
-            <Badge label="DELETED" type="custom" bgColor={isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2"} textColor={isDark ? "#FCA5A5" : "#DC2626"} />
+            <Badge label="ĐÃ XÓA" type="custom" bgColor={isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2"} textColor={isDark ? "#FCA5A5" : "#DC2626"} />
           ) : null}
         </View>
 
@@ -307,14 +307,14 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
             <View style={styles.closeHeader}>
               <CheckSquare size={22} color="#16A34A" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.closeTitle}>Incident Marked Resolved</Text>
+                <Text style={styles.closeTitle}>Sự cố được đánh dấu đã giải quyết</Text>
                 <Text style={styles.closeSub}>
                   Officers have resolved this issue. Click below to verify and close the report.
                 </Text>
               </View>
             </View>
             <Button
-              title="Close Incident & Review"
+              title="Đóng sự cố & Đánh giá"
               onPress={() => setCloseModalOpen(true)}
               style={styles.closeBtnAction}
             />
@@ -336,9 +336,9 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         {/* Restore Banner if soft-deleted (Admin) */}
         {alert.isDeleted && isAdmin ? (
           <View style={[styles.restoreCard, { backgroundColor: isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2" }]}>
-            <Text style={[styles.restoreText, { color: isDark ? "#FCA5A5" : "#DC2626" }]}>This incident report is soft-deleted.</Text>
+            <Text style={[styles.restoreText, { color: isDark ? "#FCA5A5" : "#DC2626" }]}>Báo cáo sự cố này đã bị xóa tạm thời.</Text>
             <Button
-              title="Restore Report"
+              title="Khôi phục báo cáo"
               onPress={handleRestoreAlert}
               loading={restoreAlertMutation.isPending}
               variant="outline"
@@ -512,7 +512,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               </View>
             </View>
             <Button
-              title="Select Officer"
+              title="Chọn Cán bộ"
               onPress={() => setOfficerPickerOpen(true)}
               style={styles.assignmentButton}
               icon={<UserCheck size={18} color="#FFFFFF" />}

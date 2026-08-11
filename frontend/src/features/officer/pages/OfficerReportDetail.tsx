@@ -123,7 +123,7 @@ export default function OfficerReportDetail() {
         <CardContent className="space-y-4 py-12 text-center">
           <AlertCircle className="mx-auto h-10 w-10 text-destructive" />
           <p className="font-medium">Report not found or you do not have access.</p>
-          <p className="text-sm text-muted-foreground">{getApiErrorMessage(error, 'Unable to load this report.')}</p>
+          <p className="text-sm text-muted-foreground">{getApiErrorMessage(error, 'Không thể tải báo cáo này.')}</p>
           <Button asChild variant="outline"><Link to={role === 'ADMIN' ? '/admin/reports' : '/officer/assigned'}>Back to Reports</Link></Button>
         </CardContent>
       </Card>
@@ -192,7 +192,7 @@ export default function OfficerReportDetail() {
           });
           setConfirmAction(null);
         },
-        onError: (mutationError) => onWorkflowError(mutationError, 'Unable to assign this incident.'),
+        onError: (mutationError) => onWorkflowError(mutationError, 'Không thể phân công sự cố này.'),
       },
     );
   };
@@ -205,7 +205,7 @@ export default function OfficerReportDetail() {
         });
         setConfirmAction(null);
       },
-      onError: (mutationError) => onWorkflowError(mutationError, 'Unable to start handling.'),
+      onError: (mutationError) => onWorkflowError(mutationError, 'Không thể bắt đầu xử lý.'),
     });
   };
 
@@ -220,11 +220,11 @@ export default function OfficerReportDetail() {
     const accepted: EvidenceDraft[] = [];
     Array.from(fileList).slice(0, Math.max(0, availableSlots)).forEach((file, index) => {
       if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not an image.`);
+        toast.error(`${file.name} không phải là hình ảnh.`);
         return;
       }
       if (file.size > MAX_EVIDENCE_SIZE) {
-        toast.error(`${file.name} exceeds the 10 MB upload limit.`);
+        toast.error(`${file.name} vượt quá giới hạn tải lên 10 MB.`);
         return;
       }
       accepted.push({
@@ -235,7 +235,7 @@ export default function OfficerReportDetail() {
         progress: 0,
       });
     });
-    if (fileList.length > availableSlots) toast.error(`A maximum of ${MAX_EVIDENCE_COUNT} images is allowed.`);
+    if (fileList.length > availableSlots) toast.error(`Chỉ cho phép tối đa ${MAX_EVIDENCE_COUNT} hình ảnh.`);
     setEvidenceDrafts((current) => [...current, ...accepted]);
   };
 
@@ -249,11 +249,11 @@ export default function OfficerReportDetail() {
 
   const uploadEvidenceAndConfirm = async () => {
     if (!resolutionSummary.trim() || !treatmentMethod.trim()) {
-      toast.error('Resolution summary and treatment method are required.');
+      toast.error('Bắt buộc phải có Tóm tắt kết quả và Phương pháp xử lý.');
       return;
     }
     if (evidenceDrafts.length === 0) {
-      toast.error('Add at least one after-treatment image.');
+      toast.error('Vui lòng thêm ít nhất một hình ảnh sau xử lý.');
       return;
     }
 
@@ -284,7 +284,7 @@ export default function OfficerReportDetail() {
 
     const failures = uploadedDrafts.filter((draft) => !draft.uploadedUrl);
     if (failures.length > 0) {
-      toast.error(`${failures.length} image${failures.length === 1 ? '' : 's'} failed to upload. Successful uploads were kept; retry to upload only the failed files.`);
+      toast.error(`${failures.length} hình ảnh tải lên thất bại. Các tệp thành công đã được giữ lại; vui lòng thử tải lại các tệp lỗi.`);
       return;
     }
     setConfirmAction('resolve');
@@ -334,7 +334,7 @@ export default function OfficerReportDetail() {
       { id, note: noteText.trim() },
       {
         onSuccess: () => {
-          toast.success('Officer note saved.');
+          toast.success('Ghi chú của cán bộ đã được lưu.');
           setEditingNote(false);
         },
         onError: (mutationError) => toast.error(getApiErrorMessage(mutationError, 'Unable to save note.')),

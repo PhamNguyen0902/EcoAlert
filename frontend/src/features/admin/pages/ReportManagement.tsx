@@ -85,7 +85,7 @@ export default function ReportManagement() {
                           size="icon" 
                           className="text-red-500"
                           onClick={() => {
-                            if(confirm('Delete report?')) {
+                            if(confirm('Xóa báo cáo?')) {
                               deleteAlert.mutate(alert._id);
                               toast.success(t('toast.report_deleted_success'));
                             }

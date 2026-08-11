@@ -62,7 +62,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
 
   const handleSubmit = async () => {
     if (!name.trim() || !code.trim()) {
-      RNAlert.alert(t("modals.validationError", "Validation Error"), t("modals.catNameCodeRequired", "Category Name and Code are required."));
+      RNAlert.alert(t("modals.validationError", "Lỗi xác thực"), t("modals.catNameCodeRequired", "Tên và mã danh mục là bắt buộc."));
       return;
     }
 
@@ -79,7 +79,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             isActive,
           },
         });
-        RNAlert.alert(t("modals.successTitle", "Success"), t("modals.catUpdatedMsg", "Category updated successfully."));
+        RNAlert.alert(t("modals.successTitle", "Thành công"), t("modals.catUpdatedMsg", "Cập nhật danh mục thành công."));
       } else {
         await createMutation.mutateAsync({
           name: name.trim(),
@@ -89,12 +89,12 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
           defaultSeverity,
           isActive,
         });
-        RNAlert.alert(t("modals.successTitle", "Success"), t("modals.catCreatedMsg", "Category created successfully."));
+        RNAlert.alert(t("modals.successTitle", "Thành công"), t("modals.catCreatedMsg", "Tạo danh mục thành công."));
       }
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to save category.";
-      RNAlert.alert(t("modals.saveError", "Save Error"), msg);
+      RNAlert.alert(t("modals.saveError", "Lỗi khi lưu"), msg);
     }
   };
 
@@ -117,14 +117,14 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
           <ScrollView style={styles.formContent} showsVerticalScrollIndicator={false}>
             <Input
               label={`${t("modals.catName", "Category Name")} *`}
-              placeholder="e.g. Water Pollution"
+              placeholder="VD: Ô nhiễm nước"
               value={name}
               onChangeText={setName}
             />
 
             <Input
               label={`${t("modals.catCode", "Category Code")} *`}
-              placeholder="e.g. water_pollution"
+              placeholder="VD: o_nhiem_nuoc"
               autoCapitalize="none"
               value={code}
               onChangeText={setCode}
@@ -132,7 +132,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
 
             <Input
               label={t("modals.description", "Description")}
-              placeholder="Brief description of this environmental alert category..."
+              placeholder="Mô tả ngắn gọn về danh mục cảnh báo môi trường này..."
               multiline
               numberOfLines={3}
               value={description}
@@ -141,7 +141,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
 
             <Input
               label={t("modals.iconName", "Icon Name")}
-              placeholder="e.g. Droplets, Trash2, Wind"
+              placeholder="VD: Giọt nước, Rác, Gió"
               autoCapitalize="none"
               value={icon}
               onChangeText={setIcon}

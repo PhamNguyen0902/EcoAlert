@@ -34,7 +34,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
 
   const handleCreate = async () => {
     if (!email.trim() || !fullName.trim() || !password.trim()) {
-      RNAlert.alert(t("modals.validationError", "Validation Error"), t("modals.fillRequiredUserFields", "Please fill in Email, Full Name, and Password."));
+      RNAlert.alert(t("modals.validationError", "Lỗi xác thực"), t("modals.fillRequiredUserFields", "Vui lòng điền Email, Họ tên và Mật khẩu."));
       return;
     }
 
@@ -46,7 +46,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
         phone: phone.trim() || undefined,
         role,
       });
-      RNAlert.alert(t("modals.successTitle", "Success"), t("modals.userCreatedMsg", "User account created successfully."));
+      RNAlert.alert(t("modals.successTitle", "Thành công"), t("modals.userCreatedMsg", "Tạo tài khoản người dùng thành công."));
       setEmail("");
       setFullName("");
       setPassword("");
@@ -55,7 +55,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to create user.";
-      RNAlert.alert(t("modals.creationError", "Creation Error"), msg);
+      RNAlert.alert(t("modals.creationError", "Lỗi tạo tài khoản"), msg);
     }
   };
 
@@ -76,14 +76,14 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
           <ScrollView style={styles.formContent} showsVerticalScrollIndicator={false}>
             <Input
               label={`${t("auth.fullNameLabel", "Full Name")} *`}
-              placeholder="e.g. Nguyen Van A"
+              placeholder="VD: Nguyễn Văn A"
               value={fullName}
               onChangeText={setFullName}
             />
 
             <Input
               label={`${t("auth.emailLabel", "Email Address")} *`}
-              placeholder="e.g. user@ecoalert.org"
+              placeholder="VD: user@ecoalert.org"
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -92,7 +92,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
 
             <Input
               label={`${t("modals.initialPassword", "Initial Password")} *`}
-              placeholder="Minimum 6 characters"
+              placeholder="Tối thiểu 6 ký tự"
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -100,7 +100,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ visible, onClose }
 
             <Input
               label={t("modals.phoneNumber", "Phone Number")}
-              placeholder="e.g. 0912345678"
+              placeholder="VD: 0912345678"
               keyboardType="phone-pad"
               value={phone}
               onChangeText={setPhone}

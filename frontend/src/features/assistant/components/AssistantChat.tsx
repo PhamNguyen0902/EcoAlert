@@ -10,22 +10,22 @@ import { AssistantMessageBubble } from './AssistantMessageBubble';
 
 const suggestions: Record<UserRole, string[]> = {
   CITIZEN: [
-    'How do I report an incident safely?',
-    'What do my report statuses mean?',
-    'What is the status of my reports?',
-    'What should I do next with my latest report?',
+    'Làm thế nào để báo cáo sự cố an toàn?',
+    'Trạng thái báo cáo của tôi có ý nghĩa gì?',
+    'Trạng thái các báo cáo của tôi hiện tại ra sao?',
+    'Tôi nên làm gì tiếp theo với báo cáo mới nhất?',
   ],
   OFFICER: [
-    'What tasks are assigned to me?',
-    'Explain the arrival and resolution workflow.',
-    'How should treatment evidence be recorded?',
-    'What should I do next on my assigned incident?',
+    'Tôi có những nhiệm vụ nào được giao?',
+    'Giải thích quy trình tiếp nhận và xử lý sự cố.',
+    'Hình ảnh minh chứng xử lý cần được ghi nhận như thế nào?',
+    'Tôi nên làm gì tiếp theo với sự cố được giao?',
   ],
   ADMIN: [
-    'Give me an incident status overview.',
-    'Where can I review analytics and audit activity?',
-    'What can the assistant access for administrators?',
-    'What should I do next with incident density and workload?',
+    'Tóm tắt trạng thái các sự cố cho tôi.',
+    'Tôi có thể xem phân tích và nhật ký hoạt động ở đâu?',
+    'Trợ lý AI có thể truy cập những gì cho quản trị viên?',
+    'Tôi nên làm gì tiếp theo với mật độ sự cố và khối lượng công việc?',
   ],
 };
 
@@ -34,7 +34,7 @@ const errorMessage = (error: unknown): string => {
     const response = (error as { response?: { data?: { message?: string } } }).response;
     if (response?.data?.message) return response.data.message;
   }
-  return 'I could not send that message. Please try again.';
+  return 'Không thể gửi tin nhắn. Vui lòng thử lại.';
 };
 
 interface AssistantChatProps {
@@ -71,16 +71,16 @@ export function AssistantChat({ compact = false, className }: AssistantChatProps
 
   return (
     <section
-      aria-label="EcoAlert AI Assistant"
+      aria-label="Trợ lý AI EcoAlert"
       className={cn('flex min-h-0 overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100', className)}
     >
       {!compact && (
         <aside className="hidden w-72 shrink-0 border-r border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900 md:flex md:flex-col">
           <Button variant="outline" className="mb-3 justify-start gap-2" onClick={startNewConversation}>
-            <MessageSquarePlus className="h-4 w-4" /> New conversation
+            <MessageSquarePlus className="h-4 w-4" /> Cuộc trò chuyện mới
           </Button>
           <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
-            {conversations.isLoading && <p className="px-3 py-2 text-sm text-slate-500">Loading conversations…</p>}
+            {conversations.isLoading && <p className="px-3 py-2 text-sm text-slate-500">Đang tải cuộc trò chuyện…</p>}
             {conversations.data?.map((conversation) => (
               <button
                 key={conversation.id}
@@ -109,13 +109,13 @@ export function AssistantChat({ compact = false, className }: AssistantChatProps
               <Bot className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="font-semibold">EcoAlert AI Assistant</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Read-only guidance based on your authorized access</p>
+              <h1 className="font-semibold">Trợ lý AI EcoAlert</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Hướng dẫn chỉ đọc dựa trên quyền truy cập được cấp</p>
             </div>
           </div>
           {compact && (
-            <Button variant="ghost" size="sm" onClick={startNewConversation} title="Start a new conversation">
-              <MessageSquarePlus className="mr-1 h-4 w-4" /> New
+            <Button variant="ghost" size="sm" onClick={startNewConversation} title="Tạo cuộc trò chuyện mới">
+              <MessageSquarePlus className="mr-1 h-4 w-4" /> Tạo mới
             </Button>
           )}
         </header>
@@ -123,14 +123,14 @@ export function AssistantChat({ compact = false, className }: AssistantChatProps
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
           {messages.isLoading && activeConversationId ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-500">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading conversation…
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang tải cuộc trò chuyện…
             </div>
           ) : visibleMessages.length > 0 ? (
             <div className="mx-auto max-w-3xl space-y-5">
               {visibleMessages.map((message) => <AssistantMessageBubble key={message.id} message={message} />)}
               {send.isPending && (
                 <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <Loader2 className="h-4 w-4 animate-spin" /> EcoAlert AI is checking the approved context…
+                  <Loader2 className="h-4 w-4 animate-spin" /> EcoAlert AI đang kiểm tra ngữ cảnh được phép…
                 </div>
               )}
               <div ref={endRef} />
@@ -140,9 +140,9 @@ export function AssistantChat({ compact = false, className }: AssistantChatProps
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                 <Sparkles className="h-6 w-6" />
               </div>
-              <h2 className="text-lg font-semibold">How can I help with EcoAlert?</h2>
+              <h2 className="text-lg font-semibold">Tôi có thể giúp gì cho bạn với EcoAlert?</h2>
               <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500 dark:text-slate-400">
-                I can explain reporting and workflow, or retrieve incident information that your signed-in role is allowed to view. I cannot make changes for you.
+                Tôi có thể giải thích quy trình báo cáo và xử lý, hoặc truy xuất thông tin sự cố mà vai trò của bạn được phép xem. Tôi không thể thực hiện thay đổi giúp bạn.
               </p>
               <div className="mt-6 flex w-full flex-wrap justify-center gap-2">
                 {prompts.map((prompt) => (
@@ -173,15 +173,15 @@ export function AssistantChat({ compact = false, className }: AssistantChatProps
               }}
               maxLength={2000}
               rows={compact ? 2 : 3}
-              placeholder="Ask about EcoAlert…"
+              placeholder="Hỏi về EcoAlert…"
               className="min-h-0 resize-none"
-              aria-label="Ask EcoAlert AI Assistant"
+              aria-label="Hỏi Trợ lý AI EcoAlert"
             />
-            <Button type="submit" size="icon" disabled={!draft.trim() || send.isPending} aria-label="Send message">
+            <Button type="submit" size="icon" disabled={!draft.trim() || send.isPending} aria-label="Gửi tin nhắn">
               {send.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
-          <p className="mx-auto mt-2 max-w-3xl text-xs text-slate-400">Use Enter to send; Shift+Enter for a new line. Do not include sensitive information you do not need to share.</p>
+          <p className="mx-auto mt-2 max-w-3xl text-xs text-slate-400">Nhấn Enter để gửi; Shift+Enter để xuống dòng. Không nhập thông tin nhạy cảm không cần thiết.</p>
         </form>
       </div>
     </section>

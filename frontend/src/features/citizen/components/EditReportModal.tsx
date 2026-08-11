@@ -108,7 +108,7 @@ export default function EditReportModal({ alert, isOpen, onClose }: EditReportMo
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title..."
+              placeholder="Tiêu đề..."
               required
             />
           </div>
@@ -119,7 +119,7 @@ export default function EditReportModal({ alert, isOpen, onClose }: EditReportMo
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Address..."
+              placeholder="Địa chỉ..."
             />
           </div>
 
@@ -129,7 +129,7 @@ export default function EditReportModal({ alert, isOpen, onClose }: EditReportMo
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description..."
+              placeholder="Mô tả..."
               className="h-28"
               required
             />

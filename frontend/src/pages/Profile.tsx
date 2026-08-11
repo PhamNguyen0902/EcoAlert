@@ -166,7 +166,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="avatar">Avatar URL</Label>
+                  <Label htmlFor="avatar">URL Ảnh đại diện</Label>
                   <Input
                     id="avatar"
                     value={avatar}

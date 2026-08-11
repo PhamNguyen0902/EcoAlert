@@ -84,7 +84,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
           onPress: async () => {
             const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
             if (!permissionResult.granted) {
-              RNAlert.alert("Permission Required", "Camera permission is required to take photo.");
+              RNAlert.alert("Cần cấp quyền", "Cần quyền truy cập máy ảnh để chụp ảnh.");
               return;
             }
             const result = await ImagePicker.launchCameraAsync({
@@ -101,7 +101,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
           onPress: async () => {
             const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!permissionResult.granted) {
-              RNAlert.alert("Permission Required", "Photo library permission is required.");
+              RNAlert.alert("Cần cấp quyền", "Cần quyền truy cập thư viện ảnh.");
               return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -129,7 +129,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
       setEvidenceUri(uploadedUrl);
     } catch (err) {
       setEvidenceUri(null);
-      RNAlert.alert("Upload Error", "Could not upload the after-treatment image. Please try again.");
+      RNAlert.alert("Lỗi tải lên", "Không thể tải lên ảnh sau xử lý. Vui lòng thử lại.");
     } finally {
       setIsUploading(false);
     }
@@ -137,15 +137,15 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
 
   const handleResolve = async () => {
     if (!resolutionSummary.trim()) {
-      RNAlert.alert("Validation Error", "Resolution Summary is required.");
+      RNAlert.alert("Lỗi xác thực", "Tóm tắt giải quyết là bắt buộc.");
       return;
     }
     if (!treatmentMethod.trim()) {
-      RNAlert.alert("Validation Error", "Treatment Method is required.");
+      RNAlert.alert("Lỗi xác thực", "Phương pháp xử lý là bắt buộc.");
       return;
     }
     if (!evidenceUri) {
-      RNAlert.alert("Validation Error", "An after-treatment image is required.");
+      RNAlert.alert("Lỗi xác thực", "Yêu cầu phải có ảnh sau xử lý.");
       return;
     }
 
@@ -185,7 +185,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
         },
       });
 
-      RNAlert.alert("Incident Resolved", "The incident status has been set to RESOLVED.");
+      RNAlert.alert("Sự cố đã giải quyết", "Trạng thái sự cố đã được cập nhật thành ĐÃ GIẢI QUYẾT.");
       setResolutionSummary("");
       setTreatmentMethod("Thu gom & vận chuyển phế thải đến nơi xử lý");
       setMaterialsUsed("");
@@ -193,7 +193,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to resolve incident.";
-      RNAlert.alert("Resolution Error", msg);
+      RNAlert.alert("Lỗi giải quyết", msg);
     }
   };
 
@@ -204,7 +204,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <CheckCircle2 size={22} color="#16A34A" />
-              <Text style={[styles.title, { color: colors.text }]}>Mark Incident Resolved</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Đánh dấu sự cố đã giải quyết</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.textMuted} />
@@ -217,8 +217,8 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
             </Text>
 
             <Input
-              label="Resolution Summary *"
-              placeholder="e.g. Removed 500kg waste and sanitized riverbank area"
+              label="Tóm tắt giải quyết *"
+              placeholder="VD: Đã dọn dẹp 500kg rác và vệ sinh khu vực bờ sông"
               multiline
               numberOfLines={3}
               style={styles.textArea}
@@ -227,7 +227,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
             />
 
             {/* Quick Select Treatment Method Chips */}
-            <Text style={[styles.label, { color: colors.text }]}>Treatment Method (Select Option) *</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Phương pháp xử lý (Chọn tùy chọn) *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {TREATMENT_OPTIONS.map((opt) => {
                 const isSelected = treatmentMethod === opt.value;
@@ -264,13 +264,13 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
 
             <Input
               label=""
-              placeholder="Or custom edit treatment method..."
+              placeholder="Hoặc tự chỉnh sửa phương pháp xử lý..."
               value={treatmentMethod}
               onChangeText={setTreatmentMethod}
             />
 
             {/* Quick Select Materials Chips */}
-            <Text style={[styles.label, { color: colors.text }]}>Materials & Equipment Used</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Vật tư & Thiết bị sử dụng</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {MATERIAL_OPTIONS.map((mat) => {
                 const isSelected = materialsUsed.includes(mat);
@@ -307,21 +307,21 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
 
             <Input
               label=""
-              placeholder="Or custom edit materials used..."
+              placeholder="Hoặc tự chỉnh sửa vật tư sử dụng..."
               value={materialsUsed}
               onChangeText={setMaterialsUsed}
             />
 
             <Input
-              label="Additional Notes / Remarks"
-              placeholder="Any follow-up recommendations or safety observations..."
+              label="Ghi chú bổ sung"
+              placeholder="Bất kỳ đề xuất theo dõi hoặc quan sát an toàn nào..."
               multiline
               numberOfLines={2}
               value={additionalNotes}
               onChangeText={setAdditionalNotes}
             />
 
-            <Text style={[styles.label, { color: colors.text }]}>Resolution Proof Evidence Photo *</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Ảnh bằng chứng giải quyết *</Text>
             {evidenceUri ? (
               <View style={styles.imagePreviewContainer}>
                 <Image source={{ uri: evidenceUri }} style={styles.imagePreview} />
@@ -346,14 +346,14 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
                 ) : (
                   <>
                     <Camera size={28} color={colors.primary} />
-                    <Text style={[styles.uploadText, { color: colors.primary }]}>Take Photo or Select from Device</Text>
+                    <Text style={[styles.uploadText, { color: colors.primary }]}>Chụp ảnh hoặc chọn từ thiết bị</Text>
                   </>
                 )}
               </TouchableOpacity>
             )}
 
             <Button
-              title="Submit Resolution"
+              title="Gửi kết quả xử lý"
               onPress={handleResolve}
               loading={
                 resolveMutation.isPending ||

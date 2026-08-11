@@ -20,7 +20,7 @@ export function SoundToggle({ className }: { className?: string }) {
       size="icon"
       onClick={handleToggle}
       className={className}
-      title={enabled ? 'Mute Notification Sound' : 'Unmute Notification Sound'}
+      title={enabled ? 'Tắt âm báo' : 'Bật âm báo'}
     >
       {enabled ? <Volume2 className="h-5 w-5 text-emerald-500" /> : <VolumeX className="h-5 w-5 text-muted-foreground" />}
     </Button>

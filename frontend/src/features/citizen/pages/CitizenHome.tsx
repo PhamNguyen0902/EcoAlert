@@ -28,10 +28,10 @@ export default function CitizenHome() {
       <section className="py-8" id="map-section">
         <div className="max-w-7xl mx-auto px-4 mb-8">
           <h2 className="text-3xl font-bold tracking-tight">
-            Live Incident Map
+            Bản đồ sự cố trực tiếp
           </h2>
           <p className="text-muted-foreground mt-1">
-            Real-time environmental incidents across your area
+            Các sự cố môi trường theo thời gian thực tại khu vực của bạn
           </p>
         </div>
         <div className="max-w-7xl mx-auto px-4">
@@ -53,10 +53,10 @@ export default function CitizenHome() {
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 mb-8">
           <h2 className="text-3xl font-bold tracking-tight">
-            Filter by Category
+            Lọc theo danh mục
           </h2>
           <p className="text-muted-foreground mt-1">
-            Click a category to filter incidents on the map
+            Nhấn vào một danh mục để lọc các sự cố trên bản đồ
           </p>
         </div>
         <CategoryFilter
@@ -67,14 +67,6 @@ export default function CitizenHome() {
       </section>
 
       <section className="py-12 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Nearby Incidents
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Recent environmental reports in your area
-          </p>
-        </div>
         <NearbyIncidents alerts={alerts} />
       </section>
 

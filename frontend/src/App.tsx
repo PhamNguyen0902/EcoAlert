@@ -88,7 +88,7 @@ const ProtectedRoute = lazy(() =>
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <LoadingSpinner size="lg" label="Loading..." />
+      <LoadingSpinner size="lg" label="Đang tải..." />
     </div>
   );
 }

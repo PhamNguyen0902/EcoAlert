@@ -61,7 +61,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       const msg =
         err.response?.data?.message ||
         err.message ||
-        "Login failed. Please check your credentials.";
+        "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
       setSubmitError(msg);
     }
   };

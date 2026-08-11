@@ -35,7 +35,7 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const openInGoogleMaps = async () => {
     if (!mapCoordinates) {
-      Alert.alert("Location unavailable", "Incident location is unavailable.");
+      Alert.alert("Không có vị trí", "Vị trí sự cố không có sẵn.");
       return;
     }
 
@@ -45,7 +45,7 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       "view",
     );
     if (!result.success) {
-      Alert.alert("Unable to open maps", "Please try again or open the location in your browser.");
+      Alert.alert("Không thể mở bản đồ", "Vui lòng thử lại hoặc mở vị trí trong trình duyệt.");
     }
   };
 
@@ -60,8 +60,8 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   if (isError || !alert) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.destructive }]}>Unable to load this incident report.</Text>
-        <Button title="Go Back" variant="outline" onPress={() => navigation.goBack()} />
+        <Text style={[styles.errorText, { color: colors.destructive }]}>Không thể tải báo cáo sự cố này.</Text>
+        <Button title="Quay lại" variant="outline" onPress={() => navigation.goBack()} />
       </View>
     );
   }
@@ -93,7 +93,7 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
 
         <Card style={styles.descriptionCard}>
-          <Text style={[styles.cardLabel, { color: colors.text }]}>Incident Details</Text>
+          <Text style={[styles.cardLabel, { color: colors.text }]}>Chi tiết sự cố</Text>
           <Text style={[styles.description, { color: colors.textMuted }]}>{alert.description}</Text>
         </Card>
 
@@ -102,7 +102,7 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={[styles.locationIcon, { backgroundColor: isDark ? "rgba(34, 197, 94, 0.2)" : colors.primaryLight }]}>
               <MapPin size={21} color={colors.primary} />
             </View>
-            <Text style={[styles.locationTitle, { color: colors.text }]}>Location</Text>
+            <Text style={[styles.locationTitle, { color: colors.text }]}>Vị trí</Text>
           </View>
 
           <View style={styles.addressLines}>
@@ -116,25 +116,25 @@ export const AlertDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           {mapCoordinates ? (
             <View style={[styles.coordinates, { borderTopColor: colors.border }]}>
               <View style={styles.coordinateRow}>
-                <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Latitude:</Text>
+                <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Vĩ độ:</Text>
                 <Text style={[styles.coordinateValue, { color: colors.text }]}>
                   {mapCoordinates.latitude.toFixed(6)}
                 </Text>
               </View>
               <View style={styles.coordinateRow}>
-                <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Longitude:</Text>
+                <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Kinh độ:</Text>
                 <Text style={[styles.coordinateValue, { color: colors.text }]}>
                   {mapCoordinates.longitude.toFixed(6)}
                 </Text>
               </View>
             </View>
           ) : (
-            <Text style={[styles.coordinateUnavailable, { color: colors.textMuted }]}>GPS coordinates are unavailable for this report.</Text>
+            <Text style={[styles.coordinateUnavailable, { color: colors.textMuted }]}>Tọa độ GPS không khả dụng cho báo cáo này.</Text>
           )}
 
           {mapCoordinates ? (
             <Button
-              title="Open in Google Maps"
+              title="Mở trong Google Maps"
               onPress={openInGoogleMaps}
               style={styles.mapsButton}
               icon={<MapPin size={18} color="#FFF" style={styles.mapsIcon} />}

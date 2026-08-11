@@ -38,12 +38,12 @@ export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
         reviewNote: reviewNote.trim() ? `[Rating: ${rating}/5] ${reviewNote.trim()}` : undefined,
       });
 
-      RNAlert.alert(t("modals.incidentClosedTitle", "Incident Closed"), t("modals.incidentClosedMsg", "Thank you for verifying the incident resolution!"));
+      RNAlert.alert(t("modals.incidentClosedTitle", "Sự cố đã đóng"), t("modals.incidentClosedMsg", "Cảm ơn bạn đã xác minh việc giải quyết sự cố!"));
       setReviewNote("");
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to close incident.";
-      RNAlert.alert("Error", msg);
+      RNAlert.alert("Lỗi", msg);
     }
   };
 
@@ -80,7 +80,7 @@ export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
 
           <Input
             label={t("modals.citizenReviewLabel", "Optional Citizen Review / Feedback")}
-            placeholder="Add comments about officer response time or resolution quality..."
+            placeholder="Thêm nhận xét về thời gian phản hồi hoặc chất lượng giải quyết của cán bộ..."
             multiline
             numberOfLines={3}
             value={reviewNote}

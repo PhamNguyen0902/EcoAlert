@@ -69,9 +69,9 @@ export function VisionAnalysisCard({ alert }: { alert: Alert }) {
 
       {fusion ? (
         <div className="mt-3 grid grid-cols-3 gap-2 rounded-md border bg-background p-2 text-center text-[10px]">
-          <div><p className="text-muted-foreground">Semantic</p><p className="mt-0.5 font-semibold">{percentage(fusion.semanticConfidence)}</p></div>
-          <div><p className="text-muted-foreground">Detector</p><p className="mt-0.5 font-semibold">{detectorStatus}</p></div>
-          <div><p className="text-muted-foreground">Fusion</p><p className="mt-0.5 font-semibold">{percentage(fusion.fusionConfidence)}</p></div>
+          <div><p className="text-muted-foreground">Ngữ nghĩa</p><p className="mt-0.5 font-semibold">{percentage(fusion.semanticConfidence)}</p></div>
+          <div><p className="text-muted-foreground">Nhận diện</p><p className="mt-0.5 font-semibold">{detectorStatus}</p></div>
+          <div><p className="text-muted-foreground">Kết hợp</p><p className="mt-0.5 font-semibold">{percentage(fusion.fusionConfidence)}</p></div>
         </div>
       ) : null}
 

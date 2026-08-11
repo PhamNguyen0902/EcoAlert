@@ -98,7 +98,7 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status !== "granted") {
-        NativeAlert.alert("Location required", "Allow foreground location to record a shift boundary.");
+        NativeAlert.alert("Yêu cầu vị trí", "Cho phép truy cập vị trí trên màn hình để ghi lại ca làm việc.");
         return;
       }
       // This is an explicit, one-time foreground event. The app never starts a
@@ -106,7 +106,7 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
       const accuracyMeters = position.coords.accuracy;
       if (accuracyMeters === null || !Number.isFinite(accuracyMeters)) {
-        NativeAlert.alert("Location unavailable", "A GPS accuracy value is required. Please retry outdoors.");
+        NativeAlert.alert("Vị trí không có sẵn", "Cần có giá trị độ chính xác GPS. Vui lòng thử lại ngoài trời.");
         return;
       }
       const location = {
@@ -116,14 +116,14 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
       };
       if (currentShift) {
         await endShift.mutateAsync(location);
-        NativeAlert.alert("Shift ended", "Your shift end was recorded with this foreground GPS event.");
+        NativeAlert.alert("Đã kết thúc ca", "Kết thúc ca làm việc của bạn đã được ghi lại bằng sự kiện GPS này.");
       } else {
         await startShift.mutateAsync(location);
-        NativeAlert.alert("Shift started", "Your shift start was recorded with this foreground GPS event.");
+        NativeAlert.alert("Đã bắt đầu ca", "Bắt đầu ca làm việc của bạn đã được ghi lại bằng sự kiện GPS này.");
       }
       await refetchShift();
     } catch (error: any) {
-      NativeAlert.alert("Shift update failed", error?.response?.data?.message || error?.message || "Please retry with a clearer GPS signal.");
+      NativeAlert.alert("Cập nhật ca thất bại", error?.response?.data?.message || error?.message || "Vui lòng thử lại với tín hiệu GPS rõ hơn.");
     }
   };
 
@@ -176,16 +176,16 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
         <Card style={[styles.shiftCard, { borderColor: currentShift ? "#14B8A6" : colors.border }]}>
           <View style={styles.shiftHeader}>
             <View>
-              <Text style={[styles.shiftTitle, { color: colors.text }]}>Shift availability</Text>
+              <Text style={[styles.shiftTitle, { color: colors.text }]}>Tình trạng ca làm việc</Text>
               <Text style={[styles.shiftDescription, { color: colors.textMuted }]}>
-                {currentShift ? `On shift since ${new Date(currentShift.startedAt).toLocaleTimeString()}` : "Off shift — start when you are ready to accept work."}
+                {currentShift ? `Trong ca từ ${new Date(currentShift.startedAt).toLocaleTimeString()}` : "Ngoại ca — bắt đầu khi bạn sẵn sàng nhận việc."}
               </Text>
             </View>
-            <Badge label={currentShift ? "ON SHIFT" : "OFF SHIFT"} type="custom" bgColor={currentShift ? "#CCFBF1" : (isDark ? "#334155" : "#E2E8F0")} textColor={currentShift ? "#0F766E" : colors.textMuted} />
+            <Badge label={currentShift ? "TRONG CA" : "NGOẠI CA"} type="custom" bgColor={currentShift ? "#CCFBF1" : (isDark ? "#334155" : "#E2E8F0")} textColor={currentShift ? "#0F766E" : colors.textMuted} />
           </View>
-          <Text style={[styles.shiftPrivacy, { color: colors.textMuted }]}>GPS is recorded only when you tap Start Shift or End Shift. Background tracking is disabled.</Text>
+          <Text style={[styles.shiftPrivacy, { color: colors.textMuted }]}>GPS chỉ được ghi lại khi bạn nhấn Bắt đầu ca hoặc Kết thúc ca. Theo dõi trong nền đã bị tắt.</Text>
           <TouchableOpacity disabled={startShift.isPending || endShift.isPending} onPress={handleShiftToggle} style={[styles.shiftButton, { backgroundColor: currentShift ? "#0F766E" : colors.secondary, opacity: startShift.isPending || endShift.isPending ? 0.65 : 1 }]}>
-            <Text style={styles.shiftButtonText}>{startShift.isPending || endShift.isPending ? "Recording…" : currentShift ? "End Shift" : "Start Shift"}</Text>
+            <Text style={styles.shiftButtonText}>{startShift.isPending || endShift.isPending ? "Đang ghi..." : currentShift ? "Kết thúc ca" : "Bắt đầu ca"}</Text>
           </TouchableOpacity>
         </Card>
 
@@ -245,8 +245,8 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
         {actionRequiredAlerts.length === 0 ? (
           <Card style={styles.emptyCard}>
             <CheckCircle size={36} color={isDark ? "#60A5FA" : colors.secondary} style={{ marginBottom: 12 }} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>All Clear!</Text>
-            <Text style={[styles.emptySub, { color: colors.textMuted }]}>There are no pending alerts requiring officer verification.</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Tất cả đều ổn!</Text>
+            <Text style={[styles.emptySub, { color: colors.textMuted }]}>Không có cảnh báo đang chờ cán bộ xác minh.</Text>
           </Card>
         ) : (
           actionRequiredAlerts.map((alert) => (
@@ -279,7 +279,7 @@ export const OfficerDashboardScreen: React.FC<{ navigation: any }> = ({ navigati
                     </Text>
                   </View>
                   <View style={styles.actionPrompt}>
-                    <Text style={[styles.actionPromptText, { color: isDark ? "#60A5FA" : colors.secondary }]}>Review & Respond</Text>
+                    <Text style={[styles.actionPromptText, { color: isDark ? "#60A5FA" : colors.secondary }]}>Xem xét & Phản hồi</Text>
                     <ChevronRight size={16} color={isDark ? "#60A5FA" : colors.secondary} />
                   </View>
                 </View>

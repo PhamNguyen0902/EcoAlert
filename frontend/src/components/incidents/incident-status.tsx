@@ -6,23 +6,23 @@ import type { AlertStatus, Severity } from '@/types';
 export type NormalizedIncidentStatus = AlertStatus | 'unknown';
 
 const statusLabels: Record<NormalizedIncidentStatus, string> = {
-  pending: 'Submitted',
-  ai_analyzing: 'Analysis in progress',
-  verified: 'Verified',
-  assigned: 'Assigned',
-  in_progress: 'In progress',
-  resolved: 'Resolved',
-  closed: 'Closed',
-  rejected: 'Rejected',
-  unknown: 'Status unavailable',
+  pending: 'Đã gửi',
+  ai_analyzing: 'Đang phân tích AI',
+  verified: 'Đã xác minh',
+  assigned: 'Đã phân công',
+  in_progress: 'Đang xử lý',
+  resolved: 'Đã giải quyết',
+  closed: 'Đã đóng',
+  rejected: 'Đã từ chối',
+  unknown: 'Trạng thái không có',
 };
 
 const severityLabels: Record<Severity | 'unknown', string> = {
-  low: 'Low severity',
-  medium: 'Medium severity',
-  high: 'High severity',
-  critical: 'Critical severity',
-  unknown: 'Severity unavailable',
+  low: 'Mức độ thấp',
+  medium: 'Mức độ trung bình',
+  high: 'Mức độ cao',
+  critical: 'Mức độ nghiêm trọng',
+  unknown: 'Mức độ không có',
 };
 
 const validStatuses = new Set<AlertStatus>([
@@ -86,24 +86,24 @@ export function SeverityBadge({ severity, className }: { severity?: string | nul
 }
 
 const lifecycle: Array<{ status: AlertStatus; label: string }> = [
-  { status: 'pending', label: 'Submitted' },
-  { status: 'verified', label: 'Verified' },
-  { status: 'assigned', label: 'Assigned' },
-  { status: 'in_progress', label: 'In progress' },
-  { status: 'resolved', label: 'Resolved' },
-  { status: 'closed', label: 'Closed' },
+  { status: 'pending', label: 'Đã gửi' },
+  { status: 'verified', label: 'Đã xác minh' },
+  { status: 'assigned', label: 'Đã phân công' },
+  { status: 'in_progress', label: 'Đang xử lý' },
+  { status: 'resolved', label: 'Đã giải quyết' },
+  { status: 'closed', label: 'Đã đóng' },
 ];
 
 const statusDescriptions: Record<NormalizedIncidentStatus, string> = {
-  pending: 'Your report has been received and is waiting for verification.',
-  ai_analyzing: 'Your evidence is being analyzed to help the team triage the report.',
-  verified: 'Your report has been verified and is ready for assignment.',
-  assigned: 'Your report has been assigned to an officer.',
-  in_progress: 'An officer is currently handling this incident.',
-  resolved: 'The assigned officer has completed treatment. The result is awaiting final review.',
-  closed: 'This incident has been reviewed and closed.',
-  rejected: 'This report was not accepted for the incident workflow.',
-  unknown: 'The current workflow status is unavailable.',
+  pending: 'Báo cáo của bạn đã được tiếp nhận và đang chờ xác minh.',
+  ai_analyzing: 'Minh chứng đang được AI phân loại để hỗ trợ phân công.',
+  verified: 'Báo cáo của bạn đã được xác minh và sẵn sàng phân công.',
+  assigned: 'Báo cáo của bạn đã được phân công cho cán bộ xử lý.',
+  in_progress: 'Cán bộ đang trực tiếp xử lý sự cố này.',
+  resolved: 'Cán bộ được phân công đã hoàn thành xử lý. Kết quả đang chờ đánh giá.',
+  closed: 'Sự cố này đã được xem xét và đóng.',
+  rejected: 'Báo cáo này không được tiếp nhận vào quy trình xử lý.',
+  unknown: 'Trạng thái quy trình xử lý tạm thời không khả dụng.',
 };
 
 export function getStatusDescription(status?: string | null) {
@@ -125,7 +125,7 @@ export function IncidentStatusProgress({ status }: { status?: string | null }) {
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive"><XCircle className="h-5 w-5" aria-hidden="true" /></span>
           <div>
-            <h2 id="status-progress-heading" className="font-semibold">Report status: rejected</h2>
+            <h2 id="status-progress-heading" className="font-semibold">Trạng thái báo cáo: Đã từ chối</h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">{getStatusDescription(normalized)}</p>
           </div>
         </div>
@@ -137,13 +137,13 @@ export function IncidentStatusProgress({ status }: { status?: string | null }) {
     <section className="rounded-xl border bg-card px-4 py-4 shadow-sm sm:px-5" aria-labelledby="status-progress-heading">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status progress</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tiến độ trạng thái</p>
           <h2 id="status-progress-heading" className="mt-1 font-semibold">{getStatusDescription(normalized)}</h2>
         </div>
         <StatusBadge status={normalized} className="w-fit" />
       </div>
 
-      <ol className="mt-5 grid grid-cols-3 gap-y-4 sm:grid-cols-6" aria-label="Incident workflow stages">
+      <ol className="mt-5 grid grid-cols-3 gap-y-4 sm:grid-cols-6" aria-label="Các giai đoạn quy trình sự cố">
         {lifecycle.map((stage, index) => {
           const isComplete = currentIndex > index;
           const isCurrent = currentIndex === index;
@@ -151,7 +151,7 @@ export function IncidentStatusProgress({ status }: { status?: string | null }) {
             <li key={stage.status} className="relative flex min-w-0 flex-col items-start sm:items-center sm:text-center">
               {index < lifecycle.length - 1 ? <span className={cn('absolute left-5 right-0 top-4 hidden h-px sm:block', isComplete ? 'bg-primary' : 'bg-border')} aria-hidden="true" /> : null}
               <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-full border bg-card', isComplete && 'border-primary bg-primary text-primary-foreground', isCurrent && 'border-primary text-primary ring-4 ring-primary/10', !isComplete && !isCurrent && 'border-border text-muted-foreground')}>
-                {isComplete ? <Check className="h-3.5 w-3.5" aria-label={`${stage.label} complete`} /> : isCurrent ? <CircleDot className="h-3.5 w-3.5" aria-label={`${stage.label} current`} /> : <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />}
+                {isComplete ? <Check className="h-3.5 w-3.5" aria-label={`${stage.label} đã hoàn tất`} /> : isCurrent ? <CircleDot className="h-3.5 w-3.5" aria-label={`${stage.label} hiện tại`} /> : <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />}
               </span>
               <span className={cn('mt-2 pr-2 text-xs font-medium sm:pr-0', (isComplete || isCurrent) ? 'text-foreground' : 'text-muted-foreground')}>{stage.label}</span>
             </li>

@@ -31,15 +31,15 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
   const handleSave = async () => {
     if (!oldPassword || !newPassword) {
-      RNAlert.alert("Validation Error", "Please fill in all password fields.");
+      RNAlert.alert("Lỗi xác thực", "Vui lòng điền đầy đủ các trường mật khẩu.");
       return;
     }
     if (newPassword.length < 6) {
-      RNAlert.alert("Validation Error", "New password must be at least 6 characters.");
+      RNAlert.alert("Lỗi xác thực", "Mật khẩu mới phải có ít nhất 6 ký tự.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      RNAlert.alert("Validation Error", "New passwords do not match.");
+      RNAlert.alert("Lỗi xác thực", "Mật khẩu mới không khớp.");
       return;
     }
 
@@ -49,14 +49,14 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         newPassword,
       });
 
-      RNAlert.alert("Password Changed", "Your password has been changed successfully.");
+      RNAlert.alert("Đổi mật khẩu thành công", "Mật khẩu của bạn đã được thay đổi thành công.");
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to change password.";
-      RNAlert.alert("Password Error", msg);
+      RNAlert.alert("Lỗi mật khẩu", msg);
     }
   };
 
@@ -67,7 +67,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <KeyRound size={22} color={colors.primary} />
-              <Text style={[styles.title, { color: colors.text }]}>Change Password</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Đổi mật khẩu</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.textMuted} />
@@ -75,31 +75,31 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </View>
 
           <Input
-            label="Current Password *"
-            placeholder="Enter current password"
+            label="Mật khẩu hiện tại *"
+            placeholder="Nhập mật khẩu hiện tại"
             secureTextEntry
             value={oldPassword}
             onChangeText={setOldPassword}
           />
 
           <Input
-            label="New Password *"
-            placeholder="At least 6 characters"
+            label="Mật khẩu mới *"
+            placeholder="Ít nhất 6 ký tự"
             secureTextEntry
             value={newPassword}
             onChangeText={setNewPassword}
           />
 
           <Input
-            label="Confirm New Password *"
-            placeholder="Re-enter new password"
+            label="Xác nhận mật khẩu mới *"
+            placeholder="Nhập lại mật khẩu mới"
             secureTextEntry
             value={confirmPassword}
             onChangeText={setConfirmPassword}
           />
 
           <Button
-            title="Update Password"
+            title="Cập nhật mật khẩu"
             onPress={handleSave}
             loading={changePasswordMutation.isPending}
             style={styles.submitBtn}

@@ -49,7 +49,7 @@ export default function OfficerSidebar() {
       badge: unreadCount,
     },
     { name: t("officer.stats"), path: "/officer/stats", icon: BarChart3 },
-    { name: "AI Assistant", path: "/assistant", icon: Bot },
+    { name: "Trợ lý AI", path: "/assistant", icon: Bot },
   ];
   const mobileNavItems = [
     ...navItems,

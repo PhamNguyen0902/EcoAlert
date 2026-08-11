@@ -60,10 +60,10 @@ export const UserManagementScreen: React.FC = () => {
           onPress: async () => {
             try {
               await toggleStatusMutation.mutateAsync({ id: user._id, isActive: newStatus });
-              RNAlert.alert(t("modals.successTitle", "Success"), `User status updated.`);
+              RNAlert.alert(t("modals.successTitle", "Thành công"), `Cập nhật trạng thái người dùng thành công.`);
             } catch (err: any) {
               const msg = err.response?.data?.message || err.message || "Failed to update status.";
-              RNAlert.alert("Error", msg);
+              RNAlert.alert("Lỗi", msg);
             }
           },
         },
@@ -83,10 +83,10 @@ export const UserManagementScreen: React.FC = () => {
           onPress: async () => {
             try {
               await deleteUserMutation.mutateAsync(user._id);
-              RNAlert.alert("Deleted", "User deleted successfully.");
+              RNAlert.alert("Đã xóa", "Xóa người dùng thành công.");
             } catch (err: any) {
               const msg = err.response?.data?.message || err.message || "Failed to delete user.";
-              RNAlert.alert("Error", msg);
+              RNAlert.alert("Lỗi", msg);
             }
           },
         },
@@ -147,7 +147,7 @@ export const UserManagementScreen: React.FC = () => {
             onPress={() => setSelectedUserForRole(item)}
           >
             <Shield size={14} color={isDark ? "#A78BFA" : "#7C3AED"} />
-            <Text style={[styles.actionBtnText, { color: isDark ? "#A78BFA" : "#7C3AED" }]}>Role</Text>
+            <Text style={[styles.actionBtnText, { color: isDark ? "#A78BFA" : "#7C3AED" }]}>Vai trò</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -156,7 +156,7 @@ export const UserManagementScreen: React.FC = () => {
             disabled={deleteUserMutation.isPending}
           >
             <Trash2 size={14} color="#EF4444" />
-            <Text style={[styles.actionBtnText, { color: "#EF4444" }]}>Delete</Text>
+            <Text style={[styles.actionBtnText, { color: "#EF4444" }]}>Xóa</Text>
           </TouchableOpacity>
         </View>
       </GlassCard>
@@ -233,7 +233,7 @@ export const UserManagementScreen: React.FC = () => {
           !isLoading ? (
             <View style={styles.emptyContainer}>
               <UserX size={48} color={colors.textMuted} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No user accounts found matching query.</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy tài khoản người dùng nào.</Text>
             </View>
           ) : null
         }

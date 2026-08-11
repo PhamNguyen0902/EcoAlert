@@ -54,7 +54,7 @@ export function ThemeToggle() {
           </motion.div>
         )}
       </AnimatePresence>
-      <span className="sr-only">Toggle theme</span>
+      <span className="sr-only">Đổi giao diện</span>
     </Button>
   );
 }

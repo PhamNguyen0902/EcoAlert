@@ -26,8 +26,8 @@ export function SelectedLocationCard({
             <MapPin className="h-4 w-4" aria-hidden="true" />
           </span>
           <div>
-            <h4 id="selected-location-heading" className="font-semibold">Selected location</h4>
-            <p className="text-xs text-muted-foreground">Confirm the exact place where the incident is occurring.</p>
+            <h4 id="selected-location-heading" className="font-semibold">Vị trí đã chọn</h4>
+            <p className="text-xs text-muted-foreground">Xác nhận vị trí chính xác nơi sự cố đang xảy ra.</p>
           </div>
         </div>
       </div>
@@ -45,17 +45,17 @@ export function SelectedLocationCard({
         ) : (
           <div className="rounded-lg border border-dashed bg-muted/25 px-4 py-7 text-center">
             <MapPin className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden="true" />
-            <p className="mt-2 text-sm font-medium">No incident location selected</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">Search for an address, use your GPS location, or place a pin on the map.</p>
+            <p className="mt-2 text-sm font-medium">Chưa chọn vị trí sự cố</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">Tìm kiếm một địa chỉ, sử dụng vị trí GPS của bạn, hoặc đánh dấu trên bản đồ.</p>
           </div>
         )}
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Button type="button" onClick={onChooseOnMap} disabled={disabled}>
-            <MapPin className="mr-2 h-4 w-4" />Choose on Map
+            <MapPin className="mr-2 h-4 w-4" />Chọn trên bản đồ
           </Button>
           <Button type="button" variant="outline" onClick={onUseCurrentLocation} disabled={disabled || isLocating}>
-            <LocateFixed className="mr-2 h-4 w-4" />{isLocating ? 'Finding location…' : 'Use My Location'}
+            <LocateFixed className="mr-2 h-4 w-4" />{isLocating ? 'Đang tìm vị trí...' : 'Vị trí của tôi'}
           </Button>
         </div>
       </div>

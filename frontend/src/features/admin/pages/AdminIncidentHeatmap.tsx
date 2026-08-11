@@ -110,31 +110,31 @@ export default function AdminIncidentHeatmap() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><Flame className="h-6 w-6 text-orange-500" />Incident Density</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Operational density of real reported incidents. Color intensity represents incident concentration, not temperature or a prediction.</p>
+        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><Flame className="h-6 w-6 text-orange-500" />Mật độ sự cố</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Mật độ hoạt động của các sự cố thực tế được báo cáo. Cường độ màu thể hiện sự tập trung của sự cố, không phải nhiệt độ hay dự báo.</p>
       </div>
 
       <Card>
         <CardContent className="grid gap-3 p-4 md:grid-cols-5">
-          <label className="text-xs font-medium text-muted-foreground">Category
+          <label className="text-xs font-medium text-muted-foreground">Danh mục
             <select className="mt-1 h-10 w-full rounded-md border bg-background px-2 text-sm text-foreground" value={filters.category} onChange={(event) => setFilter('category', event.target.value)}>
-              <option value="all">All categories</option>{categoryOptions.map((value) => <option key={value} value={value}>{formatMapLabel(value)}</option>)}
+              <option value="all">Tất cả danh mục</option>{categoryOptions.map((value) => <option key={value} value={value}>{formatMapLabel(value)}</option>)}
             </select>
           </label>
-          <label className="text-xs font-medium text-muted-foreground">Severity
+          <label className="text-xs font-medium text-muted-foreground">Mức độ
             <select className="mt-1 h-10 w-full rounded-md border bg-background px-2 text-sm text-foreground" value={filters.severity} onChange={(event) => setFilter('severity', event.target.value)}>
-              <option value="all">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+              <option value="all">Tất cả mức độ</option><option value="critical">Nghiêm trọng</option><option value="high">Cao</option><option value="medium">Trung bình</option><option value="low">Thấp</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-muted-foreground">Status
+          <label className="text-xs font-medium text-muted-foreground">Trạng thái
             <select className="mt-1 h-10 w-full rounded-md border bg-background px-2 text-sm text-foreground" value={filters.status} onChange={(event) => setFilter('status', event.target.value)}>
-              <option value="all">All statuses</option><option value="active">Open operational work</option><option value="resolved">Resolved</option><option value="closed">Closed</option>
+              <option value="all">Tất cả trạng thái</option><option value="active">Đang xử lý</option><option value="resolved">Đã giải quyết</option><option value="closed">Đã đóng</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-muted-foreground">From
+          <label className="text-xs font-medium text-muted-foreground">Từ ngày
             <input className="mt-1 h-10 w-full rounded-md border bg-background px-2 text-sm text-foreground" type="date" value={filters.from} onChange={(event) => setFilter('from', event.target.value)} />
           </label>
-          <label className="text-xs font-medium text-muted-foreground">To
+          <label className="text-xs font-medium text-muted-foreground">Đến ngày
             <input className="mt-1 h-10 w-full rounded-md border bg-background px-2 text-sm text-foreground" type="date" value={filters.to} onChange={(event) => setFilter('to', event.target.value)} />
           </label>
         </CardContent>
@@ -191,21 +191,21 @@ export default function AdminIncidentHeatmap() {
                     >
                       <Tooltip direction="top" offset={[0, -8]} opacity={0.95}>
                         <p className="font-medium">{incidentReportCode(point.incidentId)}</p>
-                        <p>{point.title || 'Untitled incident'}</p>
+                        <p>{point.title || 'Sự cố chưa có tiêu đề'}</p>
                       </Tooltip>
                       <Popup minWidth={250}>
                         <div className="space-y-2 text-sm">
                           <div>
                             <p className="font-semibold">{incidentReportCode(point.incidentId)}</p>
-                            <p className="font-medium">{point.title || 'Untitled incident'}</p>
+                            <p className="font-medium">{point.title || 'Sự cố chưa có tiêu đề'}</p>
                           </div>
-                          <PopupField label="Category" value={formatMapLabel(point.category)} />
-                          <PopupField label="Severity" value={severity ? formatMapLabel(severity) : 'Unavailable'} />
-                          <PopupField label="Status" value={formatMapLabel(point.status)} />
-                          <PopupField label="Reported" value={formatReportedAt(point.createdAt, language)} />
-                          <PopupField label="Address" value={point.address || 'Address unavailable'} />
+                          <PopupField label="Danh mục" value={formatMapLabel(point.category)} />
+                          <PopupField label="Mức độ" value={severity ? formatMapLabel(severity) : 'Không có'} />
+                          <PopupField label="Trạng thái" value={formatMapLabel(point.status)} />
+                          <PopupField label="Thời gian báo cáo" value={formatReportedAt(point.createdAt, language)} />
+                          <PopupField label="Địa chỉ" value={point.address || 'Không có địa chỉ'} />
                           <Button asChild size="sm" className="mt-1 w-full">
-                            <Link to={'/admin/reports/' + point.incidentId}>View incident</Link>
+                            <Link to={'/admin/reports/' + point.incidentId}>Xem sự cố</Link>
                           </Button>
                         </div>
                       </Popup>
@@ -216,22 +216,22 @@ export default function AdminIncidentHeatmap() {
             ) : null}
           </MapContainer>
           {isLoading ? <div className="absolute inset-x-0 bottom-0 top-[49px] z-10 flex items-center justify-center bg-background/65"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : null}
-          {isError ? <div className="absolute left-4 top-16 z-10 rounded-md border border-destructive/40 bg-background p-3 text-sm text-destructive">Incident density could not be loaded.</div> : null}
-          {!isLoading && !isError && incidentPoints.length === 0 ? <div className="absolute left-1/2 top-16 z-10 -translate-x-1/2 rounded-md border bg-background p-3 text-sm shadow">No reported incidents match these filters.</div> : null}
+          {isError ? <div className="absolute left-4 top-16 z-10 rounded-md border border-destructive/40 bg-background p-3 text-sm text-destructive">Không thể tải dữ liệu mật độ sự cố.</div> : null}
+          {!isLoading && !isError && incidentPoints.length === 0 ? <div className="absolute left-1/2 top-16 z-10 -translate-x-1/2 rounded-md border bg-background p-3 text-sm shadow">Không có sự cố nào khớp với bộ lọc này.</div> : null}
           <div className="pointer-events-none absolute bottom-4 left-4 z-10 max-w-xs rounded-lg border bg-background/95 p-3 text-xs shadow">
-            <div className="mb-1 flex items-center gap-1.5 font-semibold"><Info className="h-4 w-4 text-orange-500" />Click a location for incident drilldown</div>
-            <p className="text-muted-foreground">Density is calculated from GIS alert locations and is not a weather or temperature layer.</p>
+            <div className="mb-1 flex items-center gap-1.5 font-semibold"><Info className="h-4 w-4 text-orange-500" />Nhấn vào một vị trí để xem chi tiết sự cố</div>
+            <p className="text-muted-foreground">Mật độ được tính toán từ vị trí các cảnh báo GIS và không phải là lớp dữ liệu thời tiết hay nhiệt độ.</p>
           </div>
         </section>
 
         <Card>
-          <CardHeader><CardTitle>Operational summary</CardTitle><CardDescription>Real GIS alert records in the selected view.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Tóm tắt hoạt động</CardTitle><CardDescription>Bản ghi cảnh báo GIS thực tế trong giao diện đã chọn.</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <Metric label="Total" value={summary?.total ?? 0} /><Metric label="Open" value={summary?.open ?? 0} /><Metric label="Resolved" value={summary?.resolved ?? 0} /><Metric label="Closed" value={summary?.closed ?? 0} />
+              <Metric label="Tổng số" value={summary?.total ?? 0} /><Metric label="Đang mở" value={summary?.open ?? 0} /><Metric label="Đã giải quyết" value={summary?.resolved ?? 0} /><Metric label="Đã đóng" value={summary?.closed ?? 0} />
             </div>
-            <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">By severity</p><div className="space-y-2">{severityRows.map((severity) => <div key={severity} className="flex justify-between text-sm"><Badge variant="outline">{formatMapLabel(severity)}</Badge><strong>{summary?.bySeverity[severity] ?? 0}</strong></div>)}</div></div>
-            <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">By category</p><div className="max-h-48 space-y-2 overflow-auto">{categoryRows.map(([category, count]) => <div key={category} className="flex justify-between gap-3 text-sm"><span>{formatMapLabel(category)}</span><strong>{count}</strong></div>)}</div></div>
+            <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Theo mức độ</p><div className="space-y-2">{severityRows.map((severity) => <div key={severity} className="flex justify-between text-sm"><Badge variant="outline">{formatMapLabel(severity)}</Badge><strong>{summary?.bySeverity[severity] ?? 0}</strong></div>)}</div></div>
+            <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Theo danh mục</p><div className="max-h-48 space-y-2 overflow-auto">{categoryRows.map(([category, count]) => <div key={category} className="flex justify-between gap-3 text-sm"><span>{formatMapLabel(category)}</span><strong>{count}</strong></div>)}</div></div>
           </CardContent>
         </Card>
       </div>
@@ -239,16 +239,16 @@ export default function AdminIncidentHeatmap() {
       <Dialog open={Boolean(drilldownCenter)} onOpenChange={(open) => !open && setDrilldownCenter(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Incident drilldown</DialogTitle>
-            <DialogDescription>Reported incidents within 750 meters of the location you selected.</DialogDescription>
+            <DialogTitle>Chi tiết sự cố khu vực</DialogTitle>
+            <DialogDescription>Các sự cố được báo cáo trong bán kính 750 mét từ vị trí bạn chọn.</DialogDescription>
           </DialogHeader>
           {drilldown.isLoading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div> : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-                <Metric label="Total" value={drilldown.data?.summary.total ?? 0} />
-                <Metric label="Open" value={drilldown.data?.summary.open ?? 0} />
-                <Metric label="Critical" value={drilldown.data?.summary.bySeverity.critical ?? 0} />
-                <Metric label="High" value={drilldown.data?.summary.bySeverity.high ?? 0} />
+                <Metric label="Tổng số" value={drilldown.data?.summary.total ?? 0} />
+                <Metric label="Đang mở" value={drilldown.data?.summary.open ?? 0} />
+                <Metric label="Nghiêm trọng" value={drilldown.data?.summary.bySeverity.critical ?? 0} />
+                <Metric label="Cao" value={drilldown.data?.summary.bySeverity.high ?? 0} />
               </div>
               <div className="max-h-[45vh] space-y-3 overflow-auto">
                 {(drilldown.data?.incidents ?? []).map((incident) => {
@@ -257,16 +257,16 @@ export default function AdminIncidentHeatmap() {
                     <div key={incident.alertId} className="rounded-lg border p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-medium">{incident.title || 'Untitled incident'}</p>
-                          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{incident.address || 'Address unavailable'} · {Math.round(incident.distanceMeters)} m</p>
+                          <p className="font-medium">{incident.title || 'Sự cố chưa có tiêu đề'}</p>
+                          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{incident.address || 'Không có địa chỉ'} · {Math.round(incident.distanceMeters)} m</p>
                         </div>
-                        <div className="flex gap-1"><Badge variant="outline">{severity ? formatMapLabel(severity) : 'Unavailable'}</Badge><Badge>{formatMapLabel(incident.status)}</Badge></div>
+                        <div className="flex gap-1"><Badge variant="outline">{severity ? formatMapLabel(severity) : 'Không có'}</Badge><Badge>{formatMapLabel(incident.status)}</Badge></div>
                       </div>
-                      <Button asChild size="sm" variant="outline" className="mt-3"><Link to={'/admin/reports/' + incident.alertId}>View incident</Link></Button>
+                      <Button asChild size="sm" variant="outline" className="mt-3"><Link to={'/admin/reports/' + incident.alertId}>Xem sự cố</Link></Button>
                     </div>
                   );
                 })}
-                {!drilldown.data?.incidents.length ? <p className="py-8 text-center text-sm text-muted-foreground">No incidents found around this point.</p> : null}
+                {!drilldown.data?.incidents.length ? <p className="py-8 text-center text-sm text-muted-foreground">Không tìm thấy sự cố nào xung quanh điểm này.</p> : null}
               </div>
             </div>
           )}
