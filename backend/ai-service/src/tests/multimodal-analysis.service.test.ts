@@ -19,6 +19,8 @@ const semantic = async () => ({
   severityConfidence: 0.8,
   overallSummary: 'Waste is visible beside the road.',
   shortReason: 'The report and image support roadside dumping.',
+  overallSummaryLocalized: { vi: 'Có rác bên cạnh đường.', en: 'Waste is visible beside the road.' },
+  shortReasonLocalized: { vi: 'Báo cáo và ảnh cho thấy hành vi đổ rác ven đường.', en: 'The report and image support roadside dumping.' },
   visionEvidenceUsed: [],
   analysisMode: 'vision' as const,
   provider: 'openrouter' as const,
@@ -49,6 +51,8 @@ test('both successful branches produce a full multimodal result', async () => {
   assert.equal(result.vision?.status, 'COMPLETED');
   assert.equal(result.fusion?.semanticConfidence, 0.8);
   assert.equal(result.overallAnalysis?.categorySuggestion, AlertCategory.ILLEGAL_DUMPING);
+  assert.equal(result.overallAnalysis?.overallSummaryLocalized?.vi, 'Có rác bên cạnh đường.');
+  assert.equal(result.overallAnalysis?.shortReasonLocalized?.en, 'The report and image support roadside dumping.');
   assert.equal(result.overallAnalysis?.visionEvidenceUsed.length, 0);
   assert.equal('isIncident' in result, false);
   assert.equal('overallSummary' in result, false);

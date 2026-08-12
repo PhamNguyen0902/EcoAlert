@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getWeatherConditionDisplay } from '@/lib/domain-i18n';
 
 interface WeatherWidgetProps {
   latitude: number | null;
@@ -17,7 +18,7 @@ interface WeatherWidgetProps {
 }
 
 export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitude }) => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const { data: weather, isLoading, isError, refetch } = useWeather(latitude, longitude);
 
@@ -85,10 +86,10 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ latitude, longitud
               <span className="text-5xl font-bold tracking-tighter">
                 {Math.round(weather.temperature)}°
               </span>
-              <WeatherConditionIcon condition={weather.description} icon={weather.icon} className="h-16 w-16 shrink-0 text-sky-500 drop-shadow-md" aria-label={weather.description} />
+              <WeatherConditionIcon condition={weather.description} icon={weather.icon} className="h-16 w-16 shrink-0 text-sky-500 drop-shadow-md" aria-label={getWeatherConditionDisplay(language, weather.description)} />
             </div>
             <p className="text-lg font-medium capitalize mt-1 text-slate-700 dark:text-slate-200">
-              {weather.description}
+              {getWeatherConditionDisplay(language, weather.description)}
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {t('weather.feels_like')} {Math.round(weather.feelsLike)}°

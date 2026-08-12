@@ -1,29 +1,11 @@
 import { Check, CircleDot, Clock3, XCircle } from 'lucide-react';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
+import { getCategoryDisplay, getSeverityDisplay, getStatusDisplay } from '@/lib/domain-i18n';
 import { cn } from '@/lib/utils';
 import type { AlertStatus, Severity } from '@/types';
 
 export type NormalizedIncidentStatus = AlertStatus | 'unknown';
-
-const statusLabels: Record<NormalizedIncidentStatus, string> = {
-  pending: 'Submitted',
-  ai_analyzing: 'Analysis in progress',
-  verified: 'Verified',
-  assigned: 'Assigned',
-  in_progress: 'In progress',
-  resolved: 'Resolved',
-  closed: 'Closed',
-  rejected: 'Rejected',
-  unknown: 'Status unavailable',
-};
-
-const severityLabels: Record<Severity | 'unknown', string> = {
-  low: 'Low severity',
-  medium: 'Medium severity',
-  high: 'High severity',
-  critical: 'Critical severity',
-  unknown: 'Severity unavailable',
-};
 
 const validStatuses = new Set<AlertStatus>([
   'pending', 'ai_analyzing', 'verified', 'assigned', 'in_progress', 'resolved', 'closed', 'rejected',
@@ -40,8 +22,8 @@ export function normalizeSeverity(severity?: string | null): Severity | 'unknown
   return validSeverities.has(normalized as Severity) ? normalized as Severity : 'unknown';
 }
 
-export const getStatusLabel = (status?: string | null) => statusLabels[normalizeIncidentStatus(status)];
-export const getSeverityLabel = (severity?: string | null) => severityLabels[normalizeSeverity(severity)];
+export const getStatusLabel = (status?: string | null, language: Language = 'vi') => getStatusDisplay(language, status);
+export const getSeverityLabel = (severity?: string | null, language: Language = 'vi') => getSeverityDisplay(language, severity);
 
 export const getStatusBadgeVariant = (status?: string | null): BadgeProps['variant'] => {
   const normalized = normalizeIncidentStatus(status);
@@ -78,46 +60,44 @@ const severityBadgeClassName = (severity?: string | null) => {
 };
 
 export function StatusBadge({ status, className }: { status?: string | null; className?: string }) {
-  return <Badge variant={getStatusBadgeVariant(status)} className={cn('gap-1.5 border px-2.5 py-1 font-semibold', statusBadgeClassName(status), className)}>{getStatusLabel(status)}</Badge>;
+  const { language } = useLanguage();
+  return <Badge variant={getStatusBadgeVariant(status)} className={cn('gap-1.5 border px-2.5 py-1 font-semibold', statusBadgeClassName(status), className)}>{getStatusLabel(status, language)}</Badge>;
 }
 
 export function SeverityBadge({ severity, className }: { severity?: string | null; className?: string }) {
-  return <Badge variant={getSeverityBadgeVariant(severity)} className={cn('border px-2.5 py-1 font-semibold', severityBadgeClassName(severity), className)}>{getSeverityLabel(severity)}</Badge>;
+  const { language } = useLanguage();
+  return <Badge variant={getSeverityBadgeVariant(severity)} className={cn('border px-2.5 py-1 font-semibold', severityBadgeClassName(severity), className)}>{getSeverityLabel(severity, language)}</Badge>;
 }
 
-const lifecycle: Array<{ status: AlertStatus; label: string }> = [
-  { status: 'pending', label: 'Submitted' },
-  { status: 'verified', label: 'Verified' },
-  { status: 'assigned', label: 'Assigned' },
-  { status: 'in_progress', label: 'In progress' },
-  { status: 'resolved', label: 'Resolved' },
-  { status: 'closed', label: 'Closed' },
-];
+const lifecycle: AlertStatus[] = ['pending', 'verified', 'assigned', 'in_progress', 'resolved', 'closed'];
 
-const statusDescriptions: Record<NormalizedIncidentStatus, string> = {
-  pending: 'Your report has been received and is waiting for verification.',
-  ai_analyzing: 'Your evidence is being analyzed to help the team triage the report.',
-  verified: 'Your report has been verified and is ready for assignment.',
-  assigned: 'Your report has been assigned to an officer.',
-  in_progress: 'An officer is currently handling this incident.',
-  resolved: 'The assigned officer has completed treatment. The result is awaiting final review.',
-  closed: 'This incident has been reviewed and closed.',
-  rejected: 'This report was not accepted for the incident workflow.',
-  unknown: 'The current workflow status is unavailable.',
+const statusDescriptions: Record<NormalizedIncidentStatus, Record<Language, string>> = {
+  pending: { vi: 'Báo cáo của bạn đã được tiếp nhận và đang chờ xác minh.', en: 'Your report has been received and is waiting for verification.' },
+  ai_analyzing: { vi: 'Bằng chứng đang được AI phân tích để hỗ trợ phân loại.', en: 'Your evidence is being analyzed to help the team triage the report.' },
+  verified: { vi: 'Báo cáo đã được xác minh và sẵn sàng phân công.', en: 'Your report has been verified and is ready for assignment.' },
+  assigned: { vi: 'Báo cáo đã được phân công cho cán bộ.', en: 'Your report has been assigned to an officer.' },
+  in_progress: { vi: 'Cán bộ đang xử lý sự cố này.', en: 'An officer is currently handling this incident.' },
+  resolved: { vi: 'Cán bộ đã xử lý xong. Kết quả đang chờ rà soát cuối cùng.', en: 'The assigned officer has completed treatment. The result is awaiting final review.' },
+  closed: { vi: 'Sự cố đã được rà soát và đóng.', en: 'This incident has been reviewed and closed.' },
+  rejected: { vi: 'Báo cáo này không được chấp nhận vào quy trình xử lý sự cố.', en: 'This report was not accepted for the incident workflow.' },
+  unknown: { vi: 'Không xác định được trạng thái quy trình hiện tại.', en: 'The current workflow status is unavailable.' },
 };
 
-export function getStatusDescription(status?: string | null) {
-  return statusDescriptions[normalizeIncidentStatus(status)];
+export function getStatusDescription(status?: string | null, language: Language = 'vi') {
+  return statusDescriptions[normalizeIncidentStatus(status)][language];
 }
 
-export function formatIncidentCategory(category?: string | null) {
-  if (!category || category.toLowerCase() === 'unclassified') return 'Chưa phân loại (Cần kiểm tra thủ công)';
-  return category.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+export function formatIncidentCategory(category?: string | null, language: Language = 'vi') {
+  return getCategoryDisplay(language, category);
 }
 
 export function IncidentStatusProgress({ status }: { status?: string | null }) {
+  const { language } = useLanguage();
   const normalized = normalizeIncidentStatus(status);
-  const currentIndex = normalized === 'ai_analyzing' ? 0 : lifecycle.findIndex((stage) => stage.status === normalized);
+  const currentIndex = normalized === 'ai_analyzing' ? 0 : lifecycle.findIndex((stage) => stage === normalized);
+  const copy = language === 'vi'
+    ? { rejected: 'Trạng thái báo cáo: đã từ chối', progress: 'Tiến độ trạng thái', workflow: 'Các giai đoạn xử lý sự cố', complete: 'hoàn tất', current: 'hiện tại' }
+    : { rejected: 'Report status: rejected', progress: 'Status progress', workflow: 'Incident workflow stages', complete: 'complete', current: 'current' };
 
   if (normalized === 'rejected') {
     return (
@@ -125,8 +105,8 @@ export function IncidentStatusProgress({ status }: { status?: string | null }) {
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive"><XCircle className="h-5 w-5" aria-hidden="true" /></span>
           <div>
-            <h2 id="status-progress-heading" className="font-semibold">Report status: rejected</h2>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">{getStatusDescription(normalized)}</p>
+            <h2 id="status-progress-heading" className="font-semibold">{copy.rejected}</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">{getStatusDescription(normalized, language)}</p>
           </div>
         </div>
       </section>
@@ -137,23 +117,23 @@ export function IncidentStatusProgress({ status }: { status?: string | null }) {
     <section className="rounded-xl border bg-card px-4 py-4 shadow-sm sm:px-5" aria-labelledby="status-progress-heading">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status progress</p>
-          <h2 id="status-progress-heading" className="mt-1 font-semibold">{getStatusDescription(normalized)}</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{copy.progress}</p>
+          <h2 id="status-progress-heading" className="mt-1 font-semibold">{getStatusDescription(normalized, language)}</h2>
         </div>
         <StatusBadge status={normalized} className="w-fit" />
       </div>
 
-      <ol className="mt-5 grid grid-cols-3 gap-y-4 sm:grid-cols-6" aria-label="Incident workflow stages">
+      <ol className="mt-5 grid grid-cols-3 gap-y-4 sm:grid-cols-6" aria-label={copy.workflow}>
         {lifecycle.map((stage, index) => {
           const isComplete = currentIndex > index;
           const isCurrent = currentIndex === index;
           return (
-            <li key={stage.status} className="relative flex min-w-0 flex-col items-start sm:items-center sm:text-center">
+          <li key={stage} className="relative flex min-w-0 flex-col items-start sm:items-center sm:text-center">
               {index < lifecycle.length - 1 ? <span className={cn('absolute left-5 right-0 top-4 hidden h-px sm:block', isComplete ? 'bg-primary' : 'bg-border')} aria-hidden="true" /> : null}
               <span className={cn('relative z-10 flex h-8 w-8 items-center justify-center rounded-full border bg-card', isComplete && 'border-primary bg-primary text-primary-foreground', isCurrent && 'border-primary text-primary ring-4 ring-primary/10', !isComplete && !isCurrent && 'border-border text-muted-foreground')}>
-                {isComplete ? <Check className="h-3.5 w-3.5" aria-label={`${stage.label} complete`} /> : isCurrent ? <CircleDot className="h-3.5 w-3.5" aria-label={`${stage.label} current`} /> : <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />}
+                {isComplete ? <Check className="h-3.5 w-3.5" aria-label={`${getStatusLabel(stage, language)} ${copy.complete}`} /> : isCurrent ? <CircleDot className="h-3.5 w-3.5" aria-label={`${getStatusLabel(stage, language)} ${copy.current}`} /> : <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />}
               </span>
-              <span className={cn('mt-2 pr-2 text-xs font-medium sm:pr-0', (isComplete || isCurrent) ? 'text-foreground' : 'text-muted-foreground')}>{stage.label}</span>
+              <span className={cn('mt-2 pr-2 text-xs font-medium sm:pr-0', (isComplete || isCurrent) ? 'text-foreground' : 'text-muted-foreground')}>{getStatusLabel(stage, language)}</span>
             </li>
           );
         })}

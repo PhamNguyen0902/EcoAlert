@@ -125,7 +125,7 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             <View style={styles.aiMetaRow}>
               <Text style={[styles.aiMetaLabel, { color: colors.textMuted }]}>AI</Text>
               <Text style={[styles.aiMetaValue, { color: colors.text }]} numberOfLines={1}>
-                {getCategoryLabel(item.category, language)} · {getSeverityLabel(item.severity)}
+                {getCategoryLabel(item.category, language)} · {getSeverityLabel(item.severity, language)}
               </Text>
             </View>
           ) : null}

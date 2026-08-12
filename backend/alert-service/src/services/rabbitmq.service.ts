@@ -96,6 +96,14 @@ const overallAnalysisSchema = z.object({
   severityConfidence: z.number().min(0).max(1),
   overallSummary: z.string().trim().min(1).max(800),
   shortReason: z.string().trim().min(1).max(500),
+  overallSummaryLocalized: z.object({
+    vi: z.string().trim().min(1).max(800),
+    en: z.string().trim().min(1).max(800),
+  }).strict().optional(),
+  shortReasonLocalized: z.object({
+    vi: z.string().trim().min(1).max(500),
+    en: z.string().trim().min(1).max(500),
+  }).strict().optional(),
   visionEvidenceUsed: z.array(z.string().trim().min(1).max(120)).max(6),
   semanticModel: z.string().trim().min(1).max(200),
   pipelineVersion: z.literal('multimodal-v2'),

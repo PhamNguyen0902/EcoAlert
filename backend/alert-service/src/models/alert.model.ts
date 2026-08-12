@@ -310,6 +310,14 @@ const overallAnalysisSchema = new Schema<IAiOverallAnalysis>({
   severityConfidence: { type: Number, required: true, min: 0, max: 1 },
   overallSummary: { type: String, trim: true, required: true, maxlength: 800 },
   shortReason: { type: String, trim: true, required: true, maxlength: 500 },
+  overallSummaryLocalized: {
+    vi: { type: String, trim: true, maxlength: 800 },
+    en: { type: String, trim: true, maxlength: 800 },
+  },
+  shortReasonLocalized: {
+    vi: { type: String, trim: true, maxlength: 500 },
+    en: { type: String, trim: true, maxlength: 500 },
+  },
   visionEvidenceUsed: { type: [String], default: [] },
   semanticModel: { type: String, trim: true, required: true },
   pipelineVersion: { type: String, enum: ['multimodal-v2'], required: true },

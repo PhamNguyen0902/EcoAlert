@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 export type Language = "vi" | "en";
 
@@ -9,7 +9,7 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const translations: Record<Language, Record<string, string>> = {
+export const translations: Record<Language, Record<string, string>> = {
   vi: {
     // Topbar & Nav
     "nav.dashboard": "Tổng quan",
@@ -536,6 +536,37 @@ const translations: Record<Language, Record<string, string>> = {
     "incident_density.mode_heatmap": "Bản đồ nhiệt",
     "incident_density.mode_incidents": "Điểm sự cố",
     "incident_density.mode_combined": "Kết hợp",
+    "language.switch": "Đổi ngôn ngữ",
+    "language.vietnamese": "Tiếng Việt (VI)",
+    "language.english": "English (EN)",
+    "ai.overall_title": "AI phân tích tổng quan",
+    "ai.overall_subtitle": "Diễn giải sự cố từ hình ảnh và báo cáo; cần con người xác nhận.",
+    "ai.vision_only_fallback": "Phân tích ngữ nghĩa hiện không khả dụng. Vision vẫn đã nhận diện các vật thể trong ảnh.",
+    "ai.short_reason": "Lý do ngắn",
+    "ai.suggested_category": "Danh mục AI gợi ý",
+    "ai.confidence": "Độ tin cậy",
+    "ai.severity": "Mức độ",
+    "ai.incident": "Sự cố môi trường",
+    "ai.likely": "Có khả năng",
+    "ai.insufficient_evidence": "Chưa đủ bằng chứng",
+    "ai.vision_support": "Vision hỗ trợ",
+    "ai.no_vision_evidence": "Không có đối tượng rác EcoAlert được dùng làm bằng chứng. Điều này không tự động phủ nhận sự cố.",
+    "ai.vision_title": "Vision nhận diện vật thể",
+    "ai.object_type": "Loại vật thể",
+    "ai.object_count": "Số vật thể phát hiện",
+    "ai.detector_confidence": "Độ tin cậy bộ nhận diện",
+    "ai.vision_support_level": "Mức hỗ trợ Vision",
+    "ai.counts": "Số lượng",
+    "ai.no_supported_objects": "Không phát hiện vật thể rác thuộc sáu lớp EcoAlert. Điều này không tự động phủ nhận sự cố.",
+    "ai.detector_unavailable": "Bộ nhận diện không khả dụng cho lần phân tích này.",
+    "ai.semantic": "Ngữ nghĩa",
+    "ai.detector": "Bộ nhận diện",
+    "ai.fusion": "Tổng hợp",
+    "ai.hide_image": "Ẩn ảnh AI",
+    "ai.view_image": "Xem ảnh AI",
+    "ai.annotation_alt": "Ảnh sự cố được AI chú thích",
+    "ai.vision_disclaimer": "Bằng chứng vật thể tách biệt với phân tích tổng quan. Hãy kiểm tra ảnh gốc trước khi xác nhận.",
+    "common.unavailable": "Không khả dụng",
   },
   en: {
     // Topbar & Nav
@@ -1055,6 +1086,37 @@ const translations: Record<Language, Record<string, string>> = {
     "incident_density.mode_heatmap": "Heatmap",
     "incident_density.mode_incidents": "Incidents",
     "incident_density.mode_combined": "Combined",
+    "language.switch": "Switch language",
+    "language.vietnamese": "Tiếng Việt (VI)",
+    "language.english": "English (EN)",
+    "ai.overall_title": "AI Overall Analysis",
+    "ai.overall_subtitle": "An interpretation of the image and report that requires human confirmation.",
+    "ai.vision_only_fallback": "Semantic analysis is currently unavailable. Vision still detected objects in the image.",
+    "ai.short_reason": "Short reason",
+    "ai.suggested_category": "AI suggested category",
+    "ai.confidence": "Confidence",
+    "ai.severity": "Severity",
+    "ai.incident": "Environmental incident",
+    "ai.likely": "Likely",
+    "ai.insufficient_evidence": "Insufficient evidence",
+    "ai.vision_support": "Vision support",
+    "ai.no_vision_evidence": "No EcoAlert waste object was used as evidence. This does not automatically rule out an incident.",
+    "ai.vision_title": "Vision Object Detection",
+    "ai.object_type": "Object type",
+    "ai.object_count": "Detected object count",
+    "ai.detector_confidence": "Detector confidence",
+    "ai.vision_support_level": "Vision support level",
+    "ai.counts": "Counts",
+    "ai.no_supported_objects": "No supported waste objects were detected in the six EcoAlert classes. This does not automatically rule out an incident.",
+    "ai.detector_unavailable": "Detector unavailable for this analysis.",
+    "ai.semantic": "Semantic",
+    "ai.detector": "Detector",
+    "ai.fusion": "Fusion",
+    "ai.hide_image": "Hide AI image",
+    "ai.view_image": "View AI image",
+    "ai.annotation_alt": "AI-annotated incident image",
+    "ai.vision_disclaimer": "Object evidence is separate from the overall analysis. Check the original image before confirming.",
+    "common.unavailable": "Unavailable",
   },
 };
 
@@ -1075,13 +1137,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.setItem("ecoalert_lang", lang);
   };
 
+  useEffect(() => {
+    document.documentElement.lang = language === 'vi' ? 'vi' : 'en';
+  }, [language]);
+
   const toggleLanguage = () => {
     const newLang = language === "vi" ? "en" : "vi";
     setLanguage(newLang);
   };
 
   const t = (key: string): string => {
-    return translations[language]?.[key] || translations["vi"]?.[key] || translations["en"]?.[key] || key;
+    // Dictionary parity is tested. Do not fall through to the other locale: a
+    // missing key must be visible during development instead of mixing languages.
+    return translations[language]?.[key] || key;
   };
 
   return (

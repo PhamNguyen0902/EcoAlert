@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { enUS, vi } from 'date-fns/locale';
 import {
   Bot,
   CheckCircle2,
@@ -12,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getAnalysisModeDisplay, getConfidenceSourceDisplay, getStatusDisplay, getTimelineEventDisplay, isKnownTimelineEvent } from '@/lib/domain-i18n';
 import type { AiAnalysisMode, AiVisionAnalysis, TimelineEntry } from '@/types';
 
 interface IncidentTimelineProps {
@@ -35,11 +38,15 @@ const iconForEvent = (eventType: string) => {
 };
 
 export function IncidentTimeline({ entries = [], createdAt, citizenId, analysisMode, vision }: IncidentTimelineProps) {
+  const { language } = useLanguage();
+  const copy = language === 'vi'
+    ? { title: 'Dòng thời gian xử lý', system: 'Hệ thống', citizen: 'Người dân', confidence: 'Độ tin cậy', semanticConfidence: 'Độ tin cậy ngữ nghĩa', detectedObjects: 'Đối tượng đã nhận diện', detectorConfidence: 'Độ tin cậy bộ nhận diện', evidence: 'Bằng chứng trong dòng thời gian' }
+    : { title: 'Incident Timeline', system: 'System', citizen: 'Citizen', confidence: 'Confidence', semanticConfidence: 'Semantic confidence', detectedObjects: 'Detected objects', detectorConfidence: 'Detector confidence', evidence: 'Timeline evidence' };
   const normalizedEntries: TimelineEntry[] = entries.length > 0
     ? entries
     : [{
         eventType: 'INCIDENT_REPORTED',
-        label: 'Incident reported',
+        label: getTimelineEventDisplay(language, 'INCIDENT_REPORTED'),
         timestamp: createdAt,
         actorId: citizenId || 'citizen',
         actorRole: 'CITIZEN',
@@ -52,17 +59,24 @@ export function IncidentTimeline({ entries = [], createdAt, citizenId, analysisM
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Incident Timeline</CardTitle>
+        <CardTitle className="text-lg">{copy.title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ol className="relative ml-3 border-l border-border">
           {sortedEntries.map((entry, index) => {
             const Icon = iconForEvent(entry.eventType);
             const legacyVisionOnly = entry.eventType === 'AI_ANALYSIS_COMPLETED' && analysisMode === 'VISION_ONLY';
-            const label = legacyVisionOnly ? 'Vision analysis completed' : entry.label;
+            const label = legacyVisionOnly
+              ? getAnalysisModeDisplay(language, 'VISION_ONLY')
+              : isKnownTimelineEvent(entry.eventType) ? getTimelineEventDisplay(language, entry.eventType) : entry.label;
+            const recordedConfidence = entry.metadata?.displayConfidence;
+            const localizedAiNote = entry.eventType === 'AI_ANALYSIS_COMPLETED'
+              && typeof recordedConfidence === 'number'
+              ? `${copy.confidence}: ${Math.round(recordedConfidence * 100)}% (${getConfidenceSourceDisplay(language, entry.metadata?.displayConfidenceSource)})`
+              : undefined;
             const note = legacyVisionOnly
-              ? `Semantic confidence: Not available${vision ? ` · Detected objects: ${vision.totalDetectedObjects}${vision.detectorConfidence !== null ? ` · Detector confidence: ${Math.round(vision.detectorConfidence * 100)}%` : ''}` : ''}`
-              : entry.note;
+              ? `${copy.semanticConfidence}: ${language === 'vi' ? 'Không khả dụng' : 'Unavailable'}${vision ? ` · ${copy.detectedObjects}: ${vision.totalDetectedObjects}${vision.detectorConfidence !== null ? ` · ${copy.detectorConfidence}: ${Math.round(vision.detectorConfidence * 100)}%` : ''}` : ''}`
+              : localizedAiNote ?? entry.note;
             return (
               <li key={entry._id || `${entry.eventType}-${entry.timestamp}-${index}`} className="relative mb-7 ml-7 last:mb-0">
                 <span className="absolute -left-[2.35rem] flex h-8 w-8 items-center justify-center rounded-full border bg-background text-primary shadow-sm">
@@ -72,17 +86,17 @@ export function IncidentTimeline({ entries = [], createdAt, citizenId, analysisM
                   <div>
                     <p className="font-medium">{label}</p>
                     <p className="text-xs text-muted-foreground">
-                      {entry.actorRole === 'SYSTEM' ? 'System' : entry.actorRole.toLowerCase()}
+                      {entry.actorRole === 'SYSTEM' ? copy.system : entry.actorRole === 'CITIZEN' ? copy.citizen : entry.actorRole.toLowerCase()}
                       {entry.actorId ? ` · ${entry.actorId}` : ''}
                     </p>
                   </div>
                   <time className="text-xs text-muted-foreground" dateTime={entry.timestamp}>
-                    {format(new Date(entry.timestamp), 'PPp')}
+                    {format(new Date(entry.timestamp), 'PPp', { locale: language === 'vi' ? vi : enUS })}
                   </time>
                 </div>
                 {entry.status ? (
                   <Badge variant="outline" className="mt-2 capitalize">
-                    {entry.status.replace(/_/g, ' ')}
+                    {getStatusDisplay(language, entry.status)}
                   </Badge>
                 ) : null}
                 {note ? <p className="mt-2 text-sm text-muted-foreground">{note}</p> : null}
@@ -90,7 +104,7 @@ export function IncidentTimeline({ entries = [], createdAt, citizenId, analysisM
                   <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                     {entry.evidenceUrls.map((url) => (
                       <a key={url} href={url} target="_blank" rel="noopener noreferrer">
-                        <img src={url} alt="Timeline evidence" className="h-16 w-20 rounded-md border object-cover" />
+                        <img src={url} alt={copy.evidence} className="h-16 w-20 rounded-md border object-cover" />
                       </a>
                     ))}
                   </div>

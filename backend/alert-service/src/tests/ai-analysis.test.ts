@@ -186,6 +186,14 @@ test('overall semantic analysis persists canonical category suggestion and conci
       severityConfidence: 0.82,
       overallSummary: 'The image plausibly shows accumulated waste in a public area. The report supports environmental review.',
       shortReason: 'Visible waste objects and the report are consistent with illegal dumping.',
+      overallSummaryLocalized: {
+        vi: 'Ảnh cho thấy rác tập kết ở khu vực công cộng và cần được xem xét môi trường.',
+        en: 'The image plausibly shows accumulated waste in a public area and requires environmental review.',
+      },
+      shortReasonLocalized: {
+        vi: 'Các vật thể rác nhìn thấy phù hợp với nội dung báo cáo.',
+        en: 'Visible waste objects are consistent with the report.',
+      },
       visionEvidenceUsed: ['plastic_bag × 3', 'plastic_bottle × 2'],
       semanticModel: 'openai/gpt-4o-mini',
       pipelineVersion: 'multimodal-v2',
@@ -209,6 +217,7 @@ test('overall semantic analysis persists canonical category suggestion and conci
     await alertService.internalUpdateAiResult(multimodal.alertId, multimodal);
     assert.equal(capturedUpdate.$set.classification.aiSuggestedCategory, AlertCategory.ILLEGAL_DUMPING);
     assert.equal(capturedUpdate.$set.aiOverallAnalysis.overallSummary, multimodal.overallAnalysis?.overallSummary);
+    assert.equal(capturedUpdate.$set.aiOverallAnalysis.overallSummaryLocalized.vi, multimodal.overallAnalysis?.overallSummaryLocalized?.vi);
     assert.equal(capturedUpdate.$set.category, 'UNCLASSIFIED');
   } finally {
     repository.findById = originalFindById;

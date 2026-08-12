@@ -29,6 +29,7 @@ import {
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useWeatherDetails } from '../hooks/useWeather';
 import { WeatherConditionIcon } from '../components/WeatherConditionIcon';
+import { getWeatherConditionDisplay } from '@/lib/domain-i18n';
 
 export default function WeatherDetails() {
   const { language, t } = useLanguage();
@@ -153,10 +154,10 @@ export default function WeatherDetails() {
               <div className="flex items-center gap-4 sm:text-right">
                 <div>
                   <p className="text-6xl font-bold tracking-tighter sm:text-7xl">{Math.round(details.current.temperature)}°</p>
-                  <p className="mt-1 text-lg font-medium capitalize">{details.current.description}</p>
+                  <p className="mt-1 text-lg font-medium capitalize">{getWeatherConditionDisplay(language, details.current.condition || details.current.description)}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{t('weather.feels_like')} {Math.round(details.current.feelsLike)}°</p>
                 </div>
-                <WeatherConditionIcon condition={details.current.condition || details.current.description} icon={details.current.icon} className="h-24 w-24 shrink-0 text-sky-500 drop-shadow-sm" aria-label={details.current.description} />
+                <WeatherConditionIcon condition={details.current.condition || details.current.description} icon={details.current.icon} className="h-24 w-24 shrink-0 text-sky-500 drop-shadow-sm" aria-label={getWeatherConditionDisplay(language, details.current.condition || details.current.description)} />
               </div>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border/50 pt-4 text-sm text-muted-foreground">
@@ -190,9 +191,9 @@ export default function WeatherDetails() {
               <Card key={period.timestamp} className="min-w-28 shrink-0">
                 <CardContent className="flex min-h-40 flex-col items-center justify-between p-3 text-center">
                   <p className="text-sm font-semibold">{formatProviderLocalTime(period.timestamp, timezoneOffset, locale)}</p>
-                  <WeatherConditionIcon condition={period.condition || period.description} icon={period.icon} className="h-12 w-12 text-sky-500" aria-label={period.description} />
+                  <WeatherConditionIcon condition={period.condition || period.description} icon={period.icon} className="h-12 w-12 text-sky-500" aria-label={getWeatherConditionDisplay(language, period.condition || period.description)} />
                   <p className="text-xl font-bold">{Math.round(period.temperature)}°</p>
-                  <p className="max-w-full truncate text-xs text-muted-foreground">{period.description}</p>
+                  <p className="max-w-full truncate text-xs text-muted-foreground">{getWeatherConditionDisplay(language, period.condition || period.description)}</p>
                   <p className="flex items-center gap-1 text-xs font-medium text-sky-600 dark:text-sky-400"><Umbrella className="h-3.5 w-3.5" aria-hidden="true" />{period.precipitationProbability}%</p>
                 </CardContent>
               </Card>
@@ -212,9 +213,9 @@ export default function WeatherDetails() {
                 <div key={day.date} className="flex min-h-20 items-center gap-3 px-4 py-3 sm:px-5">
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{day.date === today ? t('weather.today') : formatProviderLocalDay(day.date, locale)}</p>
-                    <p className="truncate text-sm text-muted-foreground">{day.description}</p>
+                    <p className="truncate text-sm text-muted-foreground">{getWeatherConditionDisplay(language, day.condition || day.description)}</p>
                   </div>
-                  <WeatherConditionIcon condition={day.condition || day.description} icon={day.icon} className="h-11 w-11 shrink-0 text-sky-500" aria-label={day.description} />
+                  <WeatherConditionIcon condition={day.condition || day.description} icon={day.icon} className="h-11 w-11 shrink-0 text-sky-500" aria-label={getWeatherConditionDisplay(language, day.condition || day.description)} />
                   <p className="hidden items-center gap-1 text-sm text-sky-600 sm:flex dark:text-sky-400"><Umbrella className="h-3.5 w-3.5" aria-hidden="true" />{day.precipitationProbability}%</p>
                   <p className="whitespace-nowrap font-semibold">{Math.round(day.maxTemperature)}° / {Math.round(day.minTemperature)}°</p>
                 </div>

@@ -12,6 +12,7 @@ import { AlertCircle, ChevronRight, CloudSun, Droplets, MapPin, RefreshCw, Wind 
 import type { CurrentWeather } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { getWeatherConditionDisplay } from "../../utils/domainI18n";
 
 interface WeatherCardProps {
   weather?: CurrentWeather;
@@ -113,6 +114,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
   }
 
   const roundedTemperature = Math.round(weather.temperature);
+  const conditionLabel = getWeatherConditionDisplay(language, weather.description);
   const updatedTime = new Date(weather.lastUpdated).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -127,7 +129,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
         pressed && styles.pressed,
       ]}
       accessibilityRole="button"
-      accessibilityLabel={`${copy.title}. ${roundedTemperature} degrees, ${weather.description}. ${copy.humidity} ${weather.humidity} percent.`}
+      accessibilityLabel={`${copy.title}. ${roundedTemperature} degrees, ${conditionLabel}. ${copy.humidity} ${weather.humidity} percent.`}
       accessibilityHint={copy.details}
     >
       <View style={styles.topRow}>
@@ -145,7 +147,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
           <Text style={[styles.temperature, { color: colors.text }]}>{roundedTemperature}°</Text>
           <View style={styles.conditionBlock}>
             <Text style={[styles.condition, { color: colors.text }]} numberOfLines={1}>
-              {weather.description}
+              {conditionLabel}
             </Text>
             <Text style={[styles.feelsLike, { color: colors.textMuted }]}>
               {copy.feels} {Math.round(weather.feelsLike)}°
@@ -157,7 +159,7 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
             source={{ uri: weather.icon }}
             style={styles.weatherIcon}
             accessibilityIgnoresInvertColors
-            accessibilityLabel={weather.description}
+            accessibilityLabel={conditionLabel}
           />
         ) : null}
       </View>

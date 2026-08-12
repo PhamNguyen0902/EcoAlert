@@ -213,6 +213,24 @@ export const vi = {
     analyzingShort: "AI: Đang phân tích...",
   },
 
+  aiCard: {
+    overallTitle: "AI phân tích tổng quan", overallSubtitle: "Gợi ý cần con người xác nhận",
+    visionOnlyFallback: "Phân tích ngữ nghĩa hiện không khả dụng. Vision vẫn đã nhận diện các vật thể trong ảnh.",
+    shortReason: "Lý do ngắn", suggestedCategory: "Danh mục AI gợi ý", confidence: "Độ tin cậy",
+    severity: "Mức độ", incident: "Sự cố môi trường", likely: "Có khả năng", insufficientEvidence: "Chưa đủ bằng chứng",
+    visionSupport: "Vision hỗ trợ", noVisionEvidence: "Không có đối tượng rác EcoAlert được dùng làm bằng chứng; điều này không tự động phủ nhận sự cố.",
+    visionTitle: "Vision nhận diện vật thể", objectType: "Loại vật thể", objectCount: "Số vật thể",
+    detectorConfidence: "Độ tin cậy bộ nhận diện", visionSupportLevel: "Mức hỗ trợ Vision", counts: "Số lượng",
+    noSupportedObjects: "Không phát hiện vật thể rác thuộc sáu lớp EcoAlert. Điều này không tự động phủ nhận sự cố.",
+    detectorUnavailable: "Bộ nhận diện không khả dụng cho lần phân tích này.", semantic: "Ngữ nghĩa", detector: "Bộ nhận diện", fusion: "Tổng hợp",
+    hideAiImage: "Ẩn ảnh AI", viewAiImage: "Xem ảnh AI", annotatedImage: "Ảnh sự cố được AI chú thích",
+    visionDisclaimer: "Bằng chứng vật thể tách biệt với phân tích tổng quan. Hãy kiểm tra ảnh gốc trước khi xác nhận.", unavailable: "Không khả dụng",
+  },
+
+  incidentTimeline: {
+    title: "Dòng thời gian xử lý", system: "Hệ thống", citizen: "Người dân",
+  },
+
   // Admin Screens
   admin: {
     adminControlCenter: "Trung tâm Quản trị",
@@ -258,12 +276,12 @@ export const vi = {
 
   // Statuses
   status: {
-    pending: "Chờ xử lý",
+    pending: "Chờ xác minh",
     ai_analyzing: "AI Phân tích",
     verified: "Đã xác minh",
     assigned: "Đã phân công",
     in_progress: "Đang xử lý",
-    resolved: "Đã giải quyết",
+    resolved: "Đã xử lý",
     closed: "Đã đóng",
     rejected: "Đã từ chối",
   },

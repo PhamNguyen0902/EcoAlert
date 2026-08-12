@@ -215,6 +215,24 @@ export const en: Translations = {
     analyzingShort: "AI: Analyzing...",
   },
 
+  aiCard: {
+    overallTitle: "AI Overall Analysis", overallSubtitle: "A suggestion that requires human confirmation",
+    visionOnlyFallback: "Semantic analysis is currently unavailable. Vision still detected objects in the image.",
+    shortReason: "Short reason", suggestedCategory: "AI suggested category", confidence: "Confidence",
+    severity: "Severity", incident: "Environmental incident", likely: "Likely", insufficientEvidence: "Insufficient evidence",
+    visionSupport: "Vision support", noVisionEvidence: "No EcoAlert waste object was used as evidence; this does not automatically rule out an incident.",
+    visionTitle: "Vision Object Detection", objectType: "Object type", objectCount: "Object count",
+    detectorConfidence: "Detector confidence", visionSupportLevel: "Vision support level", counts: "Counts",
+    noSupportedObjects: "No supported waste objects were detected in the six EcoAlert classes. This does not automatically rule out an incident.",
+    detectorUnavailable: "Detector unavailable for this analysis.", semantic: "Semantic", detector: "Detector", fusion: "Fusion",
+    hideAiImage: "Hide AI image", viewAiImage: "View AI image", annotatedImage: "AI-annotated incident image",
+    visionDisclaimer: "Object evidence is separate from the overall analysis. Check the original image before confirming.", unavailable: "Unavailable",
+  },
+
+  incidentTimeline: {
+    title: "Incident Timeline", system: "System", citizen: "Citizen",
+  },
+
   // Admin Screens
   admin: {
     adminControlCenter: "Admin Control Center",

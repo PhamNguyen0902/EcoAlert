@@ -117,6 +117,8 @@ export const analyzeMultimodalIncident = async (
       severityConfidence: semantic.severityConfidence,
       overallSummary: semantic.overallSummary,
       shortReason: semantic.shortReason,
+      overallSummaryLocalized: semantic.overallSummaryLocalized,
+      shortReasonLocalized: semantic.shortReasonLocalized,
       // Trust the server-produced compact evidence, not an arbitrary LLM list.
       visionEvidenceUsed: formatVisionEvidenceLines(compactVisionEvidence),
       semanticModel: semantic.model,

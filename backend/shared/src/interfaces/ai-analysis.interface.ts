@@ -110,6 +110,9 @@ export interface IAiOverallAnalysis {
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
+  /** New analyses carry both UI locales from the same semantic provider response. */
+  overallSummaryLocalized?: { vi: string; en: string };
+  shortReasonLocalized?: { vi: string; en: string };
   visionEvidenceUsed: string[];
   semanticModel: string;
   pipelineVersion: 'multimodal-v2';

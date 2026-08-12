@@ -41,6 +41,7 @@ import {
   getWeatherAlert,
   getWeatherGuidance,
 } from "../../utils/weather";
+import { getWeatherConditionDisplay } from "../../utils/domainI18n";
 
 type Props = NativeStackScreenProps<CitizenStackParamList, "WeatherDetails">;
 
@@ -276,7 +277,7 @@ export const WeatherDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
                 },
               ]}
               accessible
-              accessibilityLabel={`${copy.current}. ${Math.round(details.current.temperature)} degrees. ${details.current.description}.`}
+              accessibilityLabel={`${copy.current}. ${Math.round(details.current.temperature)} degrees. ${getWeatherConditionDisplay(language, details.current.condition || details.current.description)}.`}
             >
               <View style={styles.heroTop}>
                 <View style={styles.heroCopy}>
@@ -295,12 +296,12 @@ export const WeatherDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
                         source={{ uri: details.current.icon }}
                         style={styles.heroIcon}
                         accessibilityIgnoresInvertColors
-                        accessibilityLabel={details.current.description}
+                        accessibilityLabel={getWeatherConditionDisplay(language, details.current.condition || details.current.description)}
                       />
                     ) : null}
                   </View>
                   <Text style={[styles.heroCondition, { color: colors.text }]}>
-                    {details.current.description}
+                    {getWeatherConditionDisplay(language, details.current.condition || details.current.description)}
                   </Text>
                   <Text style={[styles.heroMeta, { color: colors.textMuted }]}>
                     {copy.feels} {Math.round(details.current.feelsLike)}°{highLow ? ` · ${highLow}` : ""}
@@ -366,7 +367,7 @@ export const WeatherDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
                   <View
                     style={[styles.periodCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                     accessible
-                    accessibilityLabel={`${formatWeatherTime(period.timestamp, timezoneOffset, locale)}, ${Math.round(period.temperature)} degrees, ${period.description}, ${period.precipitationProbability} percent ${copy.rain}`}
+                    accessibilityLabel={`${formatWeatherTime(period.timestamp, timezoneOffset, locale)}, ${Math.round(period.temperature)} degrees, ${getWeatherConditionDisplay(language, period.condition || period.description)}, ${period.precipitationProbability} percent ${copy.rain}`}
                   >
                     <Text style={[styles.periodTime, { color: colors.text }]}>
                       {formatWeatherTime(period.timestamp, timezoneOffset, locale)}
@@ -411,14 +412,14 @@ export const WeatherDetailsScreen: React.FC<Props> = ({ navigation, route }) => 
                     key={day.date}
                     style={[styles.dailyRow, index > 0 && { borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth }]}
                     accessible
-                    accessibilityLabel={`${formatWeatherDay(day.date, locale)}. ${day.description}. ${Math.round(day.minTemperature)} to ${Math.round(day.maxTemperature)} degrees. ${day.precipitationProbability} percent ${copy.rain}.`}
+                    accessibilityLabel={`${formatWeatherDay(day.date, locale)}. ${getWeatherConditionDisplay(language, day.condition || day.description)}. ${Math.round(day.minTemperature)} to ${Math.round(day.maxTemperature)} degrees. ${day.precipitationProbability} percent ${copy.rain}.`}
                   >
                     <View style={styles.dayCopy}>
                       <Text style={[styles.dayName, { color: colors.text }]} numberOfLines={1}>
                         {formatWeatherDay(day.date, locale)}
                       </Text>
                       <Text style={[styles.dayCondition, { color: colors.textMuted }]} numberOfLines={1}>
-                        {day.description}
+                        {getWeatherConditionDisplay(language, day.condition || day.description)}
                       </Text>
                     </View>
                     {day.icon ? <Image source={{ uri: day.icon }} style={styles.dayIcon} accessibilityIgnoresInvertColors /> : null}

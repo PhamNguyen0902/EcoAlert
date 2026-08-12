@@ -268,7 +268,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               />
               <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
                 <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-                  {getSeverityLabel(displaySeverity)} · {t("aiAnalysis.aiAssessed", "AI assessed")}
+                  {getSeverityLabel(displaySeverity, language)} · {t("aiAnalysis.aiAssessed", "AI assessed")}
                 </Text>
               </View>
             </>
@@ -403,7 +403,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
                 </Text>
                 <View style={[styles.aiSeverityPill, { backgroundColor: sevColor.bg, borderColor: sevColor.border || sevColor.bg }]}>
                   <Text style={[styles.aiSeverityText, { color: sevColor.text }]}>
-                    {getSeverityLabel(displaySeverity)}
+                    {getSeverityLabel(displaySeverity, language)}
                   </Text>
                 </View>
               </View>

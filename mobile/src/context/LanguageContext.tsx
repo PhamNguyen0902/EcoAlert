@@ -52,17 +52,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (current && typeof current === "object" && key in current) {
         current = current[key];
       } else {
-        // Fallback to Vietnamese if key missing in current language
-        let viCurrent: any = translationsMap["vi"];
-        for (const k of keys) {
-          if (viCurrent && typeof viCurrent === "object" && k in viCurrent) {
-            viCurrent = viCurrent[k];
-          } else {
-            viCurrent = undefined;
-            break;
-          }
-        }
-        if (typeof viCurrent === "string") return viCurrent;
+        // `en` is statically typed from Vietnamese keys. Never fall back to
+        // Vietnamese here, or a missing English key would create mixed UI.
         return fallback || path;
       }
     }

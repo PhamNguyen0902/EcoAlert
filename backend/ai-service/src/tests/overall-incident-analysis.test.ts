@@ -36,6 +36,22 @@ test('invalid JSON is rejected for the caller to handle safely', () => {
   assert.throws(() => parseIncidentAnalysis('not-json'));
 });
 
+test('localized public summaries are retained without a second semantic analysis', () => {
+  const result = parseIncidentAnalysis(semanticPayload({
+    overallSummaryLocalized: {
+      vi: 'Ảnh cho thấy rác tập kết ở khu vực công cộng và cần được xem xét môi trường.',
+      en: 'The image shows accumulated waste in a public area and requires environmental review.',
+    },
+    shortReasonLocalized: {
+      vi: 'Các vật thể rác nhìn thấy phù hợp với nội dung báo cáo.',
+      en: 'Visible waste objects are consistent with the report.',
+    },
+  }));
+  assert.equal(result.overallSummaryLocalized?.vi, 'Ảnh cho thấy rác tập kết ở khu vực công cộng và cần được xem xét môi trường.');
+  assert.equal(result.overallSummaryLocalized?.en, 'The image shows accumulated waste in a public area and requires environmental review.');
+  assert.equal(result.shortReasonLocalized?.vi, 'Các vật thể rác nhìn thấy phù hợp với nội dung báo cáo.');
+});
+
 test('compact Vision evidence aggregates counts and highest confidence without bounding boxes', () => {
   const evidence = buildCompactVisionEvidence({
     status: 'COMPLETED', detectorModel: 'ecoalert-waste-yolo26n-v1.pt', imageWidth: 100, imageHeight: 100,

@@ -38,6 +38,7 @@ import { Button } from "../../components/ui/Button";
 import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
 import { IncidentTimeline } from "../../components/incidents/IncidentTimeline";
+import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../utils/maps";
@@ -48,6 +49,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
+  const { language } = useLanguage();
   const { colors, isDark } = useTheme();
   const alertId = route.params?.id;
   const { data: alert, isLoading, error } = useAlert(alertId);
@@ -194,7 +196,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           />
           <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
             <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-              MỨC ĐỘ {getSeverityLabel(displaySeverity)}
+              MỨC ĐỘ {getSeverityLabel(displaySeverity, language)}
             </Text>
           </View>
           <Badge label={alert.status || "PENDING"} type="status" />

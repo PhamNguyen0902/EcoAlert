@@ -49,6 +49,8 @@ export interface AiOverallAnalysis {
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
+  overallSummaryLocalized?: { vi: string; en: string };
+  shortReasonLocalized?: { vi: string; en: string };
   visionEvidenceUsed: string[];
   semanticModel: string;
   pipelineVersion: 'multimodal-v2';
@@ -277,6 +279,13 @@ export interface TimelineEntry {
   note?: string;
   status?: AlertStatus;
   evidenceUrls?: string[];
+  metadata?: {
+    analysisMode?: AiAnalysisMode;
+    displayConfidence?: number | null;
+    displayConfidenceSource?: 'FUSION' | 'CATEGORY' | 'SEMANTIC' | 'NONE';
+    detectorConfidence?: number | null;
+    [key: string]: unknown;
+  };
   correlationId?: string;
 }
 

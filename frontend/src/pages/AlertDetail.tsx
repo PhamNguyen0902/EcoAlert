@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
+import { enUS, vi } from 'date-fns/locale';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import {
@@ -33,6 +34,7 @@ import { OverallAiAnalysisCard } from '@/components/incidents/OverallAiAnalysisC
 import { IncidentLocationDetails } from '@/components/location/IncidentLocationDetails';
 import { hasValidCoordinates } from '@/lib/maps';
 import { getAlertDisplayConfidence, getAlertDisplaySeverity } from '@/lib/ai-confidence';
+import { getConfidenceSourceDisplay } from '@/lib/domain-i18n';
 import 'leaflet/dist/leaflet.css';
 
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -42,14 +44,14 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2x, iconUrl: markerIcon, shadowUrl: markerShadow });
 
-const formatDate = (value?: string, dateFormat = 'PPp') => {
-  if (!value) return 'Not available';
+const formatDate = (value: string | undefined, language: 'vi' | 'en', unavailable: string, dateFormat = 'PPp') => {
+  if (!value) return unavailable;
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Not available' : format(date, dateFormat);
+  return Number.isNaN(date.getTime()) ? unavailable : format(date, dateFormat, { locale: language === 'vi' ? vi : enUS });
 };
 
 export default function AlertDetail() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: alert, isLoading, isError } = useAlert(id);
@@ -79,6 +81,8 @@ export default function AlertDetail() {
   const confidence = displayConfidence.value;
   const displaySeverity = getAlertDisplaySeverity(alert);
   const shortId = alert._id.slice(-8).toUpperCase();
+  const unavailable = t('common.unavailable');
+  const displayDate = (value?: string, dateFormat = 'PPp') => formatDate(value, language, unavailable, dateFormat);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 pb-10">
@@ -89,9 +93,9 @@ export default function AlertDetail() {
             <p className="text-sm font-semibold text-primary">Mã báo cáo #{shortId}</p>
             <h1 className="mt-1 break-words text-2xl font-bold tracking-tight sm:text-3xl">{alert.title}</h1>
             <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-              <span>{formatIncidentCategory(alert.category)}</span>
+              <span>{formatIncidentCategory(alert.category, language)}</span>
               <span aria-hidden="true">·</span>
-              <span>Thời gian gửi: {formatDate(alert.createdAt, 'PPp')}</span>
+              <span>Thời gian gửi: {displayDate(alert.createdAt, 'PPp')}</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -115,8 +119,8 @@ export default function AlertDetail() {
             </div>
             <div className="mt-5 border-y py-5">
               <dl className="grid gap-5 sm:grid-cols-3">
-                <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Danh mục</dt><dd className="mt-1.5 text-sm font-medium">{formatIncidentCategory(alert.category)}</dd></div>
-                <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thời gian gửi</dt><dd className="mt-1.5 text-sm font-medium">{formatDate(alert.createdAt, 'PPp')}</dd></div>
+                <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Danh mục</dt><dd className="mt-1.5 text-sm font-medium">{formatIncidentCategory(alert.category, language)}</dd></div>
+                <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thời gian gửi</dt><dd className="mt-1.5 text-sm font-medium">{displayDate(alert.createdAt, 'PPp')}</dd></div>
                 <div><dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Trạng thái hiện tại</dt><dd className="mt-1.5"><StatusBadge status={status} /></dd></div>
               </dl>
               <div className="mt-6 border-t pt-5">
@@ -189,11 +193,11 @@ export default function AlertDetail() {
             <CardContent className="p-5">
               <div className="flex items-center gap-2"><Bot className="h-4 w-4 text-primary" aria-hidden="true" /><h2 className="font-semibold">{t('alert_detail.ai_analysis')}</h2></div>
               <div className="mt-5 space-y-4 text-sm">
-                <div className="flex items-start justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.detected_category')}</span><span className="text-right font-medium">{formatIncidentCategory(alert.category)}</span></div>
+                <div className="flex items-start justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.detected_category')}</span><span className="text-right font-medium">{formatIncidentCategory(alert.category, language)}</span></div>
                 <div className="flex items-start justify-between gap-4"><span className="text-muted-foreground">Mức độ gợi ý</span><SeverityBadge severity={displaySeverity} /></div>
                 {confidence !== null ? (
                   <div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.confidence')} · {displayConfidence.source === 'FUSION' ? 'Fusion' : displayConfidence.source === 'SEMANTIC' ? 'Ngữ nghĩa' : 'Danh mục'}</span><span className="font-medium tabular-nums">{Math.round(confidence * 100)}%</span></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.confidence')} · {getConfidenceSourceDisplay(language, displayConfidence.source)}</span><span className="font-medium tabular-nums">{Math.round(confidence * 100)}%</span></div>
                     <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Độ tin cậy AI" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(confidence * 100)}><div className="h-full bg-primary transition-[width]" style={{ width: `${confidence * 100}%` }} /></div>
                   </div>
                 ) : <p className="text-sm text-muted-foreground">Độ tin cậy AI: Không khả dụng.</p>}
@@ -209,11 +213,11 @@ export default function AlertDetail() {
               <div className="flex items-center gap-2"><UserCheck className="h-4 w-4 text-primary" aria-hidden="true" /><h2 className="font-semibold">Tóm tắt tiến độ</h2></div>
               <dl className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Phân công</dt><dd className="text-right font-medium">{alert.assignedOfficerId ? 'Đã phân công cán bộ' : 'Đang chờ phân công'}</dd></div>
-                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Bắt đầu xử lý</dt><dd className="text-right">{formatDate(alert.startedAt)}</dd></div>
-                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Đã đến hiện trường</dt><dd className="text-right">{formatDate(alert.arrivedAt)}</dd></div>
-                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Hoàn thành xử lý</dt><dd className="text-right">{formatDate(alert.resolvedAt)}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Bắt đầu xử lý</dt><dd className="text-right">{displayDate(alert.startedAt)}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Đã đến hiện trường</dt><dd className="text-right">{displayDate(alert.arrivedAt)}</dd></div>
+                <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Hoàn thành xử lý</dt><dd className="text-right">{displayDate(alert.resolvedAt)}</dd></div>
               </dl>
-              <div className="mt-5 rounded-lg bg-primary/5 p-3 text-xs leading-5 text-muted-foreground"><CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-primary" aria-hidden="true" />{getStatusDescription(status)}</div>
+              <div className="mt-5 rounded-lg bg-primary/5 p-3 text-xs leading-5 text-muted-foreground"><CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-primary" aria-hidden="true" />{getStatusDescription(status, language)}</div>
             </CardContent>
           </Card>
         </aside>

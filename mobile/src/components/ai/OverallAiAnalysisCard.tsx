@@ -3,31 +3,34 @@ import { StyleSheet, Text, View } from "react-native";
 import { AlertCircle, BrainCircuit, Sparkles } from "lucide-react-native";
 import type { Alert } from "../../types";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { Card } from "../ui/Card";
+import { getCategoryDisplay, getClassificationDisplay, getSeverityDisplay, getVisionObjectDisplay, resolveLocalizedAiText } from "../../utils/domainI18n";
 
-const percentage = (value?: number | null) => value === null || value === undefined ? "N/A" : `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
-const humanize = (value?: string | null) => value ? value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Chưa phân loại";
+const percentage = (value: number | null | undefined, unavailable: string) => value === null || value === undefined ? unavailable : `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
 
 export const OverallAiAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
   const { colors, isDark } = useTheme();
+  const { language, t } = useLanguage();
   const analysis = alert.aiOverallAnalysis;
   if (!analysis) {
     if (alert.aiAnalysisMode !== "VISION_ONLY") return null;
     return (
       <Card style={[styles.card, { borderColor: colors.primary, backgroundColor: isDark ? "rgba(22,101,52,0.16)" : "#F0FDF4" }]}>
-        <View style={styles.header}><BrainCircuit size={18} color={colors.primary} /><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>AI phân tích tổng quan</Text></View></View>
-        <Text style={[styles.summary, { color: colors.textMuted }]}>Phân tích ngữ nghĩa hiện không khả dụng. Vision vẫn đã nhận diện được các vật thể trong ảnh.</Text>
+        <View style={styles.header}><BrainCircuit size={18} color={colors.primary} /><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>{t("aiCard.overallTitle")}</Text></View></View>
+        <Text style={[styles.summary, { color: colors.textMuted }]}>{t("aiCard.visionOnlyFallback")}</Text>
       </Card>
     );
   }
-  const unclassified = analysis.classificationStatus === "UNCLASSIFIED";
+  const summary = resolveLocalizedAiText(analysis.overallSummaryLocalized, analysis.overallSummary, language);
+  const reason = resolveLocalizedAiText(analysis.shortReasonLocalized, analysis.shortReason, language);
   return (
     <Card style={[styles.card, { borderColor: colors.primary, backgroundColor: isDark ? "rgba(22,101,52,0.16)" : "#F0FDF4" }]}>
-      <View style={styles.header}><BrainCircuit size={18} color={colors.primary} /><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>AI phân tích tổng quan</Text><Text style={[styles.subtitle, { color: colors.textMuted }]}>Gợi ý cần con người xác nhận</Text></View><Text style={[styles.tier, { color: colors.textMuted, borderColor: colors.border }]}>{analysis.confidenceTier === "HIGH_CONFIDENCE" ? "Độ tin cậy cao" : unclassified ? "Chưa phân loại" : "Cần xác nhận"}</Text></View>
-      <Text style={[styles.summary, { color: colors.text }]}>{analysis.overallSummary}</Text>
-      <Text style={[styles.reason, { color: colors.textMuted }]}>Lý do ngắn: {analysis.shortReason}</Text>
-      <View style={[styles.metrics, { borderColor: colors.border, backgroundColor: colors.surface }]}><Metric label="Danh mục AI" value={humanize(analysis.categorySuggestion)} colors={colors} /><Metric label="Tin cậy" value={percentage(analysis.categoryConfidence)} colors={colors} /><Metric label="Mức độ" value={humanize(analysis.severity)} colors={colors} /><Metric label="Sự cố" value={analysis.isIncident ? "Có khả năng" : "Chưa đủ bằng chứng"} colors={colors} /></View>
-      {analysis.visionEvidenceUsed.length ? <View style={styles.evidence}><Sparkles size={14} color={colors.primary} /><Text style={[styles.evidenceText, { color: colors.textMuted }]}>Vision hỗ trợ: {analysis.visionEvidenceUsed.join(" · ")}</Text></View> : <View style={styles.evidence}><AlertCircle size={14} color={colors.textMuted} /><Text style={[styles.evidenceText, { color: colors.textMuted }]}>Không có đối tượng rác EcoAlert được dùng làm bằng chứng; điều này không tự động phủ nhận sự cố.</Text></View>}
+      <View style={styles.header}><BrainCircuit size={18} color={colors.primary} /><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>{t("aiCard.overallTitle")}</Text><Text style={[styles.subtitle, { color: colors.textMuted }]}>{t("aiCard.overallSubtitle")}</Text></View><Text style={[styles.tier, { color: colors.textMuted, borderColor: colors.border }]}>{getClassificationDisplay(language, analysis.confidenceTier)}</Text></View>
+      <Text style={[styles.summary, { color: colors.text }]}>{summary}</Text>
+      <Text style={[styles.reason, { color: colors.textMuted }]}>{t("aiCard.shortReason")}: {reason}</Text>
+      <View style={[styles.metrics, { borderColor: colors.border, backgroundColor: colors.surface }]}><Metric label={t("aiCard.suggestedCategory")} value={getCategoryDisplay(language, analysis.categorySuggestion)} colors={colors} /><Metric label={t("aiCard.confidence")} value={percentage(analysis.categoryConfidence, t("aiCard.unavailable"))} colors={colors} /><Metric label={t("aiCard.severity")} value={getSeverityDisplay(language, analysis.severity)} colors={colors} /><Metric label={t("aiCard.incident")} value={analysis.isIncident ? t("aiCard.likely") : t("aiCard.insufficientEvidence")} colors={colors} /></View>
+      {analysis.visionEvidenceUsed.length ? <View style={styles.evidence}><Sparkles size={14} color={colors.primary} /><Text style={[styles.evidenceText, { color: colors.textMuted }]}>{t("aiCard.visionSupport")}: {analysis.visionEvidenceUsed.map((value) => getVisionObjectDisplay(language, value)).join(" · ")}</Text></View> : <View style={styles.evidence}><AlertCircle size={14} color={colors.textMuted} /><Text style={[styles.evidenceText, { color: colors.textMuted }]}>{t("aiCard.noVisionEvidence")}</Text></View>}
     </Card>
   );
 };

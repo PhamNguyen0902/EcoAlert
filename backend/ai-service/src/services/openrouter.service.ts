@@ -39,6 +39,8 @@ export interface IncidentAnalysis {
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
+  overallSummaryLocalized?: { vi: string; en: string };
+  shortReasonLocalized?: { vi: string; en: string };
   visionEvidenceUsed: string[];
 }
 
@@ -52,6 +54,14 @@ const rawIncidentAnalysisSchema = z.object({
   severityConfidence: z.number().min(0).max(1).optional(),
   overallSummary: z.string().trim().min(1).max(800).optional(),
   shortReason: z.string().trim().min(1).max(500).optional(),
+  overallSummaryLocalized: z.object({
+    vi: z.string().trim().min(1).max(800),
+    en: z.string().trim().min(1).max(800),
+  }).strict().optional(),
+  shortReasonLocalized: z.object({
+    vi: z.string().trim().min(1).max(500),
+    en: z.string().trim().min(1).max(500),
+  }).strict().optional(),
   visionEvidenceUsed: z.array(z.string().trim().min(1).max(120)).max(6).optional(),
   // Backward-compatible parsing protects in-flight v1 messages while every
   // newly requested OpenRouter response uses the v2 schema below.
@@ -305,6 +315,8 @@ export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
     severityConfidence,
     overallSummary: summary,
     shortReason: reason,
+    overallSummaryLocalized: raw.overallSummaryLocalized,
+    shortReasonLocalized: raw.shortReasonLocalized,
     visionEvidenceUsed: raw.visionEvidenceUsed ?? [],
   };
 };
@@ -334,6 +346,8 @@ const structuredResponseFormat = {
         'severityConfidence',
         'overallSummary',
         'shortReason',
+        'overallSummaryLocalized',
+        'shortReasonLocalized',
         'visionEvidenceUsed',
       ],
       properties: {
@@ -346,6 +360,20 @@ const structuredResponseFormat = {
         severityConfidence: { type: 'number', minimum: 0, maximum: 1 },
         overallSummary: { type: 'string', minLength: 1, maxLength: 800 },
         shortReason: { type: 'string', minLength: 1, maxLength: 500 },
+        overallSummaryLocalized: {
+          type: 'object', additionalProperties: false, required: ['vi', 'en'],
+          properties: {
+            vi: { type: 'string', minLength: 1, maxLength: 800 },
+            en: { type: 'string', minLength: 1, maxLength: 800 },
+          },
+        },
+        shortReasonLocalized: {
+          type: 'object', additionalProperties: false, required: ['vi', 'en'],
+          properties: {
+            vi: { type: 'string', minLength: 1, maxLength: 500 },
+            en: { type: 'string', minLength: 1, maxLength: 500 },
+          },
+        },
         visionEvidenceUsed: { type: 'array', maxItems: 6, items: { type: 'string', minLength: 1, maxLength: 120 } },
       },
     },
@@ -392,7 +420,7 @@ const incidentCompletionRequest = (
         'Do not invent objects that are not visible in the image or supplied Vision evidence. Do not expose hidden reasoning.',
         `Use exactly one canonical category from: ${Object.values(AlertCategory).join(', ')}, or ${UNCLASSIFIED_CATEGORY} when the evidence is insufficient or unsupported.`,
         `Use exactly one severity from: ${Object.values(Severity).join(', ')}.`,
-        'Use calibrated confidence values from 0 to 1. overallSummary must be 2–4 concise human-readable sentences; shortReason must be a short evidence-based explanation.',
+        'Use calibrated confidence values from 0 to 1. Return equivalent concise Vietnamese and English public summaries in overallSummaryLocalized and equivalent concise reasons in shortReasonLocalized. Do not reveal hidden reasoning. Keep overallSummary and shortReason as the matching English values for legacy clients; overallSummary must be 2–4 concise human-readable sentences and shortReason must be a short evidence-based explanation.',
         'List only concise supplied Vision evidence strings in visionEvidenceUsed. AI is decision support only and never verifies, assigns, resolves, or closes an incident.',
       ].join(' '),
     },

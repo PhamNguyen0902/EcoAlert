@@ -187,7 +187,7 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
     const statusKey = alert.status?.toUpperCase() || "PENDING";
     const statusPalette = isDark ? DARK_STATUS_COLORS : STATUS_COLORS;
     const statusColor = statusPalette[statusKey] ?? statusPalette.PENDING;
-    const severity = alert.severity ? getSeverityLabel(alert.severity) : null;
+    const severity = alert.severity ? getSeverityLabel(alert.severity, language) : null;
     const severityColors = alert.severity ? SEVERITY_COLORS[alert.severity] : undefined;
 
     return (
