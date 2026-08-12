@@ -38,6 +38,32 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
     }
   };
 
+  const severityLabels: Record<string, string> = {
+    critical: 'NGHIÊM TRỌNG',
+    high: 'CAO',
+    medium: 'TRUNG BÌNH',
+    low: 'THẤP',
+  };
+
+  const statusLabels: Record<string, string> = {
+    pending: 'CHỜ XÁC MINH',
+    in_progress: 'ĐANG XỬ LÝ',
+    resolved: 'ĐÃ HOÀN THÀNH',
+    rejected: 'ĐÃ TỪ CHỐI',
+    closed: 'ĐÃ ĐÓNG',
+  };
+
+  const categoryLabels: Record<string, string> = {
+    illegal_dumping: 'RÁC THẢI TRÁI PHÉP',
+    water_pollution: 'Ô NHIỄM NGUỒN NƯỚC',
+    air_pollution: 'Ô NHIỄM KHÔNG KHÍ',
+    flooding: 'NGẬP LỤT',
+    fire: 'CHÁY / ĐỐT RÁC',
+    noise_pollution: 'Ô NHIỄM TIẾNG ỒN',
+    construction_waste: 'RÁC THẢI XÂY DỰNG',
+    other: 'KHÁC',
+  };
+
   const displayAlerts = alerts.slice(0, 10);
 
   if (displayAlerts.length === 0) {
@@ -47,37 +73,37 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-800 mb-4">
             <MapPin className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No nearby incidents</h3>
-          <p className="text-gray-500 dark:text-gray-400">There are currently no environmental incidents reported in your area.</p>
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">Không có sự cố lân cận</h3>
+          <p className="text-gray-500 dark:text-gray-400">Hiện tại chưa có báo cáo sự cố môi trường nào trong khu vực của bạn.</p>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="py-16 bg-white dark:bg-slate-950 overflow-hidden">
+    <section className="py-12 bg-white dark:bg-slate-950 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-end mb-8">
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-2">
-              Nearby Incidents
+              Sự cố lân cận
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Recent reports from your community
+              Các báo cáo sự cố môi trường gần đây trong khu vực của bạn
             </p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => scroll('left')}
               className="p-2 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-              aria-label="Scroll left"
+              aria-label="Cuộn sang trái"
             >
               <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </button>
             <button
               onClick={() => scroll('right')}
               className="p-2 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-              aria-label="Scroll right"
+              aria-label="Cuộn sang phải"
             >
               <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </button>
@@ -109,7 +135,7 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
                 )}
                 <div className="absolute top-3 left-3 flex gap-2">
                   <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-md", getSeverityColor(alert.severity ?? 'low'))}>
-                    {alert.severity?.toUpperCase() ?? 'UNAVAILABLE'}
+                    {severityLabels[alert.severity ?? 'low'] ?? 'KHÔNG XÁC ĐỊNH'}
                   </span>
                 </div>
               </div>
@@ -123,10 +149,10 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
                 
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">
-                    {alert.category.replace('_', ' ').toUpperCase()}
+                    {categoryLabels[alert.category] ?? alert.category.replace('_', ' ').toUpperCase()}
                   </span>
                   <span className={cn("inline-flex items-center px-2 py-1 rounded-md text-xs font-medium", getStatusColor(alert.status))}>
-                    {alert.status.replace('_', ' ').toUpperCase()}
+                    {statusLabels[alert.status] ?? alert.status.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
                 

@@ -85,7 +85,7 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerTitleRow}>
           <CheckSquare size={24} color={isDark ? "#60A5FA" : colors.secondary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Assigned Incident Tasks</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Các tác vụ sự cố được giao</Text>
         </View>
       </View>
 
@@ -123,9 +123,9 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
           !isLoading ? (
             <View style={styles.emptyContainer}>
               <AlertCircle size={48} color={colors.textMuted} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Tasks Assigned</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Không có tác vụ được giao</Text>
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                No incident reports currently assigned to your Officer account. Once an Admin assigns a report to you, it will appear here.
+                Hiện không có báo cáo sự cố nào được giao cho tài khoản Cán bộ của bạn. Khi Quản trị viên giao báo cáo cho bạn, nó sẽ xuất hiện ở đây.
               </Text>
             </View>
           ) : null

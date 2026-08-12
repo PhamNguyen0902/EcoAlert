@@ -2,14 +2,12 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { LayoutDashboard, ShieldAlert, MapPin, User as UserIcon, CheckSquare, Bot, Edit2, KeyRound } from "lucide-react-native";
+import { LayoutDashboard, ShieldAlert, MapPin, User as UserIcon, CheckSquare, Edit2, KeyRound } from "lucide-react-native";
 import { OfficerDashboardScreen } from "../screens/officer/OfficerDashboardScreen";
 import { OfficerTasksScreen } from "../screens/officer/OfficerTasksScreen";
 import { OfficerAlertDetailScreen } from "../screens/officer/OfficerAlertDetailScreen";
 import { OfficerMapScreen } from "../screens/officer/OfficerMapScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
-import { AssistantScreen } from "../screens/citizen/AssistantScreen";
-import { NotificationsScreen } from "../screens/citizen/NotificationsScreen";
 import { useProfile, useLogout } from "../hooks/useAuth";
 import { EditProfileModal } from "../components/modals/EditProfileModal";
 import { ChangePasswordModal } from "../components/modals/ChangePasswordModal";
@@ -130,8 +128,6 @@ const OfficerTabs = () => {
             return <CheckSquare color={color} size={size} />;
           } else if (route.name === "OfficerMapTab") {
             return <MapPin color={color} size={size} />;
-          } else if (route.name === "OfficerAssistantTab") {
-            return <Bot color={color} size={size} />;
           } else if (route.name === "OfficerProfileTab") {
             return <UserIcon color={color} size={size} />;
           }
@@ -155,11 +151,6 @@ const OfficerTabs = () => {
         options={{ tabBarLabel: t("tabs.mapView", "Map View") }}
       />
       <Tab.Screen
-        name="OfficerAssistantTab"
-        component={AssistantScreen}
-        options={{ tabBarLabel: t("tabs.assistant", "Assistant") }}
-      />
-      <Tab.Screen
         name="OfficerProfileTab"
         component={OfficerProfileScreen}
         options={{ tabBarLabel: t("tabs.profile", "Profile") }}
@@ -174,7 +165,6 @@ export const OfficerTabNavigator = () => {
       <Stack.Screen name="OfficerTabs" component={OfficerTabs} />
       <Stack.Screen name="OfficerAlertDetail" component={OfficerAlertDetailScreen} />
       <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
-      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 };

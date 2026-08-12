@@ -159,7 +159,7 @@ export default function UserManagement() {
                           <DropdownMenuItem
                             className="text-red-600 font-medium"
                             onClick={async () => {
-                              if (confirm('Delete user?')) {
+                              if (confirm('Xóa người dùng?')) {
                                 try {
                                   await deleteUser.mutateAsync(user._id);
                                   toast.success(t('toast.user_deleted_success'));
@@ -180,8 +180,8 @@ export default function UserManagement() {
             </table>
           </div>
           <div className="flex items-center justify-end space-x-2 py-4">
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-            <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)}>Next</Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Trước</Button>
+            <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)}>Tiếp</Button>
           </div>
         </CardContent>
       </Card>

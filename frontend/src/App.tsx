@@ -12,9 +12,6 @@ const CitizenLayout = lazy(
   () => import("./features/citizen/components/CitizenLayout"),
 );
 const CitizenHome = lazy(() => import("./features/citizen/pages/CitizenHome"));
-const WeatherDetails = lazy(
-  () => import("./features/citizen/pages/WeatherDetails"),
-);
 const CreateReport = lazy(() => import("./pages/CreateAlert"));
 const MyReports = lazy(() => import("./features/citizen/pages/MyReports"));
 const CitizenAlertDetail = lazy(() => import("./pages/AlertDetail"));
@@ -88,7 +85,7 @@ const ProtectedRoute = lazy(() =>
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <LoadingSpinner size="lg" label="Loading..." />
+      <LoadingSpinner size="lg" label="Đang tải..." />
     </div>
   );
 }
@@ -125,7 +122,6 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={["CITIZEN"]} />}>
             <Route element={<CitizenLayout />}>
               <Route path="/home" element={<CitizenHome />} />
-              <Route path="/weather" element={<WeatherDetails />} />
               <Route path="/report" element={<CreateReport />} />
               <Route path="/my-reports" element={<MyReports />} />
               <Route path="/incidents/:id" element={<CitizenAlertDetail />} />

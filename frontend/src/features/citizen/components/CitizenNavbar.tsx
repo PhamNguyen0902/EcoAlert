@@ -30,7 +30,7 @@ export default function CitizenNavbar() {
     { name: t('nav.home'), path: '/home' },
     { name: t('nav.report_incident'), path: '/report' },
     { name: t('nav.my_reports'), path: '/my-reports' },
-    { name: 'AI Assistant', path: '/assistant' },
+    { name: 'Trợ lý AI', path: '/assistant' },
   ];
 
   const getInitials = (name?: string) => {
@@ -89,7 +89,7 @@ export default function CitizenNavbar() {
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </Badge>
                 )}
-                <span className="sr-only">Notifications</span>
+                <span className="sr-only">Thông báo</span>
               </Link>
             </Button>
             <Button variant="ghost" size="icon" asChild>
@@ -125,19 +125,19 @@ export default function CitizenNavbar() {
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="cursor-pointer flex items-center">
                       <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
+                      <span>Hồ sơ</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600 dark:text-red-400 focus:dark:text-red-400 cursor-pointer flex items-center">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <span>Đăng xuất</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <Button asChild variant="default" className="bg-green-600 hover:bg-green-700 text-white rounded-full">
-                <Link to="/login">Sign In</Link>
+                <Link to="/login">Đăng nhập</Link>
               </Button>
             )}
           </div>
@@ -195,7 +195,7 @@ export default function CitizenNavbar() {
               
               <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-4 px-3">
-                  <span className="text-sm font-medium text-slate-500">Theme</span>
+                  <span className="text-sm font-medium text-slate-500">Giao diện</span>
                   <ThemeToggle />
                 </div>
                 
@@ -207,7 +207,7 @@ export default function CitizenNavbar() {
                       className="flex items-center px-3 py-3 rounded-xl text-base font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                     >
                       <User className="mr-3 h-5 w-5 text-slate-400" />
-                      Profile
+                      Hồ sơ
                     </Link>
                     <button
                       onClick={() => {
@@ -217,12 +217,12 @@ export default function CitizenNavbar() {
                       className="w-full flex items-center px-3 py-3 rounded-xl text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10"
                     >
                       <LogOut className="mr-3 h-5 w-5 text-red-400" />
-                      Log out
+                      Đăng xuất
                     </button>
                   </div>
                 ) : (
                   <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl">
-                    <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>Sign In</Link>
+                    <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>Đăng nhập</Link>
                   </Button>
                 )}
               </div>

@@ -49,11 +49,11 @@ export const RolePickerModal: React.FC<RolePickerModalProps> = ({
         id: user._id,
         role: selectedRole,
       });
-      RNAlert.alert(t("modals.successTitle", "Success"), `User role updated to ${selectedRole}.`);
+      RNAlert.alert(t("modals.successTitle", "Thành công"), `Vai trò người dùng được cập nhật thành ${selectedRole}.`);
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to update role.";
-      RNAlert.alert("Role Update Error", msg);
+      RNAlert.alert("Lỗi cập nhật vai trò", msg);
     }
   };
 

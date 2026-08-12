@@ -1,5 +1,4 @@
 export type UserRole = "ADMIN" | "OFFICER" | "CITIZEN";
-export type WorkflowActorRole = UserRole | "SYSTEM";
 
 export type AlertStatus =
   | "PENDING"
@@ -188,8 +187,6 @@ export interface Alert {
   confirmationsCount?: number;
   confirmations?: Array<{ citizenId: string; confirmedAt: string }>;
   voiceNoteUrl?: string;
-  statusHistory?: StatusHistoryEntry[];
-  timeline?: TimelineEntry[];
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;

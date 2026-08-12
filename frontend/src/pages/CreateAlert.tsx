@@ -294,17 +294,17 @@ export default function CreateAlert() {
   };
 
   const nextActionLabel = currentStep === 1
-    ? 'Continue to Location'
+    ? 'Tiếp tục đến Vị trí'
     : currentStep === 2
-      ? 'Continue to Evidence'
-      : 'Review Report';
+      ? 'Tiếp tục đến Minh chứng'
+      : 'Xem lại báo cáo';
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <ReportPageHeader
         title={t('report_create.title')}
-        description="Provide accurate details so the appropriate authority can review and respond to the issue quickly."
-        privacyNote="Your report, location, and evidence are used only to handle this environmental incident."
+        description="Cung cấp chi tiết chính xác để cơ quan chức năng có thể xem xét và phản hồi sự cố nhanh chóng."
+        privacyNote="Báo cáo, vị trí và minh chứng của bạn chỉ được sử dụng để xử lý sự cố môi trường này."
       />
 
       <div className="mt-6">
@@ -325,18 +325,18 @@ export default function CreateAlert() {
                 {currentStep === 1 ? (
                   <section aria-labelledby="incident-information-heading" className="mx-auto max-w-2xl space-y-7">
                     <div>
-                      <p className="text-sm font-semibold text-primary">Step 1</p>
-                      <h2 id="incident-information-heading" className="mt-1 text-2xl font-semibold tracking-tight">What happened?</h2>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">Describe what you observed so the response team can understand the issue before arriving.</p>
+                      <p className="text-sm font-semibold text-primary">Bước 1</p>
+                      <h2 id="incident-information-heading" className="mt-1 text-2xl font-semibold tracking-tight">Điều gì đã xảy ra?</h2>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">Mô tả những gì bạn quan sát thấy để đội ngũ phản ứng có thể hiểu vấn đề trước khi đến.</p>
                     </div>
 
                     <div className="space-y-6">
                       <div>
                         <div className="flex items-baseline justify-between gap-3">
                           <Label htmlFor="title" className="font-semibold">{t('report_create.field_title')} <span className="text-destructive">*</span></Label>
-                          <span className="text-xs text-muted-foreground">{title.length} characters</span>
+                          <span className="text-xs text-muted-foreground">{title.length} ký tự</span>
                         </div>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">Use a short, recognizable summary of the environmental issue.</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">Sử dụng mô tả ngắn gọn, dễ nhận biết về vấn đề môi trường.</p>
                         <Input id="title" className="mt-2 h-11" aria-invalid={Boolean(errors.title)} aria-describedby="title-help title-error" placeholder={t('report_create.field_title_placeholder')} {...register('title')} />
                         {errors.title ? <p id="title-error" role="alert" className="mt-1.5 text-xs font-medium text-destructive">{errors.title.message}</p> : null}
                       </div>
@@ -344,9 +344,9 @@ export default function CreateAlert() {
                       <div>
                         <div className="flex items-baseline justify-between gap-3">
                           <Label htmlFor="description" className="font-semibold">{t('report_create.field_description')} <span className="text-destructive">*</span></Label>
-                          <span className="text-xs text-muted-foreground">{description.length} characters</span>
+                          <span className="text-xs text-muted-foreground">{description.length} ký tự</span>
                         </div>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">Include what you saw, the scale of the issue, and any immediate risks to people or the environment.</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">Bao gồm những gì bạn đã thấy, quy mô của sự cố, và bất kỳ rủi ro tức thì nào đối với con người hoặc môi trường.</p>
                         <Textarea id="description" className="mt-2 min-h-44 resize-y" aria-invalid={Boolean(errors.description)} aria-describedby="description-error" placeholder={t('report_create.field_description_placeholder')} {...register('description')} />
                         {errors.description ? <p id="description-error" role="alert" className="mt-1.5 text-xs font-medium text-destructive">{errors.description.message}</p> : null}
                       </div>
@@ -357,14 +357,14 @@ export default function CreateAlert() {
                 {currentStep === 2 ? (
                   <section aria-labelledby="location-heading" className="mx-auto max-w-2xl space-y-6">
                     <div>
-                      <p className="text-sm font-semibold text-primary">Step 2</p>
-                      <h2 id="location-heading" className="mt-1 text-2xl font-semibold tracking-tight">Where is the incident?</h2>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">Choose the most accurate location available. The map picker lets you refine the pin before confirming it.</p>
+                      <p className="text-sm font-semibold text-primary">Bước 2</p>
+                      <h2 id="location-heading" className="mt-1 text-2xl font-semibold tracking-tight">Sự cố ở đâu?</h2>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">Chọn vị trí chính xác nhất có thể. Bản đồ cho phép bạn điều chỉnh lại trước khi xác nhận.</p>
                     </div>
 
                     <div className="relative">
                       <Label htmlFor="address-search" className="font-semibold">{t('report_create.field_address')} <span className="text-destructive">*</span></Label>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Search for an address, then select a result to confirm it.</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Tìm kiếm địa chỉ, sau đó chọn một kết quả để xác nhận.</p>
                       <div className="relative mt-2">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                         <Input
@@ -384,7 +384,7 @@ export default function CreateAlert() {
                           }}
                           onFocus={() => setShowSuggestions(true)}
                         />
-                        {isSearching ? <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-label="Searching addresses" /> : null}
+                        {isSearching ? <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-label="Đang tìm kiếm địa chỉ" /> : null}
                       </div>
                       {showSuggestions && suggestions.length > 0 ? (
                         <ul id="location-search-results" role="listbox" className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg">
@@ -413,9 +413,9 @@ export default function CreateAlert() {
                 {currentStep === 3 ? (
                   <section aria-labelledby="evidence-heading" className="mx-auto max-w-2xl space-y-6">
                     <div>
-                      <p className="text-sm font-semibold text-primary">Step 3</p>
-                      <h2 id="evidence-heading" className="mt-1 text-2xl font-semibold tracking-tight">Add evidence <span className="text-destructive">*</span></h2>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">A clear image helps the team understand the report and supports automated triage. You can replace it before submitting.</p>
+                      <p className="text-sm font-semibold text-primary">Bước 3</p>
+                      <h2 id="evidence-heading" className="mt-1 text-2xl font-semibold tracking-tight">Thêm minh chứng <span className="text-destructive">*</span></h2>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">Hình ảnh rõ nét giúp nhóm hiểu báo cáo và hỗ trợ phân loại tự động. Bạn có thể thay thế trước khi gửi.</p>
                     </div>
                     <EvidenceUploader file={file} previewUrl={previewUrl} onSelect={handleFileSelect} onRemove={handleRemoveFile} disabled={isSubmitting} isProcessing={isUploadingEvidence} />
                   </section>
@@ -424,9 +424,9 @@ export default function CreateAlert() {
                 {currentStep === 4 ? (
                   <section aria-labelledby="review-heading" className="mx-auto max-w-3xl space-y-6">
                     <div>
-                      <p className="text-sm font-semibold text-primary">Step 4</p>
-                      <h2 id="review-heading" className="mt-1 text-2xl font-semibold tracking-tight">Review your report</h2>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">Please verify the information before submitting. You can track the report status after submission.</p>
+                      <p className="text-sm font-semibold text-primary">Bước 4</p>
+                      <h2 id="review-heading" className="mt-1 text-2xl font-semibold tracking-tight">Xem lại báo cáo của bạn</h2>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">Vui lòng xác minh thông tin trước khi gửi. Bạn có thể theo dõi trạng thái báo cáo sau khi gửi.</p>
                     </div>
 
                     <div className="mb-5 space-y-3 rounded-xl border p-4">
@@ -444,8 +444,8 @@ export default function CreateAlert() {
                     <div className="overflow-hidden rounded-xl border divide-y">
                       <section className="p-4 sm:p-5" aria-labelledby="review-information-heading">
                         <div className="flex items-center justify-between gap-3">
-                          <h3 id="review-information-heading" className="font-semibold">Incident information</h3>
-                          <Button type="button" variant="link" size="sm" className="h-auto px-0" onClick={() => setCurrentStep(1)} disabled={isSubmitting}>Edit information</Button>
+                          <h3 id="review-information-heading" className="font-semibold">Thông tin sự cố</h3>
+                          <Button type="button" variant="link" size="sm" className="h-auto px-0" onClick={() => setCurrentStep(1)} disabled={isSubmitting}>Chỉnh sửa thông tin</Button>
                         </div>
                         <p className="mt-4 font-medium">{title}</p>
                         <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{description}</p>
@@ -453,19 +453,19 @@ export default function CreateAlert() {
 
                       <section className="p-4 sm:p-5" aria-labelledby="review-location-heading">
                         <div className="flex items-center justify-between gap-3">
-                          <h3 id="review-location-heading" className="font-semibold">Selected location</h3>
-                          <Button type="button" variant="link" size="sm" className="h-auto px-0" onClick={() => setCurrentStep(2)} disabled={isSubmitting}>Edit location</Button>
+                          <h3 id="review-location-heading" className="font-semibold">Vị trí đã chọn</h3>
+                          <Button type="button" variant="link" size="sm" className="h-auto px-0" onClick={() => setCurrentStep(2)} disabled={isSubmitting}>Chỉnh sửa vị trí</Button>
                         </div>
                         <p className="mt-4 text-sm leading-6">{address}</p>
-                        {selectedLocation ? <dl className="mt-3 grid grid-cols-2 gap-3 text-sm"><div className="rounded-lg bg-muted/45 p-3"><dt className="text-xs text-muted-foreground">Latitude</dt><dd className="mt-1 font-mono font-medium tabular-nums">{selectedLocation.latitude.toFixed(6)}</dd></div><div className="rounded-lg bg-muted/45 p-3"><dt className="text-xs text-muted-foreground">Longitude</dt><dd className="mt-1 font-mono font-medium tabular-nums">{selectedLocation.longitude.toFixed(6)}</dd></div></dl> : null}
+                        {selectedLocation ? <dl className="mt-3 grid grid-cols-2 gap-3 text-sm"><div className="rounded-lg bg-muted/45 p-3"><dt className="text-xs text-muted-foreground">Vĩ độ</dt><dd className="mt-1 font-mono font-medium tabular-nums">{selectedLocation.latitude.toFixed(6)}</dd></div><div className="rounded-lg bg-muted/45 p-3"><dt className="text-xs text-muted-foreground">Kinh độ</dt><dd className="mt-1 font-mono font-medium tabular-nums">{selectedLocation.longitude.toFixed(6)}</dd></div></dl> : null}
                       </section>
 
                       <section className="p-4 sm:p-5" aria-labelledby="review-evidence-heading">
                         <div className="flex items-center justify-between gap-3">
-                          <h3 id="review-evidence-heading" className="font-semibold">Evidence</h3>
-                          <Button type="button" variant="link" size="sm" className="h-auto px-0" onClick={() => setCurrentStep(3)} disabled={isSubmitting}>Change image</Button>
+                          <h3 id="review-evidence-heading" className="font-semibold">Minh chứng</h3>
+                          <Button type="button" variant="link" size="sm" className="h-auto px-0" onClick={() => setCurrentStep(3)} disabled={isSubmitting}>Thay đổi hình ảnh</Button>
                         </div>
-                        {previewUrl && file ? <div className="mt-4 flex items-center gap-4"><img src={previewUrl} alt={`Evidence preview: ${file.name}`} className="h-20 w-24 rounded-lg border object-cover" /><div className="min-w-0"><p className="truncate text-sm font-medium">{file.name}</p><p className="mt-1 text-xs text-muted-foreground">{Math.round(file.size / 1024)} KB · Uploads on submission</p></div></div> : null}
+                        {previewUrl && file ? <div className="mt-4 flex items-center gap-4"><img src={previewUrl} alt={`Xem trước minh chứng: ${file.name}`} className="h-20 w-24 rounded-lg border object-cover" /><div className="min-w-0"><p className="truncate text-sm font-medium">{file.name}</p><p className="mt-1 text-xs text-muted-foreground">{Math.round(file.size / 1024)} KB · Tải lên khi gửi</p></div></div> : null}
                       </section>
                     </div>
                   </section>

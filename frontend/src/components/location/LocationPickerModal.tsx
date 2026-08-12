@@ -40,7 +40,7 @@ interface LocationPickerModalProps {
   onConfirm: (location: PickedLocation) => void;
 }
 
-const fallbackAddress = 'Near the selected coordinates';
+const fallbackAddress = 'Gần tọa độ đã chọn';
 
 const coordinateKey = (latitude: number, longitude: number): string =>
   `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
@@ -234,8 +234,8 @@ export function LocationPickerModal({
         className="!inset-0 !h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 !rounded-none !border-0 !p-0 sm:!inset-auto sm:!left-1/2 sm:!top-1/2 sm:!h-[90vh] sm:!w-[90vw] sm:!max-w-[1400px] sm:!-translate-x-1/2 sm:!-translate-y-1/2 sm:!rounded-3xl lg:!h-[95vh] lg:!w-[95vw]"
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Choose incident location</DialogTitle>
-          <DialogDescription>Click the map, drag the marker, or use your current GPS location.</DialogDescription>
+          <DialogTitle>Chọn vị trí sự cố</DialogTitle>
+          <DialogDescription>Nhấn vào bản đồ, kéo điểm đánh dấu, hoặc sử dụng vị trí GPS hiện tại của bạn.</DialogDescription>
         </DialogHeader>
 
         <div className="relative h-full w-full overflow-hidden bg-muted">
@@ -265,7 +265,7 @@ export function LocationPickerModal({
               }}
             >
               <Popup className="ecoalert-map-popup">
-                <p className="font-semibold">Selected incident location</p>
+                <p className="font-semibold">Vị trí sự cố đã chọn</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
                 </p>
@@ -285,7 +285,7 @@ export function LocationPickerModal({
             size="icon"
             className="absolute left-4 top-4 z-[500] rounded-xl bg-background/95 shadow-lg backdrop-blur"
             onClick={() => onOpenChange(false)}
-            aria-label="Cancel location selection"
+            aria-label="Hủy chọn vị trí"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -299,7 +299,7 @@ export function LocationPickerModal({
               disabled={geolocation.loading}
             >
               {geolocation.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixed className="mr-2 h-4 w-4" />}
-              {geolocation.loading ? 'Locating...' : 'My Location'}
+              {geolocation.loading ? 'Đang tìm...' : 'Vị trí của tôi'}
             </Button>
             <LocationActions
               latitude={location.latitude}
@@ -315,19 +315,19 @@ export function LocationPickerModal({
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                   <MapPin className="h-4 w-4" />
                 </span>
-                Selected Location
+                Vị trí đã chọn
               </div>
 
               <div className="mt-3" aria-live="polite">
                 {isReverseGeocoding ? (
                   <div className="flex min-h-6 items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    Finding address...
+                    Đang tìm địa chỉ...
                   </div>
                 ) : (
                   <div>
                     {isApproximateAddress ? (
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Near:</p>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Gần:</p>
                     ) : null}
                     <p className="text-sm font-medium leading-5">{location.address}</p>
                   </div>
@@ -342,10 +342,10 @@ export function LocationPickerModal({
 
               {geolocation.accuracy !== null ? (
                 <div className="mt-3 rounded-lg bg-muted/60 px-3 py-2 text-xs">
-                  <p className="font-medium">GPS accuracy: ±{Math.round(geolocation.accuracy)}m</p>
+                  <p className="font-medium">Độ chính xác GPS: ±{Math.round(geolocation.accuracy)}m</p>
                   {geolocation.accuracy > 30 ? (
                     <p className="mt-1 text-amber-700 dark:text-amber-400">
-                      Your GPS signal is weak. Move outdoors for better accuracy.
+                      Tín hiệu GPS yếu. Vui lòng di chuyển ra ngoài để có độ chính xác tốt hơn.
                     </p>
                   ) : null}
                 </div>
@@ -354,11 +354,11 @@ export function LocationPickerModal({
 
             <div className="grid grid-cols-2 gap-3">
               <Button type="button" variant="outline" className="bg-background/95 backdrop-blur" onClick={() => onOpenChange(false)}>
-                Cancel
+                Hủy
               </Button>
               <Button type="button" className="shadow-lg" onClick={() => onConfirm(location)}>
                 <Check className="mr-2 h-4 w-4" />
-                Confirm Location
+                Xác nhận vị trí
               </Button>
             </div>
           </div>

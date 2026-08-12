@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, Bot, FileText, CheckCircle, RefreshCw, Activity } from "lucide-react-native";
+import { FileText, CheckCircle, RefreshCw, Activity } from "lucide-react-native";
 import { useAlerts } from "../../hooks/useAlerts";
 import { StatCard } from "../../components/ui/StatCard";
 import { GlassCard } from "../../components/ui/GlassCard";
@@ -44,17 +44,9 @@ export const AdminDashboardScreen: React.FC<{ navigation?: any }> = ({ navigatio
           </Text>
           <Text style={[styles.subGreeting, { color: colors.textMuted }]}>{t("admin.systemOverview", "System Overview & Management")}</Text>
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(124, 58, 237, 0.25)" : "#F3E8FF" }]} onPress={() => navigation?.getParent?.()?.navigate("Notifications")} accessibilityRole="button" accessibilityLabel={t("tabs.notifications", "Notifications")}>
-            <Bell size={18} color="#7C3AED" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(124, 58, 237, 0.25)" : "#F3E8FF" }]} onPress={() => navigation?.getParent?.()?.navigate("AdminAssistant")} accessibilityRole="button" accessibilityLabel={t("tabs.assistant", "Assistant")}>
-            <Bot size={18} color="#7C3AED" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(124, 58, 237, 0.25)" : "#F3E8FF" }]} onPress={() => refetch()} accessibilityRole="button" accessibilityLabel={t("common.refresh", "Refresh")}>
-            <RefreshCw size={18} color="#7C3AED" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(124, 58, 237, 0.25)" : "#F3E8FF" }]} onPress={() => refetch()}>
+          <RefreshCw size={18} color="#7C3AED" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -165,7 +157,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   headerTextContainer: { flex: 1, marginRight: 12 },
-  headerActions: { flexDirection: "row", gap: 7 },
   greeting: { fontSize: 22, fontWeight: "800" },
   subGreeting: { fontSize: 13, marginTop: 2 },
   refreshBtn: {

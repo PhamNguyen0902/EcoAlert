@@ -26,14 +26,26 @@ export default function OfficerDashboard() {
   const closed = alerts.filter((a: Alert) => a.status === 'closed');
 
   const statusData = [
-    { name: 'Assigned', value: assigned.length },
-    { name: 'In Progress', value: inProgress.length },
-    { name: 'Resolved', value: resolved.length },
-    { name: 'Closed', value: closed.length },
+    { name: 'Đã phân công', value: assigned.length },
+    { name: 'Đang xử lý', value: inProgress.length },
+    { name: 'Đã giải quyết', value: resolved.length },
+    { name: 'Đã đóng', value: closed.length },
   ];
 
+  const categoryNames: Record<string, string> = {
+    illegal_dumping: 'Rác thải trái phép',
+    water_pollution: 'Ô nhiễm nguồn nước',
+    air_pollution: 'Ô nhiễm không khí',
+    flooding: 'Ngập lụt',
+    fire: 'Cháy / Đốt rác',
+    noise_pollution: 'Ô nhiễm tiếng ồn',
+    construction_waste: 'Rác thải xây dựng',
+    other: 'Khác',
+  };
+
   const categoryCount = alerts.reduce((acc: Record<string, number>, curr: Alert) => {
-    acc[curr.category] = (acc[curr.category] || 0) + 1;
+    const label = categoryNames[curr.category] || curr.category;
+    acc[label] = (acc[label] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
   const categoryData = Object.entries(categoryCount).map(([name, value]) => ({ name, value }));
@@ -69,7 +81,7 @@ export default function OfficerDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
           { title: t('stats.assigned_to_me'), value: assigned.length, icon: ClipboardList, color: 'text-blue-500' },
-          { title: 'Closed Tasks', value: closed.length, icon: ShieldCheck, color: 'text-slate-500' },
+          { title: 'Nhiệm vụ đã đóng', value: closed.length, icon: ShieldCheck, color: 'text-slate-500' },
           { title: t('stats.in_progress'), value: inProgress.length, icon: Activity, color: 'text-orange-500' },
           { title: t('stats.resolved'), value: resolved.length, icon: CheckCircle2, color: 'text-green-500' },
         ].map((stat, i) => (

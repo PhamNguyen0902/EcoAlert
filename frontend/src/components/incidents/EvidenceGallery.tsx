@@ -22,7 +22,7 @@ export function EvidenceGallery({ title, description, images = [], emptyMessage,
           <h2 id={`${altPrefix}-evidence-heading`} className="text-lg font-semibold">{title}</h2>
           {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
         </div>
-        <span className="text-sm font-medium text-muted-foreground">{images.length} {images.length === 1 ? 'image' : 'images'}</span>
+        <span className="text-sm font-medium text-muted-foreground">{images.length} {images.length === 1 ? 'hình ảnh' : 'hình ảnh'}</span>
       </div>
 
       {images.length ? (
@@ -49,10 +49,10 @@ export function EvidenceGallery({ title, description, images = [], emptyMessage,
 
       <Dialog open={selectedImage !== null} onOpenChange={(open) => { if (!open) setSelectedIndex(null); }}>
         <DialogContent className="max-h-[92vh] max-w-4xl overflow-hidden p-0" aria-describedby={undefined}>
-          <DialogHeader className="sr-only"><DialogTitle>{title}</DialogTitle><DialogDescription>Expanded evidence image.</DialogDescription></DialogHeader>
+          <DialogHeader className="sr-only"><DialogTitle>{title}</DialogTitle><DialogDescription>Hình ảnh minh chứng phóng to.</DialogDescription></DialogHeader>
           {selectedImage ? <img src={selectedImage} alt={`${altPrefix} image ${(selectedIndex ?? 0) + 1} expanded`} className="max-h-[85vh] w-full bg-black object-contain" /> : null}
           <DialogClose asChild>
-            <Button type="button" variant="secondary" size="icon" className="absolute right-3 top-3 bg-background/90 shadow-sm" aria-label="Close evidence image"><X className="h-4 w-4" /></Button>
+            <Button type="button" variant="secondary" size="icon" className="absolute right-3 top-3 bg-background/90 shadow-sm" aria-label="Đóng hình ảnh minh chứng"><X className="h-4 w-4" /></Button>
           </DialogClose>
         </DialogContent>
       </Dialog>

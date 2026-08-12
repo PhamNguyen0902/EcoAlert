@@ -161,7 +161,7 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
 
       <TouchableOpacity
         accessibilityRole="button"
-        accessibilityLabel="Cancel location selection"
+        accessibilityLabel="Hủy chọn vị trí"
         onPress={() => navigation.goBack()}
         style={[styles.backButton, { top: insets.top + 12, backgroundColor: colors.surface }]}
       >
@@ -178,13 +178,13 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
         <View style={[styles.addressCard, { backgroundColor: colors.surface }]}>
           <View style={styles.addressHeader}>
             <MapPin size={18} color={colors.primary} />
-            <Text style={[styles.addressLabel, { color: colors.text }]}>Current Address</Text>
+            <Text style={[styles.addressLabel, { color: colors.text }]}>Địa chỉ hiện tại</Text>
           </View>
 
           {isFindingAddress ? (
             <View style={styles.findingAddress}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={[styles.findingAddressText, { color: colors.textMuted }]}>Finding address...</Text>
+              <Text style={[styles.findingAddressText, { color: colors.textMuted }]}>Đang tìm địa chỉ...</Text>
             </View>
           ) : (
             <Text style={[styles.address, { color: colors.text }]} numberOfLines={3}>
@@ -193,24 +193,24 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
           )}
 
           <View style={styles.coordinateRow}>
-            <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Latitude:</Text>
+            <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Vĩ độ:</Text>
             <Text style={[styles.coordinateValue, { color: colors.text }]}>{selection.latitude.toFixed(6)}</Text>
           </View>
           <View style={styles.coordinateRow}>
-            <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Longitude:</Text>
+            <Text style={[styles.coordinateLabel, { color: colors.textMuted }]}>Kinh độ:</Text>
             <Text style={[styles.coordinateValue, { color: colors.text }]}>{selection.longitude.toFixed(6)}</Text>
           </View>
         </View>
 
         <View style={styles.actions}>
           <Button
-            title="Cancel"
+            title="Hủy"
             variant="outline"
             onPress={() => navigation.goBack()}
             style={[styles.cancelButton, { backgroundColor: colors.surface }]}
           />
           <Button
-            title="Confirm Location"
+            title="Xác nhận vị trí"
             onPress={handleConfirm}
             icon={<Check size={18} color="#FFF" style={styles.confirmIcon} />}
             style={styles.confirmButton}

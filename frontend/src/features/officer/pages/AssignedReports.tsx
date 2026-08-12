@@ -16,10 +16,10 @@ const PAGE_LIMIT = 9;
 type TaskTab = 'assigned' | 'in_progress' | 'resolved' | 'all';
 
 const TASK_TABS: Array<{ value: TaskTab; label: string }> = [
-  { value: 'assigned', label: 'Assigned' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'all', label: 'All Tasks' },
+  { value: 'assigned', label: 'Đã phân công' },
+  { value: 'in_progress', label: 'Đang xử lý' },
+  { value: 'resolved', label: 'Đã giải quyết' },
+  { value: 'all', label: 'Tất cả nhiệm vụ' },
 ];
 
 const severityClasses: Record<string, string> = {
@@ -67,16 +67,16 @@ export default function AssignedReports() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Assigned Tasks</h1>
-          <p className="mt-1 text-muted-foreground">Incidents assigned to your Officer account.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Báo cáo được giao</h1>
+          <p className="mt-1 text-muted-foreground">Các sự cố được phân công cho tài khoản Cán bộ của bạn.</p>
         </div>
         <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
           <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-          Refresh
+          Làm mới
         </Button>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border bg-muted/30 p-1" role="tablist" aria-label="Task status">
+      <div className="flex gap-1 overflow-x-auto rounded-xl border bg-muted/30 p-1" role="tablist" aria-label="Trạng thái nhiệm vụ">
         {TASK_TABS.map((tab) => (
           <button
             key={tab.value}
@@ -101,30 +101,30 @@ export default function AssignedReports() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search current page by title or address"
+            placeholder="Tìm kiếm trang hiện tại theo tiêu đề hoặc địa chỉ"
             className="pl-9"
           />
         </div>
-        <p className="text-sm text-muted-foreground">{total} task{total === 1 ? '' : 's'}</p>
+        <p className="text-sm text-muted-foreground">{total} nhiệm vụ</p>
       </div>
 
       {isLoading ? (
-        <LoadingSpinner className="mx-auto my-20" label="Loading assigned tasks..." />
+        <LoadingSpinner className="mx-auto my-20" label="Đang tải các nhiệm vụ được phân công..." />
       ) : isError ? (
         <Card className="border-destructive/40">
           <CardContent className="space-y-3 py-10 text-center">
-            <p className="font-medium text-destructive">Unable to load assigned tasks.</p>
+            <p className="font-medium text-destructive">Không thể tải các nhiệm vụ được phân công.</p>
             <p className="text-sm text-muted-foreground">
-              {getApiErrorMessage(error, 'Please check your connection and try again.')}
+              {getApiErrorMessage(error, 'Vui lòng kiểm tra kết nối và thử lại.')}
             </p>
-            <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
+            <Button variant="outline" onClick={() => refetch()}>Thử lại</Button>
           </CardContent>
         </Card>
       ) : visibleTasks.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title={search ? 'No matching tasks' : `No ${TASK_TABS.find((tab) => tab.value === activeTab)?.label.toLowerCase()}`}
-          description={search ? 'Try another search term.' : 'Tasks will appear here when their workflow reaches this state.'}
+          title={search ? 'Không có nhiệm vụ nào phù hợp' : 'Chưa có nhiệm vụ'}
+          description={search ? 'Thử tìm kiếm với từ khóa khác.' : 'Nhiệm vụ sẽ xuất hiện ở đây khi quy trình đạt đến trạng thái này.'}
         />
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -132,15 +132,15 @@ export default function AssignedReports() {
             <Card key={task._id} className="group overflow-hidden border-border/70 transition hover:-translate-y-0.5 hover:shadow-lg">
               <div className="relative aspect-[16/8] bg-muted">
                 {task.mediaUrls?.[0] ? (
-                  <img src={task.mediaUrls[0]} alt="Citizen-submitted incident" className="h-full w-full object-cover" />
+                  <img src={task.mediaUrls[0]} alt="Hình ảnh sự cố từ người dân" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No incident image</div>
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Không có hình ảnh sự cố</div>
                 )}
                 <Badge className={`absolute left-3 top-3 border-0 capitalize ${statusClasses[task.status] || ''}`}>
                   {task.status.replace(/_/g, ' ')}
                 </Badge>
                 <Badge variant="outline" className={`absolute right-3 top-3 capitalize backdrop-blur ${severityClasses[task.severity ?? 'low'] || ''}`}>
-                  {task.severity ?? 'unavailable'}
+                  {task.severity ?? 'không xác định'}
                 </Badge>
               </div>
               <CardContent className="space-y-4 p-5">
@@ -152,24 +152,24 @@ export default function AssignedReports() {
                 </div>
                 <p className="flex min-h-10 items-start gap-2 text-sm text-muted-foreground">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span className="line-clamp-2">{task.address || 'Address unavailable'}</span>
+                  <span className="line-clamp-2">{task.address || 'Không có địa chỉ'}</span>
                 </p>
                 <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/50 p-3 text-xs">
                   <div>
-                    <p className="text-muted-foreground">Created</p>
+                    <p className="text-muted-foreground">Thời gian tạo</p>
                     <p className="mt-1 font-medium">{format(new Date(task.createdAt), 'PP')}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Assigned</p>
+                    <p className="text-muted-foreground">Thời gian giao</p>
                     <p className="mt-1 font-medium">
-                      {task.assignedAt ? format(new Date(task.assignedAt), 'PP') : 'Legacy assignment'}
+                      {task.assignedAt ? format(new Date(task.assignedAt), 'PP') : 'Nhiệm vụ đã phân công'}
                     </p>
                   </div>
                 </div>
                 <Button asChild className="w-full">
                   <Link to={`/officer/reports/${task._id}`}>
                     <CalendarDays className="mr-2 h-4 w-4" />
-                    Open Task
+                    Mở nhiệm vụ
                   </Link>
                 </Button>
               </CardContent>
@@ -180,10 +180,10 @@ export default function AssignedReports() {
 
       {!isLoading && !isError && totalPages > 1 ? (
         <div className="flex items-center justify-between border-t pt-4">
-          <p className="text-sm text-muted-foreground">Page {page} of {totalPages}</p>
+          <p className="text-sm text-muted-foreground">Trang {page} / {totalPages}</p>
           <div className="flex gap-2">
-            <Button variant="outline" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</Button>
-            <Button variant="outline" disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)}>Next</Button>
+            <Button variant="outline" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Trước</Button>
+            <Button variant="outline" disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)}>Tiếp</Button>
           </div>
         </div>
       ) : null}

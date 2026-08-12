@@ -80,8 +80,44 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
     return counts;
   }, [alerts]);
 
+  const severityFilterLabels: Record<Severity | 'all', string> = {
+    all: 'Tất cả',
+    critical: 'Nghiêm trọng',
+    high: 'Cao',
+    medium: 'Trung bình',
+    low: 'Thấp',
+  };
+
+  const severityLegendLabels: Record<Severity, string> = {
+    critical: 'Mức độ Nghiêm trọng',
+    high: 'Mức độ Cao',
+    medium: 'Mức độ Trung bình',
+    low: 'Mức độ Thấp',
+  };
+
   const formatCategory = (cat: string) => {
-    return cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    const categoryNames: Record<string, string> = {
+      illegal_dumping: 'Rác thải trái phép',
+      water_pollution: 'Ô nhiễm nguồn nước',
+      air_pollution: 'Ô nhiễm không khí',
+      flooding: 'Ngập lụt',
+      fire: 'Cháy / Đốt rác',
+      noise_pollution: 'Ô nhiễm tiếng ồn',
+      construction_waste: 'Rác thải xây dựng',
+      other: 'Khác',
+    };
+    return categoryNames[cat] || cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const formatStatus = (st: string) => {
+    const statusNames: Record<string, string> = {
+      pending: 'Chờ xác minh',
+      in_progress: 'Đang xử lý',
+      resolved: 'Đã hoàn thành',
+      rejected: 'Đã từ chối',
+      closed: 'Đã đóng',
+    };
+    return statusNames[st] || st;
   };
 
   return (
@@ -120,19 +156,19 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                         backgroundColor: severityColors[alert.severity ?? 'low'],
                         color: 'white',
                       }}
-                      className="text-xs capitalize"
+                      className="text-xs"
                     >
-                      {alert.severity ?? 'unavailable'}
+                      {severityFilterLabels[alert.severity ?? 'low']}
                     </Badge>
-                    <Badge variant="secondary" className="text-xs capitalize">
-                      {alert.status}
+                    <Badge variant="secondary" className="text-xs">
+                      {formatStatus(alert.status)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">
-                    {format(new Date(alert.createdAt), 'MMM dd, yyyy')}
+                    {format(new Date(alert.createdAt), 'dd/MM/yyyy')}
                   </p>
                   <Button asChild size="sm" className="w-full">
-                    <Link to={`/incidents/${alert._id}`}>View Details</Link>
+                    <Link to={`/incidents/${alert._id}`}>Xem chi tiết</Link>
                   </Button>
                 </div>
               </Popup>
@@ -142,7 +178,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
 
         {latitude && longitude && (
           <Marker position={[latitude, longitude]} icon={userLocationIcon}>
-            <Popup>Your current location</Popup>
+            <Popup>Vị trí hiện tại của bạn</Popup>
           </Marker>
         )}
       </MapContainer>
@@ -160,7 +196,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                 : 'hover:bg-muted bg-background'
             )}
           >
-            <span className="capitalize">{sev}</span>
+            <span>{severityFilterLabels[sev]}</span>
             <Badge variant={severityFilter === sev ? 'secondary' : 'outline'} className="ml-2 py-0 h-5">
               {severityCounts[sev]}
             </Badge>
@@ -170,15 +206,15 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
 
       {/* Legend Overlay */}
       <div className="absolute bottom-4 left-4 z-[400] bg-background/90 backdrop-blur-sm p-3 rounded-lg shadow-md border border-border text-sm">
-        <p className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">Legend</p>
+        <p className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">CHÚ GIẢI</p>
         <div className="space-y-2">
-          {Object.entries(severityColors).map(([sev, color]) => (
+          {(Object.entries(severityColors) as Array<[Severity, string]>).map(([sev, color]) => (
             <div key={sev} className="flex items-center gap-2">
               <div
                 className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
                 style={{ backgroundColor: color }}
               />
-              <span className="capitalize text-xs font-medium">{sev} Severity</span>
+              <span className="text-xs font-medium">{severityLegendLabels[sev]}</span>
             </div>
           ))}
           <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
@@ -186,7 +222,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500 border-2 border-white"></span>
              </div>
-             <span className="text-xs font-medium">Your Location</span>
+             <span className="text-xs font-medium">Vị trí của bạn</span>
           </div>
         </div>
       </div>

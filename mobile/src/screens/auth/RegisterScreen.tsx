@@ -86,7 +86,7 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         password: values.password,
       });
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Registration failed. Please try again.";
+      const msg = err.response?.data?.message || err.message || "Đăng ký thất bại. Vui lòng thử lại.";
       setSubmitError(msg);
     }
   };

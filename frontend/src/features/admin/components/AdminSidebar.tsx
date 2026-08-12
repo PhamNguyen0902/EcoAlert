@@ -28,10 +28,10 @@ const NAV_ITEMS = [
   { to: '/admin/categories', key: 'nav.categories', icon: Tag },
   { to: '/admin/monitoring', key: 'nav.monitoring', icon: Activity },
   { to: '/admin/analytics', key: 'nav.analytics', icon: BarChart3 },
-  { to: '/admin/incident-density', key: 'incident-density', label: 'Incident Density', icon: Map },
+  { to: '/admin/incident-density', key: 'incident-density', label: 'Mật độ sự cố', icon: Map },
   { to: '/admin/audit', key: 'nav.audit', icon: ScrollText },
   { to: '/admin/settings', key: 'nav.settings', icon: Settings },
-  { to: '/assistant', key: 'assistant', label: 'AI Assistant', icon: Bot },
+  { to: '/assistant', key: 'assistant', label: 'Trợ lý AI', icon: Bot },
 ];
 
 export default function AdminSidebar() {

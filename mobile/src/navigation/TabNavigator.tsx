@@ -23,14 +23,14 @@ const ProfileScreen: React.FC<{ navigation?: any }> = () => {
         <View style={[styles.avatarBox, { backgroundColor: isDark ? "rgba(34, 197, 94, 0.25)" : colors.primaryLight }]}>
           <UserIcon size={36} color={colors.primary} />
         </View>
-        <Text style={[styles.profileName, { color: colors.text }]}>{profile?.fullName || "EcoAlert Citizen"}</Text>
+        <Text style={[styles.profileName, { color: colors.text }]}>{profile?.fullName || "Công dân EcoAlert"}</Text>
         <Text style={[styles.profileEmail, { color: colors.textMuted }]}>{profile?.email || "citizen@ecoalert.org"}</Text>
         <View style={[styles.roleTag, { backgroundColor: isDark ? "rgba(34, 197, 94, 0.25)" : colors.primaryLight }]}>
-          <Text style={[styles.roleText, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>{profile?.role || "CITIZEN"}</Text>
+          <Text style={[styles.roleText, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>{profile?.role || "CÔNG DÂN"}</Text>
         </View>
 
         <Button
-          title="Sign Out"
+          title="Đăng xuất"
           variant="destructive"
           onPress={() => logoutMutation.mutate()}
           loading={logoutMutation.isPending}
@@ -74,17 +74,17 @@ export const TabNavigator = () => {
       <Tab.Screen
         name="DashboardTab"
         component={CitizenDashboardScreen}
-        options={{ tabBarLabel: "Dashboard" }}
+        options={{ tabBarLabel: "Trang chủ" }}
       />
       <Tab.Screen
         name="ReportTab"
         component={ReportIncidentScreen}
-        options={{ tabBarLabel: "Report Alert" }}
+        options={{ tabBarLabel: "Báo cáo" }}
       />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}
-        options={{ tabBarLabel: "Profile" }}
+        options={{ tabBarLabel: "Hồ sơ" }}
       />
     </Tab.Navigator>
   );

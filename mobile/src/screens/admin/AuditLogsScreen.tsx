@@ -40,8 +40,8 @@ export const AuditLogsScreen: React.FC = () => {
           </Text>
         </View>
 
-        <Text style={[styles.userText, { color: colors.text }]}>Performed by: {userDisplay}</Text>
-        {item.entity ? <Text style={[styles.entityText, { color: colors.textMuted }]}>Target Entity: {item.entity}</Text> : null}
+        <Text style={[styles.userText, { color: colors.text }]}>Thực hiện bởi: {userDisplay}</Text>
+        {item.entity ? <Text style={[styles.entityText, { color: colors.textMuted }]}>Đối tượng mục tiêu: {item.entity}</Text> : null}
         {item.ipAddress ? <Text style={[styles.ipText, { color: colors.textMuted }]}>IP: {item.ipAddress}</Text> : null}
       </GlassCard>
     );
@@ -52,13 +52,13 @@ export const AuditLogsScreen: React.FC = () => {
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerTitleRow}>
           <Activity size={24} color={isDark ? "#A78BFA" : "#7C3AED"} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>System Audit Logs</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Nhật ký kiểm toán hệ thống</Text>
         </View>
       </View>
 
       <View style={styles.searchContainer}>
         <Input
-          placeholder="Search audit actions, users..."
+          placeholder="Tìm kiếm thao tác kiểm toán, người dùng..."
           value={search}
           onChangeText={setSearch}
           leftIcon={<Search size={18} color={colors.textMuted} />}
@@ -79,7 +79,7 @@ export const AuditLogsScreen: React.FC = () => {
           !isLoading ? (
             <View style={styles.emptyContainer}>
               <ShieldAlert size={48} color={colors.textMuted} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No audit logs matching query.</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không có nhật ký kiểm toán phù hợp.</Text>
             </View>
           ) : null
         }

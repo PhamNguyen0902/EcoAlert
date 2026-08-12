@@ -37,7 +37,7 @@ export function Topbar() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search reports..."
+            placeholder="Tìm kiếm báo cáo..."
             className="w-full bg-muted/50 pl-9 border-none focus-visible:ring-1 focus-visible:ring-primary"
           />
         </div>
@@ -76,15 +76,15 @@ export function Topbar() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
-              Profile
+              Hồ sơ
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
-              Settings
+              Cài đặt
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>Đăng xuất</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

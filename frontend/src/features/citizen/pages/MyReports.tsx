@@ -43,7 +43,7 @@ export default function MyReports() {
   const deleteAlertMutation = useDeleteAlert();
 
   if (isLoading)
-    return <LoadingSpinner size="lg" label="Loading..." />;
+    return <LoadingSpinner size="lg" label="Đang tải..." />;
 
   const alerts: Alert[] = alertsData?.items || [];
   const total = alertsData?.total || 0;

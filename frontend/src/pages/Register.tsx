@@ -68,12 +68,12 @@ export default function Register() {
               <ThemeToggle />
             </div>
             <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-foreground">
-              Create an account
+              Tạo tài khoản
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Already have an account?{' '}
+              Đã có tài khoản?{' '}
               <Link to="/login" className="font-semibold text-primary hover:text-primary/80">
-                Log in
+                Đăng nhập
               </Link>
             </p>
           </div>
@@ -82,14 +82,14 @@ export default function Register() {
             <form onSubmit={handleRegister} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="firstName">First name</Label>
+                  <Label htmlFor="firstName">Tên</Label>
                   <div className="mt-2">
                     <Input id="firstName" name="firstName" placeholder="" required value={formData.firstName} onChange={handleChange} />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="lastName">Last name</Label>
+                  <Label htmlFor="lastName">Họ</Label>
                   <div className="mt-2">
                     <Input id="lastName" name="lastName" placeholder="" required value={formData.lastName} onChange={handleChange} />
                   </div>
@@ -97,20 +97,20 @@ export default function Register() {
               </div>
 
               <div>
-                <Label htmlFor="email">Email address</Label>
+                <Label htmlFor="email">Địa chỉ email</Label>
                 <div className="mt-2">
                   <Input id="email" name="email" type="email" placeholder="example@gmail.com" required value={formData.email} onChange={handleChange} />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Mật khẩu</Label>
                 <div className="mt-2 relative">
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Min. 6 characters"
+                    placeholder="Tối thiểu 6 ký tự"
                     required
                     value={formData.password}
                     onChange={handleChange}
@@ -120,7 +120,7 @@ export default function Register() {
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -129,7 +129,7 @@ export default function Register() {
 
               <div>
                 <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                  {registerMutation.isPending ? 'Creating account...' : 'Create account'}
+                  {registerMutation.isPending ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
                 </Button>
               </div>
             </form>
@@ -140,7 +140,7 @@ export default function Register() {
         <img
           className="absolute inset-0 h-full w-full object-cover opacity-40 mix-blend-multiply"
           src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=2013&auto=format&fit=crop"
-          alt="Nature background"
+          alt="Hình nền thiên nhiên"
         />
         <div className="absolute inset-0 flex flex-col justify-center px-12 text-white">
           <motion.h1 
@@ -149,7 +149,7 @@ export default function Register() {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="text-5xl font-bold max-w-2xl"
           >
-            Join the movement.
+            Tham gia phong trào.
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, x: 20 }}
@@ -157,7 +157,7 @@ export default function Register() {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="mt-6 text-xl max-w-xl text-green-50"
           >
-            By reporting environmental hazards, you are actively contributing to a cleaner, safer, and greener community.
+            Bằng việc báo cáo các mối nguy hại môi trường, bạn đang tích cực đóng góp vào một cộng đồng sạch hơn, an toàn hơn và xanh hơn.
           </motion.p>
         </div>
       </div>

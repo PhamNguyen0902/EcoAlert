@@ -155,7 +155,7 @@ export default function PendingVerification() {
           setConfirm(null);
         },
         onError: () => {
-          toast.error('Failed to update report status');
+          toast.error('Cập nhật trạng thái báo cáo thất bại');
           setConfirm(null);
         },
       }

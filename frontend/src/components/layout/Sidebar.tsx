@@ -15,16 +15,16 @@ export function Sidebar() {
   const location = useLocation()
 
   const links = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Reports", href: "/reports", icon: FileText },
-    { name: "Map View", href: "/map", icon: Map },
-    { name: "Create Report", href: "/report", icon: PlusCircle },
-    { name: "Notifications", href: "/notifications", icon: Bell },
+    { name: "Bảng điều khiển", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Báo cáo", href: "/reports", icon: FileText },
+    { name: "Bản đồ", href: "/map", icon: Map },
+    { name: "Tạo báo cáo", href: "/report", icon: PlusCircle },
+    { name: "Thông báo", href: "/notifications", icon: Bell },
   ]
 
   const bottomLinks = [
-    { name: "Profile", href: "/profile", icon: User },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Hồ sơ", href: "/profile", icon: User },
+    { name: "Cài đặt", href: "/settings", icon: Settings },
   ]
 
   return (

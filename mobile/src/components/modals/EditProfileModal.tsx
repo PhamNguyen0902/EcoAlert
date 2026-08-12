@@ -41,7 +41,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   const handleSave = async () => {
     if (!fullName.trim()) {
-      RNAlert.alert("Validation Error", "Full Name cannot be empty.");
+      RNAlert.alert("Lỗi xác thực", "Họ và tên không được để trống.");
       return;
     }
 
@@ -51,11 +51,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         phone: phone.trim() || undefined,
       });
 
-      RNAlert.alert("Profile Updated", "Your profile details have been updated successfully.");
+      RNAlert.alert("Cập nhật hồ sơ", "Chi tiết hồ sơ của bạn đã được cập nhật thành công.");
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to update profile.";
-      RNAlert.alert("Update Error", msg);
+      RNAlert.alert("Lỗi cập nhật", msg);
     }
   };
 
@@ -66,7 +66,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerTitleRow}>
               <UserCheck size={22} color={colors.primary} />
-              <Text style={[styles.title, { color: colors.text }]}>Edit Profile Information</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Chỉnh sửa thông tin hồ sơ</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.textMuted} />
@@ -74,22 +74,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           </View>
 
           <Input
-            label="Full Name *"
-            placeholder="Your full name"
+            label="Họ và tên *"
+            placeholder="Họ và tên của bạn"
             value={fullName}
             onChangeText={setFullName}
           />
 
           <Input
-            label="Phone Number"
-            placeholder="e.g. 0912345678"
+            label="Số điện thoại"
+            placeholder="VD: 0912345678"
             keyboardType="phone-pad"
             value={phone}
             onChangeText={setPhone}
           />
 
           <Button
-            title="Save Profile"
+            title="Lưu hồ sơ"
             onPress={handleSave}
             loading={updateProfileMutation.isPending}
             style={styles.submitBtn}

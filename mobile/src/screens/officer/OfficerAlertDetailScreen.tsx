@@ -319,14 +319,14 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             <View style={[styles.addressBox, { backgroundColor: colors.surface }]}>
               <MapPin size={16} color={colors.secondary} />
               <View style={styles.locationCopy}>
-                <Text style={[styles.locationLabel, { color: colors.textMuted }]}>Address</Text>
+                <Text style={[styles.locationLabel, { color: colors.textMuted }]}>Địa chỉ</Text>
                 <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={3}>
                   {alert.address || "Address unavailable"}
                 </Text>
               </View>
             </View>
             <View style={[styles.coordinatesBox, { borderTopColor: colors.border }]}>
-              <Text style={[styles.locationLabel, { color: colors.textMuted }]}>Coordinates</Text>
+              <Text style={[styles.locationLabel, { color: colors.textMuted }]}>Tọa độ</Text>
               <Text style={[styles.coordinatesText, { color: colors.text }]}>
                 {incidentCoordinates
                   ? `${incidentCoordinates.latitude.toFixed(6)}, ${incidentCoordinates.longitude.toFixed(6)}`
@@ -334,7 +334,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
               </Text>
             </View>
             <Button
-              title="Navigate with Google Maps"
+              title="Chỉ đường bằng Google Maps"
               onPress={handleOpenGoogleMaps}
               loading={isOpeningMaps}
               disabled={!incidentCoordinates}
@@ -355,24 +355,11 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           <GlassCard style={[styles.savedNoteCard, { backgroundColor: isDark ? "rgba(2, 132, 199, 0.25)" : "#E0F2FE" }]}>
             <View style={styles.savedNoteHeader}>
               <ShieldCheck size={18} color={isDark ? "#38BDF8" : colors.secondary} />
-              <Text style={[styles.savedNoteTitle, { color: isDark ? "#38BDF8" : colors.secondary }]}>Logged Officer Note</Text>
+              <Text style={[styles.savedNoteTitle, { color: isDark ? "#38BDF8" : colors.secondary }]}>Ghi chú của cán bộ</Text>
             </View>
             <Text style={[styles.savedNoteText, { color: colors.text }]}>{alert.officerNote}</Text>
           </GlassCard>
         ) : null}
-
-        {alert.resolutionEvidence?.length ? (
-          <View style={styles.sectionBox}>
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>Resolution evidence</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
-              {alert.resolutionEvidence.map((evidence, index) => (
-                <Image key={evidence._id || `${evidence.url}-${index}`} source={{ uri: evidence.url }} style={styles.evidenceImage} accessibilityLabel="After-treatment evidence" />
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
-
-        <IncidentTimeline alert={alert} />
       </ScrollView>
 
       <ResolutionModal

@@ -37,7 +37,7 @@ export const CategoryManagementScreen: React.FC = () => {
       });
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to update category status.";
-      RNAlert.alert("Error", msg);
+      RNAlert.alert("Lỗi", msg);
     }
   };
 
@@ -53,10 +53,10 @@ export const CategoryManagementScreen: React.FC = () => {
           onPress: async () => {
             try {
               await deleteCategoryMutation.mutateAsync(category._id);
-              RNAlert.alert("Deleted", "Category deleted successfully.");
+              RNAlert.alert("Đã xóa", "Xóa danh mục thành công.");
             } catch (err: any) {
               const msg = err.response?.data?.message || err.message || "Failed to delete category.";
-              RNAlert.alert("Error", msg);
+              RNAlert.alert("Lỗi", msg);
             }
           },
         },
@@ -71,7 +71,7 @@ export const CategoryManagementScreen: React.FC = () => {
           <Text style={styles.icon}>{item.icon || "🏷️"}</Text>
           <View>
             <Text style={[styles.categoryName, { color: colors.text }]}>{item.name}</Text>
-            <Text style={[styles.categoryCode, { color: colors.textMuted }]}>code: {item.code}</Text>
+            <Text style={[styles.categoryCode, { color: colors.textMuted }]}>mã: {item.code}</Text>
           </View>
         </View>
         <View style={styles.badgeBox}>
@@ -88,7 +88,7 @@ export const CategoryManagementScreen: React.FC = () => {
 
       <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
         <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: colors.textMuted }]}>Active</Text>
+          <Text style={[styles.switchLabel, { color: colors.textMuted }]}>Hoạt động</Text>
           <Switch
             value={item.isActive}
             onValueChange={() => handleToggleActive(item)}
@@ -105,12 +105,12 @@ export const CategoryManagementScreen: React.FC = () => {
             }}
           >
             <Edit2 size={16} color={isDark ? "#A78BFA" : "#7C3AED"} />
-            <Text style={[styles.actionText, { color: isDark ? "#A78BFA" : "#7C3AED" }]}>Edit</Text>
+            <Text style={[styles.actionText, { color: isDark ? "#A78BFA" : "#7C3AED" }]}>Chỉnh sửa</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeleteCategory(item)}>
             <Trash2 size={16} color={isDark ? "#FCA5A5" : "#DC2626"} />
-            <Text style={[styles.actionText, { color: isDark ? "#FCA5A5" : "#DC2626" }]}>Delete</Text>
+            <Text style={[styles.actionText, { color: isDark ? "#FCA5A5" : "#DC2626" }]}>Xóa</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -123,7 +123,7 @@ export const CategoryManagementScreen: React.FC = () => {
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerTitleRow}>
           <Tag size={24} color={isDark ? "#A78BFA" : "#7C3AED"} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Category Management</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Quản lý danh mục</Text>
         </View>
         <TouchableOpacity
           style={styles.addBtn}
@@ -133,13 +133,13 @@ export const CategoryManagementScreen: React.FC = () => {
           }}
         >
           <Plus size={18} color="#FFF" />
-          <Text style={styles.addBtnText}>Add</Text>
+          <Text style={styles.addBtnText}>Thêm</Text>
         </TouchableOpacity>
       </View>
 
       {/* Filter Row */}
       <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.filterLabel, { color: colors.text }]}>Show Inactive Categories</Text>
+        <Text style={[styles.filterLabel, { color: colors.text }]}>Hiển thị danh mục không hoạt động</Text>
         <Switch
           value={includeInactive}
           onValueChange={setIncludeInactive}
@@ -160,7 +160,7 @@ export const CategoryManagementScreen: React.FC = () => {
           !isLoading ? (
             <View style={styles.emptyContainer}>
               <Folder size={48} color={colors.textMuted} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No categories found.</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>Không tìm thấy danh mục.</Text>
             </View>
           ) : null
         }
