@@ -401,3 +401,51 @@ export interface CreateCategoryData {
   isActive?: boolean;
 }
 
+/**
+ * Admin-only operational GIS contract returned by the existing GIS service.
+ * Coordinates are already normalized to latitude/longitude at this boundary;
+ * persisted GeoJSON remains [longitude, latitude].
+ */
+export interface IncidentDensityPoint {
+  lat: number;
+  lng: number;
+  weight: number;
+  incidentId: string;
+  title?: string;
+  address?: string;
+  category: string;
+  severity: string;
+  status: string;
+  createdAt?: string;
+}
+
+export interface IncidentDensitySummary {
+  total: number;
+  open: number;
+  resolved: number;
+  closed: number;
+  byCategory: Record<string, number>;
+  bySeverity: Record<string, number>;
+}
+
+export interface IncidentDensity {
+  points: IncidentDensityPoint[];
+  summary: IncidentDensitySummary;
+}
+
+export interface IncidentDensityDrilldown {
+  center: { lat: number; lng: number };
+  radiusMeters: number;
+  summary: IncidentDensitySummary;
+  incidents: Array<{
+    alertId: string;
+    title?: string;
+    address?: string;
+    category: string;
+    severity: string;
+    status: string;
+    createdAt?: string;
+    distanceMeters: number;
+  }>;
+}
+

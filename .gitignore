@@ -12,6 +12,7 @@
 !backend/gis-service/.env.example
 !backend/media-service/.env.example
 !backend/vision-service/.env.example
+!mobile/.env.example
 
 # ML model artifacts and experiment outputs are external to source control
 **/models/weights/*

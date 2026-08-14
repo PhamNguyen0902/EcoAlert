@@ -12,6 +12,8 @@ export interface ILocation extends Document {
     type: 'Point';
     coordinates: [number, number]; // [longitude, latitude]
   };
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const locationSchema = new Schema<ILocation>({

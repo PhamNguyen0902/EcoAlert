@@ -1,9 +1,34 @@
+import * as Device from "expo-device";
 import { Platform } from "react-native";
 
 // Ưu tiên lấy URL từ file .env, nếu không có mới dùng giá trị mặc định
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === "android"
+const DEFAULT_API_BASE_URL = Platform.OS === "android"
   ? "http://10.0.2.2:3000/api"
-  : "http://localhost:3000/api");
+  : "http://localhost:3000/api";
+
+const normalizeApiBaseUrl = (value: string) => value.trim().replace(/\/+$/, "");
+const configuredApiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+
+/**
+ * The environment value always wins. The Android fallback remains emulator-safe;
+ * a real device must be given a LAN-reachable gateway URL through the environment.
+ */
+export const API_BASE_URL = normalizeApiBaseUrl(configuredApiBaseUrl || DEFAULT_API_BASE_URL);
+
+const PHYSICAL_DEVICE_UNREACHABLE_HOSTS = new Set(["localhost", "127.0.0.1", "10.0.2.2"]);
+
+export const getPhysicalDeviceApiUrlWarning = (): string | null => {
+  if (!__DEV__ || Platform.OS === "web" || !Device.isDevice) return null;
+
+  try {
+    const host = new URL(API_BASE_URL).hostname.toLowerCase();
+    if (!PHYSICAL_DEVICE_UNREACHABLE_HOSTS.has(host)) return null;
+  } catch {
+    return "API URL is invalid. Set EXPO_PUBLIC_API_URL to a valid API Gateway URL.";
+  }
+
+  return "API URL is not reachable from physical device. Set EXPO_PUBLIC_API_URL to a LAN-reachable API Gateway URL, for example http://<LAN_IP>:3000/api, then restart Expo with npx expo start -c.";
+};
 
 export interface ThemeColors {
   primary: string;

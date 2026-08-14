@@ -9,6 +9,8 @@ import { Alert, Severity } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { createIncidentMarkerIcon } from '@/lib/incident-map-marker';
+import { SEVERITY_COLORS } from '@/lib/gis-heatmap';
 import { useGeolocation } from '@/features/citizen/hooks/useGeolocation';
 
 // Fix Leaflet default icon issue
@@ -24,22 +26,6 @@ interface IncidentMapProps {
   selectedCategory: string | null;
   onSelectCategory?: (cat: string | null) => void;
 }
-
-const severityColors: Record<Severity, string> = {
-  critical: '#EF4444',
-  high: '#F97316',
-  medium: '#EAB308',
-  low: '#22C55E',
-};
-
-const createMarkerIcon = (severity: Severity) => {
-  return L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="background-color: ${severityColors[severity]}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-  });
-};
 
 const userLocationIcon = L.divIcon({
   className: 'user-location-marker',
@@ -133,7 +119,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
             <Marker
               key={alert._id}
               position={[alert.location.coordinates[1], alert.location.coordinates[0]]}
-              icon={createMarkerIcon(alert.severity ?? 'low')}
+              icon={createIncidentMarkerIcon(alert.severity, { size: 20 })}
             >
               <Popup className="incident-popup">
                 <div className="w-64">
@@ -153,7 +139,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                     </Badge>
                     <Badge
                       style={{
-                        backgroundColor: severityColors[alert.severity ?? 'low'],
+                        backgroundColor: SEVERITY_COLORS[alert.severity ?? 'low'],
                         color: 'white',
                       }}
                       className="text-xs"
@@ -208,7 +194,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
       <div className="absolute bottom-4 left-4 z-[400] bg-background/90 backdrop-blur-sm p-3 rounded-lg shadow-md border border-border text-sm">
         <p className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">CHÚ GIẢI</p>
         <div className="space-y-2">
-          {(Object.entries(severityColors) as Array<[Severity, string]>).map(([sev, color]) => (
+          {(Object.entries(SEVERITY_COLORS) as Array<[Severity, string]>).map(([sev, color]) => (
             <div key={sev} className="flex items-center gap-2">
               <div
                 className="w-4 h-4 rounded-full border-2 border-white shadow-sm"

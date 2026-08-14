@@ -96,6 +96,12 @@ export class GisService {
         lng,
         weight: isOpenStatus(location.status) ? 1.25 : 1,
         incidentId: location.alertId,
+        title: location.title,
+        address: location.address,
+        category: normalizeCategoryCode(location.category),
+        severity: normalizeSeverityCode(location.severity),
+        status: normalizeStatusCode(location.status),
+        createdAt: location.createdAt,
       }];
     });
     return { points, summary: summarizeIncidentLocations(locations) };
@@ -115,17 +121,23 @@ export class GisService {
     const statusFilter = buildStatusFilter(filters.status);
     if (statusFilter) query.status = statusFilter;
     const locations = await Location.aggregate<{
-      alertId: string; title?: string; address?: string; category: string; severity: string; status: string; location: { coordinates: [number, number] }; distanceMeters: number;
+      alertId: string; title?: string; address?: string; category: string; severity: string; status: string; location: { coordinates: [number, number] }; createdAt?: Date; distanceMeters: number;
     }>([
       { $geoNear: { near: { type: 'Point', coordinates: [lng, lat] }, distanceField: 'distanceMeters', maxDistance: radiusMeters, spherical: true, query } },
       { $limit: 50 },
-      { $project: { alertId: 1, title: 1, address: 1, category: 1, severity: 1, status: 1, location: 1, distanceMeters: 1 } },
+      { $project: { alertId: 1, title: 1, address: 1, category: 1, severity: 1, status: 1, location: 1, createdAt: 1, distanceMeters: 1 } },
     ]);
+    const incidents = locations.map((location) => ({
+      ...location,
+      category: normalizeCategoryCode(location.category),
+      severity: normalizeSeverityCode(location.severity),
+      status: normalizeStatusCode(location.status),
+    }));
     return {
       center: { lat, lng },
       radiusMeters,
-      summary: summarizeIncidentLocations(locations),
-      incidents: locations,
+      summary: summarizeIncidentLocations(incidents),
+      incidents,
     };
   }
 }
@@ -134,6 +146,16 @@ const OPEN_STATUSES = new Set(['pending', 'ai_analyzing', 'verified', 'assigned'
 const isOpenStatus = (status?: string) => OPEN_STATUSES.has((status || '').toLowerCase());
 const isValidCoordinate = (lat: unknown, lng: unknown) => typeof lat === 'number' && typeof lng === 'number' && Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const normalizeStatusCode = (value?: string) => value?.trim().toLowerCase().replace(/[\s-]+/g, '_') || 'unknown';
+export const normalizeSeverityCode = (value?: string) => {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'normal') return 'medium';
+  return normalized && ['low', 'medium', 'high', 'critical'].includes(normalized)
+    ? normalized
+    : 'unknown';
+};
+export const normalizeCategoryCode = (value?: string) =>
+  value?.trim().toLowerCase().replace(/[\s_-]+/g, '_') || 'unclassified';
 const buildStatusFilter = (status?: string) => {
   if (!status || status === 'all') return undefined;
   if (status === 'active') return { $in: [...OPEN_STATUSES].map((value) => new RegExp(`^${value}$`, 'i')) };
@@ -144,12 +166,14 @@ export const summarizeIncidentLocations = (locations: Array<{ status?: string; c
   const byCategory: Record<string, number> = {};
   const bySeverity: Record<string, number> = {};
   for (const location of locations) {
-    const status = (location.status || '').toLowerCase();
+    const status = normalizeStatusCode(location.status);
     if (isOpenStatus(status)) statusCounts.open += 1;
     if (status === 'resolved') statusCounts.resolved += 1;
     if (status === 'closed') statusCounts.closed += 1;
-    if (location.category) byCategory[location.category] = (byCategory[location.category] || 0) + 1;
-    if (location.severity) bySeverity[location.severity] = (bySeverity[location.severity] || 0) + 1;
+    const category = normalizeCategoryCode(location.category);
+    const severity = normalizeSeverityCode(location.severity);
+    byCategory[category] = (byCategory[category] || 0) + 1;
+    bySeverity[severity] = (bySeverity[severity] || 0) + 1;
   }
   return { ...statusCounts, byCategory, bySeverity };
 };
