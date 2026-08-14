@@ -1,6 +1,7 @@
 import "react-native-gesture-handler";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
+import { Alert } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -22,10 +23,21 @@ const queryClient = new QueryClient({
 
 import { pushNotificationService } from "./src/services/pushNotificationService";
 import { useOfflineSync } from "./src/hooks/useOfflineSync";
+import { getPhysicalDeviceApiUrlWarning } from "./src/utils/constants";
 
 const AppContent: React.FC = () => {
   const { isDark, colors } = useTheme();
   useOfflineSync();
+  const hasShownApiUrlWarning = React.useRef(false);
+
+  React.useEffect(() => {
+    const warning = getPhysicalDeviceApiUrlWarning();
+    if (!warning || hasShownApiUrlWarning.current) return;
+
+    hasShownApiUrlWarning.current = true;
+    console.warn(`[EcoAlert] ${warning}`);
+    Alert.alert("API configuration warning", warning);
+  }, []);
 
   React.useEffect(() => {
     // Register push notifications

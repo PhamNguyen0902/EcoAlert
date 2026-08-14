@@ -3,7 +3,9 @@ import test from 'node:test';
 import {
   densityLayerVisibility,
   getDensityPointLatLng,
+  incidentDetailHref,
   incidentReportCode,
+  normalizeDensitySummary,
   toDensityHeatPoint,
 } from './admin-incident-density';
 
@@ -19,4 +21,18 @@ test('real GIS points keep GeoJSON conversion explicit and ignore invalid coordi
   assert.equal(getDensityPointLatLng({ lat: 91, lng: 106.660172 }), null);
   assert.equal(toDensityHeatPoint({ lat: 10, lng: 181, weight: 1 }), null);
   assert.equal(incidentReportCode('6a7aad1ba781004fdeabab0c'), '#DEABAB0C');
+  assert.equal(incidentDetailHref('report-123'), '/admin/reports/report-123');
+});
+
+test('operational summaries merge severity and category aliases into canonical groups', () => {
+  assert.deepEqual(
+    normalizeDensitySummary({
+      bySeverity: { HIGH: 1, high: 2, normal: 3 },
+      byCategory: { 'Illegal Dumping': 1, illegal_dumping: 2, 'illegal-dumping': 3 },
+    }),
+    {
+      bySeverity: [['high', 3], ['medium', 3]],
+      byCategory: [['illegal_dumping', 6]],
+    },
+  );
 });

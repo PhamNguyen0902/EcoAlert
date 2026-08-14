@@ -355,18 +355,18 @@ const structuredResponseFormat = {
 const buildUserContent = (input: IncidentAnalysisInput, includeImage: boolean) => {
   const visionEvidence = input.visionEvidence;
   const visionText = !visionEvidence
-    ? 'Vision evidence: not requested for this analysis.'
+    ? 'Bằng chứng từ Vision: không được yêu cầu cho lần phân tích này.'
     : !visionEvidence.detectorAvailable
-      ? 'Vision evidence: detector unavailable. This does not mean there is no incident.'
+      ? 'Bằng chứng từ Vision: bộ nhận diện không khả dụng. Điều này không đồng nghĩa không có sự cố.'
       : [
-        `Vision evidence: custom EcoAlert detector ${visionEvidence.model || 'unknown model'} completed.`,
-        `Detected objects: ${visionEvidence.totalObjects}.`,
-        `Objects: ${formatVisionEvidenceLines(visionEvidence).join('; ') || 'none'}.`,
-        `Detector confidence: ${visionEvidence.detectorConfidence === null ? 'not available' : visionEvidence.detectorConfidence}.`,
+        `Bằng chứng từ Vision: bộ nhận diện EcoAlert ${visionEvidence.model || 'không có dữ liệu'} đã hoàn tất.`,
+        `Số vật thể phát hiện: ${visionEvidence.totalObjects}.`,
+        `Các vật thể: ${formatVisionEvidenceLines(visionEvidence).join('; ') || 'không có dữ liệu'}.`,
+        `Độ tin cậy của bộ nhận diện: ${visionEvidence.detectorConfidence === null ? 'không có dữ liệu' : visionEvidence.detectorConfidence}.`,
       ].join('\n');
   const text = [
-    `Title: ${input.title?.trim() || 'Not provided'}`,
-    `Description: ${input.description.trim() || 'Not provided'}`,
+    `Tiêu đề: ${input.title?.trim() || 'Không được cung cấp'}`,
+    `Mô tả: ${input.description.trim() || 'Không được cung cấp'}`,
     visionText,
   ].join('\n');
 
@@ -385,15 +385,18 @@ const incidentCompletionRequest = (
     {
       role: 'system',
       content: [
-        'You are EcoAlert’s environmental incident classification assistant.',
-        'Perform an incident-level interpretation only from the report image, citizen title/description, and supplied Vision evidence.',
-        'Vision evidence is object-level supporting evidence only. The custom detector recognizes only plastic_bottle, plastic_bag, plastic_cup, metal_can, cardboard, and glass_bottle.',
-        'Zero Vision detections does not mean there is no incident; flooding and other categories can still be supported by the report image and description.',
-        'Do not invent objects that are not visible in the image or supplied Vision evidence. Do not expose hidden reasoning.',
-        `Use exactly one canonical category from: ${Object.values(AlertCategory).join(', ')}, or ${UNCLASSIFIED_CATEGORY} when the evidence is insufficient or unsupported.`,
-        `Use exactly one severity from: ${Object.values(Severity).join(', ')}.`,
-        'Use calibrated confidence values from 0 to 1. overallSummary must be 2–4 concise human-readable sentences; shortReason must be a short evidence-based explanation.',
-        'List only concise supplied Vision evidence strings in visionEvidenceUsed. AI is decision support only and never verifies, assigns, resolves, or closes an incident.',
+        'Bạn là trợ lý AI chuyên phân tích và phân loại sự cố môi trường của hệ thống EcoAlert.',
+        'Chỉ phân tích ở cấp độ sự cố dựa trên ảnh báo cáo, tiêu đề và mô tả do người dân cung cấp, cùng với bằng chứng Vision do hệ thống cung cấp.',
+        'Bằng chứng Vision chỉ là bằng chứng hỗ trợ ở mức nhận diện vật thể. Bộ nhận diện tùy chỉnh của EcoAlert hiện chỉ nhận diện plastic_bottle, plastic_bag, plastic_cup, metal_can, cardboard và glass_bottle.',
+        'Việc Vision không phát hiện vật thể không đồng nghĩa không có sự cố; các sự cố như ngập nước hoặc các loại sự cố môi trường khác vẫn có thể được xác định từ ảnh báo cáo, tiêu đề và mô tả.',
+        'Không được suy đoán hoặc bịa ra vật thể, tình trạng hay bằng chứng không xuất hiện trong ảnh, mô tả hoặc dữ liệu Vision được cung cấp. Không tiết lộ quá trình suy luận nội bộ.',
+        `Chỉ sử dụng chính xác một category chuẩn từ danh sách sau: ${Object.values(AlertCategory).join(', ')}, hoặc ${UNCLASSIFIED_CATEGORY} khi bằng chứng không đủ hoặc không phù hợp.`,
+        `Chỉ sử dụng chính xác một severity từ danh sách sau: ${Object.values(Severity).join(', ')}.`,
+        'Giữ nguyên chính xác các tên trường kỹ thuật trong JSON theo schema được cung cấp; không dịch tên trường, category hoặc severity. Các giá trị confidence phải nằm trong khoảng từ 0 đến 1 và phản ánh đúng mức độ chắc chắn của bằng chứng.',
+        'overallSummary phải hoàn toàn bằng tiếng Việt, gồm 2 đến 4 câu ngắn gọn, tự nhiên, rõ ràng cho người dùng tại Việt Nam; mô tả sự cố, giải thích mức độ nghiêm trọng và chỉ đưa ra nhận xét hoặc khuyến nghị khi có đủ bằng chứng.',
+        'shortReason phải hoàn toàn bằng tiếng Việt, ngắn gọn và nêu bằng chứng chính dẫn đến kết quả phân loại. Không sử dụng tiếng Anh trong phần giải thích cho người dùng, trừ tên kỹ thuật hoặc object class khi thực sự cần thiết.',
+        'visionEvidenceUsed chỉ được liệt kê bằng chứng Vision thực sự được cung cấp; nếu cần diễn đạt cho người dùng, hãy viết ngắn gọn, dễ hiểu bằng tiếng Việt và chỉ giữ tên kỹ thuật hoặc object class khi cần thiết.',
+        'AI chỉ đóng vai trò hỗ trợ ra quyết định. AI không có quyền tự xác minh báo cáo, phân công nhân viên xử lý, giải quyết hoặc đóng sự cố.',
       ].join(' '),
     },
     { role: 'user', content: buildUserContent(input, includeImage) },

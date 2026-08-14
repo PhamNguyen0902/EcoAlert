@@ -8,7 +8,11 @@ P1 adds operational decision support without introducing automated dispatch, pre
 
 `GET /api/v1/gis/incidents/heatmap` and `GET /api/v1/gis/incidents/nearby` are Admin-only endpoints. They read GIS `Location` documents populated from the existing `ALERT_CREATED` and `ALERT_UPDATED` events and use the existing `2dsphere` index. Both accept optional `from`, `to`, `category`, `severity`, and `status` filters; drilldown additionally accepts `lat`, `lng`, and a radius up to 20 km.
 
-The Admin **Incident Density** page calls those APIs. It labels the view as incident density, explicitly explains that color is based on reported-incident concentration, and never describes the layer as temperature, a forecast, or a prediction. A map click opens a nearby incident drilldown with links to the actual reports.
+The Admin **Incident Density** experience has three selectable layers: **Heatmap**, **Incident Points**, and **Combined** (the default). Heatmap uses the concentration of real reported locations; Incident Points renders one marker for each valid GIS record; Combined renders both from the same `points` response and the same filters. It never describes the layer as temperature, a forecast, or a prediction.
+
+Each marker contains the alert ID, category, severity, status, reported time, and available address. Selecting it highlights the record without resetting the map; **View details** opens the existing Admin report detail route. Invalid or absent coordinates are excluded instead of being invented. On the web, marker clustering protects the map when the result contains many points. Map clicks use the existing radius/`2dsphere` drilldown endpoint rather than triggering a complete reload while the user moves the map.
+
+The Admin mobile route uses the same authenticated endpoints and response contract with native map interactions: Android uses the native heatmap layer, while iOS renders the existing intensity-area fallback. It exposes the same three modes, synchronized filters, marker preview, nearby drilldown, retry states, and the existing alert-detail screen. The mobile entry point is registered only in the Admin navigator; server-side role enforcement remains unchanged.
 
 ## Officer shifts and availability
 

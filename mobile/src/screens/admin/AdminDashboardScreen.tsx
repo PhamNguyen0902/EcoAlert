@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FileText, CheckCircle, RefreshCw, Activity } from "lucide-react-native";
+import { FileText, CheckCircle, RefreshCw, Activity, Map } from "lucide-react-native";
 import { useAlerts } from "../../hooks/useAlerts";
 import { StatCard } from "../../components/ui/StatCard";
 import { GlassCard } from "../../components/ui/GlassCard";
@@ -44,9 +44,24 @@ export const AdminDashboardScreen: React.FC<{ navigation?: any }> = ({ navigatio
           </Text>
           <Text style={[styles.subGreeting, { color: colors.textMuted }]}>{t("admin.systemOverview", "System Overview & Management")}</Text>
         </View>
-        <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(124, 58, 237, 0.25)" : "#F3E8FF" }]} onPress={() => refetch()}>
-          <RefreshCw size={18} color="#7C3AED" />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(124, 58, 237, 0.25)" : "#F3E8FF" }]}
+            onPress={() => navigation?.navigate("AdminGis")}
+            accessibilityRole="button"
+            accessibilityLabel={t("admin.gisTitle")}
+          >
+            <Map size={18} color="#7C3AED" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(124, 58, 237, 0.25)" : "#F3E8FF" }]}
+            onPress={() => refetch()}
+            accessibilityRole="button"
+            accessibilityLabel={t("admin.gisRetry")}
+          >
+            <RefreshCw size={18} color="#7C3AED" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -157,6 +172,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   headerTextContainer: { flex: 1, marginRight: 12 },
+  headerActions: { flexDirection: "row", gap: 8 },
   greeting: { fontSize: 22, fontWeight: "800" },
   subGreeting: { fontSize: 13, marginTop: 2 },
   refreshBtn: {

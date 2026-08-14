@@ -227,6 +227,12 @@ export interface HeatmapPoint {
   lng: number;
   weight: number;
   incidentId: string;
+  title?: string;
+  address?: string;
+  category: string;
+  severity: string;
+  status: string;
+  createdAt?: string;
 }
 
 export interface HeatmapSummary {
@@ -247,7 +253,16 @@ export interface HeatmapDrilldown {
   center: { lat: number; lng: number };
   radiusMeters: number;
   summary: HeatmapSummary;
-  incidents: Array<{ alertId: string; title?: string; address?: string; category: string; severity: string; status: string; distanceMeters: number }>;
+  incidents: Array<{
+    alertId: string;
+    title?: string;
+    address?: string;
+    category: string;
+    severity: string;
+    status: string;
+    createdAt?: string;
+    distanceMeters: number;
+  }>;
 }
 
 export interface StatusHistoryEntry {

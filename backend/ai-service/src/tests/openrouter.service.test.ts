@@ -182,6 +182,83 @@ test('configured model is used and confidence zero is preserved', async () => {
   assert.equal(result.analysisMode, 'text');
 });
 
+test('incident analysis sends Vietnamese instructions without changing its technical contract', async () => {
+  let capturedRequest: Record<string, unknown> | undefined;
+  const client: OpenAiSdkClient = {
+    chat: {
+      completions: {
+        create: async (request) => {
+          capturedRequest = request;
+          return {
+            choices: [{
+              message: {
+                content: JSON.stringify({
+                  isIncident: true,
+                  incidentConfidence: 0.94,
+                  category: 'illegal_dumping',
+                  categoryConfidence: 0.94,
+                  severity: 'high',
+                  severityScore: 72,
+                  severityConfidence: 0.88,
+                  overallSummary: 'Hình ảnh và nội dung báo cáo cho thấy rác thải nhựa tập trung tại khu vực công cộng. Sự cố có thể ảnh hưởng đến vệ sinh môi trường nếu không được thu gom sớm.',
+                  shortReason: 'Bằng chứng Vision phát hiện túi nhựa và mô tả của người dân phù hợp với tình trạng đổ rác trái phép.',
+                  visionEvidenceUsed: ['Phát hiện plastic_bag với số lượng 2.'],
+                }),
+              },
+            }],
+          };
+        },
+      },
+    },
+  };
+
+  const result = await analyzeIncidentWithClient(
+    client,
+    'openai/gpt-4o-mini',
+    {
+      title: 'Rác ven đường',
+      description: 'Có nhiều túi rác bị đổ tại khu vực công cộng.',
+      imageUrl: 'https://example.com/evidence.jpg',
+      visionEvidence: {
+        detectorAvailable: true,
+        model: 'ecoalert-waste-yolo26n-v1.pt',
+        totalObjects: 2,
+        objects: [{ type: 'plastic_bag', count: 2, maxConfidence: 0.86 }],
+        detectorConfidence: 0.86,
+      },
+    },
+  );
+
+  const messages = capturedRequest?.messages as Array<{ role: string; content: unknown }>;
+  const systemPrompt = messages.find((message) => message.role === 'system')?.content;
+  const userContent = messages.find((message) => message.role === 'user')?.content;
+  const userParts = userContent as Array<{
+    type: string;
+    text?: string;
+    image_url?: { url?: string };
+  }>;
+  const userText = userParts.find((part) => part.type === 'text')?.text;
+
+  assert.equal(capturedRequest?.model, 'openai/gpt-4o-mini');
+  assert.equal(capturedRequest?.temperature, 0.1);
+  assert.ok('response_format' in (capturedRequest || {}));
+  assert.match(systemPrompt as string, /trợ lý AI chuyên phân tích và phân loại sự cố môi trường/);
+  assert.match(systemPrompt as string, /category chuẩn từ danh sách sau: illegal_dumping/);
+  assert.match(systemPrompt as string, /severity từ danh sách sau: low, medium, high, critical/);
+  assert.doesNotMatch(systemPrompt as string, /You are EcoAlert/);
+  assert.ok(Array.isArray(userContent));
+  assert.match(userText || '', /Tiêu đề: Rác ven đường/);
+  assert.match(userText || '', /Mô tả: Có nhiều túi rác bị đổ tại khu vực công cộng\./);
+  assert.match(userText || '', /Bằng chứng từ Vision/);
+  assert.match(userText || '', /Số vật thể phát hiện: 2\./);
+  assert.ok(userParts.some((part) =>
+    part.type === 'image_url' && part.image_url?.url === 'https://example.com/evidence.jpg'));
+  assert.equal(result.category, 'illegal_dumping');
+  assert.equal(result.severity, 'high');
+  assert.match(result.overallSummary, /rác thải nhựa/);
+  assert.match(result.shortReason, /Bằng chứng Vision/);
+});
+
 test('malformed AI JSON is rejected and unsupported categories are normalized safely', () => {
   assert.throws(() => parseIncidentAnalysis('not-json'), OpenRouterResponseError);
   assert.equal(parseIncidentAnalysis(JSON.stringify({
@@ -251,4 +328,12 @@ test('a rejected image payload retries once with text and marks the fallback', a
   assert.ok(Array.isArray(userContent));
   assert.ok(userContent.some((part: any) =>
     part.type === 'image_url' && part.image_url?.url === 'https://example.com/evidence.jpg'));
+
+  const fallbackMessages = requests[1].messages as Array<{ role: string; content: unknown }>;
+  const fallbackSystemPrompt = fallbackMessages.find((message) => message.role === 'system')?.content;
+  const fallbackUserContent = fallbackMessages.find((message) => message.role === 'user')?.content;
+  assert.match(fallbackSystemPrompt as string, /trợ lý AI chuyên phân tích và phân loại sự cố môi trường/);
+  assert.equal(typeof fallbackUserContent, 'string');
+  assert.match(fallbackUserContent as string, /Mô tả: The canal water has turned dark\./);
+  assert.match(fallbackUserContent as string, /Bằng chứng từ Vision/);
 });

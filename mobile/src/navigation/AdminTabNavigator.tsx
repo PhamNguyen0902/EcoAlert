@@ -16,6 +16,7 @@ import { AdminDashboardScreen } from "../screens/admin/AdminDashboardScreen";
 import { UserManagementScreen } from "../screens/admin/UserManagementScreen";
 import { CategoryManagementScreen } from "../screens/admin/CategoryManagementScreen";
 import { AuditLogsScreen } from "../screens/admin/AuditLogsScreen";
+import { AdminGisScreen } from "../screens/admin/AdminGisScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { useProfile, useLogout } from "../hooks/useAuth";
 import { EditProfileModal } from "../components/modals/EditProfileModal";
@@ -179,6 +180,7 @@ export const AdminTabNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AdminTabs" component={AdminTabs} />
+      <Stack.Screen name="AdminGis" component={AdminGisScreen} />
       <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
     </Stack.Navigator>
   );
