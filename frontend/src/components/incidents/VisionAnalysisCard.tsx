@@ -28,57 +28,57 @@ export function VisionAnalysisCard({ alert }: { alert: Alert }) {
       : percentage(vision.detectorConfidence);
 
   return (
-    <section className="rounded-lg border bg-muted/20 p-4" aria-labelledby="vision-analysis-heading">
+    <section className="rounded-lg border bg-muted/20 p-5" aria-labelledby="vision-analysis-heading">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <ScanSearch className="h-4 w-4 text-primary" aria-hidden="true" />
-          <h3 id="vision-analysis-heading" className="text-sm font-semibold">Vision nhận diện vật thể</h3>
+          <ScanSearch className="h-5 w-5 text-primary" aria-hidden="true" />
+          <h3 id="vision-analysis-heading" className="text-base font-semibold">Vision nhận diện vật thể</h3>
         </div>
-        <span className="rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">
+        <span className="shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground">
           {humanize(fusion?.mode || vision?.status)}
         </span>
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-        <div><dt className="text-muted-foreground">Loại vật thể</dt><dd className="mt-1 font-medium">{humanize(fusion?.wasteType)}</dd></div>
+      <dl className="mt-5 grid gap-x-5 gap-y-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
+        <div><dt className="text-muted-foreground">Loại vật thể</dt><dd className="mt-1 break-words font-medium">{humanize(fusion?.wasteType)}</dd></div>
         <div><dt className="text-muted-foreground">Số vật thể phát hiện</dt><dd className="mt-1 font-medium tabular-nums">{visionSucceeded ? vision.totalDetectedObjects : 'Không có'}</dd></div>
         <div><dt className="text-muted-foreground">Độ tin cậy detector</dt><dd className="mt-1 font-medium">{detectorStatus}</dd></div>
         <div><dt className="text-muted-foreground">Mức hỗ trợ Vision</dt><dd className="mt-1 font-medium">{humanize(fusion?.visionSupport)}</dd></div>
       </dl>
 
       {objectCounts.length ? (
-        <p className="mt-3 text-xs leading-5 text-muted-foreground">
-          Counts: {objectCounts.slice(0, 6).map((item) => `${humanize(item.label)}: ${item.count}`).join(' · ')}
+        <p className="mt-4 break-words text-sm leading-6 text-muted-foreground">
+          Counts: {objectCounts.map((item) => `${humanize(item.label)}: ${item.count}`).join(' · ')}
         </p>
       ) : null}
 
       {visionSucceeded && detections.length ? (
-        <ul className="mt-3 space-y-1.5" aria-label="Custom waste detections">
-          {detections.slice(0, 6).map((detection, index) => (
-            <li key={`${detection.label}-${index}`} className="flex items-center justify-between rounded-md border bg-background px-2.5 py-1.5 text-xs">
-              <span className="font-medium">{humanize(detection.label)}</span>
-              <span className="tabular-nums text-muted-foreground">{percentage(detection.confidence)}</span>
+        <ul className="mt-4 space-y-2" aria-label="Custom waste detections">
+          {detections.map((detection, index) => (
+            <li key={`${detection.label}-${index}`} className="flex items-center justify-between gap-4 rounded-md border bg-background px-3 py-2 text-sm">
+              <span className="min-w-0 break-words font-medium">{humanize(detection.label)}</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">{percentage(detection.confidence)}</span>
             </li>
           ))}
         </ul>
       ) : visionSucceeded ? (
-        <p className="mt-3 text-xs text-muted-foreground">Không phát hiện vật thể rác thuộc sáu lớp EcoAlert. Điều này không tự động phủ nhận sự cố.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Không phát hiện vật thể rác thuộc sáu lớp EcoAlert. Điều này không tự động phủ nhận sự cố.</p>
       ) : vision ? (
-        <p className="mt-3 text-xs text-muted-foreground">Vision không khả dụng cho lần phân tích này.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Vision không khả dụng cho lần phân tích này.</p>
       ) : null}
 
       {fusion ? (
-        <div className="mt-3 grid grid-cols-3 gap-2 rounded-md border bg-background p-2 text-center text-[10px]">
+        <div className="mt-4 grid gap-2 rounded-md border bg-background p-3 text-center text-xs sm:grid-cols-3">
           <div><p className="text-muted-foreground">Ngữ nghĩa</p><p className="mt-0.5 font-semibold">{percentage(fusion.semanticConfidence)}</p></div>
           <div><p className="text-muted-foreground">Nhận diện</p><p className="mt-0.5 font-semibold">{detectorStatus}</p></div>
           <div><p className="text-muted-foreground">Kết hợp</p><p className="mt-0.5 font-semibold">{percentage(fusion.fusionConfidence)}</p></div>
         </div>
       ) : null}
 
-      {explanations[0] ? <p className="mt-3 text-xs leading-5 text-muted-foreground">{explanations[0]}</p> : null}
+      {explanations[0] ? <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">{explanations[0]}</p> : null}
 
       {vision?.annotatedImageUrl ? (
-        <div className="mt-4">
+        <div className="mt-5">
           <Button size="sm" variant="outline" onClick={() => setShowAnnotation((value) => !value)}>
             {showAnnotation ? <Eye className="mr-2 h-3.5 w-3.5" /> : <ImageIcon className="mr-2 h-3.5 w-3.5" />}
             {showAnnotation ? 'Hide AI image' : 'View AI image'}
@@ -94,7 +94,7 @@ export function VisionAnalysisCard({ alert }: { alert: Alert }) {
         </div>
       ) : null}
 
-      <p className="mt-3 text-[10px] leading-4 text-muted-foreground">
+      <p className="mt-4 text-xs leading-5 text-muted-foreground">
         Đây là bằng chứng ở cấp độ vật thể, tách biệt với phân tích tổng quan. Con người phải kiểm tra ảnh gốc trước khi xác nhận.
       </p>
     </section>
