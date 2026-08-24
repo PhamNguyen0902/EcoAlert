@@ -26,7 +26,10 @@ import {
   type AdminDensityMapMode,
 } from '@/lib/admin-incident-density';
 import { formatMapLabel } from '@/lib/gis-heatmap';
-import { createIncidentMarkerIcon } from '@/lib/incident-map-marker';
+import {
+  createIncidentClusterIcon,
+  createIncidentMarkerIcon,
+} from '@/lib/incident-map-marker';
 import { gisService } from '@/services/services';
 import type { HeatmapDrilldown, HeatmapPoint, IncidentHeatmap } from '@/types';
 
@@ -185,30 +188,34 @@ export default function AdminIncidentHeatmap() {
             <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <DensityClickHandler onSelect={setDrilldownCenter} />
             {mapLayers.heatmap && heatPoints.length > 0 ? <HeatmapLayer points={heatPoints} /> : null}
-            {mapLayers.incidents && mapIncidents.length > 0 ? (
-              <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
-                {mapIncidents.map((incident) => (
-                  <IncidentMarker
-                    key={incident.incidentId}
-                    incident={incident}
-                    emphasized={selectedIncidentId === incident.incidentId || highlightedIncidentIds.has(incident.incidentId)}
-                    onSelect={setSelectedIncidentId}
-                    formatReportedAt={formatReportedAt}
-                    labels={{
-                      category: t('incident_density.category'),
-                      severity: t('incident_density.severity'),
-                      status: t('incident_density.status'),
-                      reported: t('incident_density.reported'),
-                      address: t('incident_density.address'),
-                      coordinates: t('incident_density.coordinates'),
-                      viewIncident: t('incident_density.view_incident'),
-                      untitled: t('incident_density.untitled'),
-                      unknownAddress: t('incident_density.unknown_address'),
-                    }}
-                  />
-                ))}
-              </MarkerClusterGroup>
-            ) : null}
+            <MarkerClusterGroup
+              chunkedLoading
+              iconCreateFunction={createIncidentClusterIcon}
+              maxClusterRadius={40}
+            >
+              {mapLayers.incidents
+                ? mapIncidents.map((incident) => (
+                    <IncidentMarker
+                      key={incident.incidentId}
+                      incident={incident}
+                      emphasized={selectedIncidentId === incident.incidentId || highlightedIncidentIds.has(incident.incidentId)}
+                      onSelect={setSelectedIncidentId}
+                      formatReportedAt={formatReportedAt}
+                      labels={{
+                        category: t('incident_density.category'),
+                        severity: t('incident_density.severity'),
+                        status: t('incident_density.status'),
+                        reported: t('incident_density.reported'),
+                        address: t('incident_density.address'),
+                        coordinates: t('incident_density.coordinates'),
+                        viewIncident: t('incident_density.view_incident'),
+                        untitled: t('incident_density.untitled'),
+                        unknownAddress: t('incident_density.unknown_address'),
+                      }}
+                    />
+                  ))
+                : null}
+            </MarkerClusterGroup>
           </MapContainer>
           {isLoading ? <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/65"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : null}
           {isError ? <div role="alert" className="absolute left-4 top-4 z-10 rounded-md border border-destructive/40 bg-background p-3 text-sm text-destructive">{t('incident_density.load_error')}</div> : null}
@@ -300,9 +307,10 @@ function IncidentMarker({
     <Marker
       position={position}
       icon={createIncidentMarkerIcon(incident.severity, { emphasized })}
+      zIndexOffset={emphasized ? 1_000 : 0}
       eventHandlers={{ click: () => onSelect(incident.incidentId) }}
     >
-      <Tooltip direction="top" offset={[0, -12]}>{incidentReportCode(incident.incidentId)} · {incident.title || labels.untitled}</Tooltip>
+      <Tooltip direction="top" offset={[0, -14]}>{incidentReportCode(incident.incidentId)} · {incident.title || labels.untitled}</Tooltip>
       <Popup className="ecoalert-map-popup" minWidth={255} maxWidth={320}>
         <div className="w-64 space-y-3">
           <div><p className="text-xs font-semibold text-primary">{incidentReportCode(incident.incidentId)}</p><h2 className="mt-1 break-words text-base font-semibold">{incident.title || labels.untitled}</h2></div>

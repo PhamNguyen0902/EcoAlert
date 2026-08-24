@@ -81,7 +81,7 @@ export default function AlertDetail() {
   const shortId = alert._id.slice(-8).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 pb-10">
+    <div className="mx-auto w-full max-w-7xl space-y-6 pb-10">
       <header className="border-b pb-6">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} aria-label="Quay lại danh sách"><ArrowLeft className="mr-2 h-4 w-4" />Quay lại</Button>
         <div className="mt-4 flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
@@ -103,8 +103,8 @@ export default function AlertDetail() {
 
       <IncidentStatusProgress status={status} />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
-        <main className="min-w-0 space-y-8">
+      <main className="grid gap-6 lg:grid-cols-[minmax(0,2.2fr)_minmax(300px,0.8fr)]">
+        <div className="min-w-0 space-y-8">
           <section aria-labelledby="incident-details-heading">
             <div className="flex items-center gap-2">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><ClipboardList className="h-4 w-4" aria-hidden="true" /></span>
@@ -134,6 +134,39 @@ export default function AlertDetail() {
             altPrefix="Hình ảnh minh chứng"
           />
 
+          <section className="border-t pt-8" aria-labelledby="ai-analysis-heading">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Bot className="h-4 w-4" aria-hidden="true" /></span>
+              <div>
+                <h2 id="ai-analysis-heading" className="text-lg font-semibold">{t('alert_detail.ai_analysis')}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t('alert_detail.ai_read_only')}</p>
+              </div>
+            </div>
+
+            <dl className="mt-5 grid gap-4 rounded-lg border bg-muted/30 p-4 text-sm sm:grid-cols-3">
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('alert_detail.detected_category')}</dt>
+                <dd className="mt-1.5 break-words font-medium">{formatIncidentCategory(alert.category)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('alert_detail.confidence')} · {displayConfidence.source === 'FUSION' ? 'Fusion' : displayConfidence.source === 'SEMANTIC' ? t('alert_detail.confidence_semantic') : t('alert_detail.confidence_category')}</dt>
+                <dd className="mt-1.5 font-medium tabular-nums">{confidence !== null ? `${Math.round(confidence * 100)}%` : t('alert_detail.confidence_unavailable')}</dd>
+                {confidence !== null ? <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={t('alert_detail.ai_confidence_aria')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(confidence * 100)}><div className="h-full bg-primary transition-[width]" style={{ width: `${confidence * 100}%` }} /></div> : null}
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('alert_detail.suggested_severity')}</dt>
+                <dd className="mt-1.5"><SeverityBadge severity={displaySeverity} /></dd>
+              </div>
+            </dl>
+
+            <p className="mt-4 rounded-lg border bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">{t('alert_detail.ai_disclaimer')}</p>
+
+            <div className="mt-5 space-y-5">
+              <OverallAiAnalysisCard alert={alert} />
+              <VisionAnalysisCard alert={alert} />
+            </div>
+          </section>
+
           {hasTreatmentResult ? (
             <section className="border-t pt-8" aria-labelledby="treatment-result-heading">
               <div className="flex items-start gap-3">
@@ -155,10 +188,7 @@ export default function AlertDetail() {
             </section>
           ) : null}
 
-          <div className="border-t pt-8">
-            <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} analysisMode={alert.aiAnalysisMode} vision={alert.aiVision} />
-          </div>
-        </main>
+        </div>
 
         <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
           <Card className="overflow-hidden">
@@ -187,25 +217,6 @@ export default function AlertDetail() {
 
           <Card>
             <CardContent className="p-5">
-              <div className="flex items-center gap-2"><Bot className="h-4 w-4 text-primary" aria-hidden="true" /><h2 className="font-semibold">{t('alert_detail.ai_analysis')}</h2></div>
-              <div className="mt-5 space-y-4 text-sm">
-                <div className="flex items-start justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.detected_category')}</span><span className="text-right font-medium">{formatIncidentCategory(alert.category)}</span></div>
-                <div className="flex items-start justify-between gap-4"><span className="text-muted-foreground">Mức độ gợi ý</span><SeverityBadge severity={displaySeverity} /></div>
-                {confidence !== null ? (
-                  <div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{t('alert_detail.confidence')} · {displayConfidence.source === 'FUSION' ? 'Fusion' : displayConfidence.source === 'SEMANTIC' ? 'Ngữ nghĩa' : 'Danh mục'}</span><span className="font-medium tabular-nums">{Math.round(confidence * 100)}%</span></div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Độ tin cậy AI" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(confidence * 100)}><div className="h-full bg-primary transition-[width]" style={{ width: `${confidence * 100}%` }} /></div>
-                  </div>
-                ) : <p className="text-sm text-muted-foreground">Độ tin cậy AI: Không khả dụng.</p>}
-                <p className="rounded-lg border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">Phân tích AI hỗ trợ phân loại và được Cán bộ kiểm tra trước khi đưa ra quyết định cuối cùng.</p>
-                <OverallAiAnalysisCard alert={alert} />
-                <VisionAnalysisCard alert={alert} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
               <div className="flex items-center gap-2"><UserCheck className="h-4 w-4 text-primary" aria-hidden="true" /><h2 className="font-semibold">Tóm tắt tiến độ</h2></div>
               <dl className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Phân công</dt><dd className="text-right font-medium">{alert.assignedOfficerId ? 'Đã phân công cán bộ' : 'Đang chờ phân công'}</dd></div>
@@ -217,7 +228,11 @@ export default function AlertDetail() {
             </CardContent>
           </Card>
         </aside>
-      </div>
+
+        <section className="min-w-0 border-t pt-8 lg:col-start-1" aria-label={t('alert_detail.timeline')}>
+          <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} analysisMode={alert.aiAnalysisMode} vision={alert.aiVision} />
+        </section>
+      </main>
     </div>
   );
 }
