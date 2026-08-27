@@ -8,4 +8,3 @@ export * from './officer/OfficerTasksScreen';
 export * from './officer/OfficerAlertDetailScreen';
 export * from './officer/OfficerMapScreen';
 export * from './admin/AdminIncidentsScreen';
-export * from './admin/CategoryManagementScreen';

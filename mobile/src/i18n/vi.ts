@@ -11,7 +11,7 @@ export const vi = {
     monitoringMap: "Bản đồ giám sát",
     mapView: "Bản đồ",
     reportManagement: "Quản lý Báo cáo",
-    incidentCategories: "Danh mục Sự cố",
+    gisMap: "Bản đồ GIS",
     users: "Người dùng",
     categories: "Danh mục",
     audit: "Nhật ký hệ thống",

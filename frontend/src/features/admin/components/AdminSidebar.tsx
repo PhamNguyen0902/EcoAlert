@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   FileText,
-  Tag,
+  Map,
   ChevronLeft,
   ChevronRight,
   Leaf,
@@ -13,7 +13,7 @@ import { useAlerts } from '@/hooks/hooks';
 
 const NAV_ITEMS = [
   { to: '/admin/reports', key: 'nav.reports', icon: FileText, showBadge: true },
-  { to: '/admin/categories', key: 'nav.categories', icon: Tag },
+  { to: '/admin/gis', key: 'nav.gis', icon: Map },
 ];
 
 export default function AdminSidebar() {

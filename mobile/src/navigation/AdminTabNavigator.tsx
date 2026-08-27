@@ -1,12 +1,12 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { FileText, Tag } from 'lucide-react-native';
+import { FileText, Map } from 'lucide-react-native';
 import { AdminIncidentsScreen } from '../screens/admin/AdminIncidentsScreen';
-import { CategoryManagementScreen } from '../screens/admin/CategoryManagementScreen';
+import { OfficerMapScreen } from '../screens/officer/OfficerMapScreen';
 import { AlertDetailScreen } from '../screens/citizen/AlertDetailScreen';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 const Tab = createBottomTabNavigator(); const Stack = createNativeStackNavigator();
-const AdminTabs = () => { const { colors } = useTheme(); const { t } = useLanguage(); return <Tab.Navigator screenOptions={({ route }) => ({ headerShown: false, tabBarActiveTintColor: '#7C3AED', tabBarInactiveTintColor: colors.textMuted, tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, height: 64, paddingBottom: 8, paddingTop: 8 }, tabBarLabelStyle: { fontSize: 11, fontWeight: '600' }, tabBarIcon: ({ color, size }) => route.name === 'AdminIncidentsTab' ? <FileText color={color} size={size} /> : <Tag color={color} size={size} /> })}><Tab.Screen name="AdminIncidentsTab" component={AdminIncidentsScreen} options={{ tabBarLabel: t('tabs.reportManagement') }} /><Tab.Screen name="AdminCategoriesTab" component={CategoryManagementScreen} options={{ tabBarLabel: t('tabs.incidentCategories') }} /></Tab.Navigator>; };
+const AdminTabs = () => { const { colors } = useTheme(); const { t } = useLanguage(); return <Tab.Navigator screenOptions={({ route }) => ({ headerShown: false, tabBarActiveTintColor: '#7C3AED', tabBarInactiveTintColor: colors.textMuted, tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, height: 64, paddingBottom: 8, paddingTop: 8 }, tabBarLabelStyle: { fontSize: 11, fontWeight: '600' }, tabBarIcon: ({ color, size }) => route.name === 'AdminIncidentsTab' ? <FileText color={color} size={size} /> : <Map color={color} size={size} /> })}><Tab.Screen name="AdminIncidentsTab" component={AdminIncidentsScreen} options={{ tabBarLabel: t('tabs.reportManagement') }} /><Tab.Screen name="AdminGisTab" options={{ tabBarLabel: t('tabs.gisMap') }}>{(props) => <OfficerMapScreen {...props} mode="admin" />}</Tab.Screen></Tab.Navigator>; };
 export const AdminTabNavigator = () => <Stack.Navigator screenOptions={{ headerShown: false }}><Stack.Screen name="AdminTabs" component={AdminTabs} /><Stack.Screen name="AlertDetail" component={AlertDetailScreen} /></Stack.Navigator>;

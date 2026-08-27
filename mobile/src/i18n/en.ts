@@ -13,7 +13,7 @@ export const en: Translations = {
     monitoringMap: "Monitoring Map",
     mapView: "Map View",
     reportManagement: "Report Management",
-    incidentCategories: "Incident Categories",
+    gisMap: "GIS Map",
     users: "Users",
     categories: "Categories",
     audit: "Audit Logs",

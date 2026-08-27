@@ -3,9 +3,8 @@ import {
   authService,
   alertService,
   gisService,
-  categoryService,
 } from "../services/services";
-import { CreateAlertData, Category, ResolutionInput } from "@/types";
+import { CreateAlertData, ResolutionInput } from "@/types";
 
 // ========================
 // AUTH
@@ -227,48 +226,6 @@ export const useNearbyIncidents = (
     queryKey: ["gis", "nearby", lng, lat, maxDistance],
     queryFn: () => gisService.getNearby(lng, lat, maxDistance),
     enabled: Boolean(lng && lat),
-  });
-};
-
-// ========================
-// CATEGORIES
-// ========================
-
-export const useCategories = (includeInactive = false) => {
-  return useQuery({
-    queryKey: ["categories", includeInactive],
-    queryFn: () => categoryService.getCategories(includeInactive),
-  });
-};
-
-export const useCreateCategory = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: Partial<Category>) => categoryService.createCategory(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-    },
-  });
-};
-
-export const useUpdateCategory = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Category> }) =>
-      categoryService.updateCategory(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-    },
-  });
-};
-
-export const useDeleteCategory = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => categoryService.deleteCategory(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-    },
   });
 };
 
