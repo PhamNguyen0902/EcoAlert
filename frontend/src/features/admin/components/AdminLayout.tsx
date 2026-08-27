@@ -8,7 +8,7 @@ export default function AdminLayout() {
       <AdminSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminTopbar />
-        <main className="flex-1 overflow-y-auto p-6 bg-background">
+        <main className="relative z-0 flex-1 overflow-y-auto bg-background p-6">
           <Outlet />
         </main>
       </div>

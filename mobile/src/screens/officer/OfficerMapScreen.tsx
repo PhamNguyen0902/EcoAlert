@@ -10,7 +10,9 @@ import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import { getCategoryLabel, getStatusLabel } from "../../utils/incidentPresentation";
 
-export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+type MapScreenProps = { navigation: any; mode?: 'admin' | 'officer' };
+
+export const OfficerMapScreen: React.FC<MapScreenProps> = ({ navigation, mode = 'officer' }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
@@ -24,15 +26,24 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
     latitudeDelta: 0.08,
     longitudeDelta: 0.08,
   };
+  const isAdminMap = mode === 'admin';
+  const title = isAdminMap ? 'Bản đồ GIS' : 'Bản đồ Giám sát Sự cố';
+  const subtitle = isAdminMap
+    ? `Vị trí thực tế để xác minh và điều phối (${alerts.length} báo cáo)`
+    : `Vị trí các sự cố môi trường (${alerts.length} báo cáo)`;
+  const openDetail = (id: string) => {
+    const target = isAdminMap ? 'AlertDetail' : 'OfficerAlertDetail';
+    (isAdminMap ? navigation.getParent?.() : navigation)?.navigate(target, { id });
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Sticky Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Bản đồ Giám sát Sự cố</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-            Vị trí các sự cố môi trường ({alerts.length} báo cáo)
+            {subtitle}
           </Text>
         </View>
         <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE" }]} onPress={() => refetch()} disabled={isRefetching}>
@@ -58,14 +69,14 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
               coordinate={{ latitude: lat, longitude: lng }}
               pinColor={sevColor}
             >
-              <Callout onPress={() => navigation.navigate("OfficerAlertDetail", { id: alert._id })}>
+              <Callout onPress={() => openDetail(alert._id)}>
                 <View style={styles.calloutBox}>
                   <Text style={[styles.calloutTitle, { color: colors.text }]} numberOfLines={1}>
                     {alert.title}
                   </Text>
                   <Text style={[styles.calloutCategory, { color: colors.textMuted }]}>{getCategoryLabel(alert.category, language)}</Text>
                   <Text style={[styles.calloutStatus, { color: colors.secondary }]}>{language === "vi" ? "Trạng thái" : "Status"}: {getStatusLabel(alert.status, language)}</Text>
-                  <Text style={[styles.calloutCta, { color: colors.primaryDark }]}>Nhấn để xem & xác minh ›</Text>
+                  <Text style={[styles.calloutCta, { color: colors.primaryDark }]}>{isAdminMap ? 'Nhấn để xem hồ sơ ›' : 'Nhấn để xem & xử lý ›'}</Text>
                 </View>
               </Callout>
             </Marker>

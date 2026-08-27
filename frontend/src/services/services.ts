@@ -1,7 +1,6 @@
 import { api } from "./api";
 import type {
   Alert,
-  Category,
   CreateAlertData,
   PaginatedResult,
   RegisterData,
@@ -134,25 +133,6 @@ export const gisService = {
     const res = await api.get(
       `/v1/gis/radius?lng=${lng}&lat=${lat}&radius=${radius}`,
     );
-    return res.data.data;
-  },
-};
-
-export const categoryService = {
-  getCategories: async (includeInactive = false) => {
-    const res = await api.get(`/v1/alerts/categories?includeInactive=${includeInactive}`);
-    return res.data.data;
-  },
-  createCategory: async (data: Partial<Category>) => {
-    const res = await api.post('/v1/alerts/categories', data);
-    return res.data.data;
-  },
-  updateCategory: async (id: string, data: Partial<Category>) => {
-    const res = await api.patch(`/v1/alerts/categories/${id}`, data);
-    return res.data.data;
-  },
-  deleteCategory: async (id: string) => {
-    const res = await api.delete(`/v1/alerts/categories/${id}`);
     return res.data.data;
   },
 };

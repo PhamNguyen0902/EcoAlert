@@ -33,9 +33,7 @@ const AdminLayout = lazy(
 const ReportManagement = lazy(
   () => import("./features/admin/pages/ReportManagement"),
 );
-const CategoryManagement = lazy(
-  () => import("./features/admin/pages/CategoryManagement"),
-);
+const AdminGisMap = lazy(() => import("./features/admin/pages/AdminGisMap"));
 
 const ProtectedRoute = lazy(() =>
   import("./components/auth/ProtectedRoute").then((m) => ({
@@ -99,7 +97,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin/reports" element={<ReportManagement />} />
-              <Route path="/admin/categories" element={<CategoryManagement />} />
+              <Route path="/admin/gis" element={<AdminGisMap />} />
               <Route
                 path="/admin/reports/:id"
                 element={<OfficerReportDetail />}
