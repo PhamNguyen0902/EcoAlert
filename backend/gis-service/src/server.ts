@@ -6,12 +6,6 @@ import { createLogger } from '@ecoalert/shared';
 
 const logger = createLogger('gis-service');
 
-if (!envConfig.openWeatherApiKey) {
-  logger.warn(
-    'OpenWeather configuration missing; weather endpoints will return service unavailable',
-  );
-}
-
 const startServer = async () => {
   try {
     await connectDB();

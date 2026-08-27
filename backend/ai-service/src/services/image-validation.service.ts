@@ -43,7 +43,7 @@ const responseFormat = {
 
 const unavailable = (): ImageValidationResult => ({
   decision: 'UNAVAILABLE', isEnvironmentalIncident: null, confidence: null, suggestedCategory: null,
-  reason: 'Automatic image validation is temporarily unavailable. Your report can still be reviewed manually.',
+  reason: 'Tính năng kiểm tra ảnh tự động tạm thời không khả dụng. Báo cáo vẫn có thể được kiểm tra thủ công.',
   model: null, validatedAt: new Date().toISOString(),
 });
 
@@ -64,27 +64,27 @@ export const deriveImageValidation = (
 
 export const validateIncidentImage = async (imageUrl: string): Promise<ImageValidationResult> => {
   let parsedUrl: URL;
-  try { parsedUrl = new URL(imageUrl); } catch { throw new OpenRouterResponseError('A valid image URL is required.'); }
-  if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new OpenRouterResponseError('A valid image URL is required.');
+  try { parsedUrl = new URL(imageUrl); } catch { throw new OpenRouterResponseError('Cần cung cấp đường dẫn ảnh hợp lệ.'); }
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new OpenRouterResponseError('Cần cung cấp đường dẫn ảnh hợp lệ.');
   try {
     const provider = getOpenRouterProvider();
     const generation = await provider.generate(AiTask.IMAGE_VALIDATION, {
       messages: [
         { role: 'system', content: [
-          'You validate an image before an EcoAlert environmental incident report is submitted.',
-          'Decide only whether it plausibly shows an environmental or urban incident, is clearly unrelated, or is unclear.',
-          `Only suggest a category if visually defensible and one of: ${AI_SUPPORTED_CATEGORIES.join(', ')}.`,
-          'A selfie, food, pet, document, meme, screenshot, or ordinary indoor image is clearly unrelated unless it visibly documents an environmental incident.',
-          'If evidence is weak or outside this visual scope, return null category and isEnvironmentalIncident null.',
-          'Give a concise user-facing reason. Do not reveal hidden reasoning.',
+          'Bạn kiểm tra ảnh trước khi người dùng gửi báo cáo sự cố môi trường trên EcoAlert.',
+          'Chỉ đánh giá liệu ảnh có khả năng thể hiện một sự cố môi trường hoặc đô thị, rõ ràng không liên quan, hoặc chưa đủ rõ để kết luận.',
+          `Chỉ đề xuất danh mục khi có thể bảo vệ bằng bằng chứng trực quan và danh mục đó thuộc một trong các giá trị sau: ${AI_SUPPORTED_CATEGORIES.join(', ')}.`,
+          'Ảnh chân dung, đồ ăn, thú cưng, tài liệu, ảnh chế, ảnh chụp màn hình hoặc ảnh trong nhà thông thường là không liên quan, trừ khi chúng hiển thị rõ một sự cố môi trường.',
+          'Nếu bằng chứng yếu hoặc nằm ngoài phạm vi nhận diện trực quan này, hãy trả về category là null và isEnvironmentalIncident là null.',
+          'reason phải là lời giải thích ngắn gọn, tự nhiên bằng tiếng Việt dành cho người dùng. Không tiết lộ quá trình suy luận nội bộ.',
         ].join(' ') },
-        { role: 'user', content: [{ type: 'text', text: 'Validate this incident image.' }, { type: 'image_url', image_url: { url: imageUrl } }] },
+        { role: 'user', content: [{ type: 'text', text: 'Hãy kiểm tra ảnh báo cáo sự cố này.' }, { type: 'image_url', image_url: { url: imageUrl } }] },
       ],
       temperature: 0.1,
       response_format: responseFormat,
     });
     const content = generation.response.choices[0]?.message.content;
-    if (!content) throw new OpenRouterResponseError('Image validation returned no result.');
+    if (!content) throw new OpenRouterResponseError('Hệ thống kiểm tra ảnh không trả về kết quả.');
     const result = responseSchema.parse(JSON.parse(content));
     return deriveImageValidation(result, generation.model);
   } catch {

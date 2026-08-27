@@ -71,7 +71,7 @@ app.get('/health', (req, res) => {
 // Authentication Middleware for Gateway
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   // Allow unauthenticated access to certain routes
-  const publicRoutes = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh-token', '/api/v1/ai/translate'];
+  const publicRoutes = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh-token'];
   const cleanPath = req.originalUrl.split('?')[0];
   if (publicRoutes.includes(cleanPath)) {
     return next();
@@ -126,8 +126,7 @@ const socketProxy = createProxyMiddleware({
 app.use('/socket.io', socketProxy);
 
 // General Proxy configuration
-const setupProxy = (path: string, target: string, rewrite: boolean = false, internalAssistant = false, ws = false) => {
-  const internalGatewaySecret = process.env.INTERNAL_GATEWAY_SHARED_SECRET;
+const setupProxy = (path: string, target: string, rewrite: boolean = false, ws = false) => {
 
   app.use(
     path,
@@ -136,10 +135,6 @@ const setupProxy = (path: string, target: string, rewrite: boolean = false, inte
       changeOrigin: true,
       ws,
       pathRewrite: rewrite ? { [`^${path}`]: '' } : undefined,
-      headers:
-        internalAssistant && internalGatewaySecret
-          ? { 'x-internal-gateway-secret': internalGatewaySecret }
-          : undefined,
       onProxyReq: (proxyReq, req) => {
         if (req.body && Object.keys(req.body).length) {
           fixRequestBody(proxyReq, req);
@@ -158,8 +153,7 @@ setupProxy('/api/v1/users', process.env.USER_SERVICE_URL || 'http://localhost:30
 setupProxy('/api/v1/alerts', process.env.ALERT_SERVICE_URL || 'http://localhost:3002', true);
 setupProxy('/api/v1/media', process.env.MEDIA_SERVICE_URL || 'http://localhost:3003', true);
 setupProxy('/api/v1/gis', process.env.GIS_SERVICE_URL || 'http://localhost:3004', true);
-setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', true, false, true);
-setupProxy('/api/v1/assistant', process.env.AI_SERVICE_URL || 'http://localhost:3005', true, true);
+setupProxy('/api/v1/notifications', process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006', true, true);
 setupProxy('/api/v1/ai', process.env.AI_SERVICE_URL || 'http://localhost:3005', true);
 
 // Global Error Handler

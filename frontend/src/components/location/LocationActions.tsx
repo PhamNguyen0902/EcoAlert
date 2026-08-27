@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Loader2, Map, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   copyCoordinates,
   hasValidCoordinates,
@@ -24,6 +25,7 @@ export function LocationActions({
   showNavigation = true,
   className,
 }: LocationActionsProps) {
+  const { language } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const resetCopyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -56,6 +58,17 @@ export function LocationActions({
   const buttonClassName = isCompact
     ? 'justify-start rounded-xl bg-background/95 px-3 text-xs shadow-lg backdrop-blur'
     : 'w-full';
+  const text = language === 'vi'
+    ? {
+      openMap: 'Mở vị trí đã chọn trên Google Maps', viewMap: 'Xem trên Google Maps',
+      navigate: 'Chỉ đường đến vị trí đã chọn', startNavigation: 'Bắt đầu chỉ đường',
+      copy: 'Sao chép tọa độ', copied: 'Đã sao chép', copyCoords: 'Sao chép tọa độ',
+    }
+    : {
+      openMap: 'Open selected location in Google Maps', viewMap: 'View on Google Maps',
+      navigate: 'Navigate to selected location', startNavigation: 'Start navigation',
+      copy: 'Copy coordinates', copied: 'Copied', copyCoords: 'Copy coords',
+    };
 
   return (
     <div
@@ -71,11 +84,11 @@ export function LocationActions({
         className={buttonClassName}
         onClick={() => openGoogleMaps(latitude, longitude)}
         disabled={!hasCoordinates}
-        aria-label="Open selected location in Google Maps"
+        aria-label={text.openMap}
         title="Google Maps"
       >
         <Map className="h-4 w-4" />
-        <span className="ml-2">{isCompact ? 'Google Maps' : 'View on Google Maps'}</span>
+        <span className="ml-2">{isCompact ? 'Google Maps' : text.viewMap}</span>
       </Button>
 
       {showNavigation ? (
@@ -86,11 +99,11 @@ export function LocationActions({
           className={buttonClassName}
           onClick={() => startGoogleMapsNavigation(latitude, longitude)}
           disabled={!hasCoordinates}
-          aria-label="Navigate to selected location"
-          title="Navigate"
+          aria-label={text.navigate}
+          title={text.startNavigation}
         >
           <Navigation className="h-4 w-4" />
-          <span className="ml-2">{isCompact ? 'Navigate' : 'Start Navigation'}</span>
+          <span className="ml-2">{isCompact ? text.startNavigation : text.startNavigation}</span>
         </Button>
       ) : null}
 
@@ -101,8 +114,8 @@ export function LocationActions({
         className={buttonClassName}
         onClick={handleCopy}
         disabled={!hasCoordinates || isCopying}
-        aria-label="Copy coordinates"
-        title="Copy coordinates"
+        aria-label={text.copy}
+        title={text.copy}
       >
         {isCopying ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -111,7 +124,7 @@ export function LocationActions({
         ) : (
           <Copy className="h-4 w-4" />
         )}
-        <span className="ml-2">{copied ? 'Copied' : isCompact ? 'Copy coords' : 'Copy Coordinates'}</span>
+        <span className="ml-2">{copied ? text.copied : isCompact ? text.copyCoords : text.copy}</span>
       </Button>
     </div>
   );

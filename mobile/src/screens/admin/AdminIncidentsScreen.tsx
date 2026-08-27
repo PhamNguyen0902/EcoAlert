@@ -17,6 +17,7 @@ import { Card } from "../../components/ui/Card";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
 import { SEVERITY_COLORS, STATUS_COLORS } from "../../utils/constants";
+import { getCategoryLabel, getSeverityLabel, getStatusLabel } from "../../utils/incidentPresentation";
 
 const STATUS_FILTERS = ["ALL", "ACTIVE", "PENDING", "VERIFIED", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const;
 const SEVERITY_FILTERS = ["ALL", "LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
@@ -52,7 +53,7 @@ export const AdminIncidentsScreen: React.FC<{ navigation: any }> = ({ navigation
   const selectStatus = (next: (typeof STATUS_FILTERS)[number]) => { setPage(1); setStatus(next); };
   const selectSeverity = (next: (typeof SEVERITY_FILTERS)[number]) => { setPage(1); setSeverity(next); };
   const selectCategory = (next: string) => { setPage(1); setCategory(next); };
-  const labelForStatus = (value: string) => value === "ALL" ? copy.all : value === "ACTIVE" ? copy.active : value.replaceAll("_", " ");
+  const labelForStatus = (value: string) => value === "ALL" ? copy.all : value === "ACTIVE" ? copy.active : getStatusLabel(value, language);
 
   const renderFilter = (label: string, selected: boolean, onPress: () => void) => (
     <TouchableOpacity
@@ -80,8 +81,8 @@ export const AdminIncidentsScreen: React.FC<{ navigation: any }> = ({ navigation
       >
         <Card style={styles.incidentCard}>
           <View style={styles.cardTop}>
-            <Badge label={normalizedStatus.replaceAll("_", " ")} type="custom" bgColor={statusColor.bg} textColor={statusColor.text} />
-            <Badge label={severityKey} type="custom" bgColor={severityColor.bg} textColor={severityColor.text} />
+            <Badge label={getStatusLabel(normalizedStatus, language)} type="custom" bgColor={statusColor.bg} textColor={statusColor.text} />
+            <Badge label={getSeverityLabel(severityKey, language)} type="custom" bgColor={severityColor.bg} textColor={severityColor.text} />
           </View>
           <Text style={[styles.incidentTitle, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
           <Text style={[styles.incidentDescription, { color: colors.textMuted }]} numberOfLines={2}>{item.description}</Text>
@@ -114,8 +115,8 @@ export const AdminIncidentsScreen: React.FC<{ navigation: any }> = ({ navigation
           <View style={styles.filterGroups}>
             <Text style={[styles.filterLabel, { color: colors.text }]}>{copy.filters}</Text>
             <FlatList horizontal data={[...STATUS_FILTERS]} keyExtractor={(item) => item} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow} renderItem={({ item }) => renderFilter(labelForStatus(item), status === item, () => selectStatus(item))} />
-            <FlatList horizontal data={[...SEVERITY_FILTERS]} keyExtractor={(item) => item} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow} renderItem={({ item }) => renderFilter(item === "ALL" ? copy.all : item, severity === item, () => selectSeverity(item))} />
-            <FlatList horizontal data={["ALL", ...(categories.data ?? []).filter((item) => item.isActive).map((item) => item.code)]} keyExtractor={(item) => item} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow} renderItem={({ item }) => renderFilter(item === "ALL" ? copy.all : item.replaceAll("_", " "), category === item, () => selectCategory(item))} />
+            <FlatList horizontal data={[...SEVERITY_FILTERS]} keyExtractor={(item) => item} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow} renderItem={({ item }) => renderFilter(item === "ALL" ? copy.all : getSeverityLabel(item, language), severity === item, () => selectSeverity(item))} />
+            <FlatList horizontal data={["ALL", ...(categories.data ?? []).filter((item) => item.isActive).map((item) => item.code)]} keyExtractor={(item) => item} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow} renderItem={({ item }) => renderFilter(item === "ALL" ? copy.all : getCategoryLabel(item, language), category === item, () => selectCategory(item))} />
           </View>
         }
         ListEmptyComponent={

@@ -284,7 +284,7 @@ export default function CreateAlert() {
       });
 
       toast.success(t('toast.report_submit_success'), { id: 'submit' });
-      navigate('/dashboard');
+      navigate('/my-reports');
     } catch (err: any) {
       toast.error(getErrorMessage(err, t('toast.report_submit_error')), { id: 'submit' });
     } finally {

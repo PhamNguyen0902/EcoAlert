@@ -3,15 +3,20 @@ import { Translations } from "./vi";
 export const en: Translations = {
   // Navigation Tabs
   tabs: {
+    home: "Home",
     dashboard: "Dashboard",
+    reportIncident: "Report Incident",
     reportAlert: "Report Alert",
     myReports: "My Reports",
+    assignedReports: "Assigned Reports",
     assignedTasks: "Assigned Tasks",
+    monitoringMap: "Monitoring Map",
     mapView: "Map View",
+    reportManagement: "Report Management",
+    incidentCategories: "Incident Categories",
     users: "Users",
     categories: "Categories",
     audit: "Audit Logs",
-    assistant: "Assistant",
     profile: "Profile",
   },
 
@@ -238,8 +243,6 @@ export const en: Translations = {
     categoryManagementTitle: "Category Management",
     categoryManagementSub: "Configure environmental alert categories and default severity levels.",
     addCategory: "Add Category",
-    auditLogsTitle: "Audit Logs",
-    auditLogsSub: "Real-time audit trail of all platform activities, security events, and modifications.",
     searchAuditPlaceholder: "Filter audit events by actor or action...",
     gisTitle: "Incident density",
     gisSubtitle: "Real GIS data using the current filters",
@@ -279,7 +282,6 @@ export const en: Translations = {
 
   // Officer Screens
   officer: {
-    officerDashboardTitle: "Officer Control Center",
     environmentalResponse: "Environmental Command & Response",
     responseDesk: "Response Desk",
     responseDeskDesc: "Verify incoming citizen alerts, dispatch inspection teams, and log resolution updates.",

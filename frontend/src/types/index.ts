@@ -3,39 +3,7 @@ export type WorkflowActorRole = UserRole | 'SYSTEM';
 export type AlertStatus = 'pending' | 'ai_analyzing' | 'verified' | 'assigned' | 'in_progress' | 'resolved' | 'closed' | 'rejected';
 export type AlertCategory = 'illegal_dumping' | 'water_pollution' | 'air_pollution' | 'illegal_burning' | 'flooding' | 'fallen_tree' | 'illegal_construction_waste' | 'noise_pollution' | 'soil_contamination' | 'wildlife_threat' | 'other' | 'UNCLASSIFIED';
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
-export type AiAnalysisMode = 'text' | 'vision' | 'text_fallback' | 'FULL_MULTIMODAL' | 'SEMANTIC_ONLY' | 'VISION_ONLY' | 'FAILED';
-export type AiWasteType = 'PLASTIC_WASTE' | 'ORGANIC_WASTE' | 'CONSTRUCTION_WASTE' | 'HAZARDOUS_WASTE' | 'METAL_WASTE' | 'GLASS_WASTE' | 'PAPER_WASTE' | 'E_WASTE' | 'MIXED_WASTE' | 'OTHER';
-
-export interface AiVisionAnalysis {
-  status: 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'UNAVAILABLE';
-  detectorModel: string;
-  segmenterModel?: string;
-  detections: Array<{ label: string; confidence: number; wasteType?: AiWasteType }>;
-  objectCounts: Array<{ label: string; count: number }>;
-  totalDetectedObjects: number;
-  visibleWasteCoverage: number | null;
-  detectorConfidence: number | null;
-  segmentationConfidence: number | null;
-  annotatedImageUrl?: string;
-  processingTimeMs: number;
-  detectionTimeMs: number;
-  segmentationTimeMs: number;
-  annotationTimeMs: number;
-  warnings: string[];
-}
-
-export interface AiFusionAnalysis {
-  version: 'vision-fusion-v1' | 'vision-fusion-v2';
-  mode: 'FULL_MULTIMODAL' | 'SEMANTIC_ONLY' | 'VISION_ONLY' | 'FAILED';
-  wasteType?: AiWasteType;
-  severityScore: number | null;
-  explanations: string[];
-  semanticConfidence: number | null;
-  visionConfidence: number | null;
-  fusionConfidence: number | null;
-  visionSupport?: 'STRONG' | 'PARTIAL' | 'NONE' | 'NOT_APPLICABLE';
-  processingTimeMs: number;
-}
+export type AiAnalysisMode = 'TEXT_ONLY' | 'IMAGE_AND_TEXT' | 'FAILED';
 
 export interface AiOverallAnalysis {
   isIncident: boolean;
@@ -49,9 +17,8 @@ export interface AiOverallAnalysis {
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
-  visionEvidenceUsed: string[];
   semanticModel: string;
-  pipelineVersion: 'multimodal-v2';
+  pipelineVersion: 'openrouter-multimodal-v1';
 }
 
 export interface User {
@@ -131,21 +98,19 @@ export interface Alert {
   arrivalLocation?: ArrivalLocation;
   checkIn?: { accuracyMeters: number; distanceFromIncidentMeters: number; checkedInAt: string; verified: boolean };
   aiConfidence?: number | null;
-  aiConfidenceSource?: 'FUSION' | 'CATEGORY' | 'SEMANTIC' | 'NONE';
+  aiConfidenceSource?: 'CATEGORY' | 'SEMANTIC' | 'NONE';
   aiSuggestedPriority?: Severity | null;
   aiSummary?: string | null;
   aiReasoningSummary?: string | null;
   aiAnalysisMode?: AiAnalysisMode;
-  aiAnalysisProvider?: 'openrouter' | 'vision-service';
+  aiAnalysisProvider?: 'openrouter';
   aiAnalysisModel?: string;
+  aiFailureReason?: string | null;
   aiAnalysisId?: string;
   aiAnalyzedAt?: string;
-  aiPipelineVersion?: 'multimodal-v1' | 'multimodal-v2';
-  aiVision?: AiVisionAnalysis;
-  aiFusion?: AiFusionAnalysis;
+  aiPipelineVersion?: 'openrouter-multimodal-v1';
   aiOverallAnalysis?: AiOverallAnalysis;
   aiSemanticProcessingTimeMs?: number;
-  aiTotalProcessingTimeMs?: number;
   officerNote?: string;
   resolvedAt?: string;
   resolvedBy?: string;
@@ -289,16 +254,6 @@ export interface TimelineEntry {
   correlationId?: string;
 }
 
-export interface Notification {
-  _id: string;
-  recipientId: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface PaginatedResult<T> {
   items: T[];
   total: number;
@@ -314,34 +269,6 @@ export interface ApiResponse<T> {
   errors?: unknown;
 }
 
-export interface AssistantSource {
-  id: string;
-  title: string;
-  href?: string;
-  type: 'knowledge' | 'dynamic';
-}
-
-export interface AssistantMessage {
-  id: string;
-  role: 'USER' | 'ASSISTANT';
-  content: string;
-  sources: AssistantSource[];
-  createdAt: string;
-}
-
-export interface AssistantConversation {
-  id: string;
-  title: string;
-  role: UserRole;
-  lastMessageAt: string;
-  createdAt: string;
-}
-
-export interface AssistantReply {
-  conversation: AssistantConversation;
-  message: AssistantMessage;
-}
-
 export interface GISLocation {
   _id: string;
   alertId: string;
@@ -353,22 +280,6 @@ export interface GISLocation {
   updatedAt: string;
 }
 
-export interface WeatherData {
-  temperature: number;
-  feelsLike: number;
-  humidity: number;
-  windSpeed: number;
-  windDirection: number;
-  description: string;
-  icon: string;
-  aqi?: number;
-  aqiLabel?: string;
-  rainProbability?: number;
-  uvIndex?: number;
-  sunrise: string;
-  sunset: string;
-  lastUpdated: string;
-}
 
 export interface LoginCredentials {
   email: string;

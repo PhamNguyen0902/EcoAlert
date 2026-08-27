@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface StatCardProps {
   title: string;
@@ -29,6 +30,7 @@ export function StatCard({
   gradient = "bg-gradient-to-br from-primary/20 to-primary/5",
   className,
 }: StatCardProps) {
+  const { language } = useLanguage();
   const isLongText = typeof value === 'string' && value.length > 5;
 
   return (
@@ -58,7 +60,7 @@ export function StatCard({
                 >
                   {trend.value}%
                 </span>
-                <span className="text-xs text-muted-foreground ml-1 truncate">vs last period</span>
+                <span className="text-xs text-muted-foreground ml-1 truncate">{language === 'vi' ? 'so với kỳ trước' : 'vs last period'}</span>
               </div>
             )}
           </div>

@@ -111,7 +111,7 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
               textColor={isDark ? colors.text : "#475569"}
             />
-            <Badge label={getWorkflowStatusLabel(item.status, language)} type="status" />
+            <Badge label={getWorkflowStatusLabel(item.status, language)} statusValue={item.status} type="status" />
           </View>
 
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
@@ -125,7 +125,7 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             <View style={styles.aiMetaRow}>
               <Text style={[styles.aiMetaLabel, { color: colors.textMuted }]}>AI</Text>
               <Text style={[styles.aiMetaValue, { color: colors.text }]} numberOfLines={1}>
-                {getCategoryLabel(item.category, language)} · {getSeverityLabel(item.severity)}
+                {getCategoryLabel(item.category, language)} · {getSeverityLabel(item.severity, language)}
               </Text>
             </View>
           ) : null}

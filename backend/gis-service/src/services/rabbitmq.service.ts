@@ -17,7 +17,7 @@ class RabbitMQService {
       await this.channel.assertExchange('ecoalert_exchange', 'topic', { durable: true });
       
       const q = await this.channel.assertQueue('gis_service_queue', { durable: true });
-      // Listen to both created and updated to keep the map in sync
+      // Đồng bộ read model bản đồ khi báo cáo mới được tạo hoặc workflow thay đổi.
       await this.channel.bindQueue(q.queue, 'ecoalert_exchange', EVENTS.ALERT_CREATED);
       await this.channel.bindQueue(q.queue, 'ecoalert_exchange', EVENTS.ALERT_UPDATED);
       

@@ -3,12 +3,9 @@ import { baseSchemaPlugin, BaseDocument } from './base.model';
 import {
   AiAnalysisMode,
   AiDisplayConfidenceSource,
-  AiWasteType,
   AlertStatus,
   AlertCategory,
-  IAiFusionAnalysis,
   IAiOverallAnalysis,
-  IAiVisionAnalysis,
   Severity,
 } from '@ecoalert/shared';
 
@@ -120,13 +117,12 @@ export interface IAlert extends BaseDocument {
   aiSummary?: string | null;
   aiReasoningSummary?: string | null;
   aiAnalysisMode?: AiAnalysisMode;
-  aiAnalysisProvider?: 'openrouter' | 'vision-service';
+  aiAnalysisProvider?: 'openrouter';
   aiAnalysisModel?: string;
+  aiFailureReason?: string | null;
   aiAnalysisId?: string;
   aiAnalyzedAt?: Date;
-  aiPipelineVersion?: 'multimodal-v1' | 'multimodal-v2';
-  aiVision?: IAiVisionAnalysis;
-  aiFusion?: IAiFusionAnalysis;
+  aiPipelineVersion?: 'openrouter-multimodal-v1';
   aiOverallAnalysis?: IAiOverallAnalysis;
   aiSemanticProcessingTimeMs?: number;
   aiTotalProcessingTimeMs?: number;
@@ -136,7 +132,6 @@ export interface IAlert extends BaseDocument {
   aiHumanCorrection?: {
     category?: AlertCategory;
     severity?: Severity;
-    wasteType?: AiWasteType;
     imageUrl?: string;
     modelVersion?: string;
     notes?: string;
@@ -234,70 +229,6 @@ const timelineEntrySchema = new Schema<ITimelineEntry>({
   correlationId: { type: String },
 }, { _id: true });
 
-const boundingBoxSchema = new Schema({
-  x: { type: Number, required: true },
-  y: { type: Number, required: true },
-  width: { type: Number, required: true },
-  height: { type: Number, required: true },
-}, { _id: false });
-
-const visionDetectionSchema = new Schema({
-  classId: { type: Number, required: true },
-  label: { type: String, required: true, trim: true },
-  confidence: { type: Number, required: true, min: 0, max: 1 },
-  bbox: { type: boundingBoxSchema, required: true },
-  normalizedBbox: { type: boundingBoxSchema, required: true },
-  wasteType: {
-    type: String,
-    enum: ['PLASTIC_WASTE', 'ORGANIC_WASTE', 'CONSTRUCTION_WASTE', 'HAZARDOUS_WASTE', 'METAL_WASTE', 'GLASS_WASTE', 'PAPER_WASTE', 'E_WASTE', 'MIXED_WASTE', 'OTHER'],
-  },
-  maskAreaPixels: { type: Number, min: 0 },
-  maskCoverage: { type: Number, min: 0, max: 1 },
-}, { _id: false });
-
-const visionAnalysisSchema = new Schema({
-  status: { type: String, enum: ['COMPLETED', 'FAILED', 'SKIPPED', 'UNAVAILABLE'], required: true },
-  detectorModel: { type: String, required: true, trim: true },
-  segmenterModel: { type: String, trim: true },
-  imageWidth: { type: Number, min: 1 },
-  imageHeight: { type: Number, min: 1 },
-  detections: { type: [visionDetectionSchema], default: [] },
-  objectCounts: { type: [{ label: String, count: Number }], default: [] },
-  totalDetectedObjects: { type: Number, required: true, min: 0 },
-  visibleWasteCoverage: { type: Number, min: 0, max: 1, default: null },
-  detectorConfidence: { type: Number, min: 0, max: 1, default: null },
-  segmentationConfidence: { type: Number, min: 0, max: 1, default: null },
-  annotatedImageUrl: { type: String, trim: true },
-  processingTimeMs: { type: Number, required: true, min: 0 },
-  detectionTimeMs: { type: Number, required: true, min: 0 },
-  segmentationTimeMs: { type: Number, required: true, min: 0 },
-  annotationTimeMs: { type: Number, required: true, min: 0 },
-  warnings: { type: [String], default: [] },
-}, { _id: false });
-
-const fusionAnalysisSchema = new Schema({
-  version: { type: String, enum: ['vision-fusion-v1', 'vision-fusion-v2'], required: true },
-  mode: { type: String, enum: ['FULL_MULTIMODAL', 'SEMANTIC_ONLY', 'VISION_ONLY', 'FAILED'], required: true },
-  wasteType: {
-    type: String,
-    enum: ['PLASTIC_WASTE', 'ORGANIC_WASTE', 'CONSTRUCTION_WASTE', 'HAZARDOUS_WASTE', 'METAL_WASTE', 'GLASS_WASTE', 'PAPER_WASTE', 'E_WASTE', 'MIXED_WASTE', 'OTHER'],
-  },
-  // VISION_ONLY deliberately withholds a semantic-derived severity score.
-  severityScore: { type: Number, min: 0, max: 100, default: null },
-  severityFactors: { type: [{
-    factor: String,
-    score: Number,
-    evidenceSource: { type: String, enum: ['semantic', 'vision'] },
-    explanation: String,
-  }], default: [] },
-  explanations: { type: [String], default: [] },
-  semanticConfidence: { type: Number, min: 0, max: 1, default: null },
-  visionConfidence: { type: Number, min: 0, max: 1, default: null },
-  fusionConfidence: { type: Number, min: 0, max: 1, default: null },
-  visionSupport: { type: String, enum: ['STRONG', 'PARTIAL', 'NONE', 'NOT_APPLICABLE'] },
-  processingTimeMs: { type: Number, required: true, min: 0 },
-}, { _id: false });
-
 const overallAnalysisSchema = new Schema<IAiOverallAnalysis>({
   isIncident: { type: Boolean, required: true },
   incidentConfidence: { type: Number, required: true, min: 0, max: 1 },
@@ -310,9 +241,8 @@ const overallAnalysisSchema = new Schema<IAiOverallAnalysis>({
   severityConfidence: { type: Number, required: true, min: 0, max: 1 },
   overallSummary: { type: String, trim: true, required: true, maxlength: 800 },
   shortReason: { type: String, trim: true, required: true, maxlength: 500 },
-  visionEvidenceUsed: { type: [String], default: [] },
   semanticModel: { type: String, trim: true, required: true },
-  pipelineVersion: { type: String, enum: ['multimodal-v2'], required: true },
+  pipelineVersion: { type: String, enum: ['openrouter-multimodal-v1'], required: true },
 }, { _id: false });
 
 const alertSchema = new Schema<IAlert>({
@@ -356,7 +286,7 @@ const alertSchema = new Schema<IAlert>({
   },
   checkIn: { type: checkInSchema },
   aiConfidence: { type: Number, min: 0, max: 1, default: null },
-  aiConfidenceSource: { type: String, enum: ['FUSION', 'CATEGORY', 'SEMANTIC', 'NONE'], default: 'NONE' },
+  aiConfidenceSource: { type: String, enum: ['CATEGORY', 'SEMANTIC', 'NONE'], default: 'NONE' },
   aiSuggestedPriority: {
     type: String,
     enum: [...Object.values(Severity), ...Object.values(Severity).map((value) => value.toUpperCase()), null],
@@ -364,14 +294,13 @@ const alertSchema = new Schema<IAlert>({
   },
   aiSummary: { type: String, trim: true },
   aiReasoningSummary: { type: String, trim: true },
-  aiAnalysisMode: { type: String, enum: ['text', 'vision', 'text_fallback', 'FULL_MULTIMODAL', 'SEMANTIC_ONLY', 'VISION_ONLY', 'FAILED'] },
-  aiAnalysisProvider: { type: String, enum: ['openrouter', 'vision-service'] },
+  aiAnalysisMode: { type: String, enum: ['TEXT_ONLY', 'IMAGE_AND_TEXT', 'FAILED'] },
+  aiAnalysisProvider: { type: String, enum: ['openrouter'] },
   aiAnalysisModel: { type: String, trim: true },
+  aiFailureReason: { type: String, trim: true, default: null },
   aiAnalysisId: { type: String, index: true },
   aiAnalyzedAt: { type: Date },
-  aiPipelineVersion: { type: String, enum: ['multimodal-v1', 'multimodal-v2'] },
-  aiVision: { type: visionAnalysisSchema },
-  aiFusion: { type: fusionAnalysisSchema },
+  aiPipelineVersion: { type: String, enum: ['openrouter-multimodal-v1'] },
   aiOverallAnalysis: { type: overallAnalysisSchema },
   aiSemanticProcessingTimeMs: { type: Number, min: 0 },
   aiTotalProcessingTimeMs: { type: Number, min: 0 },

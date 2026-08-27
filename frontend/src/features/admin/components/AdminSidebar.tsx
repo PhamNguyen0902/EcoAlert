@@ -2,36 +2,18 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  LayoutDashboard,
-  Users,
-  ShieldCheck,
   FileText,
   Tag,
-  Activity,
-  BarChart3,
-  ScrollText,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Leaf,
-  Bot,
-  Map,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAlerts } from '@/hooks/hooks';
 
 const NAV_ITEMS = [
-  { to: '/admin/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
-  { to: '/admin/users', key: 'nav.users', icon: Users },
-  { to: '/admin/officers', key: 'nav.officers', icon: ShieldCheck },
   { to: '/admin/reports', key: 'nav.reports', icon: FileText, showBadge: true },
   { to: '/admin/categories', key: 'nav.categories', icon: Tag },
-  { to: '/admin/monitoring', key: 'nav.monitoring', icon: Activity },
-  { to: '/admin/analytics', key: 'nav.analytics', icon: BarChart3 },
-  { to: '/admin/incident-density', key: 'incident-density', label: 'Mật độ sự cố', icon: Map },
-  { to: '/admin/audit', key: 'nav.audit', icon: ScrollText },
-  { to: '/admin/settings', key: 'nav.settings', icon: Settings },
-  { to: '/assistant', key: 'assistant', label: 'Trợ lý AI', icon: Bot },
 ];
 
 export default function AdminSidebar() {
@@ -57,7 +39,7 @@ export default function AdminSidebar() {
           <NavLink
             key={item.to}
             to={item.to}
-            title={isCollapsed ? (item.label || t(item.key)) : undefined}
+            title={isCollapsed ? t(item.key) : undefined}
             className={({ isActive }) =>
               cn(
                 "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors relative group",
@@ -69,7 +51,7 @@ export default function AdminSidebar() {
             }
           >
             <item.icon className={cn("h-5 w-5 shrink-0", isCollapsed ? "mr-0" : "mr-3")} />
-            {!isCollapsed && <span className="whitespace-nowrap">{item.label || t(item.key)}</span>}
+            {!isCollapsed && <span className="whitespace-nowrap">{t(item.key)}</span>}
             {item.showBadge && pendingCount > 0 && (
               <span
                 className={cn(

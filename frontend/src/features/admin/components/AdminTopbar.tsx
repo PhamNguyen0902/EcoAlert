@@ -1,12 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { SoundToggle } from "@/components/ui/sound-toggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,13 +29,6 @@ export default function AdminTopbar() {
       <h1 className="text-xl font-semibold">{t('nav.portal')}</h1>
 
       <div className="flex items-center space-x-4">
-        <div className="relative">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          <Badge className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full p-0">
-            3
-          </Badge>
-        </div>
-
         <SoundToggle />
         <LanguageToggle />
         <ThemeToggle />

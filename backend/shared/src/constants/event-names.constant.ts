@@ -8,6 +8,6 @@ export const EVENTS = {
   ALERT_RESOLVED: 'alert.resolved',
   ALERT_CLOSED: 'alert.closed',
   MEDIA_UPLOADED: 'media.uploaded',
-  IMAGE_ANALYZED: 'image.analyzed',
+  AI_ANALYZED: 'ai.analyzed',
   NOTIFICATION_SENT: 'notification.sent',
 } as const;

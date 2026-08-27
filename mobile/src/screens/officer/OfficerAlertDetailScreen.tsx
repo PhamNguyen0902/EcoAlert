@@ -35,12 +35,13 @@ import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
-import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../utils/maps";
 import { getAlertDisplaySeverity, getSeverityLabel } from "../../utils/aiAnalysis";
+import { getCategoryLabel, getStatusLabel } from "../../utils/incidentPresentation";
 
 export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
@@ -48,6 +49,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { language } = useLanguage();
   const alertId = route.params?.id;
   const { data: alert, isLoading, error } = useAlert(alertId);
 
@@ -89,6 +91,9 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
   const displaySeverity = getAlertDisplaySeverity(alert);
   const sevColor = displaySeverity ? (SEVERITY_COLORS[displaySeverity] || { bg: "#F1F5F9", text: "#475569" }) : { bg: "#F1F5F9", text: "#475569" };
   const currentStatus = alert.status?.toUpperCase();
+  const locationCopy = language === "vi"
+    ? { unavailable: "Vị trí sự cố không khả dụng.", address: "Địa chỉ", addressUnavailable: "Chưa có địa chỉ", coordinates: "Tọa độ", coordinatesUnavailable: "Không có" }
+    : { unavailable: "Incident location is unavailable.", address: "Address", addressUnavailable: "Address unavailable", coordinates: "Coordinates", coordinatesUnavailable: "Unavailable" };
 
   const handleStartHandling = async () => {
     try {
@@ -186,17 +191,17 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         {/* Category & Status */}
         <View style={styles.badgesRow}>
           <Badge
-            label={alert.category?.toUpperCase().replace("_", " ") || "CHUNG"}
+            label={getCategoryLabel(alert.category, language)}
             type="custom"
             bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
             textColor={isDark ? colors.text : "#334155"}
           />
           <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
             <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-              MỨC ĐỘ {getSeverityLabel(displaySeverity)}
+              {language === "vi" ? "MỨC ĐỘ" : "SEVERITY"} {getSeverityLabel(displaySeverity, language)}
             </Text>
           </View>
-          <Badge label={alert.status || "PENDING"} type="status" />
+          <Badge label={getStatusLabel(alert.status, language)} statusValue={alert.status} type="status" />
         </View>
 
         <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
@@ -270,7 +275,6 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         </GlassCard>
 
         <OverallAiAnalysisCard alert={alert} />
-        <VisionAnalysisCard alert={alert} />
 
         {/* Evidence Photos */}
         {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
@@ -309,25 +313,25 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
               <View style={[styles.mapUnavailable, { backgroundColor: colors.background }]}>
                 <MapPin size={30} color={colors.textMuted} />
                 <Text style={[styles.mapUnavailableText, { color: colors.textMuted }]}>
-                  Incident location is unavailable.
+                  {locationCopy.unavailable}
                 </Text>
               </View>
             )}
             <View style={[styles.addressBox, { backgroundColor: colors.surface }]}>
               <MapPin size={16} color={colors.secondary} />
               <View style={styles.locationCopy}>
-                <Text style={[styles.locationLabel, { color: colors.textMuted }]}>Địa chỉ</Text>
+                <Text style={[styles.locationLabel, { color: colors.textMuted }]}>{locationCopy.address}</Text>
                 <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={3}>
-                  {alert.address || "Address unavailable"}
+                  {alert.address || locationCopy.addressUnavailable}
                 </Text>
               </View>
             </View>
             <View style={[styles.coordinatesBox, { borderTopColor: colors.border }]}>
-              <Text style={[styles.locationLabel, { color: colors.textMuted }]}>Tọa độ</Text>
+              <Text style={[styles.locationLabel, { color: colors.textMuted }]}>{locationCopy.coordinates}</Text>
               <Text style={[styles.coordinatesText, { color: colors.text }]}>
                 {incidentCoordinates
                   ? `${incidentCoordinates.latitude.toFixed(6)}, ${incidentCoordinates.longitude.toFixed(6)}`
-                  : "Unavailable"}
+                  : locationCopy.coordinatesUnavailable}
               </Text>
             </View>
             <Button
@@ -341,7 +345,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
             />
             {!incidentCoordinates ? (
               <Text style={[styles.locationUnavailableText, { color: colors.textMuted }]}>
-                Incident location is unavailable.
+                {locationCopy.unavailable}
               </Text>
             ) : null}
           </Card>

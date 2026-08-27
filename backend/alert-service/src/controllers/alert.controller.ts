@@ -16,6 +16,7 @@ const pagination = (req: Request) => ({
 
 export class AlertController {
   async createAlert(req: Request, res: Response) {
+    // Nhận báo cáo của Citizen và chuyển actor đã xác thực xuống tầng nghiệp vụ.
     const result = await alertService.createAlert(workflowActor(req), req.body);
     res.status(201).json(successResponse(result, 'Alert created successfully'));
   }
@@ -47,29 +48,19 @@ export class AlertController {
 
   public getOfficerTasks = async (req: Request, res: Response) => {
     try {
-      // 1. Trích xuất thông tin người dùng từ Header
-      // MẸO: Thêm fallback 'OFFICER' để hack qua cửa kiểm tra quyền 
-      // trong trường hợp API Gateway quên truyền x-user-role
-      const actor = {
-        id: req.headers['x-user-id'] as string,
-        role: req.headers['x-user-role'] as string,
-      };
-
-      // 2. Lấy các tham số phân trang
+      const actor = workflowActor(req);
       const page = parseInt(req.query.page as string, 10) || 1;
       const limit = parseInt(req.query.limit as string, 10) || 10;
       const status = req.query.status as string | undefined;
 
-      // 3. Gọi xuống Service
+      // Chỉ trả các nhiệm vụ được phân công cho Officer đang đăng nhập.
       const result = await alertService.getOfficerTasks(actor, page, limit, status);
 
-      // 4. FIX LỖI "UNDEFINED": Bọc kết quả vào { success: true, data: ... }
       res.status(200).json({
         success: true,
         data: result
       });
     } catch (error: any) {
-      // Bắt lỗi an toàn, tránh sập app
       res.status(error.status || 500).json({
         success: false,
         message: error.message || 'Internal Server Error'

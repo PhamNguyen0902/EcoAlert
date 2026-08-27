@@ -3,8 +3,11 @@ import { Leaf, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Github } from 
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function CitizenFooter() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const currentYear = new Date().getFullYear();
+  const text = language === 'vi'
+    ? { emergency: 'Khẩn cấp: 115', hotline: 'Đường dây nóng 24/7', privacy: 'Chính sách quyền riêng tư', terms: 'Điều khoản sử dụng', cityServices: 'Dịch vụ đô thị EcoAlert' }
+    : { emergency: 'Emergency: 115', hotline: '24/7 Hotline', privacy: 'Privacy Policy', terms: 'Terms of Service', cityServices: 'EcoAlert City Services' };
 
   return (
     <footer className="bg-slate-900 text-slate-300 relative border-t-4 border-t-green-500 overflow-hidden mt-auto">
@@ -42,9 +45,6 @@ export default function CitizenFooter() {
               <li>
                 <Link to="/my-reports" className="hover:text-green-400 transition-colors inline-block">{t('nav.my_reports')}</Link>
               </li>
-              <li>
-                <Link to="/map" className="hover:text-green-400 transition-colors inline-block">{t('citizen.live_map')}</Link>
-              </li>
             </ul>
           </div>
 
@@ -56,8 +56,8 @@ export default function CitizenFooter() {
                 <div className="flex items-start gap-3">
                   <Phone className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
                   <div>
-                    <span className="block text-white font-medium">Emergency: 115</span>
-                    <span className="text-slate-400 text-xs">24/7 Hotline</span>
+                    <span className="block text-white font-medium">{text.emergency}</span>
+                    <span className="text-slate-400 text-xs">{text.hotline}</span>
                   </div>
                 </div>
               </li>
@@ -81,10 +81,10 @@ export default function CitizenFooter() {
             <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">EcoAlert</h3>
             <ul className="space-y-4 text-sm">
               <li>
-                <Link to="/privacy" className="hover:text-green-400 transition-colors inline-block">Privacy Policy</Link>
+                <Link to="/privacy" className="hover:text-green-400 transition-colors inline-block">{text.privacy}</Link>
               </li>
               <li>
-                <Link to="/terms" className="hover:text-green-400 transition-colors inline-block">Terms of Service</Link>
+                <Link to="/terms" className="hover:text-green-400 transition-colors inline-block">{text.terms}</Link>
               </li>
             </ul>
           </div>
@@ -93,7 +93,7 @@ export default function CitizenFooter() {
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-sm text-slate-500">
-            &copy; {currentYear} EcoAlert City Services. {t('footer.rights')}
+            &copy; {currentYear} {text.cityServices}. {t('footer.rights')}
           </p>
           <div className="flex items-center gap-5">
             <a href="#" className="text-slate-500 hover:text-white transition-colors">

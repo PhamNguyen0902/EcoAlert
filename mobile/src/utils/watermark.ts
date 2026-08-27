@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import type { Language } from "../context/LanguageContext";
 
 export interface WatermarkData {
   latitude?: number;
@@ -18,17 +19,20 @@ export interface FormattedWatermark {
 /**
  * Formats watermark information for overlaying on photos.
  */
-export function formatWatermarkData(data: WatermarkData): FormattedWatermark {
+export function formatWatermarkData(data: WatermarkData, language: Language = "vi"): FormattedWatermark {
   const date = data.timestamp || new Date();
   const dateTimeStr = format(date, "yyyy-MM-dd HH:mm:ss");
 
-  let locationStr = "GPS: Unavailable";
+  const text = language === "vi"
+    ? { gpsUnavailable: "GPS: Không có", addressUnavailable: "Địa điểm: Chưa xác định", brand: "Sự cố đã xác minh EcoAlert" }
+    : { gpsUnavailable: "GPS: Unavailable", addressUnavailable: "Location: Unspecified", brand: "EcoAlert Verified Incident" };
+  let locationStr = text.gpsUnavailable;
   if (typeof data.latitude === "number" && typeof data.longitude === "number") {
     locationStr = `GPS: ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
   }
 
-  const addressStr = data.address ? data.address.trim() : "Location: Unspecified";
-  const brandStr = data.brandTag || "EcoAlert Verified Incident";
+  const addressStr = data.address ? data.address.trim() : text.addressUnavailable;
+  const brandStr = data.brandTag || text.brand;
 
   return {
     dateTimeStr,

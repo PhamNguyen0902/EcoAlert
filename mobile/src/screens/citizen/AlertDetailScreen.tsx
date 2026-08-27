@@ -35,7 +35,6 @@ import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
-import { VisionAnalysisCard } from "../../components/ai/VisionAnalysisCard";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -51,6 +50,7 @@ import {
   getWorkflowStatusLabel,
 } from "../../utils/aiAnalysis";
 import { format } from "date-fns";
+import { enUS, vi } from "date-fns/locale";
 
 const getRequestErrorMessage = (error: unknown, fallback: string): string => {
   const requestError = error as {
@@ -70,6 +70,19 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
   const assignOfficer = useAssignOfficer();
   const deleteAlertMutation = useDeleteAlert();
   const restoreAlertMutation = useRestoreAlert();
+  const pageCopy = language === "vi"
+    ? {
+      assignmentSuccess: "Đã phân công cán bộ", assignmentSuccessBody: (name: string) => `${name} đã được phân công xử lý sự cố này.`, assignError: "Không thể phân công cán bộ", retry: "Vui lòng làm mới báo cáo và thử lại.",
+      deleteTitle: "Xóa báo cáo sự cố", deleteQuestion: (title: string) => `Bạn có chắc muốn xóa báo cáo “${title}” không?`, cancel: "Hủy", delete: "Xóa", restoreError: "Lỗi khôi phục", restoreFailed: "Không thể khôi phục báo cáo.",
+      detailsUnavailable: "Không thể tải chi tiết báo cáo. Báo cáo có thể đã bị xóa hoặc không còn khả dụng.", title: "Chi tiết sự cố", officersResolved: "Cán bộ đã xử lý sự cố này. Nhấn bên dưới để xác minh và đóng báo cáo.",
+      description: "Mô tả", assign: "Phân công cán bộ", assignBody: "Chọn cán bộ chịu trách nhiệm xử lý sự cố này.", photos: "Hình ảnh & minh chứng", location: "Vị trí gắn thẻ", officerResponse: "Phản hồi của cán bộ môi trường", coordinates: "Tọa độ", submitted: "Thời điểm gửi:", updated: "Cập nhật gần nhất:", unavailable: "Không có", connection: "Vui lòng kiểm tra kết nối và thử lại.",
+    }
+    : {
+      assignmentSuccess: "Officer assigned", assignmentSuccessBody: (name: string) => `${name} has been assigned to this incident.`, assignError: "Unable to assign officer", retry: "Please refresh the incident and try again.",
+      deleteTitle: "Delete incident report", deleteQuestion: (title: string) => `Are you sure you want to delete report “${title}”?`, cancel: "Cancel", delete: "Delete", restoreError: "Restore error", restoreFailed: "Failed to restore report.",
+      detailsUnavailable: "Could not fetch details for this alert. It may have been removed or unavailable.", title: "Incident details", officersResolved: "Officers have resolved this issue. Click below to verify and close the report.",
+      description: "Description", assign: "Assign to officer", assignBody: "Choose an officer to take ownership of this incident.", photos: "Photos & evidence", location: "Location geotag", officerResponse: "Environmental officer response", coordinates: "Coordinates", submitted: "Submitted on:", updated: "Last updated:", unavailable: "Not available", connection: "Please check your connection and try again.",
+    };
 
   const [isOfficerPickerOpen, setOfficerPickerOpen] = useState(false);
   const [isCloseModalOpen, setCloseModalOpen] = useState(false);
@@ -134,14 +147,14 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         onSuccess: () => {
           setOfficerPickerOpen(false);
           ReactNativeAlert.alert(
-            "Officer assigned",
-            `${officer.fullName} has been assigned to this incident.`,
+            pageCopy.assignmentSuccess,
+            pageCopy.assignmentSuccessBody(officer.fullName),
           );
         },
         onError: (mutationError) => {
           ReactNativeAlert.alert(
-            "Unable to assign Officer",
-            getRequestErrorMessage(mutationError, "Please refresh the incident and try again."),
+            pageCopy.assignError,
+            getRequestErrorMessage(mutationError, pageCopy.retry),
           );
         },
       },
@@ -151,12 +164,12 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
   const handleDeleteAlert = () => {
     if (!alert) return;
     ReactNativeAlert.alert(
-      "Delete Incident Report",
-      `Are you sure you want to delete report "${alert.title}"?`,
+      pageCopy.deleteTitle,
+      pageCopy.deleteQuestion(alert.title),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: pageCopy.cancel, style: "cancel" },
         {
-          text: "Delete",
+          text: pageCopy.delete,
           style: "destructive",
           onPress: async () => {
             try {
@@ -178,7 +191,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
       await restoreAlertMutation.mutateAsync(alert._id);
       ReactNativeAlert.alert("Đã khôi phục", "Khôi phục báo cáo sự cố thành công.");
     } catch (err: any) {
-      ReactNativeAlert.alert("Restore Error", getRequestErrorMessage(err, "Failed to restore report."));
+      ReactNativeAlert.alert(pageCopy.restoreError, getRequestErrorMessage(err, pageCopy.restoreFailed));
     }
   };
 
@@ -197,7 +210,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         <AlertTriangle size={48} color={colors.destructive} />
         <Text style={[styles.errorTitle, { color: colors.text }]}>Không tìm thấy báo cáo</Text>
         <Text style={[styles.errorSub, { color: colors.textMuted }]}>
-          Could not fetch details for this alert. It may have been removed or unavailable.
+          {pageCopy.detailsUnavailable}
         </Text>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? "rgba(22, 163, 74, 0.25)" : colors.primaryLight }]} onPress={() => navigation.goBack()}>
           <Text style={[styles.backBtnText, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>Quay lại</Text>
@@ -224,7 +237,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
           <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.topBarTitle, { color: colors.text }]} numberOfLines={1}>
-          Incident Details
+          {pageCopy.title}
         </Text>
         <View style={styles.topRightActions}>
           {canEdit ? (
@@ -253,12 +266,12 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               />
               <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
                 <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-                  {getSeverityLabel(displaySeverity)} · {t("aiAnalysis.aiAssessed", "AI assessed")}
+                  {getSeverityLabel(displaySeverity, language)} · {t("aiAnalysis.aiAssessed", "AI assessed")}
                 </Text>
               </View>
             </>
           ) : null}
-          <Badge label={workflowStatusLabel} type="status" />
+          <Badge label={workflowStatusLabel} statusValue={alert.status} type="status" />
           {alert.isAnonymous ? (
             <Badge label="ẨN DANH 👤" type="custom" bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"} textColor={isDark ? colors.text : "#475569"} />
           ) : null}
@@ -281,7 +294,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               <View style={{ flex: 1 }}>
                 <Text style={styles.closeTitle}>Sự cố được đánh dấu đã giải quyết</Text>
                 <Text style={styles.closeSub}>
-                  Officers have resolved this issue. Click below to verify and close the report.
+                  {pageCopy.officersResolved}
                 </Text>
               </View>
             </View>
@@ -320,7 +333,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         ) : null}
 
         <GlassCard style={styles.mainCard}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>Description</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>{pageCopy.description}</Text>
           <Text style={[styles.descriptionText, { color: colors.text }]}>{alert.description}</Text>
         </GlassCard>
 
@@ -375,14 +388,14 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
                 </Text>
                 <View style={[styles.aiSeverityPill, { backgroundColor: sevColor.bg, borderColor: sevColor.border || sevColor.bg }]}>
                   <Text style={[styles.aiSeverityText, { color: sevColor.text }]}>
-                    {getSeverityLabel(displaySeverity)}
+                    {getSeverityLabel(displaySeverity, language)}
                   </Text>
                 </View>
               </View>
               <View style={styles.confidenceBlock}>
                 <View style={styles.aiMetricRow}>
                   <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
-                    {t("aiAnalysis.confidence", "Confidence")}{confidencePercentage === null ? "" : displayConfidence.source === "FUSION" ? " · Fusion" : displayConfidence.source === "SEMANTIC" ? " · Ngữ nghĩa" : " · Danh mục"}
+                    {t("aiAnalysis.confidence", "Confidence")}{confidencePercentage === null ? "" : displayConfidence.source === "SEMANTIC" ? " · Ngữ nghĩa" : " · Danh mục"}
                   </Text>
                   <Text style={[styles.confidenceValue, { color: colors.text }]}>
                     {confidencePercentage === null ? "Không khả dụng" : `${confidencePercentage}%`}
@@ -443,7 +456,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         </Card>
 
         <OverallAiAnalysisCard alert={alert} />
-        <VisionAnalysisCard alert={alert} />
 
         {alert.assignedOfficerId ? (
           <Card style={[styles.assignedOfficerCard, { backgroundColor: isDark ? "rgba(79,70,229,0.2)" : "#EEF2FF", borderColor: isDark ? "rgba(79,70,229,0.4)" : "#C7D2FE" }]}>
@@ -477,9 +489,9 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
                 <UserCheck size={22} color={isDark ? "#A78BFA" : "#7C3AED"} />
               </View>
               <View style={styles.assignmentCopy}>
-                <Text style={[styles.assignmentTitle, { color: colors.text }]}>Assign to Officer</Text>
+                <Text style={[styles.assignmentTitle, { color: colors.text }]}>{pageCopy.assign}</Text>
                 <Text style={[styles.assignmentDescription, { color: colors.textMuted }]}>
-                  Choose an Officer to take ownership of this incident.
+                  {pageCopy.assignBody}
                 </Text>
               </View>
             </View>
@@ -495,7 +507,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         {/* Photos Gallery */}
         {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
           <View style={styles.sectionBox}>
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>Photos & Evidence</Text>
+            <Text style={[styles.sectionHeading, { color: colors.text }]}>{pageCopy.photos}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
               {alert.mediaUrls.map((url, idx) => (
                 <Image key={idx} source={{ uri: url }} style={styles.evidenceImage} />
@@ -506,7 +518,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
 
         {/* Location Map */}
         <View style={styles.sectionBox}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>Location Geotag</Text>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>{pageCopy.location}</Text>
           <Card style={styles.mapCard}>
             <MapView
               style={styles.map}
@@ -524,7 +536,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
             <View style={[styles.addressBox, { backgroundColor: colors.surface }]}>
               <MapPin size={16} color={colors.primary} />
               <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={2}>
-                {alert.address || "Coordinates: " + latitude.toFixed(4) + ", " + longitude.toFixed(4)}
+                {alert.address || `${pageCopy.coordinates}: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`}
               </Text>
             </View>
           </Card>
@@ -535,7 +547,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
           <GlassCard style={styles.officerNoteCard}>
             <View style={styles.officerHeader}>
               <ShieldCheck size={20} color={colors.primary} />
-              <Text style={[styles.officerTitle, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>Environmental Officer Response</Text>
+              <Text style={[styles.officerTitle, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>{pageCopy.officerResponse}</Text>
             </View>
             <Text style={[styles.officerNoteContent, { color: colors.text }]}>{alert.officerNote}</Text>
           </GlassCard>
@@ -545,17 +557,17 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         <Card style={styles.metaCard}>
           <View style={styles.metaRow}>
             <Calendar size={16} color={colors.textMuted} />
-            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Submitted on:</Text>
+            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{pageCopy.submitted}</Text>
             <Text style={[styles.metaValue, { color: colors.text }]}>
-              {alert.createdAt ? format(new Date(alert.createdAt), "PPP - HH:mm") : "N/A"}
+              {alert.createdAt ? format(new Date(alert.createdAt), "PPP - HH:mm", { locale: language === "vi" ? vi : enUS }) : pageCopy.unavailable}
             </Text>
           </View>
 
           <View style={[styles.metaRow, { marginTop: 12 }]}>
             <Clock size={16} color={colors.textMuted} />
-            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Last Updated:</Text>
+            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{pageCopy.updated}</Text>
             <Text style={[styles.metaValue, { color: colors.text }]}>
-              {alert.updatedAt ? format(new Date(alert.updatedAt), "PPP - HH:mm") : "N/A"}
+              {alert.updatedAt ? format(new Date(alert.updatedAt), "PPP - HH:mm", { locale: language === "vi" ? vi : enUS }) : pageCopy.unavailable}
             </Text>
           </View>
         </Card>
@@ -569,7 +581,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         isAssigning={assignOfficer.isPending}
         errorMessage={
           officersError
-            ? getRequestErrorMessage(officersError, "Please check your connection and try again.")
+            ? getRequestErrorMessage(officersError, pageCopy.connection)
             : undefined
         }
         onClose={() => setOfficerPickerOpen(false)}

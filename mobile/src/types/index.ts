@@ -37,39 +37,7 @@ export type AlertCategory =
   | "Other";
 
 export type Severity = "low" | "medium" | "high" | "critical" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-export type AiAnalysisMode = "text" | "vision" | "text_fallback" | "FULL_MULTIMODAL" | "SEMANTIC_ONLY" | "VISION_ONLY" | "FAILED";
-export type AiWasteType = "PLASTIC_WASTE" | "ORGANIC_WASTE" | "CONSTRUCTION_WASTE" | "HAZARDOUS_WASTE" | "METAL_WASTE" | "GLASS_WASTE" | "PAPER_WASTE" | "E_WASTE" | "MIXED_WASTE" | "OTHER";
-
-export interface AiVisionAnalysis {
-  status: "COMPLETED" | "FAILED" | "SKIPPED" | "UNAVAILABLE";
-  detectorModel: string;
-  segmenterModel?: string;
-  detections: Array<{ label: string; confidence: number; wasteType?: AiWasteType }>;
-  objectCounts: Array<{ label: string; count: number }>;
-  totalDetectedObjects: number;
-  visibleWasteCoverage: number | null;
-  detectorConfidence: number | null;
-  segmentationConfidence: number | null;
-  annotatedImageUrl?: string;
-  processingTimeMs: number;
-  detectionTimeMs: number;
-  segmentationTimeMs: number;
-  annotationTimeMs: number;
-  warnings: string[];
-}
-
-export interface AiFusionAnalysis {
-  version: "vision-fusion-v1" | "vision-fusion-v2";
-  mode: "FULL_MULTIMODAL" | "SEMANTIC_ONLY" | "VISION_ONLY" | "FAILED";
-  wasteType?: AiWasteType;
-  severityScore: number | null;
-  explanations: string[];
-  semanticConfidence: number | null;
-  visionConfidence: number | null;
-  fusionConfidence: number | null;
-  visionSupport?: "STRONG" | "PARTIAL" | "NONE" | "NOT_APPLICABLE";
-  processingTimeMs: number;
-}
+export type AiAnalysisMode = "TEXT_ONLY" | "IMAGE_AND_TEXT" | "FAILED";
 
 export interface AiOverallAnalysis {
   isIncident: boolean;
@@ -83,9 +51,8 @@ export interface AiOverallAnalysis {
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
-  visionEvidenceUsed: string[];
   semanticModel: string;
-  pipelineVersion: "multimodal-v2";
+  pipelineVersion: "openrouter-multimodal-v1";
 }
 
 export interface User {
@@ -160,21 +127,19 @@ export interface Alert {
   assignedOfficerName?: string;
   assignedOfficerEmail?: string;
   aiConfidence?: number | null;
-  aiConfidenceSource?: "FUSION" | "CATEGORY" | "SEMANTIC" | "NONE";
+  aiConfidenceSource?: "CATEGORY" | "SEMANTIC" | "NONE";
   aiSuggestedPriority?: Severity | null;
   aiSummary?: string | null;
   aiReasoningSummary?: string | null;
   aiAnalysisMode?: AiAnalysisMode | null;
-  aiAnalysisProvider?: "openrouter" | "vision-service" | null;
+  aiAnalysisProvider?: "openrouter" | null;
   aiAnalysisModel?: string | null;
+  aiFailureReason?: string | null;
   aiAnalysisId?: string | null;
   aiAnalyzedAt?: string | null;
-  aiPipelineVersion?: "multimodal-v1" | "multimodal-v2" | null;
-  aiVision?: AiVisionAnalysis | null;
-  aiFusion?: AiFusionAnalysis | null;
+  aiPipelineVersion?: "openrouter-multimodal-v1" | null;
   aiOverallAnalysis?: AiOverallAnalysis | null;
   aiSemanticProcessingTimeMs?: number | null;
-  aiTotalProcessingTimeMs?: number | null;
   officerNote?: string;
   arrivedAt?: string;
   checkIn?: { accuracyMeters: number; distanceFromIncidentMeters: number; checkedInAt: string; verified: boolean };
@@ -196,115 +161,6 @@ export interface PaginatedResult<T> {
   page: number;
   limit: number;
   totalPages: number;
-}
-
-export interface CurrentWeather {
-  temperature: number;
-  feelsLike: number;
-  humidity: number;
-  windSpeed: number;
-  windDirection: number;
-  description: string;
-  icon: string;
-  sunrise: string;
-  sunset: string;
-  aqi: number;
-  aqiLabel: string;
-  lastUpdated: string;
-}
-
-export interface WeatherForecastPeriod {
-  timestamp: string;
-  temperature: number;
-  feelsLike: number;
-  temperatureMin: number;
-  temperatureMax: number;
-  condition: string;
-  description: string;
-  icon: string;
-  precipitationProbability: number;
-}
-
-export interface DailyWeatherForecast {
-  date: string;
-  minTemperature: number;
-  maxTemperature: number;
-  condition: string;
-  description: string;
-  icon: string;
-  precipitationProbability: number;
-}
-
-export interface WeatherAirQuality {
-  aqi: number;
-  aqiLabel: string;
-  pm2_5: number | null;
-  pm10: number | null;
-  co: number | null;
-  no2: number | null;
-  o3: number | null;
-}
-
-export interface WeatherDetails {
-  location: {
-    name: string;
-    country: string;
-    latitude: number;
-    longitude: number;
-    timezoneOffsetSeconds: number;
-  };
-  current: CurrentWeather & {
-    condition: string;
-    pressure: number | null;
-    visibilityKm: number | null;
-    cloudiness: number | null;
-  };
-  hourly: WeatherForecastPeriod[];
-  daily: DailyWeatherForecast[];
-  airQuality: WeatherAirQuality | null;
-  availability: {
-    forecast: boolean;
-    airQuality: boolean;
-  };
-  fetchedAt: string;
-}
-
-export interface AssistantSource {
-  id: string;
-  title: string;
-  href?: string;
-  type: "knowledge" | "dynamic";
-}
-
-export interface AssistantMessage {
-  id: string;
-  role: "USER" | "ASSISTANT";
-  content: string;
-  sources: AssistantSource[];
-  createdAt: string;
-}
-
-export interface AssistantConversation {
-  id: string;
-  title: string;
-  role: UserRole;
-  lastMessageAt: string;
-  createdAt: string;
-}
-
-export interface AssistantReply {
-  conversation: AssistantConversation;
-  message: AssistantMessage;
-}
-
-export interface Notification {
-  _id: string;
-  recipientId: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface ApiResponse<T> {

@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { gisService } from '../services/gis.service';
-import { weatherService } from '../services/weather.service';
 import { BadRequestError, ForbiddenError, successResponse } from '@ecoalert/shared';
 
 export class GisController {
@@ -34,32 +33,6 @@ export class GisController {
     
     const results = await gisService.getRadius(lng, lat, radius);
     res.status(200).json(successResponse(results));
-  }
-
-  async getWeather(req: Request, res: Response) {
-    const coordinates = parseCoordinates(req);
-    if (!coordinates) {
-      return res.status(400).json({ success: false, message: 'Invalid coordinates' });
-    }
-
-    const weather = await weatherService.getCurrentWeather(
-      coordinates.lat,
-      coordinates.lng,
-    );
-    res.status(200).json(successResponse(weather));
-  }
-
-  async getWeatherDetails(req: Request, res: Response) {
-    const coordinates = parseCoordinates(req);
-    if (!coordinates) {
-      return res.status(400).json({ success: false, message: 'Invalid coordinates' });
-    }
-
-    const weather = await weatherService.getWeatherDetails(
-      coordinates.lat,
-      coordinates.lng,
-    );
-    res.status(200).json(successResponse(weather));
   }
 
   async getIncidentHeatmap(req: Request, res: Response) {

@@ -1,9 +1,12 @@
 import { useRef } from 'react';
 import { ChevronLeft, ChevronRight, MapPin, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { enUS, vi } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { Alert } from '@/types';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getIncidentCategoryLabel, getIncidentSeverityLabel, getIncidentStatusLabel } from '@/lib/incident-presentation';
 
 interface NearbyIncidentsProps {
   alerts: Alert[];
@@ -11,6 +14,7 @@ interface NearbyIncidentsProps {
 
 export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -36,32 +40,6 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
       case 'rejected': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
       default: return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'; // pending
     }
-  };
-
-  const severityLabels: Record<string, string> = {
-    critical: 'NGHIÊM TRỌNG',
-    high: 'CAO',
-    medium: 'TRUNG BÌNH',
-    low: 'THẤP',
-  };
-
-  const statusLabels: Record<string, string> = {
-    pending: 'CHỜ XÁC MINH',
-    in_progress: 'ĐANG XỬ LÝ',
-    resolved: 'ĐÃ HOÀN THÀNH',
-    rejected: 'ĐÃ TỪ CHỐI',
-    closed: 'ĐÃ ĐÓNG',
-  };
-
-  const categoryLabels: Record<string, string> = {
-    illegal_dumping: 'RÁC THẢI TRÁI PHÉP',
-    water_pollution: 'Ô NHIỄM NGUỒN NƯỚC',
-    air_pollution: 'Ô NHIỄM KHÔNG KHÍ',
-    flooding: 'NGẬP LỤT',
-    fire: 'CHÁY / ĐỐT RÁC',
-    noise_pollution: 'Ô NHIỄM TIẾNG ỒN',
-    construction_waste: 'RÁC THẢI XÂY DỰNG',
-    other: 'KHÁC',
   };
 
   const displayAlerts = alerts.slice(0, 10);
@@ -135,7 +113,7 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
                 )}
                 <div className="absolute top-3 left-3 flex gap-2">
                   <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-md", getSeverityColor(alert.severity ?? 'low'))}>
-                    {severityLabels[alert.severity ?? 'low'] ?? 'KHÔNG XÁC ĐỊNH'}
+                    {getIncidentSeverityLabel(alert.severity, language)}
                   </span>
                 </div>
               </div>
@@ -149,16 +127,16 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
                 
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">
-                    {categoryLabels[alert.category] ?? alert.category.replace('_', ' ').toUpperCase()}
+                    {getIncidentCategoryLabel(alert.category, language)}
                   </span>
                   <span className={cn("inline-flex items-center px-2 py-1 rounded-md text-xs font-medium", getStatusColor(alert.status))}>
-                    {statusLabels[alert.status] ?? alert.status.replace('_', ' ').toUpperCase()}
+                    {getIncidentStatusLabel(alert.status, language)}
                   </span>
                 </div>
                 
                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-auto pt-4 border-t border-gray-100 dark:border-slate-800">
                   <Clock className="w-4 h-4 mr-1.5" />
-                  <span>{formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}</span>
+                  <span>{formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true, locale: language === 'vi' ? vi : enUS })}</span>
                 </div>
               </div>
             </Link>

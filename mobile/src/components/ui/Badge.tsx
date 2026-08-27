@@ -5,6 +5,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 interface BadgeProps {
   label: string;
+  statusValue?: string | null;
   type?: "status" | "custom";
   bgColor?: string;
   textColor?: string;
@@ -13,13 +14,14 @@ interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({
   label,
+  statusValue,
   type = "status",
   bgColor,
   textColor,
   style,
 }) => {
   const { isDark } = useTheme();
-  const normStatus = label?.toUpperCase() || "PENDING";
+  const normStatus = statusValue?.toUpperCase() || label?.toUpperCase() || "PENDING";
   const palette = isDark ? DARK_STATUS_COLORS : STATUS_COLORS;
   const statusColor = palette[normStatus] || { bg: isDark ? "rgba(148,163,184,0.2)" : "#F1F5F9", text: isDark ? "#CBD5E1" : "#475569" };
 

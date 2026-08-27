@@ -1,7 +1,6 @@
 import { Outlet } from "react-router-dom";
 import OfficerSidebar from "./OfficerSidebar";
 import OfficerTopbar from "./OfficerTopbar";
-import { AssistantLauncher } from "@/features/assistant/components/AssistantLauncher";
 
 export default function OfficerLayout() {
   return (
@@ -13,7 +12,6 @@ export default function OfficerLayout() {
           <Outlet />
         </main>
       </div>
-      <AssistantLauncher />
     </div>
   );
 }
