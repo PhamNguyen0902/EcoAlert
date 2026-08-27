@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { SEVERITY_COLORS, normalizeSeverity } from './gis-heatmap';
+import { SEVERITY_COLORS, normalizeSeverity } from './map-filters';
 
 export const INCIDENT_MARKER_DEFAULT_SIZE = 24;
 

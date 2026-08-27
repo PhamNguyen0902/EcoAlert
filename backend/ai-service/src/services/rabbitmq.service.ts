@@ -48,15 +48,39 @@ export const processAlertCreatedEvent = async (
   event: IEventMessage<AlertCreatedData>,
   dependencies: AlertCreatedProcessorDependencies,
 ) => {
+  // Nhận alert.created, phân tích bất đồng bộ và luôn phát một kết quả có trạng thái rõ ràng.
   const alert = event.data;
   if (!alert?._id) throw new Error('alert.created event is missing data._id');
 
-  const analysis = await dependencies.analyze({
-    alertId: alert._id,
-    title: alert.title,
-    description: alert.description || '',
-    imageUrl: alert.mediaUrls?.find((url) => typeof url === 'string' && url.length > 0),
-  });
+  let analysis: MultimodalAnalysisResult;
+  try {
+    analysis = await dependencies.analyze({
+      alertId: alert._id,
+      title: alert.title,
+      description: alert.description || '',
+      imageUrl: alert.mediaUrls?.find((url) => typeof url === 'string' && url.length > 0),
+    });
+  } catch (error) {
+    // Không làm mất báo cáo khi nhà cung cấp lỗi; Alert Service sẽ hiển thị AI unavailable.
+    const failureReason = 'Dịch vụ OpenRouter tạm thời không khả dụng; báo cáo vẫn đang chờ nhân viên xử lý.';
+    logger.warn(`AI analysis failed for alert ${alert._id}`, {
+      ...safeOpenRouterErrorMetadata(error),
+      task: AiTask.INCIDENT_ANALYSIS,
+    });
+    analysis = {
+      category: 'UNCLASSIFIED',
+      severity: null,
+      confidence: null,
+      displayConfidenceSource: 'NONE',
+      summary: null,
+      reasoningSummary: null,
+      analysisMode: 'FAILED',
+      provider: 'openrouter',
+      model: 'unavailable',
+      pipelineVersion: 'openrouter-multimodal-v1',
+      failureReason,
+    };
+  }
 
   logger.info(`Analyzed alert ${alert._id}`, {
     provider: analysis.provider,
@@ -64,12 +88,11 @@ export const processAlertCreatedEvent = async (
     model: analysis.model,
     analysisMode: analysis.analysisMode,
     pipelineVersion: analysis.pipelineVersion,
-    visionStatus: analysis.vision?.status,
-    processingTimeMs: analysis.totalProcessingTimeMs || analysis.semanticProcessingTimeMs,
+    processingTimeMs: analysis.processingTimeMs,
   });
 
   await dependencies.publish(
-    EVENTS.IMAGE_ANALYZED,
+    EVENTS.AI_ANALYZED,
     {
       alertId: alert._id,
       analysisId: event.eventId,

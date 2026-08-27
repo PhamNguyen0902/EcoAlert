@@ -31,7 +31,7 @@ class RabbitMQService {
       const queue = await this.channel.assertQueue('notification_service_queue', { durable: true });
       const eventNames = [
         EVENTS.ALERT_CREATED,
-        EVENTS.IMAGE_ANALYZED,
+        EVENTS.AI_ANALYZED,
         EVENTS.ALERT_UPDATED,
         EVENTS.OFFICER_ASSIGNED,
         EVENTS.ALERT_STARTED,
@@ -80,8 +80,8 @@ class RabbitMQService {
         socketService.emitToAll('alert:created', data);
         break;
 
-      case EVENTS.IMAGE_ANALYZED:
-        socketService.emitToAll('image:analyzed', data);
+      case EVENTS.AI_ANALYZED:
+        socketService.emitToAll('ai:analyzed', data);
         socketService.emitToAll('alert:updated', data);
         await notificationService.notifyCitizen(
           'System',

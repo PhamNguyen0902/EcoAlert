@@ -13,7 +13,6 @@ router.get('/profile', asyncHandler(userController.getMe));
 router.patch('/profile', validate(updateProfileSchema), asyncHandler(userController.updateProfile));
 router.patch('/change-password', validate(changePasswordSchema), asyncHandler(userController.changePassword));
 
-router.get('/audit-logs', requireRoles([UserRole.ADMIN]), asyncHandler(userController.getAuditLogs));
 router.get('/:id', asyncHandler(userController.getUserById));
 
 router.use(requireRoles([UserRole.ADMIN]));

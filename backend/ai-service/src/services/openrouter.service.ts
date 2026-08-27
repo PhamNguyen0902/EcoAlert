@@ -14,7 +14,6 @@ import {
   normalizeIncidentSeverity,
   UNCLASSIFIED_CATEGORY,
 } from './category-normalizer.service';
-import { CompactVisionEvidence, formatVisionEvidenceLines } from './vision-evidence.service';
 
 export {
   OpenRouterConfig,
@@ -39,7 +38,6 @@ export interface IncidentAnalysis {
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
-  visionEvidenceUsed: string[];
 }
 
 const rawIncidentAnalysisSchema = z.object({
@@ -52,7 +50,6 @@ const rawIncidentAnalysisSchema = z.object({
   severityConfidence: z.number().min(0).max(1).optional(),
   overallSummary: z.string().trim().min(1).max(800).optional(),
   shortReason: z.string().trim().min(1).max(500).optional(),
-  visionEvidenceUsed: z.array(z.string().trim().min(1).max(120)).max(6).optional(),
   // Backward-compatible parsing protects in-flight v1 messages while every
   // newly requested OpenRouter response uses the v2 schema below.
   confidence: z.number().min(0).max(1).optional(),
@@ -60,7 +57,7 @@ const rawIncidentAnalysisSchema = z.object({
   reasoningSummary: z.string().trim().min(1).max(500).optional(),
 }).strict();
 
-export type IncidentAnalysisMode = 'text' | 'vision' | 'text_fallback';
+export type IncidentAnalysisMode = 'TEXT_ONLY' | 'IMAGE_AND_TEXT';
 
 export interface IncidentAnalysisResult extends IncidentAnalysis {
   analysisMode: IncidentAnalysisMode;
@@ -73,7 +70,6 @@ export interface IncidentAnalysisInput {
   title?: string;
   description: string;
   imageUrl?: string;
-  visionEvidence?: CompactVisionEvidence;
 }
 
 type OpenRouterClientOptions = ConstructorParameters<typeof OpenAI>[0];
@@ -221,19 +217,17 @@ export const initializeOpenRouter = (
   const client = createOpenRouterClient(config, factory);
   runtime = { config, client, provider: new OpenRouterProvider(client, config) };
 
-  if (config.legacyModelTasks.length > 0 && !legacyWarningEmitted) {
+  if (config.usesLegacyModel && !legacyWarningEmitted) {
     legacyWarningEmitted = true;
     logger.warn('OPENROUTER_MODEL is deprecated. Configure task-specific models.', {
-      tasksUsingLegacyModel: config.legacyModelTasks,
+      tasksUsingLegacyModel: ['INCIDENT_ANALYSIS'],
     });
   }
 
   logger.info('OpenRouter configured', {
     configured: true,
     analysisModel: config.analysisModel,
-    chatModel: config.chatModel,
     analysisFallbackConfigured: Boolean(config.analysisFallbackModel),
-    chatFallbackConfigured: Boolean(config.chatFallbackModel),
     baseURL: config.baseURL,
   });
   return runtime;
@@ -252,13 +246,13 @@ export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
   try {
     parsed = JSON.parse(content);
   } catch {
-    throw new OpenRouterResponseError('OpenRouter returned malformed JSON.');
+    throw new OpenRouterResponseError('OpenRouter trả về dữ liệu JSON không hợp lệ.');
   }
 
   const result = rawIncidentAnalysisSchema.safeParse(parsed);
   if (!result.success) {
     throw new OpenRouterResponseError(
-      'OpenRouter returned an invalid incident analysis payload.',
+      'OpenRouter trả về dữ liệu phân tích sự cố không hợp lệ.',
     );
   }
   const raw = result.data;
@@ -276,7 +270,7 @@ export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
     !reason ||
     !severity
   ) {
-    throw new OpenRouterResponseError('OpenRouter returned an incomplete incident analysis payload.');
+    throw new OpenRouterResponseError('OpenRouter trả về dữ liệu phân tích sự cố chưa đầy đủ.');
   }
 
   const rawCategory = normalizeIncidentCategory(raw.category);
@@ -305,7 +299,6 @@ export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
     severityConfidence,
     overallSummary: summary,
     shortReason: reason,
-    visionEvidenceUsed: raw.visionEvidenceUsed ?? [],
   };
 };
 
@@ -334,7 +327,6 @@ const structuredResponseFormat = {
         'severityConfidence',
         'overallSummary',
         'shortReason',
-        'visionEvidenceUsed',
       ],
       properties: {
         isIncident: { type: 'boolean' },
@@ -346,28 +338,15 @@ const structuredResponseFormat = {
         severityConfidence: { type: 'number', minimum: 0, maximum: 1 },
         overallSummary: { type: 'string', minLength: 1, maxLength: 800 },
         shortReason: { type: 'string', minLength: 1, maxLength: 500 },
-        visionEvidenceUsed: { type: 'array', maxItems: 6, items: { type: 'string', minLength: 1, maxLength: 120 } },
       },
     },
   },
 };
 
 const buildUserContent = (input: IncidentAnalysisInput, includeImage: boolean) => {
-  const visionEvidence = input.visionEvidence;
-  const visionText = !visionEvidence
-    ? 'Bằng chứng từ Vision: không được yêu cầu cho lần phân tích này.'
-    : !visionEvidence.detectorAvailable
-      ? 'Bằng chứng từ Vision: bộ nhận diện không khả dụng. Điều này không đồng nghĩa không có sự cố.'
-      : [
-        `Bằng chứng từ Vision: bộ nhận diện EcoAlert ${visionEvidence.model || 'không có dữ liệu'} đã hoàn tất.`,
-        `Số vật thể phát hiện: ${visionEvidence.totalObjects}.`,
-        `Các vật thể: ${formatVisionEvidenceLines(visionEvidence).join('; ') || 'không có dữ liệu'}.`,
-        `Độ tin cậy của bộ nhận diện: ${visionEvidence.detectorConfidence === null ? 'không có dữ liệu' : visionEvidence.detectorConfidence}.`,
-      ].join('\n');
   const text = [
     `Tiêu đề: ${input.title?.trim() || 'Không được cung cấp'}`,
     `Mô tả: ${input.description.trim() || 'Không được cung cấp'}`,
-    visionText,
   ].join('\n');
 
   if (!includeImage || !input.imageUrl) return text;
@@ -386,16 +365,13 @@ const incidentCompletionRequest = (
       role: 'system',
       content: [
         'Bạn là trợ lý AI chuyên phân tích và phân loại sự cố môi trường của hệ thống EcoAlert.',
-        'Chỉ phân tích ở cấp độ sự cố dựa trên ảnh báo cáo, tiêu đề và mô tả do người dân cung cấp, cùng với bằng chứng Vision do hệ thống cung cấp.',
-        'Bằng chứng Vision chỉ là bằng chứng hỗ trợ ở mức nhận diện vật thể. Bộ nhận diện tùy chỉnh của EcoAlert hiện chỉ nhận diện plastic_bottle, plastic_bag, plastic_cup, metal_can, cardboard và glass_bottle.',
-        'Việc Vision không phát hiện vật thể không đồng nghĩa không có sự cố; các sự cố như ngập nước hoặc các loại sự cố môi trường khác vẫn có thể được xác định từ ảnh báo cáo, tiêu đề và mô tả.',
-        'Không được suy đoán hoặc bịa ra vật thể, tình trạng hay bằng chứng không xuất hiện trong ảnh, mô tả hoặc dữ liệu Vision được cung cấp. Không tiết lộ quá trình suy luận nội bộ.',
+        'Phân tích trực tiếp dựa trên ảnh báo cáo (nếu có), tiêu đề và mô tả do người dân cung cấp.',
+        'Không được suy đoán hoặc bịa ra vật thể, tình trạng hay bằng chứng không xuất hiện trong ảnh hoặc mô tả. Không tiết lộ quá trình suy luận nội bộ.',
         `Chỉ sử dụng chính xác một category chuẩn từ danh sách sau: ${Object.values(AlertCategory).join(', ')}, hoặc ${UNCLASSIFIED_CATEGORY} khi bằng chứng không đủ hoặc không phù hợp.`,
         `Chỉ sử dụng chính xác một severity từ danh sách sau: ${Object.values(Severity).join(', ')}.`,
         'Giữ nguyên chính xác các tên trường kỹ thuật trong JSON theo schema được cung cấp; không dịch tên trường, category hoặc severity. Các giá trị confidence phải nằm trong khoảng từ 0 đến 1 và phản ánh đúng mức độ chắc chắn của bằng chứng.',
         'overallSummary phải hoàn toàn bằng tiếng Việt, gồm 2 đến 4 câu ngắn gọn, tự nhiên, rõ ràng cho người dùng tại Việt Nam; mô tả sự cố, giải thích mức độ nghiêm trọng và chỉ đưa ra nhận xét hoặc khuyến nghị khi có đủ bằng chứng.',
         'shortReason phải hoàn toàn bằng tiếng Việt, ngắn gọn và nêu bằng chứng chính dẫn đến kết quả phân loại. Không sử dụng tiếng Anh trong phần giải thích cho người dùng, trừ tên kỹ thuật hoặc object class khi thực sự cần thiết.',
-        'visionEvidenceUsed chỉ được liệt kê bằng chứng Vision thực sự được cung cấp; nếu cần diễn đạt cho người dùng, hãy viết ngắn gọn, dễ hiểu bằng tiếng Việt và chỉ giữ tên kỹ thuật hoặc object class khi cần thiết.',
         'AI chỉ đóng vai trò hỗ trợ ra quyết định. AI không có quyền tự xác minh báo cáo, phân công nhân viên xử lý, giải quyết hoặc đóng sự cố.',
       ].join(' '),
     },
@@ -410,7 +386,7 @@ const analysisFromCompletion = (
 ): IncidentAnalysis => {
   const content = response.choices[0]?.message.content;
   if (!content) {
-    throw new OpenRouterResponseError('OpenRouter returned an empty response.');
+    throw new OpenRouterResponseError('OpenRouter không trả về nội dung phân tích.');
   }
   return parseIncidentAnalysis(content);
 };
@@ -465,13 +441,13 @@ export const mapProviderError = (error: unknown): Error => {
   const code = typeof rawCode === 'string' ? rawCode : undefined;
   if (status === 401) {
     return new OpenRouterProviderError(
-      'OpenRouter authentication failed.',
+      'Không thể xác thực với dịch vụ OpenRouter.',
       status,
       code,
     );
   }
   return new OpenRouterProviderError(
-    'OpenRouter request failed.',
+    'Yêu cầu phân tích tới OpenRouter không thành công.',
     status,
     code,
   );
@@ -496,14 +472,13 @@ const analyzeIncident = async (
   input: IncidentAnalysisInput,
   loggedModel: string,
 ): Promise<IncidentAnalysisResult> => {
-  const requestedImage = Boolean(input.imageUrl);
   const includeImage = isUsableImageUrl(input.imageUrl);
 
   try {
     const result = await request(includeImage);
     return {
       ...result.analysis,
-      analysisMode: includeImage ? 'vision' : requestedImage ? 'text_fallback' : 'text',
+      analysisMode: includeImage ? 'IMAGE_AND_TEXT' : 'TEXT_ONLY',
       provider: 'openrouter',
       model: result.model,
       ...(result.latencyMs !== undefined ? { semanticProcessingTimeMs: result.latencyMs } : {}),
@@ -521,7 +496,7 @@ const analyzeIncident = async (
         const result = await request(false);
         return {
           ...result.analysis,
-          analysisMode: 'text_fallback',
+          analysisMode: 'TEXT_ONLY',
           provider: 'openrouter',
           model: result.model,
           ...(result.latencyMs !== undefined ? { semanticProcessingTimeMs: result.latencyMs } : {}),
@@ -557,6 +532,7 @@ export const analyzeIncidentWithClient = async (
 export const analyzeIncidentWithOpenRouter = async (
   input: IncidentAnalysisInput,
 ): Promise<IncidentAnalysisResult> => {
+  // Model quan sát trực tiếp ảnh và nội dung báo cáo, sau đó trả JSON theo schema sự cố.
   const provider = getOpenRouterProvider();
   const configuredModel = provider.getModel(AiTask.INCIDENT_ANALYSIS);
   return analyzeIncident(
@@ -574,29 +550,4 @@ export const analyzeIncidentWithOpenRouter = async (
     input,
     configuredModel,
   );
-};
-
-export const translateTextWithOpenRouter = async (
-  text: string,
-  targetLang: 'vi' | 'en' = 'en',
-): Promise<string> => {
-  const provider = getOpenRouterProvider();
-  const systemPrompt =
-    targetLang === 'en'
-      ? 'You are a translation assistant for the EcoAlert environmental system. Translate the user input from Vietnamese into clear, professional English. Output ONLY the translated string without commentary, extra notes, or quotes.'
-      : 'Bạn là trợ lý dịch thuật cho hệ thống EcoAlert. Hãy dịch văn bản sang tiếng Việt chính xác, tự nhiên. CHỈ trả về văn bản đã dịch, không kèm bất kỳ giải thích hay dấu ngoặc kép nào.';
-
-  const generation = await provider.generate(
-    AiTask.CHAT,
-    {
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: text },
-      ],
-      temperature: 0.1,
-    },
-  );
-
-  const content = generation.response.choices[0]?.message.content;
-  return content ? content.trim() : text;
 };

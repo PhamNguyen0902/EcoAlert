@@ -10,8 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { createIncidentMarkerIcon } from '@/lib/incident-map-marker';
-import { SEVERITY_COLORS } from '@/lib/gis-heatmap';
+import { SEVERITY_COLORS } from '@/lib/map-filters';
 import { useGeolocation } from '@/features/citizen/hooks/useGeolocation';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getIncidentCategoryLabel, getIncidentSeverityLabel, getIncidentStatusLabel } from '@/lib/incident-presentation';
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -43,6 +45,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
   alerts,
   selectedCategory,
 }) => {
+  const { language } = useLanguage();
   const { latitude, longitude } = useGeolocation();
   const [severityFilter, setSeverityFilter] = useState<Severity | 'all'>('all');
 
@@ -66,45 +69,12 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
     return counts;
   }, [alerts]);
 
-  const severityFilterLabels: Record<Severity | 'all', string> = {
-    all: 'Tất cả',
-    critical: 'Nghiêm trọng',
-    high: 'Cao',
-    medium: 'Trung bình',
-    low: 'Thấp',
-  };
-
-  const severityLegendLabels: Record<Severity, string> = {
-    critical: 'Mức độ Nghiêm trọng',
-    high: 'Mức độ Cao',
-    medium: 'Mức độ Trung bình',
-    low: 'Mức độ Thấp',
-  };
-
-  const formatCategory = (cat: string) => {
-    const categoryNames: Record<string, string> = {
-      illegal_dumping: 'Rác thải trái phép',
-      water_pollution: 'Ô nhiễm nguồn nước',
-      air_pollution: 'Ô nhiễm không khí',
-      flooding: 'Ngập lụt',
-      fire: 'Cháy / Đốt rác',
-      noise_pollution: 'Ô nhiễm tiếng ồn',
-      construction_waste: 'Rác thải xây dựng',
-      other: 'Khác',
-    };
-    return categoryNames[cat] || cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-  };
-
-  const formatStatus = (st: string) => {
-    const statusNames: Record<string, string> = {
-      pending: 'Chờ xác minh',
-      in_progress: 'Đang xử lý',
-      resolved: 'Đã hoàn thành',
-      rejected: 'Đã từ chối',
-      closed: 'Đã đóng',
-    };
-    return statusNames[st] || st;
-  };
+  const severityFilterLabel = (severity: Severity | 'all') => severity === 'all'
+    ? language === 'vi' ? 'Tất cả' : 'All'
+    : getIncidentSeverityLabel(severity, language);
+  const severityLegendLabel = (severity: Severity) => language === 'vi'
+    ? `Mức độ ${getIncidentSeverityLabel(severity, language)}`
+    : `${getIncidentSeverityLabel(severity, language)} severity`;
 
   return (
     <div id="map-section" className="relative w-full h-[400px] md:h-[600px] rounded-xl overflow-hidden shadow-lg border border-border">
@@ -135,7 +105,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                   </h3>
                   <div className="flex flex-wrap gap-1 mb-2">
                     <Badge variant="outline" className="text-xs">
-                      {formatCategory(alert.category)}
+                      {getIncidentCategoryLabel(alert.category, language)}
                     </Badge>
                     <Badge
                       style={{
@@ -144,10 +114,10 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                       }}
                       className="text-xs"
                     >
-                      {severityFilterLabels[alert.severity ?? 'low']}
+                      {severityFilterLabel(alert.severity ?? 'low')}
                     </Badge>
                     <Badge variant="secondary" className="text-xs">
-                      {formatStatus(alert.status)}
+                      {getIncidentStatusLabel(alert.status, language)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">
@@ -182,7 +152,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                 : 'hover:bg-muted bg-background'
             )}
           >
-            <span>{severityFilterLabels[sev]}</span>
+            <span>{severityFilterLabel(sev)}</span>
             <Badge variant={severityFilter === sev ? 'secondary' : 'outline'} className="ml-2 py-0 h-5">
               {severityCounts[sev]}
             </Badge>
@@ -200,7 +170,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                 className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-xs font-medium">{severityLegendLabels[sev]}</span>
+              <span className="text-xs font-medium">{severityLegendLabel(sev)}</span>
             </div>
           ))}
           <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">

@@ -86,13 +86,6 @@ export class UserController {
     res.status(200).json(successResponse(null, 'User permanently deleted'));
   }
 
-  async getAuditLogs(req: Request, res: Response) {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const search = req.query.search as string;
-    const result = await auditLogService.getLogs(page, limit, search);
-    res.status(200).json(paginatedResponse(result.items, result.total, page, limit));
-  }
 }
 
 

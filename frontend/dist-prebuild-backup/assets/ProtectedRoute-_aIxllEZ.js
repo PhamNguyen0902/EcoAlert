@@ -1,1 +1,0 @@
-import{a as o,j as t,N as s,O as i}from"./index-Bid73aHq.js";const a=({allowedRoles:e})=>{const{isAuthenticated:u,role:r}=o();return u?e&&r&&!e.includes(r)?t.jsx(s,{to:"/login",replace:!0}):t.jsx(i,{}):t.jsx(s,{to:"/login",replace:!0})};export{a as ProtectedRoute};

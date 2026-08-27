@@ -13,19 +13,19 @@ import { useOfficerTasks } from "../../hooks/useAlerts";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Badge } from "../../components/ui/Badge";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import { Alert } from "../../types";
+import { getCategoryLabel, getSeverityLabel, getStatusLabel } from "../../utils/incidentPresentation";
 
 const STATUS_TABS = [
-  { label: "ALL", value: undefined },
-  { label: "PENDING", value: "PENDING" },
-  { label: "IN PROGRESS", value: "IN_PROGRESS" },
-  { label: "RESOLVED", value: "RESOLVED" },
+  { value: undefined }, { value: "PENDING" }, { value: "IN_PROGRESS" }, { value: "RESOLVED" },
 ];
 
 export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { language } = useLanguage();
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
 
   const { data: tasksData, isLoading, refetch, isRefetching } = useOfficerTasks(
@@ -47,17 +47,17 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
         <GlassCard style={styles.taskCard}>
           <View style={styles.cardHeader}>
             <Badge
-              label={item.category?.toUpperCase().replace("_", " ") || "GENERAL"}
+              label={getCategoryLabel(item.category, language)}
               type="custom"
               bgColor={isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE"}
               textColor={isDark ? "#60A5FA" : colors.secondary}
             />
             <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
               <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-                {item.severity?.toUpperCase()}
+                {getSeverityLabel(item.severity, language)}
               </Text>
             </View>
-            <Badge label={item.status || "PENDING"} type="status" />
+            <Badge label={getStatusLabel(item.status, language)} statusValue={item.status} type="status" />
           </View>
 
           <Text style={[styles.taskTitle, { color: colors.text }]} numberOfLines={1}>
@@ -71,7 +71,7 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
           <View style={styles.locationRow}>
             <MapPin size={14} color={isDark ? "#60A5FA" : colors.secondary} />
             <Text style={[styles.locationText, { color: isDark ? "#60A5FA" : colors.secondary }]} numberOfLines={1}>
-              {item.address || "GPS Geotag Location"}
+              {item.address || (language === "vi" ? "Vị trí GPS chưa có địa chỉ" : "GPS geotag location")}
             </Text>
           </View>
         </GlassCard>
@@ -95,7 +95,7 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
           const isActive = selectedStatus === tab.value;
           return (
             <TouchableOpacity
-              key={tab.label}
+              key={tab.value || "ALL"}
               style={[
                 styles.tabChip,
                 { borderColor: isActive ? colors.secondary : colors.border, backgroundColor: isActive ? (isDark ? "rgba(59, 130, 246, 0.3)" : "#DBEAFE") : colors.surface },
@@ -103,7 +103,7 @@ export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }
               onPress={() => setSelectedStatus(tab.value)}
             >
               <Text style={[styles.tabChipText, { color: isActive ? (isDark ? "#93C5FD" : colors.secondary) : colors.textMuted }]}>
-                {tab.label}
+                {tab.value ? getStatusLabel(tab.value, language) : language === "vi" ? "Tất cả" : "All"}
               </Text>
             </TouchableOpacity>
           );

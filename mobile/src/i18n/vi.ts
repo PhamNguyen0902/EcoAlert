@@ -1,15 +1,20 @@
 export const vi = {
   // Navigation Tabs
   tabs: {
+    home: "Trang chủ",
     dashboard: "Tổng quan",
+    reportIncident: "Gửi báo cáo",
     reportAlert: "Báo cáo sự cố",
     myReports: "Báo cáo của tôi",
+    assignedReports: "Báo cáo được giao",
     assignedTasks: "Nhiệm vụ được giao",
+    monitoringMap: "Bản đồ giám sát",
     mapView: "Bản đồ",
+    reportManagement: "Quản lý Báo cáo",
+    incidentCategories: "Danh mục Sự cố",
     users: "Người dùng",
     categories: "Danh mục",
     audit: "Nhật ký hệ thống",
-    assistant: "Trợ lý AI",
     profile: "Cá nhân",
   },
 
@@ -236,8 +241,6 @@ export const vi = {
     categoryManagementTitle: "Quản lý Danh mục",
     categoryManagementSub: "Cấu hình danh mục sự cố môi trường và mức độ nghiêm trọng mặc định.",
     addCategory: "Thêm danh mục",
-    auditLogsTitle: "Nhật ký Hệ thống",
-    auditLogsSub: "Nhật ký truy vết thời gian thực tất cả hành động và thay đổi trên hệ thống.",
     searchAuditPlaceholder: "Tìm nhật ký theo tên hoặc hành động...",
     gisTitle: "Mật độ sự cố",
     gisSubtitle: "Dữ liệu GIS thực theo bộ lọc hiện tại",
@@ -277,7 +280,6 @@ export const vi = {
 
   // Officer Screens
   officer: {
-    officerDashboardTitle: "Cán bộ Môi trường",
     environmentalResponse: "Điều hành & Phản ứng Môi trường",
     responseDesk: "Bàn Điều hành Sự cố",
     responseDeskDesc: "Xác minh cảnh báo công dân, điều động đội kiểm tra và cập nhật tiến độ xử lý.",

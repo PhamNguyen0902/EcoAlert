@@ -6,6 +6,11 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok' | grep 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -14,6 +19,11 @@ services:
     container_name: ecoalert_redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -23,6 +33,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -40,18 +55,28 @@ services:
       - REDIS_URL=${REDIS_URL}
       - USER_SERVICE_URL=http://user-service:3001
       - ALERT_SERVICE_URL=http://alert-service:3002
-      - MEDIA_SERVICE_URL=http://media-service:3003
       - GIS_SERVICE_URL=http://gis-service:3004
       - NOTIFICATION_SERVICE_URL=http://notification-service:3006
       - AI_SERVICE_URL=http://ai-service:3005
-      - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}
+      - MEDIA_SERVICE_URL=http://media-service:3003
     depends_on:
-      - user-service
-      - alert-service
-      - media-service
-      - gis-service
-      - ai-service
-      - notification-service
+      user-service:
+        condition: service_healthy
+      alert-service:
+        condition: service_healthy
+      media-service:
+        condition: service_healthy
+      gis-service:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -63,14 +88,23 @@ services:
     container_name: ecoalert_user_service
     environment:
       - PORT=3001
-      - MONGO_URI=${MONGO_URI_USER}
+      # Compose is a self-contained local stack. Do not use the Atlas URI from
+      # the root .env; it makes local containers fail whenever Atlas is offline.
+      - MONGO_URI=mongodb://mongodb:27017/ecoalert-user-db
       - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./backend/user-service/dist:/app/user-service/dist:ro
     depends_on:
-      - mongodb
-      - redis
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3001/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -82,7 +116,7 @@ services:
     container_name: ecoalert_alert_service
     environment:
       - PORT=3002
-      - MONGO_URI=${MONGO_URI_ALERT}
+      - MONGO_URI=mongodb://mongodb:27017/ecoalert-alert-db
       - RABBITMQ_URL=${RABBITMQ_URL}
       - USER_SERVICE_URL=http://user-service:3001
       - OFFICER_CHECKIN_RADIUS_METERS=${OFFICER_CHECKIN_RADIUS_METERS:-50}
@@ -96,9 +130,17 @@ services:
       - ./backend/alert-service/dist:/app/alert-service/dist:ro
       - ./backend/shared/dist:/app/shared/dist:ro
     depends_on:
-      - mongodb
-      - rabbitmq
-      - user-service
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3002/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -110,14 +152,19 @@ services:
     container_name: ecoalert_media_service
     environment:
       - PORT=3003
-      - MONGO_URI=${MONGO_URI_MEDIA}
+      - MONGO_URI=mongodb://mongodb:27017/ecoalert-media-db
       - AWS_REGION=${AWS_REGION}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
-      - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3003/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -131,15 +178,22 @@ services:
       - ./backend/gis-service/.env
     environment:
       - PORT=3004
-      - MONGO_URI=${MONGO_URI_GIS}
+      - MONGO_URI=mongodb://mongodb:27017/ecoalert-gis-db
       - RABBITMQ_URL=${RABBITMQ_URL}
     depends_on:
-      - mongodb
-      - rabbitmq
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     volumes:
       # Run the locally type-checked GIS read model without rebuilding the
       # shared Node image on this constrained workstation.
       - ./backend/gis-service/dist:/app/gis-service/dist:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3004/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -154,21 +208,9 @@ services:
     environment:
       - PORT=3005
       - RABBITMQ_URL=${RABBITMQ_URL}
-      - MONGO_URI=${MONGO_URI_AI}
-      - ALERT_MONGO_URI=${MONGO_URI_ALERT}
-      - REDIS_URL=${REDIS_URL}
       # The API key lives only in backend/ai-service/.env.  Do not let a stale
       # root-level migration copy override the service-specific credential.
       - OPENROUTER_ANALYSIS_MODEL=${OPENROUTER_ANALYSIS_MODEL:-openai/gpt-4o-mini}
-      - OPENROUTER_CHAT_MODEL=${OPENROUTER_CHAT_MODEL:-meta-llama/llama-3.1-8b-instruct}
-      - ASSISTANT_RATE_LIMIT=${ASSISTANT_RATE_LIMIT}
-      - ASSISTANT_RATE_WINDOW_SECONDS=${ASSISTANT_RATE_WINDOW_SECONDS}
-      - INTERNAL_GATEWAY_SHARED_SECRET=${INTERNAL_GATEWAY_SHARED_SECRET}
-      - VISION_AI_ENABLED=${VISION_AI_ENABLED:-false}
-      - VISION_SEGMENTATION_ENABLED=${VISION_SEGMENTATION_ENABLED:-false}
-      - VISION_SERVICE_URL=http://vision-service:3007
-      - VISION_TIMEOUT_MS=${VISION_TIMEOUT_MS:-45000}
-      - MEDIA_SERVICE_URL=http://media-service:3003
       - AI_IMAGE_VALIDATION_HIGH_THRESHOLD=${AI_IMAGE_VALIDATION_HIGH_THRESHOLD:-0.80}
       - AI_IMAGE_VALIDATION_LOW_THRESHOLD=${AI_IMAGE_VALIDATION_LOW_THRESHOLD:-0.50}
       - AI_CATEGORY_SUGGESTION_THRESHOLD=${AI_CATEGORY_SUGGESTION_THRESHOLD:-0.80}
@@ -179,57 +221,15 @@ services:
       - ./backend/ai-service/dist:/app/ai-service/dist:ro
       - ./backend/shared/dist:/app/shared/dist:ro
     depends_on:
-      - mongodb
-      - redis
-      - rabbitmq
-      - media-service
-      - vision-service
-    networks:
-      - ecoalert_network
-
-  vision-service:
-    build:
-      context: ./backend/vision-service
-      target: runtime
-      args:
-        TORCH_INDEX_URL: ${VISION_TORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
-    container_name: ecoalert_vision_service
-    expose:
-      - "3007"
-    environment:
-      - VISION_INTERNAL_TOKEN=${INTERNAL_GATEWAY_SHARED_SECRET}
-      - VISION_ALLOWED_IMAGE_HOSTS=${AWS_S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com
-      - VISION_ALLOW_PRIVATE_HOSTS=false
-      - VISION_MAX_IMAGE_BYTES=10485760
-      - VISION_MAX_IMAGE_PIXELS=25000000
-      - VISION_MAX_INFERENCE_SIDE=1280
-      - VISION_REQUEST_TIMEOUT_SECONDS=12
-      - VISION_MAX_CONCURRENCY=${VISION_MAX_CONCURRENCY:-1}
-      - VISION_DETECTION_MODEL_PATH=/models/ecoalert-waste-yolo26n-v1.pt
-      - VISION_CONFIDENCE_THRESHOLD=${VISION_CONFIDENCE_THRESHOLD:-0.40}
-      # No-build compatibility for the currently deployed Phase 1A image.
-      - VISION_DETECTION_CONFIDENCE=${VISION_CONFIDENCE_THRESHOLD:-0.40}
-      - VISION_IOU_THRESHOLD=${VISION_IOU_THRESHOLD:-0.45}
-      - VISION_MAX_DETECTIONS=${VISION_MAX_DETECTIONS:-100}
-      - VISION_DEVICE=${VISION_DEVICE:-auto}
-      - VISION_SEGMENTATION_ENABLED=${VISION_SEGMENTATION_ENABLED:-false}
-      - VISION_SAM2_CHECKPOINT_PATH=/models/sam2.1_hiera_tiny.pt
-      - VISION_SAM2_CONFIG=configs/sam2.1/sam2.1_hiera_t.yaml
-      - VISION_MODEL_EAGER_LOAD=${VISION_MODEL_EAGER_LOAD:-false}
-      - VISION_SERVICE_PORT=3007
-    volumes:
-      # The custom detector is intentionally a host-mounted, immutable artifact.
-      # A named Docker volume is laptop-local and is empty after a migration.
-      - ./models:/models:ro
-      # Resource-safe local Phase 1A deployment: run the audited source without
-      # rebuilding the large ML dependency layers on this constrained machine.
-      - ./backend/vision-service/app:/app/app:ro
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3007/health', timeout=3)"]
-      interval: 30s
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3005/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 20s
+      retries: 12
     networks:
       - ecoalert_network
 
@@ -241,11 +241,18 @@ services:
     container_name: ecoalert_notification_service
     environment:
       - PORT=3006
-      - MONGO_URI=${MONGO_URI_NOTIFICATION}
+      - MONGO_URI=mongodb://mongodb:27017/ecoalert-notification-db
       - RABBITMQ_URL=${RABBITMQ_URL}
     depends_on:
-      - mongodb
-      - rabbitmq
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3006/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     networks:
       - ecoalert_network
 

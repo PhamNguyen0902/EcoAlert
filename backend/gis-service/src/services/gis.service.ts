@@ -40,6 +40,7 @@ export class GisService {
   }
 
   async getNearby(lng: number, lat: number, maxDistanceInMeters: number = 5000) {
+    // Truy vấn 2dsphere để tìm các sự cố gần một tọa độ theo đơn vị mét.
     return Location.find({
       isDeleted: { $ne: true },
       location: {
@@ -55,7 +56,7 @@ export class GisService {
   }
   
   async getRadius(lng: number, lat: number, radiusInKm: number = 5) {
-    // MongoDB $geoWithin uses radians if using centerSphere. 1 rad = 6378.1 km
+    // $centerSphere dùng radian, vì vậy chuyển bán kính km trước khi truy vấn MongoDB.
     return Location.find({
       isDeleted: { $ne: true },
       location: {

@@ -39,6 +39,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { hasValidCoordinates } from '@/lib/maps';
 import { getAlertDisplaySeverity } from '@/lib/ai-confidence';
+import { getIncidentCategoryLabel, getIncidentSeverityLabel, getIncidentStatusLabel } from '@/lib/incident-presentation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +47,6 @@ import { IncidentLocationDetails } from '@/components/location/IncidentLocationD
 import { ConfirmActionDialog } from '@/components/incidents/ConfirmActionDialog';
 import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
 import { OverallAiAnalysisCard } from '@/components/incidents/OverallAiAnalysisCard';
-import { VisionAnalysisCard } from '@/components/incidents/VisionAnalysisCard';
 import type { AlertCategory, OfficerAvailability, ResolutionInput } from '@/types';
 import 'leaflet/dist/leaflet.css';
 
@@ -79,7 +79,7 @@ const formatTimestamp = (value?: string) => value ? format(new Date(value), 'PPp
 export default function OfficerReportDetail() {
   const { id = '' } = useParams<{ id: string }>();
   const { user, role } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { data: alert, isLoading, isError, error } = useAlert(id);
   const { data: officerAvailability } = useOfficerAvailability(role === 'ADMIN');
   const assignOfficer = useAssignOfficer();
@@ -122,9 +122,9 @@ export default function OfficerReportDetail() {
       <Card className="mx-auto max-w-lg border-destructive/40">
         <CardContent className="space-y-4 py-12 text-center">
           <AlertCircle className="mx-auto h-10 w-10 text-destructive" />
-          <p className="font-medium">Report not found or you do not have access.</p>
+          <p className="font-medium">{language === 'vi' ? 'Không tìm thấy báo cáo hoặc bạn không có quyền truy cập.' : 'Report not found or you do not have access.'}</p>
           <p className="text-sm text-muted-foreground">{getApiErrorMessage(error, 'Không thể tải báo cáo này.')}</p>
-          <Button asChild variant="outline"><Link to={role === 'ADMIN' ? '/admin/reports' : '/officer/assigned'}>Back to Reports</Link></Button>
+          <Button asChild variant="outline"><Link to={role === 'ADMIN' ? '/admin/reports' : '/officer/assigned'}>{language === 'vi' ? 'Quay lại danh sách báo cáo' : 'Back to Reports'}</Link></Button>
         </CardContent>
       </Card>
     );
@@ -144,12 +144,14 @@ export default function OfficerReportDetail() {
   const officers = availability.map((item) => item.officer);
   const selectedAvailability = availability.find((item) => item.officer._id === selectedOfficerId);
   const assignmentWarning = selectedAvailability && (selectedAvailability.shiftStatus === 'OFF_SHIFT' || selectedAvailability.workloadLevel === 'HIGH')
-    ? `${selectedAvailability.officer.fullName} is ${selectedAvailability.shiftStatus === 'OFF_SHIFT' ? 'off shift' : 'at high workload'} (${selectedAvailability.activeTaskCount} active tasks). Admin confirmation is required to continue.`
+    ? language === 'vi'
+      ? `${selectedAvailability.officer.fullName} đang ${selectedAvailability.shiftStatus === 'OFF_SHIFT' ? 'ngoài ca' : 'có khối lượng công việc cao'} (${selectedAvailability.activeTaskCount} nhiệm vụ đang xử lý). Cần Quản trị viên xác nhận để tiếp tục.`
+      : `${selectedAvailability.officer.fullName} is ${selectedAvailability.shiftStatus === 'OFF_SHIFT' ? 'off shift' : 'at high workload'} (${selectedAvailability.activeTaskCount} active tasks). Admin confirmation is required to continue.`
     : undefined;
   const assignedOfficer = officers.find((officer) => officer._id === alert.assignedOfficerId);
   const assignedOfficerLabel = alert.assignedOfficerId
     ? assignedOfficer?.fullName || (alert.assignedOfficerId === user?._id ? user.fullName : alert.assignedOfficerId)
-    : 'Not assigned';
+    : language === 'vi' ? 'Chưa phân công' : 'Not assigned';
   const originalEvidence = alert.mediaUrls ?? [];
   const resolutionEvidence = alert.resolutionEvidence ?? [];
   const statusHistory = alert.statusHistory ?? [];
@@ -210,7 +212,9 @@ export default function OfficerReportDetail() {
   };
 
   const handleArrival = () => {
-    toast('GPS check-in requires a fresh foreground location. Please use the EcoAlert mobile officer app on site.', { icon: '📍' });
+    toast(language === 'vi'
+      ? 'Check-in GPS cần vị trí mới ở chế độ nền trước. Vui lòng dùng ứng dụng EcoAlert cho cán bộ tại hiện trường.'
+      : 'GPS check-in requires a fresh foreground location. Please use the EcoAlert mobile officer app on site.', { icon: '📍' });
     setConfirmAction(null);
   };
 
@@ -275,7 +279,7 @@ export default function OfficerReportDetail() {
           ...draft,
           state: 'failed' as const,
           progress: 0,
-          error: getApiErrorMessage(uploadError, 'Upload failed'),
+          error: getApiErrorMessage(uploadError, language === 'vi' ? 'Tải lên thất bại' : 'Upload failed'),
         };
       }
     }));
@@ -308,7 +312,7 @@ export default function OfficerReportDetail() {
           });
           setConfirmAction(null);
         },
-        onError: (mutationError) => onWorkflowError(mutationError, 'Unable to resolve this incident.'),
+        onError: (mutationError) => onWorkflowError(mutationError, language === 'vi' ? 'Không thể hoàn tất xử lý sự cố này.' : 'Unable to resolve this incident.'),
       },
     );
   };
@@ -323,7 +327,7 @@ export default function OfficerReportDetail() {
           });
           setConfirmAction(null);
         },
-        onError: (mutationError) => onWorkflowError(mutationError, 'Unable to close this incident.'),
+        onError: (mutationError) => onWorkflowError(mutationError, language === 'vi' ? 'Không thể đóng sự cố này.' : 'Unable to close this incident.'),
       },
     );
   };
@@ -337,7 +341,7 @@ export default function OfficerReportDetail() {
           toast.success('Ghi chú của cán bộ đã được lưu.');
           setEditingNote(false);
         },
-        onError: (mutationError) => toast.error(getApiErrorMessage(mutationError, 'Unable to save note.')),
+        onError: (mutationError) => toast.error(getApiErrorMessage(mutationError, language === 'vi' ? 'Không thể lưu ghi chú.' : 'Unable to save note.')),
       },
     );
   };
@@ -351,8 +355,8 @@ export default function OfficerReportDetail() {
           <Link to={isAdmin ? '/admin/reports' : '/officer/assigned'}><ChevronLeft className="mr-2 h-4 w-4" />Quay lại danh sách</Link>
         </Button>
         <div className="flex gap-2">
-          <Badge variant="outline" className="capitalize">{displaySeverity ?? 'unavailable'}</Badge>
-          <Badge className="capitalize">{alert.status.replace(/_/g, ' ')}</Badge>
+          <Badge variant="outline" className="capitalize">{getIncidentSeverityLabel(displaySeverity, language)}</Badge>
+          <Badge className="capitalize">{getIncidentStatusLabel(alert.status, language)}</Badge>
         </div>
       </div>
 
@@ -363,9 +367,9 @@ export default function OfficerReportDetail() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <CardTitle className="text-2xl">{alert.title}</CardTitle>
-                  <CardDescription className="mt-2 capitalize">{alert.category.replace(/_/g, ' ')}</CardDescription>
+                  <CardDescription className="mt-2">{getIncidentCategoryLabel(alert.category, language)}</CardDescription>
                 </div>
-                <Badge variant="outline" className="capitalize">Mức độ {displaySeverity ?? 'chưa xác định'}</Badge>
+                <Badge variant="outline" className="capitalize">{language === 'vi' ? 'Mức độ' : 'Severity'} {getIncidentSeverityLabel(displaySeverity, language)}</Badge>
               </div>
               <div className="flex flex-wrap gap-4 pt-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{format(new Date(alert.createdAt), 'PP')}</span>
@@ -390,7 +394,6 @@ export default function OfficerReportDetail() {
           </Card>
 
           <OverallAiAnalysisCard alert={alert} />
-          <VisionAnalysisCard alert={alert} />
 
           {(alert.resolutionSummary || resolutionEvidence.length > 0) ? (
             <Card className="border-emerald-500/30">
@@ -420,7 +423,7 @@ export default function OfficerReportDetail() {
             </Card>
           ) : null}
 
-          <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} analysisMode={alert.aiAnalysisMode} vision={alert.aiVision} />
+          <IncidentTimeline entries={alert.timeline} createdAt={alert.createdAt} citizenId={alert.citizenId} />
 
           <Card>
             <CardHeader><CardTitle className="text-lg">Lịch sử trạng thái</CardTitle><CardDescription>Nhật ký chuyển đổi trạng thái do máy chủ lưu trữ.</CardDescription></CardHeader>
@@ -450,7 +453,7 @@ export default function OfficerReportDetail() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between gap-4"><span className="text-muted-foreground">Cán bộ phụ trách</span><span className="text-right font-medium">{assignedOfficerLabel}</span></div>
               <div className="flex justify-between gap-4"><span className="text-muted-foreground">Ngày phân công</span><span className="text-right">{formatTimestamp(alert.assignedAt)}</span></div>
-              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Trạng thái</span><Badge className="capitalize">{alert.status.replace(/_/g, ' ')}</Badge></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">{language === 'vi' ? 'Trạng thái' : 'Status'}</span><Badge className="capitalize">{getIncidentStatusLabel(alert.status, language)}</Badge></div>
               <div className="flex justify-between gap-4"><span className="text-muted-foreground">Bắt đầu xử lý</span><span className="text-right">{formatTimestamp(alert.startedAt)}</span></div>
               <div className="flex justify-between gap-4"><span className="text-muted-foreground">Thời gian đến nơi</span><span className="text-right">{formatTimestamp(alert.arrivedAt)}</span></div>
               <div className="flex justify-between gap-4"><span className="text-muted-foreground">Hoàn thành</span><span className="text-right">{formatTimestamp(alert.resolvedAt)}</span></div>

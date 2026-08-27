@@ -8,8 +8,6 @@ import {
   View,
 } from "react-native";
 import {
-  Bell,
-  Bot,
   Camera,
   CheckCircle2,
   ChevronRight,
@@ -18,7 +16,6 @@ import {
   Navigation,
   Plus,
   Sparkles,
-  User as UserIcon,
 } from "lucide-react-native";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, vi } from "date-fns/locale";
@@ -30,11 +27,8 @@ import type { CitizenStackParamList, CitizenTabParamList } from "../../navigatio
 import { useAlerts } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
 import { useDashboardLocation } from "../../hooks/useDashboardLocation";
-import { useUnreadNotificationCount } from "../../hooks/useNotifications";
-import { useWeather } from "../../hooks/useWeather";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
-import { WeatherCard } from "../../components/weather/WeatherCard";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import {
@@ -64,16 +58,10 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { language } = useLanguage();
   const profile = useProfile();
   const alertsQuery = useAlerts(1, 100);
-  const unreadQuery = useUnreadNotificationCount(Boolean(profile.data));
   const [refreshing, setRefreshing] = useState(false);
 
   const alerts = alertsQuery.data?.items ?? [];
-  const { location, isResolvingDeviceLocation } = useDashboardLocation(alerts[0]);
-  const weatherQuery = useWeather(
-    location.latitude,
-    location.longitude,
-    !alertsQuery.isLoading && !isResolvingDeviceLocation,
-  );
+  const { location } = useDashboardLocation(alerts[0]);
 
   const copy = language === "vi"
     ? {
@@ -94,12 +82,8 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
         viewAll: "Xem tất cả",
         empty: "Bạn chưa có báo cáo nào.",
         emptyButton: "Tạo báo cáo đầu tiên",
-        aiBody: "Hỏi về báo cáo, trạng thái hoặc cách sử dụng EcoAlert.",
-        askAi: "Hỏi EcoAlert AI",
         aiPending: "AI đang phân tích…",
         unknownLocation: "Chưa có địa chỉ",
-        notifications: "Mở thông báo",
-        profile: "Mở hồ sơ",
       }
     : {
         greeting: "Hello",
@@ -119,12 +103,8 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
         viewAll: "View all",
         empty: "You have not submitted a report yet.",
         emptyButton: "Create your first report",
-        aiBody: "Ask about reports, statuses, or how to use EcoAlert.",
-        askAi: "Ask EcoAlert AI",
         aiPending: "AI is analyzing…",
         unknownLocation: "Address unavailable",
-        notifications: "Open notifications",
-        profile: "Open profile",
       };
 
   const stats = useMemo(() => {
@@ -153,30 +133,10 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
       ?.navigate("AlertDetail", { id });
   };
 
-  const openNotifications = () => {
-    navigation
-      .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
-      ?.navigate("Notifications");
-  };
-
-  const openWeatherDetails = () => {
-    navigation
-      .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
-      ?.navigate("WeatherDetails", {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        locationLabel: location.label,
-      });
-  };
-
   const refresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        alertsQuery.refetch(),
-        unreadQuery.refetch(),
-        weatherQuery.refetch(),
-      ]);
+      await alertsQuery.refetch();
     } finally {
       setRefreshing(false);
     }
@@ -187,7 +147,7 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
     const statusKey = alert.status?.toUpperCase() || "PENDING";
     const statusPalette = isDark ? DARK_STATUS_COLORS : STATUS_COLORS;
     const statusColor = statusPalette[statusKey] ?? statusPalette.PENDING;
-    const severity = alert.severity ? getSeverityLabel(alert.severity) : null;
+    const severity = alert.severity ? getSeverityLabel(alert.severity, language) : null;
     const severityColors = alert.severity ? SEVERITY_COLORS[alert.severity] : undefined;
 
     return (
@@ -255,35 +215,6 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
           </View>
           <Text style={[styles.brandText, { color: colors.text }]}>EcoAlert</Text>
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={openNotifications}
-            style={[styles.headerButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-            accessibilityRole="button"
-            accessibilityLabel={copy.notifications}
-          >
-            <Bell size={19} color={colors.text} />
-            {(unreadQuery.data ?? 0) > 0 ? (
-              <View style={[styles.unreadBadge, { backgroundColor: colors.destructive }]}>
-                <Text style={styles.unreadText}>{Math.min(unreadQuery.data ?? 0, 9)}{(unreadQuery.data ?? 0) > 9 ? "+" : ""}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("ProfileTab")}
-            style={[styles.avatarButton, { backgroundColor: colors.primaryLight, borderColor: colors.border }]}
-            accessibilityRole="button"
-            accessibilityLabel={copy.profile}
-          >
-            {profile.data?.fullName ? (
-              <Text style={[styles.avatarText, { color: isDark ? "#86EFAC" : colors.primaryDark }]}>
-                {profile.data.fullName.trim().charAt(0).toUpperCase()}
-              </Text>
-            ) : (
-              <UserIcon size={19} color={colors.primary} />
-            )}
-          </TouchableOpacity>
-        </View>
       </View>
 
       <ScrollView
@@ -302,16 +233,6 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={[styles.currentLocationText, { color: colors.textMuted }]} numberOfLines={1}>{location.label}</Text>
           </View>
         </View>
-
-        <WeatherCard
-          weather={weatherQuery.data}
-          locationLabel={location.label}
-          isLoading={weatherQuery.isLoading || isResolvingDeviceLocation}
-          isError={weatherQuery.isError}
-          isCached={Boolean(weatherQuery.data && !weatherQuery.isFetchedAfterMount)}
-          onRetry={() => weatherQuery.refetch()}
-          onPress={openWeatherDetails}
-        />
 
         <View style={[styles.reportCta, { backgroundColor: isDark ? "#0D5132" : "#15803D" }]}>
           <View style={styles.ctaHeader}>
@@ -382,20 +303,6 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
           </Card>
         )}
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate("AssistantTab")}
-          activeOpacity={0.76}
-          style={[styles.aiCard, { backgroundColor: isDark ? "#16233B" : "#F2F7FF", borderColor: isDark ? "#30466A" : "#D7E4F8" }]}
-          accessibilityRole="button"
-          accessibilityLabel={copy.askAi}
-        >
-          <View style={[styles.aiIcon, { backgroundColor: isDark ? "rgba(96,165,250,0.16)" : "#DBEAFE" }]}><Bot size={23} color={colors.secondary} /></View>
-          <View style={styles.aiCopy}>
-            <View style={styles.aiTitleRow}><Sparkles size={14} color={colors.primary} /><Text style={[styles.aiTitle, { color: colors.text }]}>EcoAlert AI</Text></View>
-            <Text style={[styles.aiBody, { color: colors.textMuted }]}>{copy.aiBody}</Text>
-            <Text style={[styles.aiLink, { color: colors.secondary }]}>{copy.askAi} →</Text>
-          </View>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );

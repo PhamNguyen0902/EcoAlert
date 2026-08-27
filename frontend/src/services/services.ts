@@ -1,15 +1,11 @@
 import { api } from "./api";
 import type {
   Alert,
-  AssistantConversation,
-  AssistantMessage,
-  AssistantReply,
   Category,
   CreateAlertData,
   PaginatedResult,
   RegisterData,
   ResolutionInput,
-  User,
 } from "@/types";
 
 export const authService = {
@@ -24,28 +20,6 @@ export const authService = {
   logout: async (refreshToken?: string) => {
     const res = await api.post("/v1/auth/logout", { refreshToken });
     return res.data;
-  },
-};
-
-export const assistantService = {
-  getConversations: async (): Promise<AssistantConversation[]> => {
-    const res = await api.get('/v1/assistant/conversations');
-    return res.data.data;
-  },
-  getMessages: async (conversationId: string): Promise<AssistantMessage[]> => {
-    const res = await api.get(`/v1/assistant/conversations/${conversationId}/messages`);
-    return res.data.data;
-  },
-  createConversation: async (title?: string): Promise<AssistantConversation> => {
-    const res = await api.post('/v1/assistant/conversations', { title });
-    return res.data.data;
-  },
-  sendMessage: async (
-    message: string,
-    conversationId?: string,
-  ): Promise<AssistantReply> => {
-    const res = await api.post('/v1/assistant/messages', { message, conversationId });
-    return res.data.data;
   },
 };
 
@@ -149,82 +123,6 @@ export const alertService = {
   },
 };
 
-export const notificationService = {
-  getNotifications: async (page = 1, limit = 20) => {
-    const res = await api.get(`/v1/notifications?page=${page}&limit=${limit}`);
-    return res.data.data;
-  },
-  getUnreadCount: async (): Promise<number> => {
-    const res = await api.get("/v1/notifications/unread-count");
-    return res.data.data.count;
-  },
-  markAsRead: async (id: string) => {
-    const res = await api.patch(`/v1/notifications/${id}/read`);
-    return res.data.data;
-  },
-  markAllAsRead: async () => {
-    const res = await api.patch("/v1/notifications/mark-all-read");
-    return res.data.data;
-  },
-  deleteNotification: async (id: string) => {
-    const res = await api.delete(`/v1/notifications/${id}`);
-    return res.data.data;
-  },
-};
-
-export const userService = {
-  getProfile: async (): Promise<User> => {
-    const res = await api.get("/v1/users/profile");
-    return res.data.data;
-  },
-  updateProfile: async (
-    data: Partial<Pick<User, "fullName" | "phone" | "avatar">>,
-  ) => {
-    const res = await api.patch("/v1/users/profile", data);
-    return res.data.data;
-  },
-  changePassword: async (data: {
-    oldPassword: string;
-    newPassword: string;
-  }) => {
-    const res = await api.patch("/v1/users/change-password", data);
-    return res.data.data;
-  },
-  getUsers: async (page = 1, limit = 10, role?: string, search?: string): Promise<PaginatedResult<User>> => {
-    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (role && role !== 'all') params.append('role', role);
-    if (search) params.append('search', search);
-    const res = await api.get(`/v1/users?${params}`);
-    return res.data.data;
-  },
-  getUserById: async (id: string): Promise<User> => {
-    const res = await api.get(`/v1/users/${id}`);
-    return res.data.data;
-  },
-  changeRole: async (id: string, role: string) => {
-    const res = await api.patch(`/v1/users/${id}/role`, { role });
-    return res.data.data;
-  },
-  toggleStatus: async (id: string, isActive: boolean) => {
-    const res = await api.patch(`/v1/users/${id}/status`, { isActive });
-    return res.data.data;
-  },
-  deleteUser: async (id: string) => {
-    const res = await api.delete(`/v1/users/${id}`);
-    return res.data.data;
-  },
-  createUser: async (data: { email: string; password?: string; fullName: string; phone?: string; role?: string }) => {
-    const res = await api.post('/v1/users', data);
-    return res.data.data;
-  },
-  getAuditLogs: async (page = 1, limit = 20, search?: string) => {
-    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (search) params.append('search', search);
-    const res = await api.get(`/v1/users/audit-logs?${params}`);
-    return res.data.data;
-  },
-};
-
 export const gisService = {
   getNearby: async (lng: number, lat: number, maxDistance = 5000) => {
     const res = await api.get(
@@ -236,16 +134,6 @@ export const gisService = {
     const res = await api.get(
       `/v1/gis/radius?lng=${lng}&lat=${lat}&radius=${radius}`,
     );
-    return res.data.data;
-  },
-  getIncidentHeatmap: async (filters: Record<string, string> = {}) => {
-    const params = new URLSearchParams(filters);
-    const res = await api.get(`/v1/gis/incidents/heatmap?${params}`);
-    return res.data.data;
-  },
-  getIncidentDrilldown: async (lat: number, lng: number, radius = 500, filters: Record<string, string> = {}) => {
-    const params = new URLSearchParams({ lat: String(lat), lng: String(lng), radius: String(radius), ...filters });
-    const res = await api.get(`/v1/gis/incidents/nearby?${params}`);
     return res.data.data;
   },
 };

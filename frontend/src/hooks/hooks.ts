@@ -2,8 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   authService,
   alertService,
-  notificationService,
-  userService,
   gisService,
   categoryService,
 } from "../services/services";
@@ -71,7 +69,6 @@ const invalidateAlertWorkflow = (
   queryClient.invalidateQueries({ queryKey: ['alert', id] });
   queryClient.invalidateQueries({ queryKey: ['alerts'] });
   queryClient.invalidateQueries({ queryKey: ['officer-tasks'] });
-  queryClient.invalidateQueries({ queryKey: ['notifications'] });
 };
 
 export const useAssignOfficer = () => {
@@ -214,158 +211,6 @@ export const useAddOfficerNote = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
     },
-  });
-};
-
-// ========================
-// NOTIFICATION
-// ========================
-
-export const useNotifications = (page = 1, limit = 20) => {
-  return useQuery({
-    queryKey: ["notifications", page, limit],
-    queryFn: () => notificationService.getNotifications(page, limit),
-    refetchInterval: 30000,
-  });
-};
-
-export const useUnreadCount = () => {
-  return useQuery({
-    queryKey: ["notifications", "unreadCount"],
-    queryFn: notificationService.getUnreadCount,
-    refetchInterval: 15000,
-  });
-};
-
-export const useMarkAsRead = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: notificationService.markAsRead,
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["notifications"],
-      });
-    },
-  });
-};
-
-export const useMarkAllAsRead = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: notificationService.markAllAsRead,
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["notifications"],
-      });
-    },
-  });
-};
-
-// ========================
-// USER
-// ========================
-
-export const useProfile = () => {
-  return useQuery({
-    queryKey: ["profile"],
-    queryFn: userService.getProfile,
-  });
-};
-
-export const useUpdateProfile = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: userService.updateProfile,
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["profile"],
-      });
-    },
-  });
-};
-
-export const useChangePassword = () => {
-  return useMutation({
-    mutationFn: userService.changePassword,
-  });
-};
-
-export const useUsers = (page = 1, limit = 10, role?: string, search?: string, enabled = true) => {
-  return useQuery({
-    queryKey: ["users", page, limit, role, search],
-    queryFn: () => userService.getUsers(page, limit, role, search),
-    enabled,
-  });
-};
-
-export const useChangeRole = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, role }: { id: string; role: string }) =>
-      userService.changeRole(id, role),
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["users"],
-      });
-    },
-  });
-};
-
-export const useToggleUserStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      userService.toggleStatus(id, isActive),
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["users"],
-      });
-    },
-  });
-};
-
-export const useDeleteUser = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: userService.deleteUser,
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["users"],
-      });
-    },
-  });
-};
-
-export const useCreateUser = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: userService.createUser,
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["users"],
-      });
-    },
-  });
-};
-
-export const useAuditLogs = (page = 1, limit = 20, search?: string) => {
-  return useQuery({
-    queryKey: ["audit-logs", page, limit, search],
-    queryFn: () => userService.getAuditLogs(page, limit, search),
   });
 };
 

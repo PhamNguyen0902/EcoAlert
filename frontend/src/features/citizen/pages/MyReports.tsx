@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import type { Alert } from "@/types";
 import EditReportModal from "../components/EditReportModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getIncidentCategoryLabel, getIncidentSeverityLabel, getIncidentStatusLabel } from '@/lib/incident-presentation';
 
 const severityColor: Record<string, string> = {
   critical: "destructive",
@@ -28,7 +29,7 @@ const statusColor = (status: string) =>
     : ("outline" as const);
 
 export default function MyReports() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -147,12 +148,10 @@ export default function MyReports() {
                             <Badge
                               variant={severityColor[alert.severity ?? 'low'] as any}
                             >
-                              {alert.severity?.toUpperCase() ?? 'UNAVAILABLE'}
+                              {getIncidentSeverityLabel(alert.severity, language)}
                             </Badge>
                             <Badge variant={statusColor(alert.status)}>
-                              {t(`status.${alert.status}`) !== `status.${alert.status}`
-                                ? t(`status.${alert.status}`)
-                                : alert.status?.replace(/_/g, " ").toUpperCase()}
+                              {getIncidentStatusLabel(alert.status, language)}
                             </Badge>
                           </div>
                         </div>
@@ -168,7 +167,7 @@ export default function MyReports() {
                           </span>
                           {alert.address && <span>• {alert.address}</span>}
                           {alert.category && (
-                            <span>• {alert.category.replace(/_/g, " ")}</span>
+                            <span>• {getIncidentCategoryLabel(alert.category, language)}</span>
                           )}
                         </div>
                       </div>

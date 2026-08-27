@@ -149,6 +149,7 @@ export class AlertService {
   }
 
   async createAlert(actor: WorkflowActor, data: CreateAlertDto) {
+    // Lưu báo cáo mới rồi phát alert.created để các read model và AI xử lý bất đồng bộ.
     this.requireRole(actor, ['CITIZEN']);
     const citizenId = actor.id;
     const createdAt = new Date();
@@ -191,7 +192,7 @@ export class AlertService {
         confirmedAt: null,
       };
 
-    // Prevent duplicate report creation within 10 seconds for the same citizen
+    // Chống gửi trùng cùng nội dung trong khoảng thời gian ngắn.
     const recentDuplicate = await alertRepository.findOne({
       citizenId,
       title: data.title,
@@ -668,17 +669,15 @@ export class AlertService {
     if (alert.aiAnalysisId === analysis.analysisId) return alert;
 
     const currentStatus = normalizeStatus(alert.status);
-    // Theo góp ý của Thầy: AI không tự động duyệt VERIFIED mà giữ PENDING cho con người xác nhận.
-    // Nếu độ tin cậy thấp (< 60%), hệ thống gán phân loại là UNCLASSIFIED (Chưa phân loại).
+    // AI chỉ cung cấp gợi ý; Admin vẫn là người xác minh và quyết định workflow.
     const newStatus = AlertStatus.PENDING;
     const displayConfidence = resolveOverallAiConfidence({
       analysisMode: analysis.analysisMode,
       confidence: analysis.confidence,
-      fusion: analysis.fusion,
       overallAnalysis: analysis.overallAnalysis,
     });
     const semanticCategoryConfidence = analysis.overallAnalysis?.categoryConfidence
-      ?? (analysis.analysisMode === 'VISION_ONLY' ? null : analysis.confidence);
+      ?? (analysis.analysisMode === 'FAILED' ? null : analysis.confidence);
     const aiSuggestedCategory = analysis.overallAnalysis?.classificationStatus === 'AI_SUGGESTED'
       && validAiSuggestion(analysis.overallAnalysis.categorySuggestion, analysis.overallAnalysis.categoryConfidence)
       ? analysis.overallAnalysis.categorySuggestion
@@ -732,30 +731,26 @@ export class AlertService {
         aiAnalysisMode: analysis.analysisMode,
         aiAnalysisProvider: analysis.provider,
         aiAnalysisModel: analysis.model,
+        aiFailureReason: analysis.failureReason ?? null,
         aiAnalysisId: analysis.analysisId,
         aiAnalyzedAt: analyzedAt,
         ...(analysis.pipelineVersion ? { aiPipelineVersion: analysis.pipelineVersion } : {}),
-        ...(analysis.vision ? { aiVision: analysis.vision } : {}),
-        ...(analysis.fusion ? { aiFusion: analysis.fusion } : {}),
         ...(analysis.overallAnalysis ? { aiOverallAnalysis: analysis.overallAnalysis } : {}),
-        ...(analysis.semanticProcessingTimeMs !== undefined
-          ? { aiSemanticProcessingTimeMs: analysis.semanticProcessingTimeMs }
-          : {}),
-        ...(analysis.totalProcessingTimeMs !== undefined
-          ? { aiTotalProcessingTimeMs: analysis.totalProcessingTimeMs }
+        ...(analysis.processingTimeMs !== undefined
+          ? { aiSemanticProcessingTimeMs: analysis.processingTimeMs }
           : {}),
         ...(currentStatus === AlertStatus.PENDING || currentStatus === AlertStatus.AI_ANALYZING ? { status: newStatus } : {}),
       },
       $push: {
         timeline: this.timelineEntry(
           'AI_ANALYSIS_COMPLETED',
-          analysis.analysisMode === 'VISION_ONLY' ? 'Vision analysis completed' : 'AI analysis completed',
+          analysis.analysisMode === 'FAILED' ? 'AI analysis unavailable' : 'AI analysis completed',
           actor,
           analyzedAt,
           {
             status: newStatus,
-            note: analysis.analysisMode === 'VISION_ONLY'
-              ? `Semantic confidence: Not available${analysis.vision ? ` · Detected objects: ${analysis.vision.totalDetectedObjects}${analysis.vision.detectorConfidence !== null ? ` · Detector confidence: ${Math.round(analysis.vision.detectorConfidence * 100)}%` : ''}` : ''}`
+            note: analysis.analysisMode === 'FAILED'
+              ? (analysis.failureReason || 'Dịch vụ AI tạm thời không khả dụng.')
               : displayConfidence.value === null
                 ? 'Semantic confidence: Not available'
                 : `Confidence: ${Math.round(displayConfidence.value * 100)}% (${displayConfidence.source.toLowerCase()})`,
@@ -763,7 +758,7 @@ export class AlertService {
               analysisMode: analysis.analysisMode,
               displayConfidence: displayConfidence.value,
               displayConfidenceSource: displayConfidence.source,
-              detectorConfidence: analysis.vision?.detectorConfidence ?? null,
+              failureReason: analysis.failureReason ?? null,
             },
           },
         ),

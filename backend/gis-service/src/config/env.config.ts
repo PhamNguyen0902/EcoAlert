@@ -12,5 +12,4 @@ export const envConfig = {
     'mongodb://localhost:27017/ecoalert-gis-db',
   ),
   rabbitMqUrl: environmentValue('RABBITMQ_URL', 'amqp://localhost'),
-  openWeatherApiKey: environmentValue('OPENWEATHER_API_KEY'),
 };

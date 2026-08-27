@@ -1,11 +1,10 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Search, LogOut, User as UserIcon } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Search, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LanguageToggle } from '@/components/ui/language-toggle';
 import { SoundToggle } from '@/components/ui/sound-toggle';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useUnreadCount } from '@/hooks/hooks';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,21 +17,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function OfficerTopbar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { t } = useLanguage();
-  const { data: unreadCount = 0 } = useUnreadCount();
+  const { t, language } = useLanguage();
 
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path.includes('dashboard')) return t('officer.dashboard');
     if (path.includes('assigned')) return t('officer.assigned');
-    if (path.includes('pending')) return t('officer.pending');
     if (path.includes('map')) return t('officer.map');
-    if (path.includes('notifications')) return t('officer.notifications');
-    if (path.includes('stats')) return t('officer.stats');
     if (path.includes('reports/')) return t('officer.details');
-    return 'Officer Portal';
+    return language === 'vi' ? 'Cổng cán bộ' : 'Officer Portal';
   };
 
   return (
@@ -53,16 +46,6 @@ export default function OfficerTopbar() {
         <LanguageToggle />
         <ThemeToggle />
 
-        <button 
-          onClick={() => navigate('/officer/notifications')}
-          className="relative p-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full transition-colors"
-        >
-          <Bell className="w-5 h-5" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-destructive rounded-full" />
-          )}
-        </button>
-
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
             <Avatar className="h-8 w-8">
@@ -78,13 +61,9 @@ export default function OfficerTopbar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/officer/profile')}>
-              <UserIcon className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4 text-destructive" />
-              <span className="text-destructive">Log out</span>
+              <span className="text-destructive">{language === 'vi' ? 'Đăng xuất' : 'Log out'}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

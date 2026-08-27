@@ -6,11 +6,14 @@ import { MapPin, RefreshCw, AlertTriangle } from "lucide-react-native";
 import { useAlerts } from "../../hooks/useAlerts";
 import { Badge } from "../../components/ui/Badge";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
+import { getCategoryLabel, getStatusLabel } from "../../utils/incidentPresentation";
 
 export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { language } = useLanguage();
   const { data: alertsData, isLoading, refetch, isRefetching } = useAlerts(1, 100);
 
   const alerts = alertsData?.items ?? [];
@@ -60,8 +63,8 @@ export const OfficerMapScreen: React.FC<{ navigation: any }> = ({ navigation }) 
                   <Text style={[styles.calloutTitle, { color: colors.text }]} numberOfLines={1}>
                     {alert.title}
                   </Text>
-                  <Text style={[styles.calloutCategory, { color: colors.textMuted }]}>{alert.category?.toUpperCase()}</Text>
-                  <Text style={[styles.calloutStatus, { color: colors.secondary }]}>Trạng thái: {alert.status}</Text>
+                  <Text style={[styles.calloutCategory, { color: colors.textMuted }]}>{getCategoryLabel(alert.category, language)}</Text>
+                  <Text style={[styles.calloutStatus, { color: colors.secondary }]}>{language === "vi" ? "Trạng thái" : "Status"}: {getStatusLabel(alert.status, language)}</Text>
                   <Text style={[styles.calloutCta, { color: colors.primaryDark }]}>Nhấn để xem & xác minh ›</Text>
                 </View>
               </Callout>

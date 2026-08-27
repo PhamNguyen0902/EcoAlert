@@ -50,6 +50,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import type { CitizenStackParamList, CitizenTabParamList } from "../../navigation/types";
 import { getAiAnalysisState, getWorkflowStatusLabel } from "../../utils/aiAnalysis";
+import { getCategoryLabel } from "../../utils/incidentPresentation";
 import type { AlertCategory, ImageValidation } from "../../types";
 import { alertService } from "../../api/alertService";
 
@@ -109,6 +110,15 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
   const [imageValidation, setImageValidation] = useState<ImageValidation | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<AlertCategory | undefined>();
   const [classificationDecision, setClassificationDecision] = useState<"CONFIRM" | "CORRECT" | undefined>();
+  const validationCopy = language === "vi"
+    ? {
+      suggestion: "Gợi ý của EcoAlert AI", category: "Danh mục", selectOrEdit: "Chọn / chỉnh sửa",
+      gpsStamped: "Đã gắn GPS", decision: { VALID: "Phù hợp", UNCERTAIN: "Chưa chắc chắn", INVALID: "Không phù hợp", UNAVAILABLE: "Chưa khả dụng" },
+    }
+    : {
+      suggestion: "EcoAlert AI suggestion", category: "Category", selectOrEdit: "Select / edit",
+      gpsStamped: "GPS stamped", decision: { VALID: "Valid", UNCERTAIN: "Uncertain", INVALID: "Invalid", UNAVAILABLE: "Unavailable" },
+    };
 
   useEffect(() => {
     void fetchLocation();
@@ -539,10 +549,10 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
             </Text>
             {imageValidation ? (
               <View style={[styles.aiValidationCard, { backgroundColor: imageValidation.decision === "INVALID" ? "#FEF2F2" : imageValidation.decision === "UNCERTAIN" ? "#FFFBEB" : colors.primaryLight }]}>
-                <Text style={[styles.aiValidationTitle, { color: colors.text }]}>Gợi ý của EcoAlert AI: {imageValidation.decision}</Text>
+                <Text style={[styles.aiValidationTitle, { color: colors.text }]}>{validationCopy.suggestion}: {validationCopy.decision[imageValidation.decision]}</Text>
                 <Text style={[styles.helperText, { color: colors.textMuted }]}>{imageValidation.reason}</Text>
                 {imageValidation.confidence !== null ? <Text style={[styles.helperText, { color: colors.textMuted }]}>Độ tin cậy: {Math.round(imageValidation.confidence * 100)}%</Text> : null}
-                <TouchableOpacity onPress={chooseCategory}><Text style={[styles.categoryChoice, { color: colors.primary }]}>Danh mục: {selectedCategory || "UNCLASSIFIED"} · Chọn / chỉnh sửa</Text></TouchableOpacity>
+                <TouchableOpacity onPress={chooseCategory}><Text style={[styles.categoryChoice, { color: colors.primary }]}>{validationCopy.category}: {getCategoryLabel(selectedCategory || "UNCLASSIFIED", language)} · {validationCopy.selectOrEdit}</Text></TouchableOpacity>
               </View>
             ) : null}
             {evidence.length > 0 ? (
@@ -553,7 +563,7 @@ export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => 
                     <View style={styles.watermarkBadgeOverlay}>
                       <ShieldCheck size={10} color="#4ADE80" />
                       <Text style={styles.watermarkBadgeText} numberOfLines={1}>
-                        {coords ? `${coords.coordinates[1].toFixed(2)},${coords.coordinates[0].toFixed(2)}` : "GPS Stamped"}
+                        {coords ? `${coords.coordinates[1].toFixed(2)},${coords.coordinates[0].toFixed(2)}` : validationCopy.gpsStamped}
                       </Text>
                     </View>
                     <TouchableOpacity

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Leaf, Bell, Menu, X, User, LogOut, Bot } from 'lucide-react';
+import { Leaf, Menu, X, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -16,21 +16,16 @@ import {
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUnreadCount } from '@/hooks/hooks';
-import { Badge } from '@/components/ui/badge';
 
 export default function CitizenNavbar() {
   const { user, logout, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { data: unreadCount = 0 } = useUnreadCount();
-
   const navLinks = [
     { name: t('nav.home'), path: '/home' },
     { name: t('nav.report_incident'), path: '/report' },
     { name: t('nav.my_reports'), path: '/my-reports' },
-    { name: 'Trợ lý AI', path: '/assistant' },
   ];
 
   const getInitials = (name?: string) => {
@@ -78,26 +73,6 @@ export default function CitizenNavbar() {
 
           {/* Right side actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative" asChild>
-              <Link to="/notifications">
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <Badge 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-red-500 text-white border-2 border-white dark:border-slate-900"
-                    variant="destructive"
-                  >
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Badge>
-                )}
-                <span className="sr-only">Thông báo</span>
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/assistant" aria-label="Open EcoAlert AI Assistant">
-                <Bot className="h-5 w-5" />
-              </Link>
-            </Button>
-            
             <ThemeToggle />
 
             {isAuthenticated && user ? (
@@ -122,13 +97,6 @@ export default function CitizenNavbar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="cursor-pointer flex items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Hồ sơ</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600 dark:text-red-400 focus:dark:text-red-400 cursor-pointer flex items-center">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Đăng xuất</span>
@@ -144,14 +112,6 @@ export default function CitizenNavbar() {
 
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative" asChild>
-              <Link to="/notifications">
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white dark:border-slate-900" />
-                )}
-              </Link>
-            </Button>
             <Button 
               variant="ghost" 
               size="icon"
@@ -201,14 +161,6 @@ export default function CitizenNavbar() {
                 
                 {isAuthenticated && user ? (
                   <div className="space-y-1">
-                    <Link
-                      to="/profile"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center px-3 py-3 rounded-xl text-base font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                    >
-                      <User className="mr-3 h-5 w-5 text-slate-400" />
-                      Hồ sơ
-                    </Link>
                     <button
                       onClick={() => {
                         logout();

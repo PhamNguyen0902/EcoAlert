@@ -11,9 +11,10 @@ import { Link } from 'react-router-dom';
 import { Alert } from '@/types';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getIncidentCategoryLabel, getIncidentSeverityLabel, getIncidentStatusLabel } from '@/lib/incident-presentation';
 
 export default function ReportManagement() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   
@@ -63,17 +64,17 @@ export default function ReportManagement() {
                 {filteredAlerts.map((alert: Alert) => (
                   <tr key={alert._id} className="border-b last:border-0 hover:bg-muted/50">
                     <td className="p-4 font-medium">{alert.title}</td>
-                    <td className="p-4 capitalize">{alert.category}</td>
+                    <td className="p-4">{getIncidentCategoryLabel(alert.category, language)}</td>
                     <td className="p-4">
                       <Badge variant="outline" className={
                         alert.severity === 'high' ? 'border-red-500 text-red-500' :
                         alert.severity === 'medium' ? 'border-orange-500 text-orange-500' :
                         'border-blue-500 text-blue-500'
                       }>
-                        {alert.severity}
+                        {getIncidentSeverityLabel(alert.severity, language)}
                       </Badge>
                     </td>
-                    <td className="p-4 capitalize">{alert.status}</td>
+                    <td className="p-4">{getIncidentStatusLabel(alert.status, language)}</td>
                     <td className="p-4 text-muted-foreground">{format(new Date(alert.createdAt), 'MMM d, yyyy')}</td>
                     <td className="p-4">
                       <div className="flex gap-2">
