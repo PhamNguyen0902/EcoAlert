@@ -45,17 +45,24 @@ export const RootNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {profile ? (
         role === "ADMIN" ? (
+          // tab của admin
           <Stack.Screen name="AdminApp" component={AdminTabNavigator} />
         ) : role === "OFFICER" ? (
+          // tab của officer
           <Stack.Screen name="OfficerApp" component={OfficerTabNavigator} />
         ) : (
+          //tab của người dân
           <Stack.Screen name="CitizenApp" component={CitizenTabNavigator} />
         )
       ) : (
         <>
+          {/* chưa đăng nhập thì ở màn hình đăng nhập hoặc đăng ký */}
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="CitizenAppGuest" component={CitizenTabNavigator} />
+          <Stack.Screen
+            name="CitizenAppGuest"
+            component={CitizenTabNavigator}
+          />
         </>
       )}
     </Stack.Navigator>
