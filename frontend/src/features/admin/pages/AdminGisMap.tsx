@@ -37,7 +37,7 @@ function FitMapToIncidents({ alerts }: { alerts: readonly Alert[] }) {
   return null;
 }
 
-/** Hiển thị các báo cáo có tọa độ thật để Admin mở nhanh hồ sơ cần xác minh. */
+// Hiển thị các báo cáo có tọa độ thật để Admin mở nhanh hồ sơ cần xác minh
 export default function AdminGisMap() {
   const { language } = useLanguage();
   const { data, isLoading } = useAlerts(1, 1000);
