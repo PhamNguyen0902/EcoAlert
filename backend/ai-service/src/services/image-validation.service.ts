@@ -73,6 +73,19 @@ export const validateIncidentImage = async (imageUrl: string): Promise<ImageVali
         { role: 'system', content: [
           'Bạn kiểm tra ảnh trước khi người dùng gửi báo cáo sự cố môi trường trên EcoAlert.',
           'Chỉ đánh giá liệu ảnh có khả năng thể hiện một sự cố môi trường hoặc đô thị, rõ ràng không liên quan, hoặc chưa đủ rõ để kết luận.',
+
+          'Rác thải / đổ trộm nếu như thấy rác ở gần trụ điện, lề đường, bờ sông, bãi đất trống, bãi đất nông nghiệp, bãi đất công cộng hoặc bãi đất hoang. Không đánh giá rác thải trong nhà, rác thải sinh hoạt thông thường hoặc rác thải trong thùng rác.',
+          'Ô nhiễm nước nếu như thấy nước bị đổi màu, nổi váng, nổi bọt, nổi rác thải hoặc có mùi hôi. Không đánh giá nước trong nhà, nước uống, nước sinh hoạt thông thường hoặc nước trong bể bơi.',
+          'Ô nhiễm không khí nếu như thấy khói, bụi, mùi hôi, bốc cháy hoặc có vật thể bay trong không khí. Không đánh giá khói trong nhà, khói từ bếp nấu ăn thông thường hoặc khói từ đốt lửa trại.',
+          'Đốt rác trái phép nếu như thấy đống rác đang cháy, bốc khói, bụi hoặc rác đang bị đốt trái phép. Không đánh giá khói từ bếp nấu ăn thông thường hoặc khói từ đốt lửa trại.',
+          'Ngập lụt nếu như thấy nước ngập đường, nhà, đất hoặc các công trình khác. Không đánh giá nước trong nhà, nước trong bể bơi hoặc nước sinh hoạt thông thường.',
+          'Hỏa hoạn nếu như thấy lửa, khói, bụi hoặc vật thể đang cháy. Không đánh giá lửa trong nhà, lửa từ bếp nấu ăn thông thường hoặc lửa từ đốt lửa trại.',
+          'Cây đổ nếu như thấy cây bị đổ ngã, gây ngập lụt hoặc ảnh hưởng đến giao thông. Không đánh giá cây trong vườn, cây cảnh hoặc cây được trồng trong nhà.',
+          'Chất thải xây dựng nếu như thấy vật liệu xây dựng, vật liệu xây dựng bị vứt bỏ trên đường phố, bãi đất trống hoặc bãi đất nông nghiệp. Không đánh giá vật liệu xây dựng trong nhà hoặc vật liệu xây dựng được xử lý đúng cách.',
+          'Ô nhiễm tiếng ồn nếu như thấy tiếng ồn lớn, gây khó chịu cho người dân xung quanh. Không đánh giá tiếng ồn trong nhà, tiếng ồn từ thiết bị điện tử thông thường hoặc tiếng ồn từ phương tiện giao thông thông thường.',
+          'Ô nhiễm đất nếu như thấy đất bị ô nhiễm bởi hóa chất, rác thải hoặc các chất độc hại. Không đánh giá đất trong nhà hoặc đất được xử lý đúng cách.',
+          'Đe doạ động vật hoang dã nếu như thấy động vật bị đe dọa, bị thương hoặc bị bắt giữ trái phép. Không đánh giá động vật trong nhà hoặc động vật được chăm sóc đúng cách.',
+
           `Chỉ đề xuất danh mục khi có thể bảo vệ bằng bằng chứng trực quan và danh mục đó thuộc một trong các giá trị sau: ${AI_SUPPORTED_CATEGORIES.join(', ')}.`,
           'Ảnh chân dung, đồ ăn, thú cưng, tài liệu, ảnh chế, ảnh chụp màn hình hoặc ảnh trong nhà thông thường là không liên quan, trừ khi chúng hiển thị rõ một sự cố môi trường.',
           'Nếu bằng chứng yếu hoặc nằm ngoài phạm vi nhận diện trực quan này, hãy trả về category là null và isEnvironmentalIncident là null.',

@@ -53,6 +53,7 @@ const INCIDENT_CATEGORIES: Array<{ value: AlertCategory; label: string }> = [
   { value: 'noise_pollution', label: 'Ô nhiễm tiếng ồn' },
   { value: 'soil_contamination', label: 'Ô nhiễm đất' },
   { value: 'wildlife_threat', label: 'Đe doạ động vật hoang dã' },
+  { value: 'fire', label: 'Hỏa hoạn' },
   { value: 'other', label: 'Khác' },
 ];
 
