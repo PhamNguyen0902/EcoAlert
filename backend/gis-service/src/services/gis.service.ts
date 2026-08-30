@@ -38,9 +38,8 @@ export class GisService {
       logger.error('Failed to save location', error);
     }
   }
-
+// Truy vấn 2dsphere để tìm các sự cố gần một tọa độ theo đơn vị mét ở đây là 5000m.
   async getNearby(lng: number, lat: number, maxDistanceInMeters: number = 5000) {
-    // Truy vấn 2dsphere để tìm các sự cố gần một tọa độ theo đơn vị mét.
     return Location.find({
       isDeleted: { $ne: true },
       location: {
@@ -54,9 +53,8 @@ export class GisService {
       }
     });
   }
-  
+  // $centerSphere dùng radian, vì vậy chuyển bán kính km trước khi truy vấn MongoDB.
   async getRadius(lng: number, lat: number, radiusInKm: number = 5) {
-    // $centerSphere dùng radian, vì vậy chuyển bán kính km trước khi truy vấn MongoDB.
     return Location.find({
       isDeleted: { $ne: true },
       location: {
