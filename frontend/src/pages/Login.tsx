@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useLogin } from "../hooks/hooks";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
@@ -14,6 +14,7 @@ import { ThemeToggle } from "../components/ui/theme-toggle";
 import { useLanguage } from "../contexts/LanguageContext";
 
 export default function Login() {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const loginMutation = useLogin();
   const { login, isAuthenticated, role } = useAuth();
@@ -43,6 +44,10 @@ export default function Login() {
             refreshToken: loginData.refreshToken,
             user: loginData.user,
           });
+          //chủ động chuyển hướng sau khi đăng nhập thành công
+          const userRole = loginData.user?.role;
+          const target = getRoleHome(userRole);
+          navigate(target, { replace: true });
         },
       },
     );

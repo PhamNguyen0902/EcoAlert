@@ -130,6 +130,9 @@ export const useCreateAlert = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    // mutationFn: hàm thực sự gửi yêu cầu
+    // alertService.createAlert: servivce được gọi
+    // onSuccess: thành công sẽ yêu cầu tải lại alerts
     mutationFn: alertService.createAlert,
     onSuccess: () => {
       queryClient.invalidateQueries({

@@ -1,5 +1,5 @@
-import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 interface ConfirmActionDialogProps {
   open: boolean;
@@ -27,7 +27,7 @@ export function ConfirmActionDialog({
   title,
   description,
   confirmLabel,
-  pendingLabel = 'Saving...',
+  pendingLabel = "Saving...",
   isPending = false,
   destructive = false,
   onOpenChange,
@@ -35,7 +35,10 @@ export function ConfirmActionDialog({
   children,
 }: ConfirmActionDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !isPending && onOpenChange(nextOpen)}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => !isPending && onOpenChange(nextOpen)}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -43,16 +46,23 @@ export function ConfirmActionDialog({
         </DialogHeader>
         {children}
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button
             type="button"
-            variant={destructive ? 'destructive' : 'default'}
+            variant={destructive ? "destructive" : "default"}
             onClick={onConfirm}
             disabled={isPending}
           >
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
             {isPending ? pendingLabel : confirmLabel}
           </Button>
         </DialogFooter>

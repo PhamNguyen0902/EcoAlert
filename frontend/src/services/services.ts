@@ -45,8 +45,11 @@ export const alertService = {
     limit = 10,
     status?: string,
   ): Promise<PaginatedResult<Alert>> => {
-    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-    if (status) params.set('status', status);
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (status) params.set("status", status);
     const res = await api.get(`/v1/alerts/officer/tasks?${params}`);
     return res.data.data;
   },
@@ -65,7 +68,10 @@ export const alertService = {
     const res = await api.post(`/v1/alerts/${id}/arrival`, location);
     return res.data.data;
   },
-  resolveIncident: async (id: string, data: ResolutionInput): Promise<Alert> => {
+  resolveIncident: async (
+    id: string,
+    data: ResolutionInput,
+  ): Promise<Alert> => {
     const res = await api.post(`/v1/alerts/${id}/resolution`, data);
     return res.data.data;
   },
@@ -74,15 +80,20 @@ export const alertService = {
     return res.data.data;
   },
   validateImage: async (imageUrl: string) => {
-    const res = await api.post('/v1/ai/validate-image', { imageUrl });
+    const res = await api.post("/v1/ai/validate-image", { imageUrl });
     return res.data.data;
   },
-  reviewClassification: async (id: string, category?: string): Promise<Alert> => {
-    const res = await api.post(`/v1/alerts/${id}/classification/review`, { category });
+  reviewClassification: async (
+    id: string,
+    category?: string,
+  ): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/classification/review`, {
+      category,
+    });
     return res.data.data;
   },
   getOfficerAvailability: async () => {
-    const res = await api.get('/v1/alerts/officers/availability');
+    const res = await api.get("/v1/alerts/officers/availability");
     return res.data.data;
   },
   createAlert: async (data: CreateAlertData) => {
@@ -97,13 +108,17 @@ export const alertService = {
     const res = await api.delete(`/v1/alerts/${id}`);
     return res.data.data;
   },
-  uploadMedia: async (file: File, onProgress?: (percentage: number) => void): Promise<string> => {
+  uploadMedia: async (
+    file: File,
+    onProgress?: (percentage: number) => void,
+  ): Promise<string> => {
     const formData = new FormData();
     formData.append("image", file);
     const res = await api.post("/v1/media/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: (event) => {
-        if (event.total && onProgress) onProgress(Math.round((event.loaded / event.total) * 100));
+        if (event.total && onProgress)
+          onProgress(Math.round((event.loaded / event.total) * 100));
       },
     });
     return res.data.data.url;
@@ -136,4 +151,3 @@ export const gisService = {
     return res.data.data;
   },
 };
-
