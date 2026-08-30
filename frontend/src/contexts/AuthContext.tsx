@@ -1,11 +1,6 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-} from 'react';
-import { User, UserRole } from '@/types';
-import toast from 'react-hot-toast';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { User, UserRole } from "@/types";
+import toast from "react-hot-toast";
 
 interface AuthState {
   user: User | null;
@@ -24,17 +19,19 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [authState, setAuthState] = useState<AuthState>(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    const storedRefreshToken = localStorage.getItem('refreshToken');
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
+    const storedRefreshToken = localStorage.getItem("refreshToken");
 
     let user = null;
     try {
       if (storedUser) user = JSON.parse(storedUser);
     } catch (e) {
-      localStorage.removeItem('user');
+      localStorage.removeItem("user");
     }
 
     return {
@@ -49,14 +46,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthState({ token: null, refreshToken: null, user: null });
     };
 
-    window.addEventListener('auth:unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () =>
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, []);
 
   const login = (data: { token: string; refreshToken: string; user: User }) => {
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("refreshToken", data.refreshToken);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
     setAuthState({
       token: data.token,
@@ -67,9 +65,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     toast.dismiss();
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
 
     setAuthState({
       token: null,
@@ -81,23 +79,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const contextValue: AuthContextType = {
     user: authState.user,
     token: authState.token,
-    role: authState.user?.role || null,
+    role: authState.user?.role
+      ? (authState.user.role.toUpperCase() as UserRole)
+      : null,
     isAuthenticated: !!authState.token,
     login,
     logout,
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
