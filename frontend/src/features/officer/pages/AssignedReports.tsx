@@ -230,7 +230,7 @@ export default function AssignedReports() {
                     </p>
                   </div>
                 </div>
-                {/* nút bấm mở chi tiết alert */}
+                {/* nút bấm mở chi tiết alert dẫn tới report detail */}
                 <Button asChild className="w-full">
                   <Link to={`/officer/reports/${task._id}`}>
                     <CalendarDays className="mr-2 h-4 w-4" />
