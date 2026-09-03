@@ -1,24 +1,45 @@
-export type UserRole = 'ADMIN' | 'OFFICER' | 'CITIZEN';
-export type WorkflowActorRole = UserRole | 'SYSTEM';
-export type AlertStatus = 'pending' | 'ai_analyzing' | 'verified' | 'assigned' | 'in_progress' | 'resolved' | 'closed' | 'rejected';
-export type AlertCategory = 'illegal_dumping' | 'water_pollution' | 'air_pollution' | 'illegal_burning' | 'flooding' | 'fallen_tree' | 'illegal_construction_waste' | 'noise_pollution' | 'soil_contamination' | 'wildlife_threat' | 'fire' | 'other' | 'UNCLASSIFIED';
-export type Severity = 'low' | 'medium' | 'high' | 'critical';
-export type AiAnalysisMode = 'TEXT_ONLY' | 'IMAGE_AND_TEXT' | 'FAILED';
+export type UserRole = "ADMIN" | "OFFICER" | "CITIZEN";
+export type WorkflowActorRole = UserRole | "SYSTEM";
+export type AlertStatus =
+  | "pending"
+  | "ai_analyzing"
+  | "verified"
+  | "assigned"
+  | "in_progress"
+  | "resolved"
+  | "closed"
+  | "rejected";
+export type AlertCategory =
+  | "illegal_dumping"
+  | "water_pollution"
+  | "air_pollution"
+  | "illegal_burning"
+  | "flooding"
+  | "fallen_tree"
+  | "illegal_construction_waste"
+  | "noise_pollution"
+  | "soil_contamination"
+  | "wildlife_threat"
+  | "fire"
+  | "other"
+  | "UNCLASSIFIED";
+export type Severity = "low" | "medium" | "high" | "critical";
+export type AiAnalysisMode = "TEXT_ONLY" | "IMAGE_AND_TEXT" | "FAILED";
 
 export interface AiOverallAnalysis {
   isIncident: boolean;
   incidentConfidence: number;
   categorySuggestion: AlertCategory | null;
   categoryConfidence: number;
-  classificationStatus: 'AI_SUGGESTED' | 'UNCLASSIFIED';
-  confidenceTier: 'HIGH_CONFIDENCE' | 'REVIEW_REQUIRED' | 'UNCLASSIFIED';
+  classificationStatus: "AI_SUGGESTED" | "UNCLASSIFIED";
+  confidenceTier: "HIGH_CONFIDENCE" | "REVIEW_REQUIRED" | "UNCLASSIFIED";
   severity: Severity;
   severityScore: number;
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
   semanticModel: string;
-  pipelineVersion: 'openrouter-multimodal-v1';
+  pipelineVersion: "openrouter-multimodal-v1";
 }
 
 export interface User {
@@ -35,12 +56,22 @@ export interface User {
 }
 
 export interface GeoLocation {
-  type: 'Point';
+  type: "Point";
   coordinates: [number, number];
 }
 
-export type ImageValidationDecision = 'VALID' | 'UNCERTAIN' | 'INVALID' | 'UNAVAILABLE';
-export type ClassificationStatus = 'AI_SUGGESTED' | 'USER_CONFIRMED' | 'USER_CORRECTED' | 'ADMIN_CONFIRMED' | 'ADMIN_CORRECTED' | 'UNCLASSIFIED';
+export type ImageValidationDecision =
+  | "VALID"
+  | "UNCERTAIN"
+  | "INVALID"
+  | "UNAVAILABLE";
+export type ClassificationStatus =
+  | "AI_SUGGESTED"
+  | "USER_CONFIRMED"
+  | "USER_CORRECTED"
+  | "ADMIN_CONFIRMED"
+  | "ADMIN_CORRECTED"
+  | "UNCLASSIFIED";
 export interface ImageValidation {
   decision: ImageValidationDecision;
   isEnvironmentalIncident: boolean | null;
@@ -56,7 +87,7 @@ export interface AlertClassification {
   aiConfidence?: number | null;
   aiReason?: string | null;
   finalCategory?: AlertCategory | null;
-  finalCategorySource?: 'AI' | 'CITIZEN' | 'ADMIN' | null;
+  finalCategorySource?: "AI" | "CITIZEN" | "ADMIN" | null;
   citizenSelectedCategory?: AlertCategory | null;
   citizenDecisionAt?: string | null;
   confirmedBy?: string | null;
@@ -96,19 +127,24 @@ export interface Alert {
   arrivedAt?: string;
   arrivedBy?: string;
   arrivalLocation?: ArrivalLocation;
-  checkIn?: { accuracyMeters: number; distanceFromIncidentMeters: number; checkedInAt: string; verified: boolean };
+  checkIn?: {
+    accuracyMeters: number;
+    distanceFromIncidentMeters: number;
+    checkedInAt: string;
+    verified: boolean;
+  };
   aiConfidence?: number | null;
-  aiConfidenceSource?: 'CATEGORY' | 'SEMANTIC' | 'NONE';
+  aiConfidenceSource?: "CATEGORY" | "SEMANTIC" | "NONE";
   aiSuggestedPriority?: Severity | null;
   aiSummary?: string | null;
   aiReasoningSummary?: string | null;
   aiAnalysisMode?: AiAnalysisMode;
-  aiAnalysisProvider?: 'openrouter';
+  aiAnalysisProvider?: "openrouter";
   aiAnalysisModel?: string;
   aiFailureReason?: string | null;
   aiAnalysisId?: string;
   aiAnalyzedAt?: string;
-  aiPipelineVersion?: 'openrouter-multimodal-v1';
+  aiPipelineVersion?: "openrouter-multimodal-v1";
   aiOverallAnalysis?: AiOverallAnalysis;
   aiSemanticProcessingTimeMs?: number;
   officerNote?: string;
@@ -141,7 +177,7 @@ export interface ResolutionEvidence {
   url: string;
   uploadedBy: string;
   uploadedAt: string;
-  type: 'AFTER_TREATMENT';
+  type: "AFTER_TREATMENT";
   capturedAt?: string;
   accuracyMeters?: number;
   distanceFromIncidentMeters?: number;
@@ -170,20 +206,28 @@ export interface ShiftLocationInput {
 export interface OfficerShift {
   _id: string;
   officerId: string;
-  status: 'ACTIVE' | 'COMPLETED';
+  status: "ACTIVE" | "COMPLETED";
   startedAt: string;
   endedAt?: string;
-  startLocation: { type: 'Point'; coordinates: [number, number]; accuracyMeters: number };
-  endLocation?: { type: 'Point'; coordinates: [number, number]; accuracyMeters: number };
+  startLocation: {
+    type: "Point";
+    coordinates: [number, number];
+    accuracyMeters: number;
+  };
+  endLocation?: {
+    type: "Point";
+    coordinates: [number, number];
+    accuracyMeters: number;
+  };
 }
 
 export interface OfficerAvailability {
-  officer: Pick<User, '_id' | 'fullName' | 'email' | 'role'>;
-  shiftStatus: 'ON_SHIFT' | 'OFF_SHIFT';
+  officer: Pick<User, "_id" | "fullName" | "email" | "role">;
+  shiftStatus: "ON_SHIFT" | "OFF_SHIFT";
   activeTaskCount: number;
   assignedCount: number;
   inProgressCount: number;
-  workloadLevel: 'NORMAL' | 'MODERATE' | 'HIGH';
+  workloadLevel: "NORMAL" | "MODERATE" | "HIGH";
   currentShift?: OfficerShift | null;
 }
 
@@ -280,7 +324,6 @@ export interface GISLocation {
   updatedAt: string;
 }
 
-
 export interface LoginCredentials {
   email: string;
   password?: string;
@@ -302,5 +345,8 @@ export interface CreateAlertData {
   mediaUrls?: string[];
   category?: AlertCategory;
   imageValidation?: ImageValidation;
-  classification?: { selectedCategory?: AlertCategory; decision?: 'CONFIRM' | 'CORRECT' };
+  classification?: {
+    selectedCategory?: AlertCategory;
+    decision?: "CONFIRM" | "CORRECT";
+  };
 }

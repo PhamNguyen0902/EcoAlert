@@ -14,7 +14,11 @@ import toast from "react-hot-toast";
 import type { Alert } from "@/types";
 import EditReportModal from "../components/EditReportModal";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getIncidentCategoryLabel, getIncidentSeverityLabel, getIncidentStatusLabel } from '@/lib/incident-presentation';
+import {
+  getIncidentCategoryLabel,
+  getIncidentSeverityLabel,
+  getIncidentStatusLabel,
+} from "@/lib/incident-presentation";
 
 const severityColor: Record<string, string> = {
   critical: "destructive",
@@ -43,8 +47,7 @@ export default function MyReports() {
   );
   const deleteAlertMutation = useDeleteAlert();
 
-  if (isLoading)
-    return <LoadingSpinner size="lg" label="Đang tải..." />;
+  if (isLoading) return <LoadingSpinner size="lg" label="Đang tải..." />;
 
   const alerts: Alert[] = alertsData?.items || [];
   const total = alertsData?.total || 0;
@@ -57,15 +60,15 @@ export default function MyReports() {
       return;
     }
 
-    if (
-      window.confirm(t('my_reports.delete_confirm_desc'))
-    ) {
+    if (window.confirm(t("my_reports.delete_confirm_desc"))) {
       deleteAlertMutation.mutate(id, {
         onSuccess: () => {
           toast.success(t("toast.report_deleted_success"));
         },
         onError: (err: any) => {
-          toast.error(err.response?.data?.message || t("toast.report_delete_failed"));
+          toast.error(
+            err.response?.data?.message || t("toast.report_delete_failed"),
+          );
         },
       });
     }
@@ -75,15 +78,17 @@ export default function MyReports() {
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('my_reports.title')}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {t("my_reports.title")}
+          </h1>
           <p className="text-muted-foreground mt-1">
-            {t('my_reports.subtitle')}
+            {t("my_reports.subtitle")}
           </p>
         </div>
         <Button asChild>
           <Link to="/report" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            {t('my_reports.btn_create')}
+            {t("my_reports.btn_create")}
           </Link>
         </Button>
       </div>
@@ -91,7 +96,7 @@ export default function MyReports() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder={t('btn.search')}
+          placeholder={t("btn.search")}
           className="pl-9 bg-muted/50"
           value={search}
           onChange={(e) => {
@@ -104,10 +109,10 @@ export default function MyReports() {
       {alerts.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title={t('my_reports.empty')}
-          description={t('my_reports.empty_desc')}
+          title={t("my_reports.empty")}
+          description={t("my_reports.empty_desc")}
           action={{
-            label: t('my_reports.btn_create'),
+            label: t("my_reports.btn_create"),
             onClick: () => navigate("/report"),
           }}
         />
@@ -146,9 +151,14 @@ export default function MyReports() {
                           </Link>
                           <div className="flex gap-1.5 shrink-0">
                             <Badge
-                              variant={severityColor[alert.severity ?? 'low'] as any}
+                              variant={
+                                severityColor[alert.severity ?? "low"] as any
+                              }
                             >
-                              {getIncidentSeverityLabel(alert.severity, language)}
+                              {getIncidentSeverityLabel(
+                                alert.severity,
+                                language,
+                              )}
                             </Badge>
                             <Badge variant={statusColor(alert.status)}>
                               {getIncidentStatusLabel(alert.status, language)}
@@ -167,18 +177,24 @@ export default function MyReports() {
                           </span>
                           {alert.address && <span>• {alert.address}</span>}
                           {alert.category && (
-                            <span>• {getIncidentCategoryLabel(alert.category, language)}</span>
+                            <span>
+                              •{" "}
+                              {getIncidentCategoryLabel(
+                                alert.category,
+                                language,
+                              )}
+                            </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Action buttons: View, Edit, Delete */}
+                      {/* Nút hành động: View, Edit, Delete */}
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
                           asChild
-                          title={t('btn.view')}
+                          title={t("btn.view")}
                         >
                           <Link to={`/incidents/${alert._id}`}>
                             <Eye className="h-4 w-4" />
@@ -192,7 +208,7 @@ export default function MyReports() {
                               size="icon"
                               className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
                               onClick={() => setEditingAlert(alert)}
-                              title={t('btn.edit')}
+                              title={t("btn.edit")}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -205,7 +221,7 @@ export default function MyReports() {
                                 handleDelete(alert._id, alert.status)
                               }
                               disabled={deleteAlertMutation.isPending}
-                              title={t('btn.delete')}
+                              title={t("btn.delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -233,7 +249,7 @@ export default function MyReports() {
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
             >
-              {t('btn.back')}
+              {t("btn.back")}
             </Button>
             <Button
               variant="outline"
@@ -241,7 +257,7 @@ export default function MyReports() {
               disabled={page === totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
-              {t('btn.next')}
+              {t("btn.next")}
             </Button>
           </div>
         </div>

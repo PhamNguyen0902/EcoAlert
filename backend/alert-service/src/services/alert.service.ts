@@ -202,8 +202,10 @@ export class AlertService {
     const classification: IAlertClassification = selectedCategory
       ? {
           status: citizenConfirmedSuggestion
-            ? "USER_CONFIRMED"
-            : "USER_CORRECTED",
+            ? //đồng ý với kết quả của category AI
+              "USER_CONFIRMED"
+            : //citizen chọn category khác
+              "USER_CORRECTED",
           aiSuggestedCategory,
           aiConfidence: validation?.confidence ?? null,
           aiReason: validation?.reason ?? null,
