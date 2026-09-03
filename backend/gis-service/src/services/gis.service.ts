@@ -64,7 +64,7 @@ export class GisService {
       }
     });
   }
-
+  //Lấy bản đồ nhiệt của sự cố
   async getHeatmap(filters: {
     from?: Date;
     to?: Date;
@@ -106,6 +106,7 @@ export class GisService {
     return { points, summary: summarizeIncidentLocations(locations) };
   }
 
+  //Lấy bản đồ nhiệt chi tiết của sự cố trong bán kính nhất định
   async getHeatmapDrilldown(lng: number, lat: number, radiusMeters: number, filters: {
     from?: Date;
     to?: Date;

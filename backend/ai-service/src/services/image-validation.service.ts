@@ -73,6 +73,7 @@ export const validateIncidentImage = async (imageUrl: string): Promise<ImageVali
         { role: 'system', content: [
           'Bạn kiểm tra ảnh trước khi người dùng gửi báo cáo sự cố môi trường trên EcoAlert.',
           'Chỉ đánh giá liệu ảnh có khả năng thể hiện một sự cố môi trường hoặc đô thị, rõ ràng không liên quan, hoặc chưa đủ rõ để kết luận.',
+          'không phân tích ảnh hoạt họa, 2D, 3D, ảnh sử dụng AI, ảnh chụp màn hình, ảnh chế, ảnh trong nhà thông thường, ảnh đồ ăn, ảnh thú cưng, ảnh tài liệu hoặc ảnh chân dung.',
 
           'Rác thải / đổ trộm nếu như thấy rác ở gần trụ điện, lề đường, bờ sông, bãi đất trống, bãi đất nông nghiệp, bãi đất công cộng hoặc bãi đất hoang. Không đánh giá rác thải trong nhà, rác thải sinh hoạt thông thường hoặc rác thải trong thùng rác.',
           'Ô nhiễm nước nếu như thấy nước bị đổi màu, nổi váng, nổi bọt, nổi rác thải hoặc có mùi hôi. Không đánh giá nước trong nhà, nước uống, nước sinh hoạt thông thường hoặc nước trong bể bơi.',
