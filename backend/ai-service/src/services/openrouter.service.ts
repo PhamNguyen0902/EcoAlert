@@ -370,7 +370,7 @@ const incidentCompletionRequest = (
         `Chỉ sử dụng chính xác một category chuẩn từ danh sách sau: ${Object.values(AlertCategory).join(', ')}, hoặc ${UNCLASSIFIED_CATEGORY} khi bằng chứng không đủ hoặc không phù hợp.`,
         `Chỉ sử dụng chính xác một severity từ danh sách sau: ${Object.values(Severity).join(', ')}.`,
         'Giữ nguyên chính xác các tên trường kỹ thuật trong JSON theo schema được cung cấp; không dịch tên trường, category hoặc severity. Các giá trị confidence phải nằm trong khoảng từ 0 đến 1 và phản ánh đúng mức độ chắc chắn của bằng chứng.',
-        'overallSummary phải hoàn toàn bằng tiếng Việt, gồm 2 đến 4 câu ngắn gọn, tự nhiên, rõ ràng cho người dùng tại Việt Nam; mô tả sự cố, giải thích mức độ nghiêm trọng và chỉ đưa ra nhận xét hoặc khuyến nghị khi có đủ bằng chứng.',
+        'overallSummary phải hoàn toàn bằng tiếng Việt, gồm 3 đến 5 câu ngắn gọn, tự nhiên, rõ ràng cho người dùng tại Việt Nam; mô tả sự cố, giải thích mức độ nghiêm trọng và chỉ đưa ra nhận xét hoặc khuyến nghị khi có đủ bằng chứng.',
         'shortReason phải hoàn toàn bằng tiếng Việt, ngắn gọn và nêu bằng chứng chính dẫn đến kết quả phân loại. Không sử dụng tiếng Anh trong phần giải thích cho người dùng, trừ tên kỹ thuật hoặc object class khi thực sự cần thiết.',
         'AI chỉ đóng vai trò hỗ trợ ra quyết định. AI không có quyền tự xác minh báo cáo, phân công nhân viên xử lý, giải quyết hoặc đóng sự cố.',
       ].join(' '),

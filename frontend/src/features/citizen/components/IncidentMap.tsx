@@ -80,8 +80,8 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
     <div id="map-section" className="relative w-full h-[400px] md:h-[600px] rounded-xl overflow-hidden shadow-lg border border-border">
       <MapContainer center={center} zoom={13} className="w-full h-full z-0">
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; OpenStreetMap contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
         <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
@@ -174,11 +174,11 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
             </div>
           ))}
           <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
-             <div className="relative flex h-4 w-4">
-               <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-               <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500 border-2 border-white"></span>
-             </div>
-             <span className="text-xs font-medium">Vị trí của bạn</span>
+            <div className="relative flex h-4 w-4">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500 border-2 border-white"></span>
+            </div>
+            <span className="text-xs font-medium">Vị trí của bạn</span>
           </div>
         </div>
       </div>

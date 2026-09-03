@@ -26,10 +26,10 @@ export const readOpenRouterConfig = (
   const configuredAnalysisModel = trimmed(environment.OPENROUTER_ANALYSIS_MODEL);
   const analysisModel = configuredAnalysisModel || legacyModel;
 
-  if (!apiKey) throw new OpenRouterConfigurationError('OPENROUTER_API_KEY is required and must not be blank.');
+  if (!apiKey) throw new OpenRouterConfigurationError('OPENROUTER_API_KEY là bắt buộc và không được để trống.');
   if (!analysisModel) {
     throw new OpenRouterConfigurationError(
-      'OPENROUTER_ANALYSIS_MODEL is required (or configure legacy OPENROUTER_MODEL temporarily).',
+      'OPENROUTER_ANALYSIS_MODEL là bắt buộc (hoặc cấu hình legacy OPENROUTER_MODEL tạm thời).',
     );
   }
 
