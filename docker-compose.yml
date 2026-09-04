@@ -207,6 +207,11 @@ services:
       - ./backend/ai-service/.env
     environment:
       - PORT=3005
+      - MONGO_URI=mongodb://mongodb:27017/ecoalert-ai-db
+      # ai-service mở thêm 1 kết nối Mongo thứ 2 (chỉ đọc) để lấy dữ liệu alert
+      # phục vụ tính năng AI assistant/RAG. Nếu thiếu biến này, code sẽ tự fallback
+      # về localhost:27017 -> connect thất bại trong container.
+      - ALERT_MONGO_URI=mongodb://mongodb:27017/ecoalert-alert-db
       - RABBITMQ_URL=${RABBITMQ_URL}
       # The API key lives only in backend/ai-service/.env.  Do not let a stale
       # root-level migration copy override the service-specific credential.
