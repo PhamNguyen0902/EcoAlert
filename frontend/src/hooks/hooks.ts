@@ -1,9 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  authService,
-  alertService,
-  gisService,
-} from "../services/services";
+import { authService, alertService, gisService } from "../services/services";
 import { CreateAlertData, ResolutionInput } from "@/types";
 
 // ========================
@@ -11,6 +7,7 @@ import { CreateAlertData, ResolutionInput } from "@/types";
 // ========================
 
 export const useLogin = () => {
+  //useMutation: tạo, sửa hoặc xóa dữ liệu
   return useMutation({
     mutationFn: authService.login,
   });
@@ -31,6 +28,7 @@ export const useAlerts = (
   limit = 10,
   filters: Record<string, string> = {},
 ) => {
+  //useQuery: lấy dữ liệu
   return useQuery({
     queryKey: ["alerts", page, limit, filters],
     queryFn: () => alertService.getAlerts(page, limit, filters),
@@ -46,8 +44,8 @@ export const useAlert = (id: string) => {
       const alert = query.state.data;
       const analysisPending =
         alert &&
-        (alert.status === 'pending' || alert.status === 'ai_analyzing') &&
-        alert.category === 'UNCLASSIFIED' &&
+        (alert.status === "pending" || alert.status === "ai_analyzing") &&
+        alert.category === "UNCLASSIFIED" &&
         alert.aiConfidence === undefined;
       return analysisPending ? 3000 : false;
     },
@@ -56,7 +54,7 @@ export const useAlert = (id: string) => {
 
 export const useOfficerTasks = (page = 1, limit = 10, status?: string) => {
   return useQuery({
-    queryKey: ['officer-tasks', page, limit, status || 'all'],
+    queryKey: ["officer-tasks", page, limit, status || "all"],
     queryFn: () => alertService.getOfficerTasks(page, limit, status),
   });
 };
@@ -65,9 +63,9 @@ const invalidateAlertWorkflow = (
   queryClient: ReturnType<typeof useQueryClient>,
   id: string,
 ) => {
-  queryClient.invalidateQueries({ queryKey: ['alert', id] });
-  queryClient.invalidateQueries({ queryKey: ['alerts'] });
-  queryClient.invalidateQueries({ queryKey: ['officer-tasks'] });
+  queryClient.invalidateQueries({ queryKey: ["alert", id] });
+  queryClient.invalidateQueries({ queryKey: ["alerts"] });
+  queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
 };
 
 export const useAssignOfficer = () => {
@@ -75,16 +73,18 @@ export const useAssignOfficer = () => {
   return useMutation({
     mutationFn: ({ id, officerId }: { id: string; officerId: string }) =>
       alertService.assignOfficer(id, officerId),
-    onSuccess: (_, variables) => invalidateAlertWorkflow(queryClient, variables.id),
+    onSuccess: (_, variables) =>
+      invalidateAlertWorkflow(queryClient, variables.id),
   });
 };
 
-export const useOfficerAvailability = (enabled = true) => useQuery({
-  queryKey: ['officer-availability'],
-  queryFn: () => alertService.getOfficerAvailability(),
-  enabled,
-  staleTime: 30_000,
-});
+export const useOfficerAvailability = (enabled = true) =>
+  useQuery({
+    queryKey: ["officer-availability"],
+    queryFn: () => alertService.getOfficerAvailability(),
+    enabled,
+    staleTime: 30_000,
+  });
 
 export const useStartHandling = () => {
   const queryClient = useQueryClient();
@@ -104,7 +104,8 @@ export const useConfirmArrival = () => {
       id: string;
       location?: { latitude?: number; longitude?: number; accuracy?: number };
     }) => alertService.confirmArrival(id, location),
-    onSuccess: (_, variables) => invalidateAlertWorkflow(queryClient, variables.id),
+    onSuccess: (_, variables) =>
+      invalidateAlertWorkflow(queryClient, variables.id),
   });
 };
 
@@ -113,7 +114,8 @@ export const useResolveIncident = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ResolutionInput }) =>
       alertService.resolveIncident(id, data),
-    onSuccess: (_, variables) => invalidateAlertWorkflow(queryClient, variables.id),
+    onSuccess: (_, variables) =>
+      invalidateAlertWorkflow(queryClient, variables.id),
   });
 };
 
@@ -122,7 +124,8 @@ export const useCloseIncident = () => {
   return useMutation({
     mutationFn: ({ id, reviewNote }: { id: string; reviewNote?: string }) =>
       alertService.closeIncident(id, reviewNote),
-    onSuccess: (_, variables) => invalidateAlertWorkflow(queryClient, variables.id),
+    onSuccess: (_, variables) =>
+      invalidateAlertWorkflow(queryClient, variables.id),
   });
 };
 
@@ -231,4 +234,3 @@ export const useNearbyIncidents = (
     enabled: Boolean(lng && lat),
   });
 };
-

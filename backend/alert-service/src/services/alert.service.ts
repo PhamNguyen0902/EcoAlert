@@ -277,6 +277,7 @@ export class AlertService {
     page: number,
     limit: number,
     citizenId?: string,
+    //chưa có lọc theo title
     filters: {
       status?: string;
       category?: string;
@@ -1132,6 +1133,7 @@ export class AlertService {
       updatedBy: actor.id,
     });
     if (!updatedAlert) throw new NotFoundError("Alert not found during update");
+    //phát event cho các hành động 
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_UPDATED,
       updatedAlert,
