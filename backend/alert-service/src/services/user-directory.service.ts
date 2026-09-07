@@ -16,7 +16,7 @@ interface UserLookupResponse {
 interface UserListResponse {
   data?: { items?: UserDirectoryItem[] };
 }
-
+// Dịch vụ thư mục người dùng để quản lý thông tin người dùng, bao gồm xác minh vai trò và liệt kê nhân viên tuần tra.
 export class UserDirectoryService {
   private readonly baseUrl = envConfig.userServiceUrl.replace(/\/$/, '');
 

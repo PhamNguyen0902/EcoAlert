@@ -7,8 +7,7 @@ import type { WorkflowActor } from './alert.service';
 import { userDirectoryService, UserDirectoryItem } from './user-directory.service';
 
 export type WorkloadLevel = 'NORMAL' | 'MODERATE' | 'HIGH';
-
-/** JSON-safe active-shift shape used by the Admin availability read model. */
+// Dịch vụ ca trực của nhân viên tuần tra để quản lý các ca trực, bao gồm bắt đầu, kết thúc.
 interface OfficerShiftSummary {
   _id: unknown;
   officerId: string;

@@ -1,5 +1,5 @@
 import axios from "axios";
-
+// Dịch vụ API sử dụng Axios để thực hiện các yêu cầu HTTP đến backend, bao gồm việc gắn token xác thực và xử lý refresh token khi hết hạn.
 const getApiBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;

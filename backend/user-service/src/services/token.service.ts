@@ -6,6 +6,7 @@ import { redisClient } from '../config/redis.config';
 import ms from 'ms';
 
 export class TokenService {
+  // Tạo access token và refresh token mới cho người dùng
   async generateAuthTokens(userPayload: IUserPayload) {
     const accessToken = generateAccessToken(userPayload);
     const refreshToken = generateRefreshToken();
@@ -22,6 +23,7 @@ export class TokenService {
     return { accessToken, refreshToken };
   }
 
+  // Đưa token vào danh sách đen (blacklist) để vô hiệu hóa
   async blacklistToken(token: string): Promise<void> {
     const ttl = ms(envConfig.jwtExpiresIn) / 1000;
     await redisClient.setex(`blacklist:${token}`, ttl, 'true');

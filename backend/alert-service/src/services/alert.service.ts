@@ -476,16 +476,16 @@ export class AlertService {
     this.requireAssignedOfficer(alert, actor);
     if (normalizeStatus(alert.status) !== AlertStatus.IN_PROGRESS) {
       throw new ConflictError(
-        "Arrival can only be confirmed for an incident in progress",
+        "Việc đến nơi chỉ có thể được xác nhận đối với một sự cố đang diễn ra.",
       );
     }
     if (alert.arrivedAt) {
-      throw new ConflictError("Arrival has already been confirmed");
+      throw new ConflictError("Việc đến nơi đã được xác nhận.");
     }
 
     if (data.accuracyMeters > envConfig.officerMaxGpsAccuracyMeters) {
       throw new ConflictError(
-        `GPS accuracy is insufficient (${Math.round(data.accuracyMeters)} m). Please retry in a clearer location.`,
+        `GPS accuracy is insufficient (${Math.round(data.accuracyMeters)} m). Vui lòng thử lại ở vị trí thoáng đãng hơn.`,
       );
     }
     const [incidentLongitude, incidentLatitude] = alert.location.coordinates;
@@ -551,7 +551,7 @@ export class AlertService {
     );
     if (!updatedAlert)
       throw new ConflictError(
-        "Arrival was already confirmed or the incident status changed",
+        "Việc đến nơi đã được xác nhận hoặc trạng thái sự cố đã thay đổi.",
       );
 
     await this.publishWorkflowEvent(EVENTS.ALERT_ARRIVED, updatedAlert, actor);
@@ -572,7 +572,7 @@ export class AlertService {
     }
     if (!alert.checkIn?.verified || alert.checkIn.officerId !== actor.id) {
       throw new ConflictError(
-        "A verified on-site GPS check-in is required before resolving this incident",
+        "Cần thực hiện xác thực check-in bằng GPS tại hiện trường trước khi giải quyết sự cố này.",
       );
     }
 
@@ -682,7 +682,7 @@ export class AlertService {
       },
     );
     if (!updatedAlert)
-      throw new ConflictError("Incident status changed. Refresh and try again");
+      throw new ConflictError("Trạng thái sự cố đã thay đổi. Vui lòng tải lại trang và thử lại.");
 
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_RESOLUTION_EVIDENCE_UPLOADED,
@@ -709,7 +709,7 @@ export class AlertService {
     this.requireRole(actor, ["ADMIN"]);
     const alert = await this.requireAlert(id);
     if (normalizeStatus(alert.status) !== AlertStatus.RESOLVED) {
-      throw new ConflictError("Only a resolved incident can be closed");
+      throw new ConflictError("Chỉ có thể đóng sự cố đã được giải quyết.");
     }
     if (
       !alert.assignedOfficerId ||
@@ -718,7 +718,7 @@ export class AlertService {
       !alert.resolutionEvidence?.length
     ) {
       throw new ConflictError(
-        "Resolution evidence, assigned Officer, and resolution timestamp are required before closing",
+        "Bằng chứng giải quyết, nhân viên được giao, và thời gian giải quyết là bắt buộc trước khi đóng sự cố.",
       );
     }
 
@@ -752,7 +752,7 @@ export class AlertService {
       },
     );
     if (!updatedAlert)
-      throw new ConflictError("Incident status changed. Refresh and try again");
+      throw new ConflictError("Trạng thái sự cố đã thay đổi. Vui lòng tải lại trang và thử lại.");
 
     await this.publishWorkflowEvent(EVENTS.ALERT_CLOSED, updatedAlert, actor);
     return updatedAlert;
@@ -774,7 +774,7 @@ export class AlertService {
 
     if (!allowedNext.includes(newStatus)) {
       throw new ConflictError(
-        "Use the assignment, start, arrival, resolution, or close action for workflow status changes",
+        "Sử dụng các hành động gán, bắt đầu, đến nơi, giải quyết hoặc đóng để thay đổi trạng thái quy trình làm việc.",
       );
     }
 
@@ -805,7 +805,7 @@ export class AlertService {
       },
     );
     if (!updatedAlert)
-      throw new ConflictError("Incident status changed. Refresh and try again");
+      throw new ConflictError("Trạng thái sự cố đã thay đổi. Vui lòng tải lại trang và thử lại.");
     await this.publishWorkflowEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor);
     return updatedAlert;
   }
@@ -821,7 +821,7 @@ export class AlertService {
     const currentStatus = normalizeStatus(alert.status);
     if (![AlertStatus.PENDING, AlertStatus.VERIFIED].includes(currentStatus)) {
       throw new ConflictError(
-        "Classification can only be reviewed before an incident is assigned",
+        "Việc phân loại chỉ có thể được xem xét trước khi sự cố được giao.",
       );
     }
     const currentClassification = alert.classification;
@@ -830,7 +830,7 @@ export class AlertService {
       currentClassification?.finalCategory ||
       (alert.category === "UNCLASSIFIED" ? undefined : alert.category);
     if (!finalCategory)
-      throw new ConflictError("Select a classification before confirming it");
+      throw new ConflictError("Vui lòng chọn một danh mục trước khi xác nhận.");
 
     const confirmedAt = new Date();
     const isCorrection = Boolean(
@@ -873,7 +873,7 @@ export class AlertService {
       },
     );
     if (!updatedAlert)
-      throw new ConflictError("Incident changed. Refresh and try again");
+      throw new ConflictError("Trạng thái sự cố đã thay đổi. Vui lòng tải lại trang và thử lại.");
     await this.publishWorkflowEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor);
     return updatedAlert;
   }
@@ -1089,7 +1089,7 @@ export class AlertService {
       _id: id,
       includeDeleted: true,
     } as never);
-    if (!alert) throw new NotFoundError("Alert not found");
+    if (!alert) throw new NotFoundError("Không tìm thấy sự cố");
     alert.isDeleted = false;
     alert.deletedAt = null as never;
     alert.updatedBy = actor.id;
@@ -1118,18 +1118,18 @@ export class AlertService {
         )
       ) {
         throw new ConflictError(
-          "Cannot edit an incident once it is verified or processed",
+          "Không thể chỉnh sửa sự cố sau khi đã được xác minh hoặc xử lý.",
         );
       }
     } else if (role !== "ADMIN") {
-      throw new ForbiddenError("You do not have permission to edit incidents");
+      throw new ForbiddenError("Bạn không có quyền chỉnh sửa các sự cố.");
     }
 
     const updatedAlert = await alertRepository.update(id, {
       ...data,
       updatedBy: actor.id,
     });
-    if (!updatedAlert) throw new NotFoundError("Alert not found during update");
+    if (!updatedAlert) throw new NotFoundError("Không tìm thấy sự cố trong quá trình cập nhật.");
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_UPDATED,
       updatedAlert,
@@ -1147,16 +1147,16 @@ export class AlertService {
     const alert = await this.requireAlert(id);
     const role = normalizeRole(actor.role);
     if (role === "OFFICER" && alert.assignedOfficerId !== actor.id) {
-      throw new ForbiddenError("This incident is not assigned to you");
+      throw new ForbiddenError("Sự cố này không được giao cho bạn.");
     }
     if (!["OFFICER", "ADMIN"].includes(role)) {
-      throw new ForbiddenError("Only officers and admins can add notes");
+      throw new ForbiddenError("Chỉ có viên chức và quản trị viên mới có thể thêm ghi chú.");
     }
     const updatedAlert = await alertRepository.update(id, {
       officerNote: data.note.trim(),
       updatedBy: actor.id,
     });
-    if (!updatedAlert) throw new NotFoundError("Alert not found during update");
+    if (!updatedAlert) throw new NotFoundError("Không tìm thấy sự cố trong quá trình cập nhật.");
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_UPDATED,
       updatedAlert,

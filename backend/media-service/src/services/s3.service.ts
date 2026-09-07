@@ -1,7 +1,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { AppError } from '@ecoalert/shared';
 import { randomUUID } from 'crypto';
-
+// Dịch vụ S3 để quản lý việc tải lên hình ảnh sự cố môi trường lên Amazon S3.
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'ap-southeast-1',
   credentials: {

@@ -17,7 +17,7 @@ interface LocationActionsProps {
   showNavigation?: boolean;
   className?: string;
 }
-
+// Hiển thị các hành động liên quan đến vị trí, bao gồm mở Google Maps.
 export function LocationActions({
   latitude,
   longitude,

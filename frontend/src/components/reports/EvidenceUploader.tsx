@@ -3,6 +3,8 @@ import { FileImage, ImagePlus, Loader2, RotateCcw, Trash2, UploadCloud } from 'l
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+// Hiển thị trình tải lên minh chứng, cho phép người dùng chọn, thay thế hoặc xóa hình ảnh minh chứng. 
+
 interface EvidenceUploaderProps {
   file: File | null;
   previewUrl: string | null;
@@ -12,11 +14,13 @@ interface EvidenceUploaderProps {
   isProcessing?: boolean;
 }
 
+// Định dạng ảnh
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+// Hiển thị trình tải lên minh chứng
 export function EvidenceUploader({ file, previewUrl, onSelect, onRemove, disabled = false, isProcessing = false }: EvidenceUploaderProps) {
   const { language } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);

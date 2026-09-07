@@ -4,7 +4,7 @@ export type AlertStatus = 'pending' | 'ai_analyzing' | 'verified' | 'assigned' |
 export type AlertCategory = 'illegal_dumping' | 'water_pollution' | 'air_pollution' | 'illegal_burning' | 'flooding' | 'fallen_tree' | 'illegal_construction_waste' | 'noise_pollution' | 'soil_contamination' | 'wildlife_threat' | 'fire' | 'other' | 'UNCLASSIFIED';
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
 export type AiAnalysisMode = 'TEXT_ONLY' | 'IMAGE_AND_TEXT' | 'FAILED';
-
+// Giao diện phân tích tổng thể của AI, bao gồm các thông tin về sự cố môi trường, danh mục đề xuất, mức độ nghiêm trọng, lý do và tóm tắt.
 export interface AiOverallAnalysis {
   isIncident: boolean;
   incidentConfidence: number;

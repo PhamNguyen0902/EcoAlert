@@ -88,6 +88,7 @@ export default function MyReports() {
         </Button>
       </div>
 
+      {/* tìm kiếm */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
@@ -101,6 +102,7 @@ export default function MyReports() {
         />
       </div>
 
+      {/* danh sách báo cáo */}
       {alerts.length === 0 ? (
         <EmptyState
           icon={FileText}
@@ -172,7 +174,7 @@ export default function MyReports() {
                         </div>
                       </div>
 
-                      {/* Action buttons: View, Edit, Delete */}
+                      {/* xem, xóa, sửa báo cáo */}
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
                           variant="ghost"

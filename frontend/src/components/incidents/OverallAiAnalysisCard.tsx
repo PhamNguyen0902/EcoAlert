@@ -8,12 +8,15 @@ import {
   getPresentationCopy,
 } from "@/lib/incident-presentation";
 
+
+// Tính mức độ nghiêm trọng dưới dạng % của hình ảnh
 const percentage = (value: number | null | undefined, unavailable: string) =>
   value === null || value === undefined || !Number.isFinite(value)
     ? unavailable
     : `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
 
-/** Shows the direct OpenRouter incident interpretation, always as human-review guidance. */
+// Hiển thị phân tích tổng quan của AI về sự cố môi trường, bao gồm lý do, danh mục gợi ý, độ tin cậy và mức độ nghiêm trọng. Luôn yêu cầu con người xác nhận.
+
 export function OverallAiAnalysisCard({ alert }: { alert: Alert }) {
   const { language } = useLanguage();
   const presentation = getPresentationCopy(language);

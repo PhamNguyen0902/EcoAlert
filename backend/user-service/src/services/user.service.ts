@@ -4,6 +4,7 @@ import { NotFoundError, BadRequestError, UserRole } from '@ecoalert/shared';
 import { hashPassword, comparePassword } from '../utils/password.util';
 
 export class UserService {
+  // Tạo người dùng mới (dành cho Admin)
   async createUser(data: CreateUserDto) {
     const existing = await userRepository.findOne({ email: data.email.toLowerCase() });
     if (existing) throw new BadRequestError('Email already registered');
@@ -21,12 +22,14 @@ export class UserService {
     return user;
   }
 
+  // Lấy thông tin hồ sơ người dùng
   async getProfile(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) throw new NotFoundError('User not found');
     return user;
   }
 
+  // Cập nhật thông tin hồ sơ người dùng
   async updateProfile(userId: string, data: UpdateProfileDto) {
     const updateData: any = { ...data };
     if ((data.firstName || data.lastName) && !data.fullName) {
@@ -41,6 +44,7 @@ export class UserService {
     return user;
   }
 
+  // Thay đổi mật khẩu người dùng
   async changePassword(userId: string, data: ChangePasswordDto) {
     const user = await userRepository.findByIdWithPassword(userId);
     if (!user || !user.password) throw new NotFoundError('User not found');
@@ -51,7 +55,7 @@ export class UserService {
     const newHashed = await hashPassword(data.newPassword);
     await userRepository.update(userId, { password: newHashed });
   }
-
+  // Lấy danh sách người dùng với phân trang, lọc theo vai trò và tìm kiếm
   async getUsers(page: number, limit: number, role?: string, search?: string) {
     const skip = (page - 1) * limit;
     const filter: any = {};
@@ -66,7 +70,7 @@ export class UserService {
     }
     return userRepository.findPaginated(filter, skip, limit);
   }
-
+  // Thay đổi vai trò người dùng
   async changeRole(userId: string, targetUserId: string, role: string) {
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
@@ -74,12 +78,14 @@ export class UserService {
     return userRepository.update(targetUserId, { role: newRole as any, updatedBy: userId });
   }
 
+  // Bật/tắt trạng thái hoạt động của người dùng
   async toggleStatus(userId: string, targetUserId: string, isActive: boolean) {
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
     return userRepository.update(targetUserId, { isActive, updatedBy: userId });
   }
 
+  // Xóa người dùng
   async deleteUser(userId: string, targetUserId: string) {
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
@@ -87,9 +93,11 @@ export class UserService {
     if (!success) throw new NotFoundError('User not found');
     return target;
   }
-
+  // Xóa mềm người dùng (đánh dấu là đã xóa)
   async softDelete(userId: string, targetUserId: string) {
-    return this.deleteUser(userId, targetUserId);
+    const target = await userRepository.findById(targetUserId);
+    if (!target) throw new NotFoundError('User not found');
+    return userRepository.update(targetUserId, { isDeleted: true, updatedBy: userId });
   }
 }
 

@@ -9,7 +9,7 @@ interface AnimatedCounterProps {
   duration?: number;
   className?: string;
 }
-
+// Hiển thị bộ đếm số liệu với hiệu ứng hoạt hình, hỗ trợ định dạng số và thời gian hoạt hình tùy chỉnh.
 export function AnimatedCounter({ value, duration = 1, className }: AnimatedCounterProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const motionValue = useMotionValue(0);

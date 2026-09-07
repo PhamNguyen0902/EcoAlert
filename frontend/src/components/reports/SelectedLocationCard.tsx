@@ -11,6 +11,7 @@ interface SelectedLocationCardProps {
   disabled?: boolean;
 }
 
+// Hiển thị thẻ vị trí đã chọn, cho phép người dùng xác nhận vị trí sự cố môi trường.
 export function SelectedLocationCard({
   location,
   onChooseOnMap,

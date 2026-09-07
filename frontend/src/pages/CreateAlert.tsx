@@ -32,6 +32,7 @@ import type { PickedLocation } from "@/components/location/LocationPickerModal";
 import { reverseGeocoder } from "@/services/reverseGeocoder";
 import type { AlertCategory, ImageValidation } from "@/types";
 
+// Tạo trang báo cáo sự cố môi trường, cho phép người dùng điền thông tin về sự cố.
 const LocationPickerModal = lazy(() =>
   import("@/components/location/LocationPickerModal").then(
     ({ LocationPickerModal: Picker }) => ({ default: Picker }),

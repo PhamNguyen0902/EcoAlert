@@ -8,7 +8,7 @@ interface LanguageContextType {
   toggleLanguage: () => void;
   t: (key: string) => string;
 }
-
+// Tạo ngữ cảnh ngôn ngữ để quản lý trạng thái ngôn ngữ và cung cấp chức năng dịch thuật trong toàn bộ ứng dụng.
 const translations: Record<Language, Record<string, string>> = {
   vi: {
     // Topbar & Nav

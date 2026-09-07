@@ -1,6 +1,7 @@
 import { Category, ICategory } from '../models/category.model';
 import { NotFoundError, BadRequestError } from '@ecoalert/shared';
 
+// Dịch vụ danh mục để quản lý các danh mục sự cố môi trường, bao gồm tạo, cập nhật, xóa và truy vấn danh mục.
 export class CategoryService {
   async getCategories(includeInactive = false): Promise<ICategory[]> {
     const filter = includeInactive ? {} : { isActive: true };

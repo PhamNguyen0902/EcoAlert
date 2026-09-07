@@ -38,6 +38,7 @@ import 'leaflet/dist/leaflet.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+// Trang chi tiết báo cáo sự cố môi trường, hiển thị thông tin chi tiết, hình ảnh minh chứng, phân tích AI và tiến trình xử lý.
 
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2x, iconUrl: markerIcon, shadowUrl: markerShadow });
@@ -135,6 +136,7 @@ export default function AlertDetail() {
             altPrefix="Hình ảnh minh chứng"
           />
 
+          {/* Phân tích AI nếu có dữ liệu trả về */}
           <section className="border-t pt-8" aria-labelledby="ai-analysis-heading">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Bot className="h-4 w-4" aria-hidden="true" /></span>

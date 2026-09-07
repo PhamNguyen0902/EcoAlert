@@ -12,7 +12,7 @@ interface ReportFormStepperProps {
   currentStep: number;
   steps: ReportStep[];
 }
-
+// Hiển thị thanh tiến trình từng bước của biểu mẫu báo cáo, với khả năng hiển thị nhãn, biểu tượng và phần trăm hoàn thành. Hỗ trợ chế độ xem trên thiết bị di động và máy tính để bàn.
 export function ReportFormStepper({ currentStep, steps }: ReportFormStepperProps) {
   const activeStep = steps.find((step) => step.id === currentStep) ?? steps[0];
   const progress = steps.length > 1 ? ((currentStep - 1) / (steps.length - 1)) * 100 : 0;
