@@ -297,6 +297,7 @@ export default function CreateAlert() {
       }
       try {
         setIsUploadingEvidence(true);
+        //upload ròi thì sẽ dùng uploadedMediaUrl, còn chưa có ảnh thì dùng alertService.uploadMedia(file)
         const mediaUrl =
           uploadedMediaUrl || (await alertService.uploadMedia(file));
         setUploadedMediaUrl(mediaUrl);

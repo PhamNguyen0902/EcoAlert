@@ -8,6 +8,7 @@ export default function CitizenLayout() {
       <CitizenNavbar />
       
       <main className="flex-1 flex flex-col">
+        {/* outlet thay đổi theo URL */}
         <Outlet />
       </main>
 

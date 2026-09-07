@@ -202,8 +202,10 @@ export class AlertService {
     const classification: IAlertClassification = selectedCategory
       ? {
           status: citizenConfirmedSuggestion
-            ? "USER_CONFIRMED"
-            : "USER_CORRECTED",
+            ? //đồng ý với kết quả của category AI
+              "USER_CONFIRMED"
+            : //citizen chọn category khác
+              "USER_CORRECTED",
           aiSuggestedCategory,
           aiConfidence: validation?.confidence ?? null,
           aiReason: validation?.reason ?? null,
@@ -275,6 +277,7 @@ export class AlertService {
     page: number,
     limit: number,
     citizenId?: string,
+    //chưa có lọc theo title
     filters: {
       status?: string;
       category?: string;
@@ -1129,7 +1132,8 @@ export class AlertService {
       ...data,
       updatedBy: actor.id,
     });
-    if (!updatedAlert) throw new NotFoundError("Không tìm thấy sự cố trong quá trình cập nhật.");
+    if (!updatedAlert) throw new NotFoundError("Alert not found during update");
+    //phát event cho các hành động 
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_UPDATED,
       updatedAlert,

@@ -72,20 +72,24 @@ function App() {
           <Route path="/login" element={<Login />} />
           {/* đăng ký */}
           <Route path="/register" element={<Register />} />
+
           {/* Citizen Routes */}
           <Route element={<ProtectedRoute allowedRoles={["CITIZEN"]} />}>
             <Route element={<CitizenLayout />}>
               <Route path="/home" element={<CitizenHome />} />
               {/* tạo report */}
               <Route path="/report" element={<CreateReport />} />
+              {/* báo cáo của tôi */}
               <Route path="/my-reports" element={<MyReports />} />
+              {/* chi tiết báo cáo */}
               <Route path="/incidents/:id" element={<CitizenAlertDetail />} />
             </Route>
           </Route>
+
           {/* Officer Routes */}
           <Route element={<ProtectedRoute allowedRoles={["OFFICER"]} />}>
             <Route element={<OfficerLayout />}>
-            {/* task của officer */}
+              {/* task của officer */}
               <Route path="/officer/assigned" element={<AssignedReports />} />
               <Route path="/officer/map" element={<OfficerMap />} />
               <Route
@@ -94,6 +98,7 @@ function App() {
               />
             </Route>
           </Route>
+
           {/* Admin Routes */}
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route element={<AdminLayout />}>
