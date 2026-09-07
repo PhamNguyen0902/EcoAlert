@@ -10,6 +10,7 @@ import {
 import { hashPassword, comparePassword } from "../utils/password.util";
 
 export class AuthService {
+  // Đăng ký người dùng mới
   async register(data: RegisterDto) {
     const existingUser = await userRepository.findOne({ email: data.email, includeDeleted: true });
     if (existingUser) {
@@ -84,6 +85,7 @@ export class AuthService {
     return { user: userObj, ...tokens, token: tokens.accessToken };
   }
 
+  // Đổi mới access token bằng refresh token
   async refreshToken(oldRefreshToken: string) {
     const tokenDoc = await tokenService.verifyRefreshToken(oldRefreshToken);
     if (!tokenDoc) {

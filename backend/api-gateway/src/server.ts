@@ -67,7 +67,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check
+// Kiểm tra sức khỏe của API Gateway
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", service: "api-gateway" });
 });

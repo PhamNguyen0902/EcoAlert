@@ -34,6 +34,7 @@ export default function CitizenHome() {
         </div>
       </section>
 
+      
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 mb-8">
           <h2 className="text-3xl font-bold tracking-tight">
@@ -50,6 +51,7 @@ export default function CitizenHome() {
         />
       </section>
 
+      {/* Các sự cố lân cận */}
       <section className="py-12 bg-muted/30">
         <NearbyIncidents alerts={alerts} />
       </section>

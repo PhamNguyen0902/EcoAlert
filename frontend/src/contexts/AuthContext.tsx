@@ -17,6 +17,8 @@ interface AuthContextType {
   logout: () => void;
 }
 
+// Tạo ngữ cảnh xác thực để quản lý trạng thái người dùng và thông tin xác thực trong toàn bộ ứng dụng. 
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({

@@ -2,7 +2,7 @@ import { Location } from '../models/location.model';
 import { createLogger } from '@ecoalert/shared';
 
 const logger = createLogger('gis-service');
-
+// Dịch vụ GIS để quản lý dữ liệu vị trí của các sự cố môi trường, bao gồm lưu trữ, truy vấn và tạo bản đồ nhiệt.
 export class GisService {
   async saveLocation(alertData: any) {
     try {

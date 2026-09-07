@@ -27,20 +27,18 @@ import {
   normalizeIncidentStatus,
   SeverityBadge,
   StatusBadge,
-} from "@/components/incidents/incident-status";
-import { IncidentTimeline } from "@/components/incidents/IncidentTimeline";
-import { OverallAiAnalysisCard } from "@/components/incidents/OverallAiAnalysisCard";
-import { IncidentLocationDetails } from "@/components/location/IncidentLocationDetails";
-import { hasValidCoordinates } from "@/lib/maps";
-import {
-  getAlertDisplayConfidence,
-  getAlertDisplaySeverity,
-} from "@/lib/ai-confidence";
-import "leaflet/dist/leaflet.css";
+} from '@/components/incidents/incident-status';
+import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';
+import { OverallAiAnalysisCard } from '@/components/incidents/OverallAiAnalysisCard';
+import { IncidentLocationDetails } from '@/components/location/IncidentLocationDetails';
+import { hasValidCoordinates } from '@/lib/maps';
+import { getAlertDisplayConfidence, getAlertDisplaySeverity } from '@/lib/ai-confidence';
+import 'leaflet/dist/leaflet.css';
 
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+// Trang chi tiết báo cáo sự cố môi trường, hiển thị thông tin chi tiết, hình ảnh minh chứng, phân tích AI và tiến trình xử lý.
 
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -223,6 +221,8 @@ export default function AlertDetail() {
             altPrefix="Hình ảnh minh chứng"
           />
 
+          {/* Phân tích AI nếu có dữ liệu trả về */}
+          <section className="border-t pt-8" aria-labelledby="ai-analysis-heading">
           <section
             className="border-t pt-8"
             aria-labelledby="ai-analysis-heading"

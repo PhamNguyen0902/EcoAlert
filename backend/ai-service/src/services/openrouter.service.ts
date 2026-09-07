@@ -23,6 +23,7 @@ export {
 
 const logger = createLogger('ai-service');
 
+// Kết quả phân tích sự cố môi trường do AI đưa ra, bao gồm danh mục, mức độ nghiêm trọng, độ tin cậy, tóm tắt và lý do
 export interface IncidentAnalysis {
   category: ClassifiedAlertCategory;
   severity: Severity;
@@ -40,6 +41,7 @@ export interface IncidentAnalysis {
   shortReason: string;
 }
 
+// Định dạng phản hồi JSON Schema mà AI trả về cho việc phân tích sự cố môi trường
 const rawIncidentAnalysisSchema = z.object({
   isIncident: z.boolean().optional(),
   incidentConfidence: z.number().min(0).max(1).optional(),
@@ -74,6 +76,7 @@ export interface IncidentAnalysisInput {
 
 type OpenRouterClientOptions = ConstructorParameters<typeof OpenAI>[0];
 
+// Kết quả trả về từ OpenRouter, bao gồm phản hồi, mô hình được cấu hình, mô hình thực tế và độ trễ
 export interface OpenAiCompletionResponse {
   choices: Array<{ message: { content: string | null } }>;
   model?: string;
@@ -83,7 +86,7 @@ export interface OpenAiCompletionResponse {
     total_tokens?: number | null;
   };
 }
-
+ // Giao diện cho client SDK OpenAI, bao gồm phương thức tạo hoàn thành chat
 export interface OpenAiSdkClient {
   chat: {
     completions: {
@@ -100,7 +103,7 @@ export interface OpenRouterGenerationResult {
   model: string;
   latencyMs: number;
 }
-
+ // Lỗi xảy ra khi OpenRouter trả về phản hồi không hợp lệ hoặc không thể phân tích được
 export class OpenRouterResponseError extends Error {
   constructor(message: string) {
     super(message);
@@ -122,6 +125,7 @@ export class OpenRouterProviderError extends Error {
 const defaultClientFactory: OpenAiClientFactory = (options) =>
   new OpenAI(options) as unknown as OpenAiSdkClient;
 
+ // Tạo client OpenRouter với cấu hình và factory được cung cấp
 export const createOpenRouterClient = (
   config: OpenRouterConfig,
   factory: OpenAiClientFactory = defaultClientFactory,
@@ -139,6 +143,7 @@ export const createOpenRouterClient = (
 const numberOrUndefined = (value: unknown): number | undefined =>
   typeof value === 'number' ? value : undefined;
 
+// Lấy mô hình được cấu hình cho một tác vụ AI cụ thể, dựa trên cấu hình OpenRouter
 export class OpenRouterProvider {
   constructor(
     private readonly client: OpenAiSdkClient,
@@ -301,14 +306,15 @@ export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
     shortReason: reason,
   };
 };
-
+ // Sau khi phân tích ảnh xong thì AI sẽ phân tích mức độ nghiêm trọng và đánh giá tổng quan cho người dùng từ 0 đến 100%
 const severityScoreFor = (severity: Severity): number => ({
   [Severity.LOW]: 20,
   [Severity.MEDIUM]: 45,
   [Severity.HIGH]: 70,
   [Severity.CRITICAL]: 90,
 }[severity]);
-
+  
+// Định dạng phản hồi JSON Schema mà AI trả về cho việc phân tích sự cố môi trường
 const structuredResponseFormat = {
   type: 'json_schema',
   json_schema: {
@@ -356,6 +362,7 @@ const buildUserContent = (input: IncidentAnalysisInput, includeImage: boolean) =
   ];
 };
 
+// Sau khi phân tích ảnh xong thì AI sẽ phân tích mức độ nghiêm trọng và đánh giá tổng quan cho người dùng
 const incidentCompletionRequest = (
   input: IncidentAnalysisInput,
   includeImage: boolean,
@@ -365,7 +372,8 @@ const incidentCompletionRequest = (
       role: 'system',
       content: [
         'Bạn là trợ lý AI chuyên phân tích và phân loại sự cố môi trường của hệ thống EcoAlert.',
-        'Phân tích trực tiếp dựa trên ảnh báo cáo (nếu có), tiêu đề và mô tả do người dân cung cấp.',
+        'Đánh giá mức độ nghiêm trọng ',
+        'Phân tích trực tiếp dựa trên ảnh báo cáo, tiêu đề và mô tả do người dân cung cấp.',
         'Không được suy đoán hoặc bịa ra vật thể, tình trạng hay bằng chứng không xuất hiện trong ảnh hoặc mô tả. Không tiết lộ quá trình suy luận nội bộ.',
         `Chỉ sử dụng chính xác một category chuẩn từ danh sách sau: ${Object.values(AlertCategory).join(', ')}, hoặc ${UNCLASSIFIED_CATEGORY} khi bằng chứng không đủ hoặc không phù hợp.`,
         `Chỉ sử dụng chính xác một severity từ danh sách sau: ${Object.values(Severity).join(', ')}.`,

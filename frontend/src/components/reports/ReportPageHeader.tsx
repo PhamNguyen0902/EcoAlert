@@ -6,6 +6,7 @@ interface ReportPageHeaderProps {
   privacyNote: string;
 }
 
+// Hiển thị tiêu đề trang báo cáo, bao gồm tiêu đề, mô tả và ghi chú về quyền riêng tư.
 export function ReportPageHeader({ title, description, privacyNote }: ReportPageHeaderProps) {
   return (
     <header className="border-b border-border/80 pb-6 sm:pb-7">

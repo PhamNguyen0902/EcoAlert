@@ -2,7 +2,7 @@ const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
 const CACHE_LIMIT = 50;
 const REQUEST_TIMEOUT_MS = 8_000;
 const MIN_REQUEST_INTERVAL_MS = 1_000;
-
+// Dịch vụ geocoding ngược sử dụng Nominatim để lấy địa chỉ từ tọa độ.
 export interface ReverseGeocoder {
   reverseGeocode(latitude: number, longitude: number): Promise<string | null>;
 }

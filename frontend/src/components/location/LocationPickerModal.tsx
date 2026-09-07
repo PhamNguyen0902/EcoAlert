@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { reverseGeocoder } from '@/services/reverseGeocoder';
 
+// Hiển thị hộp thoại chọn vị trí trên bản đồ, cho phép người dùng nhấp vào bản đồ, kéo điểm đánh dấu hoặc sử dụng vị trí GPS hiện tại để chọn vị trí sự cố môi trường. Cung cấp địa chỉ gần đúng và tọa độ GPS của vị trí đã chọn, với khả năng sao chép và mở Google Maps.
 export interface PickedLocation {
   latitude: number;
   longitude: number;

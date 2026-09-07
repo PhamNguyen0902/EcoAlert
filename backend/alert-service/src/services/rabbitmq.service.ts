@@ -11,6 +11,7 @@ import {
   Severity,
 } from '@ecoalert/shared';
 
+// Dịch vụ RabbitMQ để quản lý kết nối và xử lý các sự kiện liên quan đến AI.
 const logger = createLogger('alert-service');
 
 const overallAnalysisSchema = z.object({

@@ -10,7 +10,7 @@ interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
 }
-
+// Tạo ngữ cảnh WebSocket để quản lý kết nối socket và cung cấp thông tin trạng thái kết nối trong toàn bộ ứng dụng.
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,

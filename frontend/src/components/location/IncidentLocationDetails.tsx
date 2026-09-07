@@ -10,6 +10,7 @@ interface IncidentLocationDetailsProps {
   longitude?: number;
 }
 
+// Hiển thị chi tiết vị trí sự cố môi trường, bao gồm địa chỉ, tọa độ GPS và các hành động liên quan đến vị trí.
 export function IncidentLocationDetails({
   address,
   latitude,

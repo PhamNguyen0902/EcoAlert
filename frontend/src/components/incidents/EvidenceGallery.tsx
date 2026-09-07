@@ -10,7 +10,7 @@ interface EvidenceGalleryProps {
   emptyMessage: string;
   altPrefix: string;
 }
-
+// Hiển thị thư viện hình ảnh minh chứng của sự cố môi trường, với khả năng phóng to hình ảnh khi nhấp vào. Nếu không có hình ảnh, hiển thị thông báo trống.
 export function EvidenceGallery({ title, description, images = [], emptyMessage, altPrefix }: EvidenceGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const selectedImage = selectedIndex === null ? null : images[selectedIndex];

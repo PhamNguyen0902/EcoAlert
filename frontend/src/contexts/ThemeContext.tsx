@@ -7,7 +7,7 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void;
   isDark: boolean;
 }
-
+// Tạo ngữ cảnh chủ đề để quản lý trạng thái chủ đề (sáng, tối, hệ thống) và cung cấp thông tin về chế độ tối trong toàn bộ ứng dụng.
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -39,7 +39,7 @@ const userLocationIcon = L.divIcon({
   iconAnchor: [10, 10],
 });
 
-const DEFAULT_CENTER: [number, number] = [10.8231, 106.6297];
+const DEFAULT_CENTER: [number, number] = [10.8231, 106.6297]; // vị trí mặc định
 
 export const IncidentMap: React.FC<IncidentMapProps> = ({
   alerts,
@@ -58,7 +58,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
       return matchCategory && matchSeverity;
     });
   }, [alerts, selectedCategory, severityFilter]);
-
+ 
   const severityCounts = useMemo(() => {
     const counts = { all: alerts.length, critical: 0, high: 0, medium: 0, low: 0 };
     alerts.forEach((a) => {

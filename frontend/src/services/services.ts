@@ -6,7 +6,7 @@ import type {
   RegisterData,
   ResolutionInput,
 } from "@/types";
-
+ // Dịch vụ xác thực, bao gồm các phương thức đăng nhập, đăng ký và đăng xuất.
 export const authService = {
   login: async (data: { email: string; password: string }) => {
     const res = await api.post("/v1/auth/login", data);

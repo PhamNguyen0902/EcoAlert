@@ -4,7 +4,8 @@ import { createLogger, IEventMessage, EVENTS } from '@ecoalert/shared';
 import { gisService } from './gis.service';
 
 const logger = createLogger('gis-service');
-
+//RabbitMQ để quản lý kết nối và xử lý các sự kiện liên quan đến GIS
+// bao gồm việc lắng nghe các sự kiện từ hàng đợi và lưu trữ dữ liệu vị trí vào cơ sở dữ liệu.
 class RabbitMQService {
   private connection: any;
   private channel: any;
