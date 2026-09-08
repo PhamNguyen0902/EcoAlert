@@ -221,6 +221,12 @@ export default function OfficerReportDetail() {
     : language === "vi"
       ? "Chưa phân công"
       : "Not assigned";
+  const assginedEmailLabel = alert.assignedOfficerId
+    ? assignedOfficer?.email ||
+      (alert.assignedOfficerId === user?._id ? user.email : undefined)
+    : language === "vi"
+      ? "Chưa có email"
+      : "No email";
   const originalEvidence = alert.mediaUrls ?? [];
   const resolutionEvidence = alert.resolutionEvidence ?? [];
   const statusHistory = alert.statusHistory ?? [];
@@ -721,6 +727,14 @@ export default function OfficerReportDetail() {
                 <span className="text-muted-foreground">Cán bộ phụ trách</span>
                 <span className="text-right font-medium">
                   {assignedOfficerLabel}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">
+                  Email của cán bộ phụ trách
+                </span>
+                <span className="text-right font-medium">
+                  {assginedEmailLabel}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
