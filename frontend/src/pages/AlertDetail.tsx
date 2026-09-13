@@ -68,7 +68,7 @@ export default function AlertDetail() {
         <p className="mt-2 text-sm text-muted-foreground">Báo cáo này có thể không còn khả dụng hoặc bạn không có quyền xem.</p>
         <Button className="mt-6" variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" />Quay lại</Button>
       </div>
-    );
+    );  
   }
 
   const [longitude = Number.NaN, latitude = Number.NaN] = alert.location?.coordinates ?? [];
@@ -164,6 +164,8 @@ export default function AlertDetail() {
 
             <p className="mt-4 rounded-lg border bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">{t('alert_detail.ai_disclaimer')}</p>
 
+            {/*Thẻ AI phân tích dữ liệu trả về từ openrouter*/}
+            
             <div className="mt-5 space-y-5">
               <OverallAiAnalysisCard alert={alert} />
             </div>

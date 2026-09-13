@@ -696,15 +696,6 @@ export default function CreateAlert() {
                         {imageValidation?.reason ||
                           "Không thể kiểm tra hình ảnh tự động. Báo cáo vẫn được nhân viên kiểm tra."}
                       </p>
-                      {imageValidation?.confidence !== null &&
-                      imageValidation?.confidence !== undefined ? (
-                        <p className="text-sm">
-                          Độ tin cậy:{" "}
-                          <strong>
-                            {Math.round(imageValidation.confidence * 100)}%
-                          </strong>
-                        </p>
-                      ) : null}
                       {imageValidation?.decision === "UNCERTAIN" ? (
                         <p className="text-sm text-amber-700">
                           AI chưa xác định rõ nội dung ảnh. Bạn có thể tiếp tục

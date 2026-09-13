@@ -122,6 +122,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     });
 
+    // Nhận kết quả phân tích hình ảnh từ AI và hiển thị thông báo cho người dùng.
     socketInstance.on('image:analyzed', (data: any) => {
       console.log('[Web Socket] Image analyzed by AI:', data);
       playNotificationSound('success');
