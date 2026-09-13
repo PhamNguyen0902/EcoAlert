@@ -39,7 +39,7 @@ app.use(
   }),
 );
 
-// Rate Limiting - API routes only (exclude /socket.io and /health)
+// Rate Limiter cho tất cả các API - giới hạn cao để dev/test
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 2000, // High limit for dev/testing API requests
@@ -59,7 +59,7 @@ const authLimiter = rateLimit({
 });
 app.use("/api/v1/auth", authLimiter);
 
-// Request ID Injection
+// Middleware để gán một request ID duy nhất cho mỗi yêu cầu, giúp theo dõi và debug dễ dàng hơn.
 app.use((req, res, next) => {
   const reqId = randomUUID();
   req.headers["x-request-id"] = reqId;
@@ -72,7 +72,7 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", service: "api-gateway" });
 });
 
-// Authentication Middleware for Gateway
+// Middleware xác thực JWT cho tất cả các yêu cầu đến /api, ngoại trừ các route công khai như login/register.
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   // Allow unauthenticated access to certain routes
   const publicRoutes = [
@@ -80,11 +80,13 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     "/api/v1/auth/register",
     "/api/v1/auth/refresh-token",
   ];
+
+  // Loại bỏ query string để so sánh đường dẫn
   const cleanPath = req.originalUrl.split("?")[0];
   if (publicRoutes.includes(cleanPath)) {
     return next();
   }
-
+ // Kiểm tra xem có header Authorization không
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res
@@ -93,7 +95,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   const token = authHeader.split(" ")[1];
-  // Check blacklist
+  // Kiểm tra xem token có bị blacklist trong Redis không
   try {
     const isBlacklisted = await redisClient.get(`blacklist:${token}`);
     if (isBlacklisted) {
@@ -103,12 +105,12 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     }
   } catch (err) {
     logger.error("Redis blacklist check error", err);
-    // Proceed if redis is down to not break everything, or fail fast. We fail open here.
+    // Nếu Redis gặp sự cố, vẫn cho phép tiếp tục xác thực để tránh gián đoạn dịch vụ.
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    // Attach to headers so downstream services can read it
+    // Gán thông tin người dùng đã xác thực vào header để các dịch vụ downstream có thể sử dụng.
     req.headers["x-user-id"] = decoded.userId;
     req.headers["x-user-role"] = decoded.role;
     req.headers["x-user-email"] = decoded.email;
@@ -121,10 +123,10 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-// Apply auth middleware to all /api routes
+// Middleware xác thực JWT cho tất cả các yêu cầu đến /api, ngoại trừ các route công khai như login/register.
 app.use("/api", verifyToken);
 
-// WebSocket Proxy specifically configured for Notification Service
+// WebSocket Proxy cho /socket.io
 const socketProxy = createProxyMiddleware({
   target: process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006",
   changeOrigin: true,
@@ -137,9 +139,10 @@ const socketProxy = createProxyMiddleware({
   },
 });
 
+// WebSocket endpoint cho /socket.io
 app.use("/socket.io", socketProxy);
 
-// General Proxy configuration
+// Hàm thiết lập proxy giúp giảm thiểu sự trùng lặp mã nguồn.
 const setupProxy = (
   path: string,
   target: string,
@@ -206,7 +209,7 @@ setupProxy(
   true,
 );
 
-// Global Error Handler
+// Global error handler để xử lý các lỗi không được bắt trong các route hoặc middleware.
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   logger.error("Gateway Error:", err);
   res.status(500).json(errorResponse("API Gateway Internal Error"));
@@ -216,7 +219,7 @@ const server = app.listen(PORT, () => {
   logger.info(`API Gateway running on port ${PORT}`);
 });
 
-// Handle WebSocket HTTP upgrade requests for /socket.io
+// Thiết lập WebSocket upgrade để chuyển tiếp các kết nối WebSocket đến dịch vụ thông báo.
 server.on("upgrade", (req, socket, head) => {
   if (req.url && req.url.startsWith("/socket.io")) {
     (socketProxy as any).upgrade?.(req, socket, head);

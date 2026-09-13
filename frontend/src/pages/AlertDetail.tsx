@@ -95,7 +95,7 @@ export default function AlertDetail() {
           Quay lại
         </Button>
       </div>
-    );
+    );  
   }
 
   const [longitude = Number.NaN, latitude = Number.NaN] =
@@ -295,6 +295,8 @@ export default function AlertDetail() {
               {t("alert_detail.ai_disclaimer")}
             </p>
 
+            {/*Thẻ AI phân tích dữ liệu trả về từ openrouter*/}
+            
             <div className="mt-5 space-y-5">
               <OverallAiAnalysisCard alert={alert} />
             </div>

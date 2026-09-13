@@ -8,6 +8,7 @@ import {
   getPresentationCopy,
 } from "@/lib/incident-presentation";
 
+// Lấy dữ liệu từ websocket và hiển thị phân tích hình ảnh lên frontend.
 
 // Tính mức độ nghiêm trọng dưới dạng % của hình ảnh
 const percentage = (value: number | null | undefined, unavailable: string) =>

@@ -4,6 +4,7 @@ import { createLogger } from '@ecoalert/shared';
 const logger = createLogger('gis-service');
 // Dịch vụ GIS để quản lý dữ liệu vị trí của các sự cố môi trường, bao gồm lưu trữ, truy vấn và tạo bản đồ nhiệt.
 export class GisService {
+  // Lưu trữ hoặc cập nhật vị trí của sự cố môi trường.
   async saveLocation(alertData: any) {
     try {
       const existing = await Location.findOne({ alertId: alertData._id });
@@ -143,9 +144,15 @@ export class GisService {
 }
 
 const OPEN_STATUSES = new Set(['pending', 'ai_analyzing', 'verified', 'assigned', 'in_progress']);
+
+// Kiểm tra xem trạng thái có phải là trạng thái mở hay không
 const isOpenStatus = (status?: string) => OPEN_STATUSES.has((status || '').toLowerCase());
+// Kiểm tra xem tọa độ có hợp lệ hay không
 const isValidCoordinate = (lat: unknown, lng: unknown) => typeof lat === 'number' && typeof lng === 'number' && Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+// Kiểm tra xem tọa độ có hợp lệ hay không
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Chuẩn hóa danh mục thành chữ thường
 const normalizeStatusCode = (value?: string) => value?.trim().toLowerCase().replace(/[\s-]+/g, '_') || 'unknown';
 export const normalizeSeverityCode = (value?: string) => {
   const normalized = value?.trim().toLowerCase();
@@ -154,6 +161,8 @@ export const normalizeSeverityCode = (value?: string) => {
     ? normalized
     : 'unknown';
 };
+
+// Chuẩn hóa danh mục đầu vào
 export const normalizeCategoryCode = (value?: string) =>
   value?.trim().toLowerCase().replace(/[\s_-]+/g, '_') || 'unclassified';
 const buildStatusFilter = (status?: string) => {
@@ -161,6 +170,8 @@ const buildStatusFilter = (status?: string) => {
   if (status === 'active') return { $in: [...OPEN_STATUSES].map((value) => new RegExp(`^${value}$`, 'i')) };
   return new RegExp(`^${escapeRegex(status)}$`, 'i');
 };
+
+// Tóm tắt các sự cố theo trạng thái, danh mục và mức độ nghiêm trọng
 export const summarizeIncidentLocations = (locations: Array<{ status?: string; category?: string; severity?: string }>) => {
   const statusCounts = { total: locations.length, open: 0, resolved: 0, closed: 0 };
   const byCategory: Record<string, number> = {};

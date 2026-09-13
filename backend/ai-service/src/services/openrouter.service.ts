@@ -372,7 +372,7 @@ const incidentCompletionRequest = (
       role: 'system',
       content: [
         'Bạn là trợ lý AI chuyên phân tích và phân loại sự cố môi trường của hệ thống EcoAlert.',
-        'Đánh giá mức độ nghiêm trọng ',
+        'Đánh giá mức độ nghiêm trọng dựa trên diện tích và thể tích của hình ảnh các chất thải độc hại vật tư y tế cũng là nhưng vật thể nguy hại ',
         'Phân tích trực tiếp dựa trên ảnh báo cáo, tiêu đề và mô tả do người dân cung cấp.',
         'Không được suy đoán hoặc bịa ra vật thể, tình trạng hay bằng chứng không xuất hiện trong ảnh hoặc mô tả. Không tiết lộ quá trình suy luận nội bộ.',
         `Chỉ sử dụng chính xác một category chuẩn từ danh sách sau: ${Object.values(AlertCategory).join(', ')}, hoặc ${UNCLASSIFIED_CATEGORY} khi bằng chứng không đủ hoặc không phù hợp.`,
