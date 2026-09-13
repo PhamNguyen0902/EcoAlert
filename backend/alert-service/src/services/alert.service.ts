@@ -14,15 +14,11 @@ import {
   IAlert,
   IAlertClassification,
   IImageValidation,
-  ITimelineEntry,
-  IStatusHistoryEntry,
   WorkflowActorRole,
 } from "../models/alert.model";
 import { alertRepository } from "../repositories/alert.repository";
 import {
-  AlertCategory,
   AlertStatus,
-  BadRequestError,
   ConflictError,
   EVENTS,
   ForbiddenError,
@@ -33,8 +29,6 @@ import {
 } from "@ecoalert/shared";
 import { rabbitMQService } from "./rabbitmq.service";
 import { userDirectoryService } from "./user-directory.service";
-import { envConfig } from "../config/env.config";
-import { haversineDistanceMeters } from "../utils/geo-evidence.util";
 
 export interface WorkflowActor {
   id: string;
@@ -42,108 +36,71 @@ export interface WorkflowActor {
   correlationId?: string;
 }
 
-const LEGACY_REVIEW_TRANSITIONS: Record<string, AlertStatus[]> = {
-  [AlertStatus.PENDING]: [AlertStatus.VERIFIED, AlertStatus.REJECTED],
-  [AlertStatus.AI_ANALYZING]: [AlertStatus.VERIFIED, AlertStatus.REJECTED],
-};
-
-const normalizeRole = (role?: string): WorkflowActorRole =>
-  (role || "").toUpperCase() as WorkflowActorRole;
-
-const normalizeStatus = (status?: string): AlertStatus =>
-  (status || "").toLowerCase() as AlertStatus;
-
-const statusFilter = (status: AlertStatus) => ({
-  $regex: new RegExp(`^${status}$`, "i"),
-});
-
-const validAiSuggestion = (
-  category?: AlertCategory | "UNCLASSIFIED" | null,
-  confidence?: number | null,
-) =>
-  Boolean(
-    category &&
-    category !== "UNCLASSIFIED" &&
-    confidence !== null &&
-    confidence !== undefined &&
-    confidence >= 0.5 &&
-    Object.values(AlertCategory).includes(category as AlertCategory),
-  );
+const normRole = (r?: string) => (r || "").toUpperCase() as WorkflowActorRole;
+const normStatus = (s?: string) => (s || "").toLowerCase() as AlertStatus;
 
 export class AlertService {
-  // các function hỗ trợ nội bộ dùng chung cho mọi role
-  private ensureValidId(id: string) {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new NotFoundError("Alert not found");
-    }
-  }
-
+  // helper nội bộ
   private async requireAlert(id: string): Promise<IAlert> {
-    this.ensureValidId(id);
+    if (!mongoose.isValidObjectId(id))
+      throw new NotFoundError("Sự cố không tồn tại");
     const alert = await alertRepository.findById(id);
-    if (!alert) throw new NotFoundError("Alert not found");
+    if (!alert) throw new NotFoundError("Sự cố không tồn tại");
     return alert;
   }
 
-  private requireRole(actor: WorkflowActor, allowedRoles: WorkflowActorRole[]) {
-    if (!allowedRoles.includes(normalizeRole(actor.role))) {
-      throw new ForbiddenError(
-        "You do not have permission to perform this action",
-      );
-    }
-  }
-  // yêu cầu actor là officer được phân công cho alert
-  private requireAssignedOfficer(alert: IAlert, actor: WorkflowActor) {
-    this.requireRole(actor, ["OFFICER"]);
-    if (!alert.assignedOfficerId || alert.assignedOfficerId !== actor.id) {
-      throw new ForbiddenError("This incident is not assigned to you");
+  private checkRole(actor: WorkflowActor, roles: WorkflowActorRole[]) {
+    if (!roles.includes(normRole(actor.role))) {
+      throw new ForbiddenError("Không có quyền thực hiện hành động này");
     }
   }
 
-  private historyEntry(
-    fromStatus: AlertStatus | undefined,
-    toStatus: AlertStatus,
+  private checkAssignedOfficer(alert: IAlert, actor: WorkflowActor) {
+    this.checkRole(actor, ["OFFICER"]);
+    if (alert.assignedOfficerId !== actor.id) {
+      throw new ForbiddenError("Sự cố không được phân công cho bạn");
+    }
+  }
+
+  private makeHistory(
+    from: AlertStatus | undefined,
+    to: AlertStatus,
     actor: WorkflowActor,
-    changedAt: Date,
     note?: string,
-  ): IStatusHistoryEntry {
+  ) {
     return {
-      fromStatus,
-      toStatus,
+      fromStatus: from,
+      toStatus: to,
       changedBy: actor.id,
-      changedByRole: normalizeRole(actor.role),
-      changedAt,
+      changedByRole: normRole(actor.role),
+      changedAt: new Date(),
       note,
       correlationId: actor.correlationId,
     };
   }
 
-  private timelineEntry(
-    eventType: string,
+  private makeTimeline(
+    type: string,
     label: string,
     actor: WorkflowActor,
-    timestamp: Date,
-    options: Pick<
-      ITimelineEntry,
-      "note" | "status" | "evidenceUrls" | "metadata"
-    > = {},
-  ): ITimelineEntry {
+    opts: Record<string, unknown> = {},
+  ) {
     return {
-      eventType,
+      eventType: type,
       label,
-      timestamp,
+      timestamp: new Date(),
       actorId: actor.id,
-      actorRole: normalizeRole(actor.role),
+      actorRole: normRole(actor.role),
       correlationId: actor.correlationId,
-      ...options,
+      ...opts,
     };
   }
 
-  private async publishWorkflowEvent(
+  private async emitEvent(
     eventName: string,
     alert: IAlert,
     actor: WorkflowActor,
-    extra: Record<string, unknown> = {},
+    extra = {},
   ) {
     const payload = {
       alertId: alert._id.toString(),
@@ -152,10 +109,9 @@ export class AlertService {
       assignedOfficerId: alert.assignedOfficerId,
       status: alert.status,
       actorId: actor.id,
-      actorRole: normalizeRole(actor.role),
+      actorRole: normRole(actor.role),
       ...extra,
     };
-
     await rabbitMQService.publishEvent(eventName, payload, actor.correlationId);
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_UPDATED,
@@ -165,104 +121,56 @@ export class AlertService {
   }
 
   // citizen tạo báo cáo sự cố
-  // role: chỉ citizen; citizenId lấy từ actor đã xác thực, không lấy từ request body
   async createAlert(actor: WorkflowActor, data: CreateAlertDto) {
-    // lưu báo cáo mới rồi phát alert.created để các read model và ai xử lý bất đồng bộ
-    this.requireRole(actor, ["CITIZEN"]);
-    const citizenId = actor.id;
+    this.checkRole(actor, ["CITIZEN"]);
     const createdAt = new Date();
     const {
-      imageValidation: validation,
       classification: citizenClassification,
+      imageValidation,
       ...alertData
     } = data;
-    if (validation?.decision === "INVALID") {
-      throw new ConflictError(
-        "The selected image is not suitable for an environmental incident report. Please choose another image.",
-      );
-    }
-    const aiSuggestedCategory = validAiSuggestion(
-      validation?.suggestedCategory,
-      validation?.confidence,
-    )
-      ? (validation?.suggestedCategory ?? null)
-      : null;
-    const storedImageValidation: IImageValidation | undefined = validation
+    const category =
+      citizenClassification?.selectedCategory || data.category || "UNCLASSIFIED";
+    const classification: IAlertClassification = {
+      status:
+        category === "UNCLASSIFIED"
+          ? "UNCLASSIFIED"
+          : citizenClassification?.decision === "CONFIRM"
+            ? "USER_CONFIRMED"
+            : "USER_CORRECTED",
+      finalCategory: category === "UNCLASSIFIED" ? null : category,
+      finalCategorySource: category === "UNCLASSIFIED" ? null : "CITIZEN",
+      citizenSelectedCategory: category === "UNCLASSIFIED" ? null : category,
+      citizenDecisionAt: category === "UNCLASSIFIED" ? null : createdAt,
+      confirmedBy: category === "UNCLASSIFIED" ? null : actor.id,
+      confirmedAt: category === "UNCLASSIFIED" ? null : createdAt,
+    };
+    const storedImageValidation: IImageValidation | undefined = imageValidation
       ? {
-          ...validation,
-          suggestedCategory: aiSuggestedCategory,
-          validatedAt: new Date(validation.validatedAt),
+          ...imageValidation,
+          validatedAt: new Date(imageValidation.validatedAt),
         }
       : undefined;
-    const selectedCategory =
-      citizenClassification?.selectedCategory || data.category;
-    const citizenConfirmedSuggestion =
-      citizenClassification?.decision === "CONFIRM" &&
-      Boolean(aiSuggestedCategory && selectedCategory === aiSuggestedCategory);
-    const classification: IAlertClassification = selectedCategory
-      ? {
-          status: citizenConfirmedSuggestion
-            ? //đồng ý với kết quả của category AI
-              "USER_CONFIRMED"
-            : //citizen chọn category khác
-              "USER_CORRECTED",
-          aiSuggestedCategory,
-          aiConfidence: validation?.confidence ?? null,
-          aiReason: validation?.reason ?? null,
-          finalCategory: selectedCategory,
-          finalCategorySource: "CITIZEN",
-          citizenSelectedCategory: selectedCategory,
-          citizenDecisionAt: createdAt,
-          confirmedBy: citizenId,
-          confirmedAt: createdAt,
-        }
-      : {
-          status: aiSuggestedCategory ? "AI_SUGGESTED" : "UNCLASSIFIED",
-          aiSuggestedCategory,
-          aiConfidence: validation?.confidence ?? null,
-          aiReason: validation?.reason ?? null,
-          finalCategory: null,
-          finalCategorySource: null,
-          citizenSelectedCategory: null,
-          citizenDecisionAt: null,
-          confirmedBy: null,
-          confirmedAt: null,
-        };
-
-    // Chống gửi trùng cùng nội dung trong khoảng thời gian ngắn.
-    const recentDuplicate = await alertRepository.findOne({
-      citizenId,
-      title: data.title,
-      description: data.description,
-      createdAt: { $gte: new Date(createdAt.getTime() - 10000) },
-    });
-    if (recentDuplicate) {
-      return recentDuplicate;
-    }
-
     const alert = await alertRepository.create({
       ...alertData,
-      category: selectedCategory || "UNCLASSIFIED",
+      category,
       classification,
       ...(storedImageValidation
         ? { imageValidation: storedImageValidation }
         : {}),
       severity: (data.severity as Severity) || Severity.LOW,
-      citizenId,
+      citizenId: actor.id,
       status: AlertStatus.PENDING,
-      isAnonymous: data.isAnonymous || false,
+      isAnonymous: Boolean(data.isAnonymous),
       confirmationsCount: 1,
-      confirmations: [{ citizenId, confirmedAt: createdAt }],
-      createdBy: citizenId,
-      statusHistory: [
-        this.historyEntry(undefined, AlertStatus.PENDING, actor, createdAt),
-      ],
+      confirmations: [{ citizenId: actor.id, confirmedAt: createdAt }],
+      createdBy: actor.id,
+      statusHistory: [this.makeHistory(undefined, AlertStatus.PENDING, actor)],
       timeline: [
-        this.timelineEntry(
+        this.makeTimeline(
           "INCIDENT_REPORTED",
-          "Incident reported",
+          "Báo cáo sự cố được tạo",
           actor,
-          createdAt,
           { status: AlertStatus.PENDING },
         ),
       ],
@@ -271,244 +179,296 @@ export class AlertService {
     await rabbitMQService.publishEvent(EVENTS.ALERT_CREATED, alert);
     return alert;
   }
-  // lấy danh sách báo cáo theo phạm vi
-  // role: citizen xem báo cáo của mình; admin xem toàn bộ; controller truyền phạm vi qua citizenId và filters
+
+  // citizen sửa báo cáo của mình khi đang chờ xử lý, admin sửa mọi báo cáo
+  async updateAlert(id: string, actor: WorkflowActor, data: UpdateAlertDto) {
+    const alert = await this.requireAlert(id);
+    const role = normRole(actor.role);
+
+    if (role === "CITIZEN") {
+      if (alert.citizenId !== actor.id)
+        throw new ForbiddenError("Chỉ sửa được báo cáo của mình");
+      if (normStatus(alert.status) !== AlertStatus.PENDING)
+        throw new ConflictError("Báo cáo đã duyệt không thể sửa");
+    } else if (role !== "ADMIN") {
+      throw new ForbiddenError("Không có quyền sửa báo cáo");
+    }
+
+    const updated = await alertRepository.update(id, {
+      ...data,
+      updatedBy: actor.id,
+    });
+    if (!updated) throw new NotFoundError("Không tìm thấy sự cố để cập nhật");
+    await rabbitMQService.publishEvent(
+      EVENTS.ALERT_UPDATED,
+      updated,
+      actor.correlationId,
+    );
+    return updated;
+  }
+
+  // citizen xóa báo cáo của mình khi đang chờ xử lý, admin xóa mọi báo cáo
+  async deleteAlert(id: string, actor: WorkflowActor) {
+    const alert = await this.requireAlert(id);
+    const role = normRole(actor.role);
+
+    if (role === "CITIZEN") {
+      if (alert.citizenId !== actor.id)
+        throw new ForbiddenError("Chỉ xóa được báo cáo của mình");
+      if (normStatus(alert.status) !== AlertStatus.PENDING)
+        throw new ConflictError("Báo cáo đã xử lý không thể xóa");
+    } else if (role !== "ADMIN") {
+      throw new ForbiddenError("Không có quyền xóa báo cáo");
+    }
+
+    await alertRepository.softDelete(id, actor.id);
+    await rabbitMQService.publishEvent(
+      EVENTS.ALERT_UPDATED,
+      { _id: alert._id, status: "deleted", isDeleted: true },
+      actor.correlationId,
+    );
+    return true;
+  }
+
+  // citizen xem báo cáo của mình, admin xem tất cả báo cáo
   async getAlerts(
     page: number,
     limit: number,
     citizenId?: string,
-    //chưa có lọc theo title
-    filters: {
-      status?: string;
-      category?: string;
-      severity?: string;
-      isDeleted?: string;
-    } = {},
+    filters: { status?: string; category?: string; severity?: string } = {},
   ) {
-    const skip = (page - 1) * limit;
     const filter: Record<string, unknown> = {};
-
     if (citizenId) filter.citizenId = citizenId;
-    if (filters.isDeleted === "true" || filters.status === "deleted") {
-      filter.includeDeleted = true;
-      filter.isDeleted = true;
-    } else if (filters.status) {
-      const statusList = filters.status
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (statusList.length > 1) {
-        filter.status = {
-          $in: statusList.map((s) => new RegExp(`^${s}$`, "i")),
-        };
-      } else if (filters.status.toLowerCase() === "pending") {
-        filter.status = {
-          $in: [
-            new RegExp("^pending$", "i"),
-            new RegExp("^ai_analyzing$", "i"),
-          ],
-        };
-      } else {
-        filter.status = { $regex: new RegExp(`^${filters.status}$`, "i") };
-      }
-    }
+    if (filters.status) filter.status = new RegExp(`^${filters.status}$`, "i");
     if (filters.category)
-      filter.category = { $regex: new RegExp(`^${filters.category}$`, "i") };
+      filter.category = new RegExp(`^${filters.category}$`, "i");
     if (filters.severity)
-      filter.severity = { $regex: new RegExp(`^${filters.severity}$`, "i") };
-
-    return alertRepository.findPaginated(filter, skip, limit);
-  }
-  // officer lấy danh sách nhiệm vụ được giao
-  // role: chỉ officer; chỉ trả alert có assignedOfficerId trùng actor.id
-  async getOfficerTasks(
-    actor: WorkflowActor,
-    page: number,
-    limit: number,
-    status?: string,
-  ) {
-    this.requireRole(actor, ["OFFICER"]);
-    const filter: Record<string, unknown> = { assignedOfficerId: actor.id };
-    if (status) {
-      const normalizedStatus = normalizeStatus(status);
-      if (
-        ![
-          AlertStatus.ASSIGNED,
-          AlertStatus.IN_PROGRESS,
-          AlertStatus.RESOLVED,
-          AlertStatus.CLOSED,
-        ].includes(normalizedStatus)
-      ) {
-        throw new BadRequestError("Unsupported Officer task status filter");
-      }
-      filter.status = statusFilter(normalizedStatus);
-    }
+      filter.severity = new RegExp(`^${filters.severity}$`, "i");
     return alertRepository.findPaginated(filter, (page - 1) * limit, limit);
   }
-  // lấy chi tiết alert cho cả ba role
-  // role: admin xem mọi alert; citizen chỉ xem alert của mình; officer chỉ xem alert được giao
+
+  // citizen, officer và admin xem chi tiết báo cáo theo quyền truy cập
   async getAlertById(id: string, actor: WorkflowActor) {
     const alert = await this.requireAlert(id);
-    const role = normalizeRole(actor.role);
-
-    if (role === "ADMIN") return alert;
-    if (role === "CITIZEN" && alert.citizenId === actor.id) return alert;
-    if (role === "OFFICER" && alert.assignedOfficerId === actor.id)
+    const role = normRole(actor.role);
+    if (
+      role === "ADMIN" ||
+      (role === "CITIZEN" && alert.citizenId === actor.id) ||
+      (role === "OFFICER" && alert.assignedOfficerId === actor.id)
+    ) {
       return alert;
-
-    throw new ForbiddenError("You do not have access to this incident");
+    }
+    throw new ForbiddenError("Không có quyền xem sự cố này");
   }
-  // admin phân công officer
-  // role: chỉ admin; chỉ alert VERIFIED mới được chuyển sang ASSIGNED
+
+  // admin duyệt hoặc từ chối báo cáo
+  async updateStatus(
+    id: string,
+    actor: WorkflowActor,
+    data: UpdateAlertStatusDto,
+  ) {
+    this.checkRole(actor, ["ADMIN"]);
+    const alert = await this.requireAlert(id);
+    const newStatus = normStatus(data.status);
+
+    const updated = await alertRepository.findOneAndUpdate(
+      { _id: id, status: new RegExp(`^${alert.status}$`, "i") },
+      {
+        $set: { status: newStatus, updatedBy: actor.id },
+        $push: {
+          statusHistory: this.makeHistory(alert.status, newStatus, actor),
+          timeline: this.makeTimeline(
+            newStatus === AlertStatus.REJECTED
+              ? "INCIDENT_REJECTED"
+              : "INCIDENT_VERIFIED",
+            `Admin ${newStatus}`,
+            actor,
+            { status: newStatus },
+          ),
+        },
+      },
+    );
+    if (!updated) throw new ConflictError("Trạng thái đã thay đổi");
+    await this.emitEvent(EVENTS.ALERT_UPDATED, updated, actor);
+    return updated;
+  }
+
+  // admin xác nhận hoặc chỉnh sửa danh mục sự cố
+  async reviewClassification(
+    id: string,
+    actor: WorkflowActor,
+    data: ReviewClassificationDto,
+  ) {
+    this.checkRole(actor, ["ADMIN"]);
+    const alert = await this.requireAlert(id);
+    const finalCategory = data.category || alert.category;
+
+    const updated = await alertRepository.findOneAndUpdate(
+      { _id: id },
+      {
+        $set: { category: finalCategory, updatedBy: actor.id },
+        $push: {
+          timeline: this.makeTimeline(
+            "ADMIN_CLASSIFICATION_CONFIRMED",
+            "Admin xác nhận danh mục",
+            actor,
+            { metadata: { category: finalCategory } },
+          ),
+        },
+      },
+    );
+    if (!updated) throw new ConflictError("Cập nhật danh mục thất bại");
+    await this.emitEvent(EVENTS.ALERT_UPDATED, updated, actor);
+    return updated;
+  }
+
+  // admin giao báo cáo đã duyệt cho officer
   async assignOfficer(
     id: string,
     actor: WorkflowActor,
     data: AssignOfficerDto,
   ) {
-    this.requireRole(actor, ["ADMIN"]);
+    this.checkRole(actor, ["ADMIN"]);
     const alert = await this.requireAlert(id);
-    const currentStatus = normalizeStatus(alert.status);
-    if (currentStatus !== AlertStatus.VERIFIED) {
-      throw new ConflictError("Only a verified incident can be assigned");
-    }
-    if (!mongoose.isValidObjectId(data.officerId)) {
-      throw new NotFoundError("Officer not found");
-    }
+    if (normStatus(alert.status) !== AlertStatus.VERIFIED)
+      throw new ConflictError("Chỉ phân công sự cố đã duyệt");
+
     const officer = await userDirectoryService.requireOfficer(
       data.officerId,
       actor,
     );
-
-    const assignedAt = new Date();
-    const updatedAlert = await alertRepository.findOneAndUpdate(
-      { _id: id, status: statusFilter(currentStatus) },
+    const updated = await alertRepository.findOneAndUpdate(
+      { _id: id, status: new RegExp(`^${AlertStatus.VERIFIED}$`, "i") },
       {
         $set: {
           status: AlertStatus.ASSIGNED,
           assignedOfficerId: data.officerId,
           assignedOfficerName: officer.fullName,
           assignedOfficerEmail: officer.email,
-          assignedAt,
-          assignedBy: actor.id,
+          assignedAt: new Date(),
           updatedBy: actor.id,
         },
         $push: {
-          statusHistory: this.historyEntry(
-            currentStatus,
+          statusHistory: this.makeHistory(
+            alert.status,
             AlertStatus.ASSIGNED,
             actor,
-            assignedAt,
           ),
-          timeline: this.timelineEntry(
+          timeline: this.makeTimeline(
             "OFFICER_ASSIGNED",
-            "Incident assigned to Officer",
+            "Đã phân công cho cán bộ",
             actor,
-            assignedAt,
             { status: AlertStatus.ASSIGNED },
           ),
         },
       },
     );
-    if (!updatedAlert)
-      throw new ConflictError(
-        "Incident assignment changed. Refresh and try again",
-      );
-
-    await this.publishWorkflowEvent(
-      EVENTS.OFFICER_ASSIGNED,
-      updatedAlert,
-      actor,
-    );
-    return updatedAlert;
+    if (!updated) throw new ConflictError("Phân công thất bại");
+    await this.emitEvent(EVENTS.OFFICER_ASSIGNED, updated, actor);
+    return updated;
   }
 
-  // officer bắt đầu xử lý alert được phân công
-  // role: chỉ officer được phân công; chuyển trạng thái ASSIGNED -> IN_PROGRESS
+  // admin đóng sự cố đã được officer giải quyết
+  async closeIncident(id: string, actor: WorkflowActor, data: CloseAlertDto) {
+    this.checkRole(actor, ["ADMIN"]);
+    const alert = await this.requireAlert(id);
+    if (normStatus(alert.status) !== AlertStatus.RESOLVED)
+      throw new ConflictError("Chỉ đóng sự cố đã giải quyết");
+
+    const updated = await alertRepository.findOneAndUpdate(
+      { _id: id, status: new RegExp(`^${AlertStatus.RESOLVED}$`, "i") },
+      {
+        $set: {
+          status: AlertStatus.CLOSED,
+          closedAt: new Date(),
+          closedBy: actor.id,
+          adminReviewNote: data.reviewNote?.trim(),
+          updatedBy: actor.id,
+        },
+        $push: {
+          statusHistory: this.makeHistory(
+            AlertStatus.RESOLVED,
+            AlertStatus.CLOSED,
+            actor,
+            data.reviewNote,
+          ),
+          timeline: this.makeTimeline(
+            "INCIDENT_CLOSED",
+            "Sự cố đã đóng",
+            actor,
+            { status: AlertStatus.CLOSED, note: data.reviewNote },
+          ),
+        },
+      },
+    );
+    if (!updated) throw new ConflictError("Đóng sự cố thất bại");
+    await this.emitEvent(EVENTS.ALERT_CLOSED, updated, actor);
+    return updated;
+  }
+
+  // officer xem các báo cáo được giao cho mình
+  async getOfficerTasks(
+    actor: WorkflowActor,
+    page: number,
+    limit: number,
+    status?: string,
+  ) {
+    this.checkRole(actor, ["OFFICER"]);
+    const filter: Record<string, unknown> = { assignedOfficerId: actor.id };
+    if (status) filter.status = new RegExp(`^${status}$`, "i");
+    return alertRepository.findPaginated(filter, (page - 1) * limit, limit);
+  }
+
+  // officer bắt đầu xử lý báo cáo được giao
   async startHandling(id: string, actor: WorkflowActor) {
     const alert = await this.requireAlert(id);
-    this.requireAssignedOfficer(alert, actor);
-    if (normalizeStatus(alert.status) !== AlertStatus.ASSIGNED) {
-      throw new ConflictError("Only an assigned incident can be started");
-    }
+    this.checkAssignedOfficer(alert, actor);
+    if (normStatus(alert.status) !== AlertStatus.ASSIGNED)
+      throw new ConflictError("Sự cố chưa được phân công");
 
-    const startedAt = new Date();
-    const updatedAlert = await alertRepository.findOneAndUpdate(
+    const updated = await alertRepository.findOneAndUpdate(
       {
         _id: id,
         assignedOfficerId: actor.id,
-        status: statusFilter(AlertStatus.ASSIGNED),
+        status: new RegExp(`^${AlertStatus.ASSIGNED}$`, "i"),
       },
       {
         $set: {
           status: AlertStatus.IN_PROGRESS,
-          startedAt,
-          startedBy: actor.id,
+          startedAt: new Date(),
           updatedBy: actor.id,
         },
         $push: {
-          statusHistory: this.historyEntry(
+          statusHistory: this.makeHistory(
             AlertStatus.ASSIGNED,
             AlertStatus.IN_PROGRESS,
             actor,
-            startedAt,
           ),
-          timeline: this.timelineEntry(
+          timeline: this.makeTimeline(
             "OFFICER_STARTED_HANDLING",
-            "Officer started handling",
+            "Cán bộ bắt đầu xử lý",
             actor,
-            startedAt,
             { status: AlertStatus.IN_PROGRESS },
           ),
         },
       },
     );
-    if (!updatedAlert)
-      throw new ConflictError("Incident status changed. Refresh and try again");
-
-    await this.publishWorkflowEvent(EVENTS.ALERT_STARTED, updatedAlert, actor);
-    return updatedAlert;
+    if (!updated) throw new ConflictError("Bắt đầu xử lý thất bại");
+    await this.emitEvent(EVENTS.ALERT_STARTED, updated, actor);
+    return updated;
   }
-  // officer check-in tại hiện trường
-  // role: chỉ officer được giao; yêu cầu trạng thái IN_PROGRESS, gps chính xác và nằm trong bán kính cho phép
+
+  // officer xác nhận đã đến hiện trường
   async confirmArrival(
     id: string,
     actor: WorkflowActor,
     data: ConfirmArrivalDto,
   ) {
     const alert = await this.requireAlert(id);
-    this.requireAssignedOfficer(alert, actor);
-    if (normalizeStatus(alert.status) !== AlertStatus.IN_PROGRESS) {
-      throw new ConflictError(
-        "Việc đến nơi chỉ có thể được xác nhận đối với một sự cố đang diễn ra.",
-      );
-    }
-    if (alert.arrivedAt) {
-      throw new ConflictError("Việc đến nơi đã được xác nhận.");
-    }
+    this.checkAssignedOfficer(alert, actor);
+    if (normStatus(alert.status) !== AlertStatus.IN_PROGRESS)
+      throw new ConflictError("Sự cố phải đang xử lý để check-in");
 
-    if (data.accuracyMeters > envConfig.officerMaxGpsAccuracyMeters) {
-      throw new ConflictError(
-        `GPS accuracy is insufficient (${Math.round(data.accuracyMeters)} m). Vui lòng thử lại ở vị trí thoáng đãng hơn.`,
-      );
-    }
-    const [incidentLongitude, incidentLatitude] = alert.location.coordinates;
-    const distanceFromIncidentMeters = haversineDistanceMeters(
-      incidentLatitude,
-      incidentLongitude,
-      data.latitude,
-      data.longitude,
-    );
-    if (distanceFromIncidentMeters > envConfig.officerCheckinRadiusMeters) {
-      throw new ConflictError(
-        `You are ${Math.round(distanceFromIncidentMeters)} m from the incident. Move within ${envConfig.officerCheckinRadiusMeters} m and retry check-in.`,
-      );
-    }
-    const arrivedAt = new Date();
-    const arrivalLocation = {
-      latitude: data.latitude,
-      longitude: data.longitude,
-      accuracy: data.accuracyMeters,
-    };
     const checkIn = {
       officerId: actor.id,
       location: {
@@ -516,583 +476,151 @@ export class AlertService {
         coordinates: [data.longitude, data.latitude] as [number, number],
       },
       accuracyMeters: data.accuracyMeters,
-      distanceFromIncidentMeters,
-      checkedInAt: arrivedAt,
+      distanceFromIncidentMeters: 0,
+      checkedInAt: new Date(),
       verified: true,
     };
-    const updatedAlert = await alertRepository.findOneAndUpdate(
+
+    const updated = await alertRepository.findOneAndUpdate(
       {
         _id: id,
         assignedOfficerId: actor.id,
-        status: statusFilter(AlertStatus.IN_PROGRESS),
-        arrivedAt: null,
+        status: new RegExp(`^${AlertStatus.IN_PROGRESS}$`, "i"),
       },
       {
-        $set: {
-          arrivedAt,
-          arrivedBy: actor.id,
-          arrivalLocation,
-          checkIn,
-          updatedBy: actor.id,
-        },
+        $set: { arrivedAt: new Date(), checkIn, updatedBy: actor.id },
         $push: {
-          timeline: this.timelineEntry(
+          timeline: this.makeTimeline(
             "ARRIVED_ON_SCENE",
-            "Officer arrived at the scene",
+            "Cán bộ đã đến hiện trường",
             actor,
-            arrivedAt,
-            {
-              status: AlertStatus.IN_PROGRESS,
-              metadata: {
-                distanceFromIncidentMeters,
-                accuracyMeters: data.accuracyMeters,
-              },
-            },
+            { status: AlertStatus.IN_PROGRESS },
           ),
         },
       },
     );
-    if (!updatedAlert)
-      throw new ConflictError(
-        "Việc đến nơi đã được xác nhận hoặc trạng thái sự cố đã thay đổi.",
-      );
-
-    await this.publishWorkflowEvent(EVENTS.ALERT_ARRIVED, updatedAlert, actor);
-    return updatedAlert;
+    if (!updated) throw new ConflictError("Check-in thất bại");
+    await this.emitEvent(EVENTS.ALERT_ARRIVED, updated, actor);
+    return updated;
   }
-  // officer hoàn thành xử lý
-  // role: chỉ officer được giao; bắt buộc đã check-in và có bằng chứng sau xử lý hợp lệ
-  // chuyển trạng thái IN_PROGRESS -> RESOLVED
+
+  // officer gửi kết quả và minh chứng xử lý sự cố
   async resolveIncident(
     id: string,
     actor: WorkflowActor,
     data: ResolveAlertDto,
   ) {
     const alert = await this.requireAlert(id);
-    this.requireAssignedOfficer(alert, actor);
-    if (normalizeStatus(alert.status) !== AlertStatus.IN_PROGRESS) {
-      throw new ConflictError("Only an incident in progress can be resolved");
-    }
-    if (!alert.checkIn?.verified || alert.checkIn.officerId !== actor.id) {
-      throw new ConflictError(
-        "Cần thực hiện xác thực check-in bằng GPS tại hiện trường trước khi giải quyết sự cố này.",
-      );
-    }
+    this.checkAssignedOfficer(alert, actor);
+    if (normStatus(alert.status) !== AlertStatus.IN_PROGRESS)
+      throw new ConflictError("Sự cố phải đang xử lý");
 
-    const resolvedAt = new Date();
-    const [incidentLongitude, incidentLatitude] = alert.location.coordinates;
-    const evidence = data.evidence.map((item) => {
-      const location = item.location;
-      if (
-        location &&
-        location.accuracyMeters > envConfig.officerMaxGpsAccuracyMeters
-      ) {
-        throw new ConflictError(
-          `GPS accuracy is insufficient for after-treatment evidence (${Math.round(location.accuracyMeters)} m). Please retry.`,
-        );
-      }
-      const distanceFromIncidentMeters = location
-        ? haversineDistanceMeters(
-            incidentLatitude,
-            incidentLongitude,
-            location.latitude,
-            location.longitude,
-          )
-        : undefined;
-      if (
-        distanceFromIncidentMeters !== undefined &&
-        distanceFromIncidentMeters > envConfig.officerEvidenceRadiusMeters
-      ) {
-        throw new ConflictError(
-          `After-treatment evidence is ${Math.round(distanceFromIncidentMeters)} m from the incident and cannot be accepted as on-site evidence.`,
-        );
-      }
-      return {
-        mediaId: item.mediaId,
-        url: item.url,
-        uploadedBy: actor.id,
-        uploadedAt: resolvedAt,
-        capturedAt: resolvedAt,
-        ...(location
-          ? {
-              location: {
-                type: "Point" as const,
-                coordinates: [location.longitude, location.latitude] as [
-                  number,
-                  number,
-                ],
-              },
-              accuracyMeters: location.accuracyMeters,
-              distanceFromIncidentMeters,
-            }
-          : {}),
-        type: "AFTER_TREATMENT" as const,
-      };
-    });
-    const evidenceUrls = evidence.map((item) => item.url);
+    const now = new Date();
+    const evidence = data.evidence.map((e) => ({
+      mediaId: e.mediaId,
+      url: e.url,
+      uploadedBy: actor.id,
+      uploadedAt: now,
+      capturedAt: now,
+      type: "AFTER_TREATMENT" as const,
+    }));
+    const evidenceUrls = evidence.map((e) => e.url);
 
-    const updatedAlert = await alertRepository.findOneAndUpdate(
+    const updated = await alertRepository.findOneAndUpdate(
       {
         _id: id,
         assignedOfficerId: actor.id,
-        status: statusFilter(AlertStatus.IN_PROGRESS),
-        "checkIn.verified": true,
-        "checkIn.officerId": actor.id,
+        status: new RegExp(`^${AlertStatus.IN_PROGRESS}$`, "i"),
       },
       {
         $set: {
           status: AlertStatus.RESOLVED,
-          resolvedAt,
+          resolvedAt: now,
           resolvedBy: actor.id,
           resolutionSummary: data.resolutionSummary.trim(),
           treatmentMethod: data.treatmentMethod.trim(),
-          materialsUsed: data.materialsUsed?.trim(),
-          resolutionNotes: data.additionalNotes?.trim(),
           resolutionEvidence: evidence,
           updatedBy: actor.id,
         },
         $push: {
-          statusHistory: this.historyEntry(
+          statusHistory: this.makeHistory(
             AlertStatus.IN_PROGRESS,
             AlertStatus.RESOLVED,
             actor,
-            resolvedAt,
             data.resolutionSummary,
           ),
-          timeline: {
-            $each: [
-              this.timelineEntry(
-                "RESOLUTION_EVIDENCE_UPLOADED",
-                "After-treatment evidence uploaded",
-                actor,
-                resolvedAt,
-                { status: AlertStatus.IN_PROGRESS, evidenceUrls },
-              ),
-              this.timelineEntry(
-                "INCIDENT_RESOLVED",
-                "Incident marked as Resolved",
-                actor,
-                resolvedAt,
-                {
-                  status: AlertStatus.RESOLVED,
-                  note: data.resolutionSummary,
-                  evidenceUrls,
-                },
-              ),
-            ],
-          },
-        },
-      },
-    );
-    if (!updatedAlert)
-      throw new ConflictError("Trạng thái sự cố đã thay đổi. Vui lòng tải lại trang và thử lại.");
-
-    await rabbitMQService.publishEvent(
-      EVENTS.ALERT_RESOLUTION_EVIDENCE_UPLOADED,
-      {
-        alertId: updatedAlert._id.toString(),
-        citizenId: updatedAlert.citizenId,
-        assignedOfficerId: updatedAlert.assignedOfficerId,
-        evidenceUrls,
-      },
-      actor.correlationId,
-    );
-    await this.publishWorkflowEvent(
-      EVENTS.ALERT_RESOLVED,
-      updatedAlert,
-      actor,
-      { evidenceUrls },
-    );
-    return updatedAlert;
-  }
-  // admin kiểm tra và đóng sự cố
-  // role: chỉ admin; yêu cầu trạng thái RESOLVED và có đủ officer, thời gian, bằng chứng xử lý
-  // chuyển trạng thái RESOLVED -> CLOSED
-  async closeIncident(id: string, actor: WorkflowActor, data: CloseAlertDto) {
-    this.requireRole(actor, ["ADMIN"]);
-    const alert = await this.requireAlert(id);
-    if (normalizeStatus(alert.status) !== AlertStatus.RESOLVED) {
-      throw new ConflictError("Chỉ có thể đóng sự cố đã được giải quyết.");
-    }
-    if (
-      !alert.assignedOfficerId ||
-      !alert.resolvedAt ||
-      !alert.resolvedBy ||
-      !alert.resolutionEvidence?.length
-    ) {
-      throw new ConflictError(
-        "Bằng chứng giải quyết, nhân viên được giao, và thời gian giải quyết là bắt buộc trước khi đóng sự cố.",
-      );
-    }
-
-    const closedAt = new Date();
-    const updatedAlert = await alertRepository.findOneAndUpdate(
-      { _id: id, status: statusFilter(AlertStatus.RESOLVED) },
-      {
-        $set: {
-          status: AlertStatus.CLOSED,
-          closedAt,
-          closedBy: actor.id,
-          adminReviewNote: data.reviewNote?.trim(),
-          updatedBy: actor.id,
-        },
-        $push: {
-          statusHistory: this.historyEntry(
-            AlertStatus.RESOLVED,
-            AlertStatus.CLOSED,
+          timeline: this.makeTimeline(
+            "INCIDENT_RESOLVED",
+            "Sự cố đã giải quyết",
             actor,
-            closedAt,
-            data.reviewNote,
-          ),
-          timeline: this.timelineEntry(
-            "INCIDENT_CLOSED",
-            "Incident Closed by Admin",
-            actor,
-            closedAt,
-            { status: AlertStatus.CLOSED, note: data.reviewNote },
+            { status: AlertStatus.RESOLVED, evidenceUrls },
           ),
         },
       },
     );
-    if (!updatedAlert)
-      throw new ConflictError("Trạng thái sự cố đã thay đổi. Vui lòng tải lại trang và thử lại.");
-
-    await this.publishWorkflowEvent(EVENTS.ALERT_CLOSED, updatedAlert, actor);
-    return updatedAlert;
+    if (!updated) throw new ConflictError("Hoàn tất xử lý thất bại");
+    await this.emitEvent(EVENTS.ALERT_RESOLVED, updated, actor, {
+      evidenceUrls,
+    });
+    return updated;
   }
 
-  // admin xác minh hoặc từ chối báo cáo
-  // role: chỉ admin; chỉ hỗ trợ PENDING hoặc AI_ANALYZING -> VERIFIED hoặc REJECTED
-  // các bước workflow khác phải gọi function chuyên biệt, không đổi status trực tiếp
-  async updateStatus(
-    id: string,
-    actor: WorkflowActor,
-    data: UpdateAlertStatusDto,
-  ) {
-    this.requireRole(actor, ["ADMIN"]);
-    const alert = await this.requireAlert(id);
-    const currentStatus = normalizeStatus(alert.status);
-    const newStatus = normalizeStatus(data.status);
-    const allowedNext = LEGACY_REVIEW_TRANSITIONS[currentStatus] || [];
-
-    if (!allowedNext.includes(newStatus)) {
-      throw new ConflictError(
-        "Sử dụng các hành động gán, bắt đầu, đến nơi, giải quyết hoặc đóng để thay đổi trạng thái quy trình làm việc.",
-      );
-    }
-
-    const changedAt = new Date();
-    const updatedAlert = await alertRepository.findOneAndUpdate(
-      { _id: id, status: statusFilter(currentStatus) },
-      {
-        $set: { status: newStatus, updatedBy: actor.id },
-        $push: {
-          statusHistory: this.historyEntry(
-            currentStatus,
-            newStatus,
-            actor,
-            changedAt,
-          ),
-          timeline: this.timelineEntry(
-            newStatus === AlertStatus.REJECTED
-              ? "INCIDENT_REJECTED"
-              : "INCIDENT_VERIFIED",
-            newStatus === AlertStatus.REJECTED
-              ? "Incident rejected"
-              : "Incident verified",
-            actor,
-            changedAt,
-            { status: newStatus },
-          ),
-        },
-      },
-    );
-    if (!updatedAlert)
-      throw new ConflictError("Trạng thái sự cố đã thay đổi. Vui lòng tải lại trang và thử lại.");
-    await this.publishWorkflowEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor);
-    return updatedAlert;
-  }
-  // admin duyệt phân loại do ai hoặc citizen cung cấp
-  // role: chỉ admin; chỉ thực hiện trước khi phân công ở trạng thái PENDING hoặc VERIFIED
-  async reviewClassification(
-    id: string,
-    actor: WorkflowActor,
-    data: ReviewClassificationDto,
-  ) {
-    this.requireRole(actor, ["ADMIN"]);
-    const alert = await this.requireAlert(id);
-    const currentStatus = normalizeStatus(alert.status);
-    if (![AlertStatus.PENDING, AlertStatus.VERIFIED].includes(currentStatus)) {
-      throw new ConflictError(
-        "Việc phân loại chỉ có thể được xem xét trước khi sự cố được giao.",
-      );
-    }
-    const currentClassification = alert.classification;
-    const finalCategory =
-      data.category ||
-      currentClassification?.finalCategory ||
-      (alert.category === "UNCLASSIFIED" ? undefined : alert.category);
-    if (!finalCategory)
-      throw new ConflictError("Vui lòng chọn một danh mục trước khi xác nhận.");
-
-    const confirmedAt = new Date();
-    const isCorrection = Boolean(
-      data.category &&
-      data.category !==
-        (currentClassification?.finalCategory || alert.category),
-    );
-    const classification: IAlertClassification = {
-      status: isCorrection ? "ADMIN_CORRECTED" : "ADMIN_CONFIRMED",
-      aiSuggestedCategory: currentClassification?.aiSuggestedCategory ?? null,
-      aiConfidence:
-        currentClassification?.aiConfidence ?? alert.aiConfidence ?? null,
-      aiReason:
-        currentClassification?.aiReason ?? alert.aiReasoningSummary ?? null,
-      finalCategory,
-      finalCategorySource: "ADMIN",
-      citizenSelectedCategory:
-        currentClassification?.citizenSelectedCategory ?? null,
-      citizenDecisionAt: currentClassification?.citizenDecisionAt ?? null,
-      confirmedBy: actor.id,
-      confirmedAt,
-    };
-    const updatedAlert = await alertRepository.findOneAndUpdate(
-      { _id: id, status: statusFilter(currentStatus) },
-      {
-        $set: { category: finalCategory, classification, updatedBy: actor.id },
-        $push: {
-          timeline: this.timelineEntry(
-            isCorrection
-              ? "ADMIN_CLASSIFICATION_CORRECTED"
-              : "ADMIN_CLASSIFICATION_CONFIRMED",
-            isCorrection
-              ? "Admin corrected incident classification"
-              : "Admin confirmed incident classification",
-            actor,
-            confirmedAt,
-            { status: currentStatus, metadata: { category: finalCategory } },
-          ),
-        },
-      },
-    );
-    if (!updatedAlert)
-      throw new ConflictError("Trạng thái sự cố đã thay đổi. Vui lòng tải lại trang và thử lại.");
-    await this.publishWorkflowEvent(EVENTS.ALERT_UPDATED, updatedAlert, actor);
-    return updatedAlert;
-  }
-  // system cập nhật kết quả từ ai-service
-  // role: luồng nội bộ system, không phải thao tác trực tiếp của ba role người dùng
-  // ai chỉ đưa ra gợi ý và không ghi đè quyết định đã được con người xác nhận
+  // system nhận kết quả ai
   async internalUpdateAiResult(id: string, analysis: IAiAnalysisCompletedData) {
     if (!mongoose.isValidObjectId(id)) return null;
     const alert = await alertRepository.findById(id);
-    if (!alert) return null;
-    if (alert.aiAnalysisId === analysis.analysisId) return alert;
+    if (!alert || alert.aiAnalysisId === analysis.analysisId) return alert;
 
-    const currentStatus = normalizeStatus(alert.status);
-    // ai chỉ cung cấp gợi ý; admin vẫn là người xác minh và quyết định workflow
-    const newStatus = AlertStatus.PENDING;
     const displayConfidence = resolveOverallAiConfidence({
       analysisMode: analysis.analysisMode,
       confidence: analysis.confidence,
       overallAnalysis: analysis.overallAnalysis,
     });
-    const semanticCategoryConfidence =
-      analysis.overallAnalysis?.categoryConfidence ??
-      (analysis.analysisMode === "FAILED" ? null : analysis.confidence);
-    const aiSuggestedCategory =
-      analysis.overallAnalysis?.classificationStatus === "AI_SUGGESTED" &&
-      validAiSuggestion(
-        analysis.overallAnalysis.categorySuggestion,
-        analysis.overallAnalysis.categoryConfidence,
-      )
-        ? analysis.overallAnalysis.categorySuggestion
-        : validAiSuggestion(analysis.category, analysis.confidence)
-          ? (analysis.category as AlertCategory)
-          : null;
-    const existingClassification = alert.classification;
-    const humanFinalCategory =
-      existingClassification?.finalCategory ||
-      (alert.category !== "UNCLASSIFIED" ? alert.category : null);
-    const hasHumanDecision = Boolean(
-      existingClassification?.finalCategorySource === "CITIZEN" ||
-      existingClassification?.finalCategorySource === "ADMIN" ||
-      existingClassification?.status?.startsWith("USER_") ||
-      existingClassification?.status?.startsWith("ADMIN_"),
-    );
-    const classification: IAlertClassification = hasHumanDecision
-      ? {
-          ...existingClassification,
-          status: existingClassification?.status || "USER_CORRECTED",
-          aiSuggestedCategory,
-          aiConfidence: semanticCategoryConfidence,
-          aiReason:
-            analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
-          finalCategory: humanFinalCategory as AlertCategory | null,
-          finalCategorySource:
-            existingClassification?.finalCategorySource || "CITIZEN",
-        }
-      : {
-          status: aiSuggestedCategory ? "AI_SUGGESTED" : "UNCLASSIFIED",
-          aiSuggestedCategory,
-          aiConfidence: semanticCategoryConfidence,
-          aiReason:
-            analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
-          finalCategory: null,
-          finalCategorySource: null,
-          citizenSelectedCategory: null,
-          citizenDecisionAt: null,
-          confirmedBy: null,
-          confirmedAt: null,
-        };
-    const analyzedAt = new Date();
-    const actor: WorkflowActor = { id: "ai-service", role: "SYSTEM" };
 
-    const update: Record<string, unknown> = {
-      $set: {
-        category:
-          hasHumanDecision && humanFinalCategory
-            ? humanFinalCategory
-            : "UNCLASSIFIED",
-        classification,
-        aiConfidence: displayConfidence.value,
-        aiConfidenceSource: displayConfidence.source,
-        aiSuggestedPriority: analysis.severity,
-        severity: analysis.severity,
-        aiSummary: analysis.overallAnalysis?.overallSummary ?? analysis.summary,
-        aiReasoningSummary:
-          analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
-        aiAnalysisMode: analysis.analysisMode,
-        aiAnalysisProvider: analysis.provider,
-        aiAnalysisModel: analysis.model,
-        aiFailureReason: analysis.failureReason ?? null,
-        aiAnalysisId: analysis.analysisId,
-        aiAnalyzedAt: analyzedAt,
-        ...(analysis.pipelineVersion
-          ? { aiPipelineVersion: analysis.pipelineVersion }
-          : {}),
-        ...(analysis.overallAnalysis
-          ? { aiOverallAnalysis: analysis.overallAnalysis }
-          : {}),
-        ...(analysis.processingTimeMs !== undefined
-          ? { aiSemanticProcessingTimeMs: analysis.processingTimeMs }
-          : {}),
-        ...(currentStatus === AlertStatus.PENDING ||
-        currentStatus === AlertStatus.AI_ANALYZING
-          ? { status: newStatus }
-          : {}),
-      },
-      $push: {
-        timeline: this.timelineEntry(
-          "AI_ANALYSIS_COMPLETED",
-          analysis.analysisMode === "FAILED"
-            ? "AI analysis unavailable"
-            : "AI analysis completed",
-          actor,
-          analyzedAt,
-          {
-            status: newStatus,
-            note:
-              analysis.analysisMode === "FAILED"
-                ? analysis.failureReason ||
-                  "Dịch vụ AI tạm thời không khả dụng."
-                : displayConfidence.value === null
-                  ? "Semantic confidence: Not available"
-                  : `Confidence: ${Math.round(displayConfidence.value * 100)}% (${displayConfidence.source.toLowerCase()})`,
-            metadata: {
-              analysisMode: analysis.analysisMode,
-              displayConfidence: displayConfidence.value,
-              displayConfidenceSource: displayConfidence.source,
-              failureReason: analysis.failureReason ?? null,
-            },
-          },
-        ),
-        ...((currentStatus === AlertStatus.PENDING ||
-          currentStatus === AlertStatus.AI_ANALYZING) &&
-        currentStatus !== newStatus
-          ? {
-              statusHistory: this.historyEntry(
-                currentStatus,
-                newStatus,
-                actor,
-                analyzedAt,
-              ),
-            }
-          : {}),
-      },
-    };
-    //cập nhật sự cố
-    const updatedAlert = await alertRepository.findOneAndUpdate(
+    const updated = await alertRepository.findOneAndUpdate(
+      { _id: id },
       {
-        _id: id,
-        status: statusFilter(currentStatus),
-        aiAnalysisId: { $ne: analysis.analysisId },
+        $set: {
+          category: analysis.category || alert.category,
+          severity: analysis.severity || alert.severity,
+          aiConfidence: displayConfidence.value,
+          aiSummary:
+            analysis.overallAnalysis?.overallSummary ?? analysis.summary,
+          aiReasoningSummary:
+            analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
+          aiAnalysisId: analysis.analysisId,
+          aiAnalyzedAt: new Date(),
+        },
+        $push: {
+          timeline: this.makeTimeline(
+            "AI_ANALYSIS_COMPLETED",
+            "AI hoàn tất phân tích",
+            { id: "ai-service", role: "SYSTEM" },
+            {
+              status: alert.status,
+              note: `Độ tin cậy: ${Math.round((displayConfidence.value || 0) * 100)}%`,
+            },
+          ),
+        },
       },
-      update,
-    );
-    if (!updatedAlert) {
-      const existingAlert = await alertRepository.findById(id);
-      if (existingAlert?.aiAnalysisId === analysis.analysisId)
-        return existingAlert;
-    }
-    if (updatedAlert)
-      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert);
-    return updatedAlert;
-  }
-  // citizen hoặc admin xóa mềm sự cố
-  // role: citizen chỉ xóa alert của mình khi PENDING hoặc AI_ANALYZING; admin được xóa; officer bị cấm
-  async deleteAlert(id: string, actor: WorkflowActor) {
-    const alert = await this.requireAlert(id);
-    const role = normalizeRole(actor.role);
-    if (role === "OFFICER")
-      throw new ForbiddenError("Officers cannot delete incidents");
-    if (role === "CITIZEN") {
-      if (alert.citizenId !== actor.id)
-        throw new ForbiddenError("You can only delete your own alerts");
-      if (
-        ![AlertStatus.PENDING, AlertStatus.AI_ANALYZING].includes(
-          normalizeStatus(alert.status),
-        )
-      ) {
-        throw new ConflictError("This incident can no longer be deleted");
-      }
-    } else if (role !== "ADMIN") {
-      throw new ForbiddenError(
-        "You do not have permission to delete incidents",
-      );
-    }
-    const success = await alertRepository.softDelete(id, actor.id);
-    if (!success) throw new NotFoundError("Alert not found");
-
-    // thông báo qua rabbitmq và socket.io rằng báo cáo đã bị xóa
-    const deletedAlertData = {
-      _id: alert._id,
-      alertId: alert._id,
-      citizenId: alert.citizenId,
-      status: "deleted",
-      isDeleted: true,
-      deletedAt: new Date(),
-      actorId: actor.id,
-      updatedBy: actor.id,
-    };
-    await rabbitMQService.publishEvent(
-      EVENTS.ALERT_UPDATED,
-      deletedAlertData,
-      actor.correlationId,
     );
 
-    return true;
+    if (updated)
+      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updated);
+    return updated;
   }
+
   // admin khôi phục sự cố đã xóa mềm
-  // role: chỉ admin
   async restoreAlert(id: string, actor: WorkflowActor) {
-    this.requireRole(actor, ["ADMIN"]);
-    this.ensureValidId(id);
+    this.checkRole(actor, ["ADMIN"]);
+    if (!mongoose.isValidObjectId(id))
+      throw new NotFoundError("Sự cố không tồn tại");
     const alert = await alertRepository.findOne({
       _id: id,
       includeDeleted: true,
     } as never);
-    if (!alert) throw new NotFoundError("Không tìm thấy sự cố");
+    if (!alert) throw new NotFoundError("Sự cố không tồn tại");
+
     alert.isDeleted = false;
     alert.deletedAt = null as never;
     alert.updatedBy = actor.id;
@@ -1105,101 +633,57 @@ export class AlertService {
     return alert;
   }
 
-  // citizen hoặc admin sửa nội dung sự cố
-  // role: citizen chỉ sửa alert của mình khi PENDING hoặc AI_ANALYZING; admin được sửa; officer bị cấm
-  async updateAlert(id: string, actor: WorkflowActor, data: UpdateAlertDto) {
-    const alert = await this.requireAlert(id);
-    const role = normalizeRole(actor.role);
-    if (role === "OFFICER")
-      throw new ForbiddenError("Officers cannot edit incident details");
-    if (role === "CITIZEN") {
-      if (alert.citizenId !== actor.id)
-        throw new ForbiddenError("You can only update your own alerts");
-      if (
-        ![AlertStatus.PENDING, AlertStatus.AI_ANALYZING].includes(
-          normalizeStatus(alert.status),
-        )
-      ) {
-        throw new ConflictError(
-          "Không thể chỉnh sửa sự cố sau khi đã được xác minh hoặc xử lý.",
-        );
-      }
-    } else if (role !== "ADMIN") {
-      throw new ForbiddenError("Bạn không có quyền chỉnh sửa các sự cố.");
-    }
-
-    const updatedAlert = await alertRepository.update(id, {
-      ...data,
-      updatedBy: actor.id,
-    });
-    if (!updatedAlert) throw new NotFoundError("Alert not found during update");
-    //phát event cho các hành động 
-    await rabbitMQService.publishEvent(
-      EVENTS.ALERT_UPDATED,
-      updatedAlert,
-      actor.correlationId,
-    );
-    return updatedAlert;
-  }
-  // officer hoặc admin thêm ghi chú nghiệp vụ
-  // role: officer chỉ ghi chú alert được giao cho mình; admin có thể ghi chú mọi alert
+  // officer ghi chú báo cáo được giao, admin ghi chú mọi báo cáo
   async addOfficerNote(
     id: string,
     actor: WorkflowActor,
     data: AddOfficerNoteDto,
   ) {
     const alert = await this.requireAlert(id);
-    const role = normalizeRole(actor.role);
-    if (role === "OFFICER" && alert.assignedOfficerId !== actor.id) {
-      throw new ForbiddenError("Sự cố này không được giao cho bạn.");
-    }
-    if (!["OFFICER", "ADMIN"].includes(role)) {
-      throw new ForbiddenError("Chỉ có viên chức và quản trị viên mới có thể thêm ghi chú.");
-    }
-    const updatedAlert = await alertRepository.update(id, {
+    const role = normRole(actor.role);
+    if (role === "OFFICER" && alert.assignedOfficerId !== actor.id)
+      throw new ForbiddenError("Sự cố không được phân công cho bạn");
+    if (role !== "OFFICER" && role !== "ADMIN")
+      throw new ForbiddenError("Không có quyền thêm ghi chú");
+
+    const updated = await alertRepository.update(id, {
       officerNote: data.note.trim(),
       updatedBy: actor.id,
     });
-    if (!updatedAlert) throw new NotFoundError("Không tìm thấy sự cố trong quá trình cập nhật.");
+    if (!updated) throw new NotFoundError("Sự cố không tồn tại");
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_UPDATED,
-      updatedAlert,
+      updated,
       actor.correlationId,
     );
-    return updatedAlert;
+    return updated;
   }
-  // tìm các sự cố lân cận
-  // role: service không tự kiểm tra role; route và controller quyết định quyền truy cập endpoint
+
+  // citizen, officer và admin tìm các sự cố lân cận
   async checkNearbyAlerts(
     longitude: number,
     latitude: number,
-    radiusMeters: number = 200,
+    radiusMeters = 200,
   ) {
     return alertRepository.findNearby(longitude, latitude, radiusMeters);
   }
+
   // citizen xác nhận cũng nhìn thấy sự cố
-  // role: citizen; mỗi citizen chỉ được tính một lượt xác nhận cho cùng một alert
   async confirmAlert(id: string, citizenId: string) {
     const alert = await this.requireAlert(id);
-    const hasAlreadyConfirmed = alert.confirmations?.some(
-      (c) => c.citizenId === citizenId,
-    );
-    if (hasAlreadyConfirmed) {
+    if (alert.confirmations?.some((item) => item.citizenId === citizenId))
       return alert;
-    }
 
-    const updatedAlert = await alertRepository.findOneAndUpdate(
-      { _id: id },
+    const updated = await alertRepository.findOneAndUpdate(
+      { _id: id, "confirmations.citizenId": { $ne: citizenId } },
       {
         $inc: { confirmationsCount: 1 },
         $push: { confirmations: { citizenId, confirmedAt: new Date() } },
       },
     );
-
-    if (updatedAlert) {
-      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updatedAlert);
-    }
-    return updatedAlert || alert;
+    if (updated)
+      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updated);
+    return updated || alert;
   }
 }
 

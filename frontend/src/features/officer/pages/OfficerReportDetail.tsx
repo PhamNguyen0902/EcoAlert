@@ -195,8 +195,8 @@ export default function OfficerReportDetail() {
   const canAdminVerify = isAdmin && normalizedAlertStatus === "pending";
   const isAssignedToCurrentOfficer =
     isOfficer && alert.assignedOfficerId === user?._id;
-  // api backend đã lọc sẵn chỉ lấy toàn khoản officer
-  // fallback ?? [] làm chốt chặn an toàn để giao diện không bị crash nếu API trả về dữ liệu rỗng/lỗi.
+  // dữ liệu officer dành cho admin phân công
+  // fallback giữ giao diện ổn định khi api trả về dữ liệu rỗng hoặc lỗi
   const availability = (officerAvailability ?? []) as OfficerAvailability[];
   const officers = availability.map((item) => item.officer);
   const selectedAvailability = availability.find(
@@ -241,7 +241,7 @@ export default function OfficerReportDetail() {
     toast.error(getApiErrorMessage(workflowError, fallback));
     setConfirmAction(null);
   };
-
+  // admin duyệt báo cáo
   const handleVerify = async () => {
     try {
       await alertService.updateStatus(id, "verified");
@@ -254,6 +254,7 @@ export default function OfficerReportDetail() {
     }
   };
 
+  // admin xác nhận hoặc chỉnh sửa danh mục sự cố
   const handleReviewClassification = async () => {
     try {
       setIsReviewingClassification(true);
@@ -272,6 +273,7 @@ export default function OfficerReportDetail() {
     }
   };
 
+  // admin giao báo cáo cho officer
   const handleAssign = () => {
     if (!selectedOfficerId) return;
     assignOfficer.mutate(
@@ -289,6 +291,7 @@ export default function OfficerReportDetail() {
     );
   };
 
+  // officer bắt đầu xử lý sự cố được giao
   const handleStart = () => {
     startHandling.mutate(id, {
       onSuccess: () => {
@@ -302,6 +305,7 @@ export default function OfficerReportDetail() {
     });
   };
 
+  // officer xác nhận đã đến hiện trường
   const handleArrival = () => {
     toast(
       language === "vi"
@@ -312,6 +316,7 @@ export default function OfficerReportDetail() {
     setConfirmAction(null);
   };
 
+  // officer chọn minh chứng sau xử lý
   const addEvidenceFiles = (fileList: FileList | null) => {
     if (!fileList) return;
     const availableSlots = MAX_EVIDENCE_COUNT - evidenceDrafts.length;
@@ -350,6 +355,7 @@ export default function OfficerReportDetail() {
     });
   };
 
+  // officer tải minh chứng trước khi hoàn tất xử lý
   const uploadEvidenceAndConfirm = async () => {
     if (!resolutionSummary.trim() || !treatmentMethod.trim()) {
       toast.error("Bắt buộc phải có Tóm tắt kết quả và Phương pháp xử lý.");
@@ -415,6 +421,7 @@ export default function OfficerReportDetail() {
     setConfirmAction("resolve");
   };
 
+  // officer gửi kết quả xử lý sự cố
   const handleResolve = () => {
     const evidence = evidenceDrafts.flatMap((draft) =>
       draft.uploadedUrl ? [{ url: draft.uploadedUrl }] : [],
@@ -446,6 +453,7 @@ export default function OfficerReportDetail() {
     );
   };
 
+  // admin đóng sự cố đã được officer giải quyết
   const handleClose = () => {
     closeIncident.mutate(
       { id, reviewNote: reviewNote.trim() || undefined },
@@ -467,6 +475,7 @@ export default function OfficerReportDetail() {
     );
   };
 
+  // officer hoặc admin lưu ghi chú nghiệp vụ
   const handleSaveNote = () => {
     if (!noteText.trim()) return;
     addOfficerNote.mutate(
@@ -512,7 +521,7 @@ export default function OfficerReportDetail() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
         <div className="space-y-6">
-          {/* báo cáo cùa người dân */}
+          {/* thông tin báo cáo của người dân */}
           <Card>
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -659,7 +668,7 @@ export default function OfficerReportDetail() {
               </CardContent>
             </Card>
           ) : null}
-          {/* được gọi từ components IncidentTimeline */}
+          {/* dòng thời gian dùng chung cho admin và officer */}
           <IncidentTimeline
             entries={alert.timeline}
             createdAt={alert.createdAt}
@@ -713,7 +722,7 @@ export default function OfficerReportDetail() {
             </CardContent>
           </Card>
         </div>
-        {/* phân công cán bộ */}
+        {/* thông tin phân công dành cho admin và officer */}
         <aside className="space-y-6">
           <Card>
             <CardHeader>
@@ -777,7 +786,7 @@ export default function OfficerReportDetail() {
               ) : null}
             </CardContent>
           </Card>
-          {/* hành động cán bộ và của admin */}
+          {/* khu vực hành động của admin và officer */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
@@ -789,6 +798,7 @@ export default function OfficerReportDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               {isAdmin ? (
+                /* admin xác nhận hoặc chỉnh sửa danh mục sự cố */
                 <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
                   <div>
                     <p className="text-sm font-semibold">
@@ -810,7 +820,7 @@ export default function OfficerReportDetail() {
                       · {alert.classification?.status || "UNCLASSIFIED"}
                     </p>
                   </div>
-                  {/* dropdown chọn danh mục */}
+                  {/* admin chọn danh mục */}
                   <select
                     value={classificationCategory}
                     onChange={(event) =>
@@ -835,7 +845,7 @@ export default function OfficerReportDetail() {
                     <option value="wildlife_threat">Đe dọa động vật</option>
                     <option value="other">Khác</option>
                   </select>
-                  {/* nut cập nhật  */}
+                  {/* admin cập nhật danh mục */}
                   <Button
                     size="sm"
                     variant="outline"
@@ -854,12 +864,14 @@ export default function OfficerReportDetail() {
                 </div>
               ) : null}
 
+              {/* admin duyệt báo cáo */}
               {canAdminVerify ? (
                 <Button className="w-full" onClick={() => void handleVerify()}>
                   <ShieldCheck className="mr-2 h-4 w-4" />
                   Xác minh báo cáo
                 </Button>
               ) : null}
+              {/* admin giao việc cho officer */}
               {canAdminAssign ? (
                 <div className="space-y-3">
                   <label
@@ -903,6 +915,7 @@ export default function OfficerReportDetail() {
                 </div>
               ) : null}
 
+              {/* officer bắt đầu xử lý sự cố được giao */}
               {isAssignedToCurrentOfficer && alert.status === "assigned" ? (
                 <Button
                   className="w-full"
@@ -913,6 +926,7 @@ export default function OfficerReportDetail() {
                 </Button>
               ) : null}
 
+              {/* officer xác nhận đã đến hiện trường */}
               {isAssignedToCurrentOfficer &&
               alert.status === "in_progress" &&
               !alert.arrivedAt ? (
@@ -925,6 +939,7 @@ export default function OfficerReportDetail() {
                 </Button>
               ) : null}
 
+              {/* officer nhập kết quả và minh chứng xử lý */}
               {isAssignedToCurrentOfficer &&
               alert.status === "in_progress" &&
               alert.arrivedAt ? (
@@ -1083,6 +1098,7 @@ export default function OfficerReportDetail() {
                 </div>
               ) : null}
 
+              {/* admin đóng sự cố đã được giải quyết */}
               {isAdmin && alert.status === "resolved" ? (
                 <div className="space-y-3">
                   <label htmlFor="review-note" className="text-sm font-medium">
@@ -1112,7 +1128,7 @@ export default function OfficerReportDetail() {
                   đang {alert.status === "resolved" ? "chờ xử lý" : "hoàn tất"}.
                 </p>
               ) : null}
-              {/* thông báo khi không có hành động hợp lệ cho trạng thái hiện tại */}
+              {/* thông báo cho admin khi không có hành động hợp lệ */}
               {isAdmin &&
               !ADMIN_ASSIGNABLE_STATUSES.has(normalizedAlertStatus) &&
               normalizedAlertStatus !== "resolved" ? (
@@ -1127,7 +1143,7 @@ export default function OfficerReportDetail() {
               ) : null}
             </CardContent>
           </Card>
-          {/* ghi chú của cán bô */}
+          {/* ghi chú nghiệp vụ của officer hoặc admin */}
           {canEditOfficerNote ? (
             <Card>
               <CardHeader>
