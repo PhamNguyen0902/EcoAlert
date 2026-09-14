@@ -29,8 +29,8 @@ export default function AdminTopbar() {
       <h1 className="text-xl font-semibold">{t('nav.portal')}</h1>
 
       <div className="flex items-center space-x-4">
-        <SoundToggle />
-        <LanguageToggle />
+        {/* <SoundToggle /> */}
+        {/* <LanguageToggle /> */}
         <ThemeToggle />
 
         <DropdownMenu>

@@ -948,9 +948,10 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  //cố định ngôn ngữ mặc định toàn hệ thống là Tiếng Việt ('vi')
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem("ecoalert_lang");
-    return saved === "en" || saved === "vi" ? saved : "vi";
+    localStorage.setItem("ecoalert_lang","vi")
+    return "vi"
   });
 
   const setLanguage = (lang: Language) => {

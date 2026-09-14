@@ -21,8 +21,9 @@ export function LanguageToggle({ className }: { className?: string }) {
 
 export function FloatingLanguageToggle() {
   return (
-    <div className="fixed bottom-5 left-5 z-[9999]">
-      <LanguageToggle />
-    </div>
+    // <div className="fixed bottom-5 left-5 z-[9999]">
+    //   {/* <LanguageToggle /> */}
+    // </div>
+    null
   );
 }

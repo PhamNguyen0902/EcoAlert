@@ -42,8 +42,8 @@ export default function OfficerTopbar() {
           />
         </div>
 
-        <SoundToggle />
-        <LanguageToggle />
+        {/* <SoundToggle /> */}
+        {/* <LanguageToggle /> */}
         <ThemeToggle />
 
         <DropdownMenu>
