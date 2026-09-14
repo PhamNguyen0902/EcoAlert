@@ -20,16 +20,13 @@ const translationsMap: Record<Language, Translations> = {
 };
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  //Khởi tạo và ép mặc định ngôn ngữ trên Mobile luôn là Tiếng Việt ('vi')
   const [language, setLanguageState] = useState<Language>("vi");
 
   useEffect(() => {
     const loadLanguage = async () => {
-      const savedLang = await storage.getLanguage();
-      if (savedLang === "vi" || savedLang === "en") {
-        setLanguageState(savedLang);
-      } else {
-        setLanguageState("vi");
-      }
+      setLanguageState("vi")
+      await storage.setLanguage("vi")
     };
     loadLanguage();
   }, []);
@@ -40,8 +37,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const toggleLanguage = async () => {
-    const newLang: Language = language === "vi" ? "en" : "vi";
-    await setLanguage(newLang);
+    setLanguage("vi")
   };
 
   const t = (path: string, fallback?: string): string => {
@@ -75,7 +71,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage,toggleLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );
