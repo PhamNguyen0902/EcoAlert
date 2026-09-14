@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { LatLngTuple } from 'leaflet';
-import L from 'leaflet';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { LatLngTuple } from "leaflet";
+import L from "leaflet";
 import {
   CircleMarker,
   MapContainer,
@@ -10,21 +10,21 @@ import {
   useMap,
   useMapEvents,
   ZoomControl,
-} from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Check, Loader2, LocateFixed, MapPin, X } from 'lucide-react';
-import { useGeolocation } from '@/features/citizen/hooks/useGeolocation';
-import { Button } from '@/components/ui/button';
-import { CoordinateDisplay } from '@/components/location/CoordinateDisplay';
-import { LocationActions } from '@/components/location/LocationActions';
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import { Check, Loader2, LocateFixed, MapPin, X } from "lucide-react";
+import { useGeolocation } from "@/features/citizen/hooks/useGeolocation";
+import { Button } from "@/components/ui/button";
+import { CoordinateDisplay } from "@/components/location/CoordinateDisplay";
+import { LocationActions } from "@/components/location/LocationActions";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { reverseGeocoder } from '@/services/reverseGeocoder';
+} from "@/components/ui/dialog";
+import { reverseGeocoder } from "@/services/reverseGeocoder";
 
 // Hiển thị hộp thoại chọn vị trí trên bản đồ, cho phép người dùng nhấp vào bản đồ, kéo điểm đánh dấu hoặc sử dụng vị trí GPS hiện tại để chọn vị trí sự cố môi trường. Cung cấp địa chỉ gần đúng và tọa độ GPS của vị trí đã chọn, với khả năng sao chép và mở Google Maps.
 export interface PickedLocation {
@@ -41,19 +41,25 @@ interface LocationPickerModalProps {
   onConfirm: (location: PickedLocation) => void;
 }
 
-const fallbackAddress = 'Gần tọa độ đã chọn';
+const fallbackAddress = "Gần tọa độ đã chọn";
 
 const coordinateKey = (latitude: number, longitude: number): string =>
   `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
 
 const selectedLocationIcon = L.divIcon({
-  className: 'ecoalert-location-marker',
+  className: "ecoalert-location-marker",
   html: '<span class="ecoalert-location-marker__pulse"></span><span class="ecoalert-location-marker__dot"></span>',
   iconAnchor: [26, 26],
   iconSize: [52, 52],
 });
 
-function MapViewport({ position, focusRequest }: { position: LatLngTuple; focusRequest: number }) {
+function MapViewport({
+  position,
+  focusRequest,
+}: {
+  position: LatLngTuple;
+  focusRequest: number;
+}) {
   const map = useMap();
   const previousPosition = useRef<LatLngTuple | null>(null);
   const previousFocusRequest = useRef(focusRequest);
@@ -77,8 +83,12 @@ function MapViewport({ position, focusRequest }: { position: LatLngTuple; focusR
 
   return null;
 }
-
-function MapClickHandler({ onPositionChange }: { onPositionChange: (position: LatLngTuple) => void }) {
+// bản đồ citizen dùng react leaflet; nhấp bản đồ để đổi tọa độ báo cáo
+function MapClickHandler({
+  onPositionChange,
+}: {
+  onPositionChange: (position: LatLngTuple) => void;
+}) {
   useMapEvents({
     click(event) {
       onPositionChange([event.latlng.lat, event.latlng.lng]);
@@ -210,7 +220,7 @@ export function LocationPickerModal({
     },
     [requestAddress],
   );
-
+  // lấy gps qua browser geolocation; người dùng vẫn có thể nhấp hoặc kéo marker để chỉnh vị trí
   const handleUseMyLocation = () => {
     const { error, latitude, loading, longitude } = geolocation;
 
@@ -225,8 +235,12 @@ export function LocationPickerModal({
   };
 
   const markerPosition: LatLngTuple = [location.latitude, location.longitude];
-  const addressParts = location.address.split(',').map((part) => part.trim()).filter(Boolean);
-  const isApproximateAddress = location.address === fallbackAddress || addressParts.length < 3;
+  const addressParts = location.address
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const isApproximateAddress =
+    location.address === fallbackAddress || addressParts.length < 3;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -236,23 +250,40 @@ export function LocationPickerModal({
       >
         <DialogHeader className="sr-only">
           <DialogTitle>Chọn vị trí sự cố</DialogTitle>
-          <DialogDescription>Nhấn vào bản đồ, kéo điểm đánh dấu, hoặc sử dụng vị trí GPS hiện tại của bạn.</DialogDescription>
+          <DialogDescription>
+            Nhấn vào bản đồ, kéo điểm đánh dấu, hoặc sử dụng vị trí GPS hiện tại
+            của bạn.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="relative h-full w-full overflow-hidden bg-muted">
-          <MapContainer center={markerPosition} zoom={16} zoomControl={false} className="ecoalert-map-modal h-full w-full">
+          <MapContainer
+            center={markerPosition}
+            zoom={16}
+            zoomControl={false}
+            className="ecoalert-map-modal h-full w-full"
+          >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             <ZoomControl position="topright" />
-            <MapViewport position={markerPosition} focusRequest={focusRequest} />
+            <MapViewport
+              position={markerPosition}
+              focusRequest={focusRequest}
+            />
             <MapClickHandler onPositionChange={handlePositionChange} />
             <CircleMarker
               center={markerPosition}
               radius={26}
-              pathOptions={{ color: '#16a34a', fillColor: '#16a34a', fillOpacity: 0.1, weight: 1.5 }}
+              pathOptions={{
+                color: "#16a34a",
+                fillColor: "#16a34a",
+                fillOpacity: 0.1,
+                weight: 1.5,
+              }}
             />
+            {/* kéo marker lấy tọa độ mới và reverse geocode để cập nhật địa chỉ */}
             <Marker
               position={markerPosition}
               icon={selectedLocationIcon}
@@ -268,7 +299,8 @@ export function LocationPickerModal({
               <Popup className="ecoalert-map-popup">
                 <p className="font-semibold">Vị trí sự cố đã chọn</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                  {location.latitude.toFixed(6)},{" "}
+                  {location.longitude.toFixed(6)}
                 </p>
               </Popup>
             </Marker>
@@ -299,8 +331,12 @@ export function LocationPickerModal({
               onClick={handleUseMyLocation}
               disabled={geolocation.loading}
             >
-              {geolocation.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixed className="mr-2 h-4 w-4" />}
-              {geolocation.loading ? 'Đang tìm...' : 'Vị trí của tôi'}
+              {geolocation.loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LocateFixed className="mr-2 h-4 w-4" />
+              )}
+              {geolocation.loading ? "Đang tìm..." : "Vị trí của tôi"}
             </Button>
             <LocationActions
               latitude={location.latitude}
@@ -328,9 +364,13 @@ export function LocationPickerModal({
                 ) : (
                   <div>
                     {isApproximateAddress ? (
-                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Gần:</p>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Gần:
+                      </p>
                     ) : null}
-                    <p className="text-sm font-medium leading-5">{location.address}</p>
+                    <p className="text-sm font-medium leading-5">
+                      {location.address}
+                    </p>
                   </div>
                 )}
               </div>
@@ -343,10 +383,13 @@ export function LocationPickerModal({
 
               {geolocation.accuracy !== null ? (
                 <div className="mt-3 rounded-lg bg-muted/60 px-3 py-2 text-xs">
-                  <p className="font-medium">Độ chính xác GPS: ±{Math.round(geolocation.accuracy)}m</p>
+                  <p className="font-medium">
+                    Độ chính xác GPS: ±{Math.round(geolocation.accuracy)}m
+                  </p>
                   {geolocation.accuracy > 30 ? (
                     <p className="mt-1 text-amber-700 dark:text-amber-400">
-                      Tín hiệu GPS yếu. Vui lòng di chuyển ra ngoài để có độ chính xác tốt hơn.
+                      Tín hiệu GPS yếu. Vui lòng di chuyển ra ngoài để có độ
+                      chính xác tốt hơn.
                     </p>
                   ) : null}
                 </div>
@@ -354,10 +397,19 @@ export function LocationPickerModal({
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Button type="button" variant="outline" className="bg-background/95 backdrop-blur" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="bg-background/95 backdrop-blur"
+                onClick={() => onOpenChange(false)}
+              >
                 Hủy
               </Button>
-              <Button type="button" className="shadow-lg" onClick={() => onConfirm(location)}>
+              <Button
+                type="button"
+                className="shadow-lg"
+                onClick={() => onConfirm(location)}
+              >
                 <Check className="mr-2 h-4 w-4" />
                 Xác nhận vị trí
               </Button>

@@ -213,7 +213,7 @@ export default function CreateAlert() {
     }
     confirmLocation({ latitude, longitude, address: suggestion.display_name });
   };
-
+  // lấy vị trí tọa độ hiện tại qua geolocation api của trình duyệt
   const handleGetCurrentLocation = () => {
     if (!("geolocation" in navigator)) {
       toast.error(t("toast.browser_no_location"));
@@ -225,6 +225,7 @@ export default function CreateAlert() {
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         try {
+          // giải ngược tọa độ thành địa chỉ đọc được bằng reversegeocoder
           const locationAddress = await getAddressForCoordinates(
             coords.latitude,
             coords.longitude,
@@ -248,7 +249,8 @@ export default function CreateAlert() {
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
     );
   };
-
+  // form gửi báo cáo chỉ hỗ trợ chọn một ảnh minh chứng tại một thời điểm.
+  // file được kiểm tra định dạng ảnh và giới hạn dung lượng trước khi lưu vào state.
   const handleFileSelect = (selectedFile: File) => {
     if (!selectedFile.type.startsWith("image/")) {
       toast.error(t("toast.select_image_format"));
@@ -258,7 +260,7 @@ export default function CreateAlert() {
       toast.error(t("toast.image_max_size"));
       return;
     }
-
+    // thu hồi url cũ và khởi tạo url xem trước mới từ file chọn
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     const nextPreviewUrl = URL.createObjectURL(selectedFile);
     previewUrlRef.current = nextPreviewUrl;
@@ -290,6 +292,7 @@ export default function CreateAlert() {
         return;
       }
     }
+    // tải ảnh bằng formdata lên media service, rồi gửi image url dạng json đến ai service
     if (currentStep === 3) {
       if (!file) {
         toast.error(t("toast.add_evidence_required"));
@@ -297,10 +300,11 @@ export default function CreateAlert() {
       }
       try {
         setIsUploadingEvidence(true);
-        //upload ròi thì sẽ dùng uploadedMediaUrl, còn chưa có ảnh thì dùng alertService.uploadMedia(file)
+        // upload ảnh lên media service để lấy url công khai
         const mediaUrl =
           uploadedMediaUrl || (await alertService.uploadMedia(file));
         setUploadedMediaUrl(mediaUrl);
+        // gửi url ảnh sang ai service để phân tích và nhận gợi ý danh mục
         const validation = (await alertService.validateImage(
           mediaUrl,
         )) as ImageValidation;
@@ -311,6 +315,7 @@ export default function CreateAlert() {
           );
           return;
         }
+        // người dân có thể chọn lại danh mục ai gợi ý trước khi gửi
         if (validation.suggestedCategory)
           setSelectedCategory(validation.suggestedCategory);
         if (validation.decision === "UNCERTAIN")
@@ -334,13 +339,16 @@ export default function CreateAlert() {
           model: null,
           validatedAt: new Date().toISOString(),
         });
+        // xử lý khi ai không phản hồi
       } finally {
         setIsUploadingEvidence(false);
       }
     }
     setCurrentStep((step) => Math.min(step + 1, steps.length));
   };
-
+  // khi tạo báo cáo, FE gửi JSON đến Alert Service.
+  // payload chứa GeoJSON Point [longitude, latitude], mediaUrls và dữ liệu
+  // classification/imageValidation; File ảnh đã được upload riêng ở Media Service.
   const handleSubmit = async () => {
     if (
       isSubmitting ||
@@ -361,6 +369,7 @@ export default function CreateAlert() {
         uploadedMediaUrl || (await alertService.uploadMedia(file));
       toast.loading(t("report_create.submitting"), { id: "submit" });
 
+      // tạo sự cố mới thông qua createAlertMutation
       await createAlertMutation.mutateAsync({
         title: formData.title,
         description: formData.description,
@@ -370,6 +379,7 @@ export default function CreateAlert() {
           coordinates: [selectedLocation.longitude, selectedLocation.latitude],
         },
         mediaUrls: [mediaUrl],
+        //Người dân có thể giữ hoặc thay đổi danh mục AI gợi ý trước khi gửi.
         ...(selectedCategory
           ? {
               category: selectedCategory,
@@ -654,6 +664,7 @@ export default function CreateAlert() {
                         loại tự động. Bạn có thể thay thế trước khi gửi.
                       </p>
                     </div>
+                    {/* đang tải ảnh sẽ khóa thao tác gửi và hiển thị spinner; chưa có skeleton riêng cho kết quả ai */}
                     <EvidenceUploader
                       file={file}
                       previewUrl={previewUrl}

@@ -50,6 +50,7 @@ export class AlertService {
   }
 
   private checkRole(actor: WorkflowActor, roles: WorkflowActorRole[]) {
+    //  kiểm tra role do api gateway chuyển vào trước khi xử lý nghiệp vụ nhạy cảm
     if (!roles.includes(normRole(actor.role))) {
       throw new ForbiddenError("Không có quyền thực hiện hành động này");
     }
@@ -299,6 +300,7 @@ export class AlertService {
     actor: WorkflowActor,
     data: ReviewClassificationDto,
   ) {
+    // chỉ admin được xác nhận hoặc sửa category và hệ thống lưu nguồn quyết định
     this.checkRole(actor, ["ADMIN"]);
     const alert = await this.requireAlert(id);
     const finalCategory = data.category || alert.category;
@@ -328,6 +330,7 @@ export class AlertService {
     actor: WorkflowActor,
     data: AssignOfficerDto,
   ) {
+    // chỉ admin phân công alert đã verified; thành công chuyển status sang assigned và phát rabbitmq event
     this.checkRole(actor, ["ADMIN"]);
     const alert = await this.requireAlert(id);
     if (normStatus(alert.status) !== AlertStatus.VERIFIED)

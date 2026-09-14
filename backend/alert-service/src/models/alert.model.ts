@@ -25,7 +25,7 @@ export interface IResolutionEvidence {
 
 export type ImageValidationDecision = 'VALID' | 'UNCERTAIN' | 'INVALID' | 'UNAVAILABLE';
 export type ClassificationStatus = 'AI_SUGGESTED' | 'USER_CONFIRMED' | 'USER_CORRECTED' | 'ADMIN_CONFIRMED' | 'ADMIN_CORRECTED' | 'UNCLASSIFIED';
-
+// subdocument lưu nguồn và lịch sử quyết định phân loại từ ai, citizen hoặc admin
 export interface IAlertClassification {
   status: ClassificationStatus;
   aiSuggestedCategory?: AlertCategory | null;
@@ -80,7 +80,7 @@ export interface ITimelineEntry {
   metadata?: Record<string, unknown>;
   correlationId?: string;
 }
-
+// schema alert lưu mongodb gồm dữ liệu sự cố, vị trí geojson, media và kết quả ai
 export interface IAlert extends BaseDocument {
   title: string;
   description: string;
@@ -90,6 +90,7 @@ export interface IAlert extends BaseDocument {
   imageValidation?: IImageValidation;
   severity: Severity | null;
   mediaUrls: string[];
+  // geojson point lưu theo thứ tự longitude, latitude và có chỉ mục 2dsphere
   location: {
     type: 'Point';
     coordinates: [number, number];

@@ -53,6 +53,7 @@ export const alertService = {
     const res = await api.get(`/v1/alerts/officer/tasks?${params}`);
     return res.data.data;
   },
+  // admin phân công bằng post với payload json chứa officer id
   assignOfficer: async (id: string, officerId: string): Promise<Alert> => {
     const res = await api.post(`/v1/alerts/${id}/assign`, { officerId });
     return res.data.data;
@@ -79,10 +80,12 @@ export const alertService = {
     const res = await api.post(`/v1/alerts/${id}/close`, { reviewNote });
     return res.data.data;
   },
+  // gửi image url dạng json qua api gateway đến ai service để kiểm tra ảnh
   validateImage: async (imageUrl: string) => {
     const res = await api.post("/v1/ai/validate-image", { imageUrl });
     return res.data.data;
   },
+  // admin xác nhận hoặc sửa category qua endpoint review classification
   reviewClassification: async (
     id: string,
     category?: string,
@@ -108,6 +111,7 @@ export const alertService = {
     const res = await api.delete(`/v1/alerts/${id}`);
     return res.data.data;
   },
+  // upload ảnh dùng multipart formdata; media service trả url cho payload alert dạng json
   uploadMedia: async (
     file: File,
     onProgress?: (percentage: number) => void,

@@ -26,12 +26,12 @@ const severityColor: Record<string, string> = {
   medium: "default",
   low: "secondary",
 };
-
+// trạng thái được hiển thị bằng Badge có màu:
 const statusColor = (status: string) =>
   ["resolved", "closed"].includes(status)
     ? ("success" as const)
     : ("outline" as const);
-
+// trang danh sách báo cáo người dân sử dụng hook phân trang pagination
 export default function MyReports() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ export default function MyReports() {
   const [search, setSearch] = useState("");
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
 
-  // Hook lấy danh sách báo cáo & Hook xóa báo cáo
+  // hook usealerts lấy danh sách báo cáo của người dân phân trang mười mục mỗi trang
   const { data: alertsData, isLoading } = useAlerts(
     page,
     10,
@@ -120,6 +120,7 @@ export default function MyReports() {
         />
       ) : (
         <div className="space-y-3">
+          {/* duyệt qua danh sách alerts và render từng thẻ báo cáo sự cố của người dân */}
           {alerts.map((alert, i) => {
             const canEditOrDelete =
               alert.status === "pending" || alert.status === "ai_analyzing";
@@ -162,6 +163,7 @@ export default function MyReports() {
                                 language,
                               )}
                             </Badge>
+                            {/*component badge hiển thị mức độ nghiêm trọng và trạng thái xử lý của sự cố */}
                             <Badge variant={statusColor(alert.status)}>
                               {getIncidentStatusLabel(alert.status, language)}
                             </Badge>
@@ -238,7 +240,7 @@ export default function MyReports() {
           })}
         </div>
       )}
-
+      {/* hiển thị bộ nút phân trang khi tổng số trang lớn hơn một */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-4">
           <span className="text-sm text-muted-foreground">

@@ -40,14 +40,14 @@ const responseFormat = {
     },
   },
 };
- // Trả về kết quả kiểm tra ảnh không khả dụng khi có lỗi xảy ra hoặc không thể phân tích ảnh
+// lỗi provider trả unavailable để báo cáo vẫn được cán bộ xem xét thủ công
 const unavailable = (): ImageValidationResult => ({
   decision: 'UNAVAILABLE', isEnvironmentalIncident: null, confidence: null, suggestedCategory: null,
   reason: 'Tính năng kiểm tra ảnh tự động tạm thời không khả dụng. Báo cáo vẫn có thể được kiểm tra thủ công.',
   model: null, validatedAt: new Date().toISOString(),
 });
 
- // Chuyển đổi kết quả kiểm tra ảnh từ AI sang định dạng ImageValidationResult
+// ảnh mờ hoặc bằng chứng yếu trả uncertain và không tự gán category mặc định
 export const deriveImageValidation = (
   result: z.infer<typeof responseSchema>,
   model: string,

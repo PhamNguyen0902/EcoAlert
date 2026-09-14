@@ -72,7 +72,7 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", service: "api-gateway" });
 });
 
-// Middleware xác thực JWT cho tất cả các yêu cầu đến /api, ngoại trừ các route công khai như login/register.
+// xác thực jwt token và gán user id user role vào header cho các downstream services
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   // Allow unauthenticated access to certain routes
   const publicRoutes = [
@@ -86,7 +86,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   if (publicRoutes.includes(cleanPath)) {
     return next();
   }
- // Kiểm tra xem có header Authorization không
+  // Kiểm tra xem có header Authorization không
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res
@@ -168,7 +168,7 @@ const setupProxy = (
     }),
   );
 };
-//user service
+// định tuyến các endpoint sang media service alert service ai service gis service
 setupProxy(
   "/api/v1/auth",
   process.env.USER_SERVICE_URL || "http://localhost:3001",
@@ -176,33 +176,28 @@ setupProxy(
 setupProxy(
   "/api/v1/users",
   process.env.USER_SERVICE_URL || "http://localhost:3001",
-);
-//alert service
+);  
 setupProxy(
   "/api/v1/alerts",
   process.env.ALERT_SERVICE_URL || "http://localhost:3002",
   true,
 );
-//media service
 setupProxy(
   "/api/v1/media",
   process.env.MEDIA_SERVICE_URL || "http://localhost:3003",
   true,
 );
-//gis service
 setupProxy(
   "/api/v1/gis",
   process.env.GIS_SERVICE_URL || "http://localhost:3004",
   true,
 );
-//notification service
 setupProxy(
   "/api/v1/notifications",
   process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006",
   true,
   true,
 );
-//ai service
 setupProxy(
   "/api/v1/ai",
   process.env.AI_SERVICE_URL || "http://localhost:3005",

@@ -63,6 +63,7 @@ class RabbitMQService {
   }
 
   async handleEvent(event: IEventMessage<AlertEventData>) {
+    // nhận workflow event từ rabbitmq, lưu notification và đẩy realtime qua socket io cho web, mobile
     const data = event.data;
     const incidentId = data.alertId || data._id || 'incident';
     const incidentLabel = data.title ? `“${data.title}”` : incidentId;
