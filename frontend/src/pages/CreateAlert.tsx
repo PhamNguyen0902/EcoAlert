@@ -250,7 +250,6 @@ export default function CreateAlert() {
     );
   };
   // form gửi báo cáo chỉ hỗ trợ chọn một ảnh minh chứng tại một thời điểm.
-  // file được kiểm tra định dạng ảnh và giới hạn dung lượng trước khi lưu vào state.
   const handleFileSelect = (selectedFile: File) => {
     if (!selectedFile.type.startsWith("image/")) {
       toast.error(t("toast.select_image_format"));
@@ -347,8 +346,6 @@ export default function CreateAlert() {
     setCurrentStep((step) => Math.min(step + 1, steps.length));
   };
   // khi tạo báo cáo, FE gửi JSON đến Alert Service.
-  // payload chứa GeoJSON Point [longitude, latitude], mediaUrls và dữ liệu
-  // classification/imageValidation; File ảnh đã được upload riêng ở Media Service.
   const handleSubmit = async () => {
     if (
       isSubmitting ||
