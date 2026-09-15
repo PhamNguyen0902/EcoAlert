@@ -62,7 +62,7 @@ const formatDate = (
     ? unavailable
     : format(date, dateFormat, { locale: language === "vi" ? vi : enUS });
 };
-
+// trang chi tiết sự cố
 export default function AlertDetail() {
   const { t, language } = useLanguage();
   const { id = "" } = useParams<{ id: string }>();

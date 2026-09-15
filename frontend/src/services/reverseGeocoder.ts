@@ -1,30 +1,42 @@
+// đường dẫn máy chủ chuyển đổi tọa độ của openstreetmap
 const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
+// giới hạn số lượng địa chỉ lưu trong bộ nhớ tạm
 const CACHE_LIMIT = 50;
+// thời gian tối đa chờ phản hồi mạng
 const REQUEST_TIMEOUT_MS = 8_000;
+// khoảng cách tối thiểu giữa hai lần gửi yêu cầu liên tiếp
 const MIN_REQUEST_INTERVAL_MS = 1_000;
-// Dịch vụ geocoding ngược sử dụng Nominatim để lấy địa chỉ từ tọa độ.
+
+// giao diện chuẩn cho dịch vụ chuyển đổi tọa độ thành địa chỉ
 export interface ReverseGeocoder {
   reverseGeocode(latitude: number, longitude: number): Promise<string | null>;
 }
 
+// kiểu dữ liệu địa chỉ trả về từ máy chủ
 type NominatimAddress = Record<string, unknown>;
 
+// kiểm tra giá trị có phải là một đối tượng hợp lệ
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
+// kiểm tra và chuẩn hóa chuỗi không rỗng
 const nonEmptyString = (value: unknown): string | null =>
   typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 
+// nối các phần của địa chỉ và loại bỏ các phần trùng nhau
 const joinAddressParts = (parts: Array<string | null>): string | null => {
   const address = Array.from(new Set(parts.filter((part): part is string => Boolean(part)))).join(', ');
   return address || null;
 };
 
+// định dạng các trường địa chỉ chi tiết thành chuỗi hoàn chỉnh
 const formatNominatimAddress = (address: NominatimAddress): string | null => {
+  // ghép số nhà và tên đường
   const street = [nonEmptyString(address.house_number), nonEmptyString(address.road)]
     .filter((part): part is string => Boolean(part))
     .join(' ');
 
+  // ghép đầy đủ từ cấp đường, phường xã đến quận huyện và tỉnh thành
   return joinAddressParts([
     street || null,
     nonEmptyString(address.neighbourhood),
@@ -38,9 +50,11 @@ const formatNominatimAddress = (address: NominatimAddress): string | null => {
   ]);
 };
 
+// tạo khóa nhận diện từ tọa độ được làm tròn
 const coordinateKey = (latitude: number, longitude: number): string =>
   `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
 
+// kiểm tra tính hợp lệ của tọa độ vĩ độ và kinh độ
 const hasValidCoordinates = (latitude: number, longitude: number): boolean =>
   Number.isFinite(latitude) &&
   Number.isFinite(longitude) &&
@@ -49,25 +63,34 @@ const hasValidCoordinates = (latitude: number, longitude: number): boolean =>
   longitude >= -180 &&
   longitude <= 180;
 
+// lớp trực tiếp gửi yêu cầu lấy địa chỉ từ máy chủ openstreetmap
 export class NominatimReverseGeocoder implements ReverseGeocoder {
+  // hàng đợi điều tiết các yêu cầu gửi đi
   private requestQueue: Promise<void> = Promise.resolve();
+  // mốc thời gian cho phép gửi yêu cầu tiếp theo
   private nextRequestAt = 0;
 
+  // hàm thực hiện chuyển đổi tọa độ thành địa chỉ chữ
   async reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
+    // bỏ qua nếu tọa độ không hợp lệ
     if (!hasValidCoordinates(latitude, longitude)) {
       return null;
     }
 
+    // tạo đường dẫn yêu cầu kèm các tham số tọa độ
     const url = `${NOMINATIM_REVERSE_URL}?format=json&lat=${encodeURIComponent(
       String(latitude),
     )}&lon=${encodeURIComponent(String(longitude))}&zoom=18&addressdetails=1`;
 
     try {
+      // chờ đến lượt để đảm bảo không vi phạm giới hạn tần suất
       await this.waitForRequestSlot();
+      // bộ điều khiển tự động hủy yêu cầu khi quá thời gian chờ
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
       try {
+        // gửi yêu cầu mạng lấy dữ liệu
         const response = await fetch(url, { signal: controller.signal });
         if (!response.ok) {
           return null;
@@ -78,19 +101,23 @@ export class NominatimReverseGeocoder implements ReverseGeocoder {
           return null;
         }
 
+        // ưu tiên ghép từ các trường chi tiết trước khi dùng tên đầy đủ
         if (isRecord(payload.address)) {
           return formatNominatimAddress(payload.address) ?? nonEmptyString(payload.display_name);
         }
 
         return nonEmptyString(payload.display_name);
       } finally {
+        // xóa bộ đếm thời gian khi nhận được phản hồi
         clearTimeout(timeoutId);
       }
     } catch {
+      // trả về rỗng khi xảy ra lỗi mạng hoặc quá giờ
       return null;
     }
   }
 
+  // đảm bảo khoảng cách giữa các lần gọi mạng tối thiểu một giây
   private waitForRequestSlot(): Promise<void> {
     const scheduledRequest = this.requestQueue.then(async () => {
       const waitMs = Math.max(0, this.nextRequestAt - Date.now());
@@ -105,31 +132,40 @@ export class NominatimReverseGeocoder implements ReverseGeocoder {
   }
 }
 
+// lớp bọc bổ sung tính năng lưu đệm và chống gọi trùng lặp
 export class CachedReverseGeocoder implements ReverseGeocoder {
+  // bảng lưu trữ địa chỉ theo tọa độ
   private readonly cache = new Map<string, string>();
+  // bảng quản lý các yêu cầu đang trong quá trình tải
   private readonly inFlightRequests = new Map<string, Promise<string | null>>();
 
   constructor(private readonly geocoder: ReverseGeocoder) {}
 
+  // lấy địa chỉ có ưu tiên kiểm tra bộ nhớ tạm
   reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
     const key = coordinateKey(latitude, longitude);
     const cachedAddress = this.cache.get(key);
+    
+    // nếu đã có trong bộ nhớ tạm thì làm mới vị trí và trả về ngay
     if (cachedAddress) {
       this.cache.delete(key);
       this.cache.set(key, cachedAddress);
       return Promise.resolve(cachedAddress);
     }
 
+    // nếu đang có một yêu cầu cùng tọa độ đang chạy thì dùng chung kết quả
     const inFlightRequest = this.inFlightRequests.get(key);
     if (inFlightRequest) {
       return inFlightRequest;
     }
 
+    // gửi yêu cầu xuống lớp dịch vụ mạng bên dưới
     const request = this.geocoder
       .reverseGeocode(latitude, longitude)
       .then((address) => {
         if (address) {
           this.cache.set(key, address);
+          // xóa bớt mục cũ nhất khi vượt quá giới hạn lưu trữ
           if (this.cache.size > CACHE_LIMIT) {
             const oldestKey = this.cache.keys().next().value;
             if (oldestKey) {
@@ -141,6 +177,7 @@ export class CachedReverseGeocoder implements ReverseGeocoder {
       })
       .catch(() => null)
       .finally(() => {
+        // dọn dẹp danh sách yêu cầu đang chạy khi hoàn tất
         this.inFlightRequests.delete(key);
       });
 
@@ -149,6 +186,7 @@ export class CachedReverseGeocoder implements ReverseGeocoder {
   }
 }
 
+// khởi tạo đối tượng dịch vụ dùng chung cho toàn ứng dụng
 export const reverseGeocoder: ReverseGeocoder = new CachedReverseGeocoder(
   new NominatimReverseGeocoder(),
 );

@@ -16,7 +16,7 @@ import {
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-
+// thanh điều hướng (navbar) dành cho người dân: quản lý menu điều hướng, đổi giao diện, avatar người dùng
 export default function CitizenNavbar() {
   const { user, logout, isAuthenticated } = useAuth();
   const { t } = useLanguage();
@@ -50,7 +50,7 @@ export default function CitizenNavbar() {
             </Link>
           </div>
 
-          {/* Desktop Nav */}
+          {/* menu điều hướng trên desktop */}
           <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = location.pathname.startsWith(link.path);
@@ -71,7 +71,7 @@ export default function CitizenNavbar() {
             })}
           </nav>
 
-          {/* Right side actions */}
+          {/* các nút chức năng bên phải(theme, tài khoản / đăng nhập) */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
 
@@ -110,7 +110,7 @@ export default function CitizenNavbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* nút menu ở mobile */}
           <div className="flex md:hidden items-center gap-2">
             <Button 
               variant="ghost" 
@@ -123,7 +123,7 @@ export default function CitizenNavbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* menu thả xuống trên thiết bị di động */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div

@@ -2,8 +2,8 @@ import { Toaster } from 'react-hot-toast';
 import { useTheme } from '@/contexts/ThemeContext';
 
 /**
- * AppToaster - Toaster đồng bộ với light/dark theme của EcoAlert.
- * Dùng component này thay cho <Toaster /> ở mọi layout.
+ * component hiển thị thông báo (toast) toàn cục, tự động đổi giao diện theo Dark/Light mode.
+ * đặt component này ở layout root thay thế cho <Toaster /> mặc định.
  */
 export function AppToaster() {
   const { isDark } = useTheme();

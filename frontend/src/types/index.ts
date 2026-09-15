@@ -30,8 +30,8 @@ export type AlertCategory =
   | "fire"
   | "other"
   | "UNCLASSIFIED";
-export type Severity = "low" | "medium" | "high" | "critical";
-export type AiAnalysisMode = "TEXT_ONLY" | "IMAGE_AND_TEXT" | "FAILED";
+export type severity = "low" | "medium" | "high" | "critical";
+export type aiAnalysisMode = "TEXT_ONLY" | "IMAGE_AND_TEXT" | "FAILED";
 
 export interface AiOverallAnalysis {
   isIncident: boolean;

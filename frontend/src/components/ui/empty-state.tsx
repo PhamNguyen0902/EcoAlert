@@ -15,7 +15,7 @@ interface EmptyStateProps {
   };
   className?: string;
 }
-
+//giao diện trạng thái trống khi trang không tải được sự cố
 export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
     <motion.div

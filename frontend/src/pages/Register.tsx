@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { useLanguage } from '../contexts/LanguageContext';
-
+// trang đan ký
 export default function Register() {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ export default function Register() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  //xử lý đăng ký
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     registerMutation.mutate(

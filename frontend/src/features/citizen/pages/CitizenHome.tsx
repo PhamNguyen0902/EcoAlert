@@ -5,7 +5,7 @@ import { IncidentMap } from '../components/IncidentMap';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { NearbyIncidents } from '../components/NearbyIncidents';
 import type { Alert } from '@/types';
-
+// giao diện phía dưới hero section
 export default function CitizenHome() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { data: alertsData } = useAlerts(1, 1000);
@@ -34,7 +34,7 @@ export default function CitizenHome() {
         </div>
       </section>
 
-      
+      {/* lọc theo danh mục */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 mb-8">
           <h2 className="text-3xl font-bold tracking-tight">

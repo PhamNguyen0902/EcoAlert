@@ -15,7 +15,7 @@ import { useGeolocation } from '@/features/citizen/hooks/useGeolocation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getIncidentCategoryLabel, getIncidentSeverityLabel, getIncidentStatusLabel } from '@/lib/incident-presentation';
 
-// Fix Leaflet default icon issue
+// xử lý lỗi không tải được icon mặc định của leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -28,7 +28,7 @@ interface IncidentMapProps {
   selectedCategory: string | null;
   onSelectCategory?: (cat: string | null) => void;
 }
-
+// tạo icon ghim vị trí hiện tại của người dùng
 const userLocationIcon = L.divIcon({
   className: 'user-location-marker',
   html: `<div class="relative flex h-5 w-5">
@@ -41,6 +41,7 @@ const userLocationIcon = L.divIcon({
 
 const DEFAULT_CENTER: [number, number] = [10.8231, 106.6297]; // vị trí mặc định
 
+// bản đồ sự cố: hiển thị vị trí sự cố theo nhóm cụm (cluster), vị trí người dùng, bộ lọc mức độ nghiêm trọng và bảng chú thích
 export const IncidentMap: React.FC<IncidentMapProps> = ({
   alerts,
   selectedCategory,

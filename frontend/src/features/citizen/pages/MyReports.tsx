@@ -78,6 +78,7 @@ export default function MyReports() {
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          {/* tiêu đề */}
           <h1 className="text-3xl font-bold tracking-tight">
             {t("my_reports.title")}
           </h1>
@@ -85,6 +86,7 @@ export default function MyReports() {
             {t("my_reports.subtitle")}
           </p>
         </div>
+        {/*tạo báo cáo mới */}
         <Button asChild>
           <Link to="/report" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
@@ -122,6 +124,7 @@ export default function MyReports() {
         <div className="space-y-3">
           {/* duyệt qua danh sách alerts và render từng thẻ báo cáo sự cố của người dân */}
           {alerts.map((alert, i) => {
+            // xóa và chỉnh sửa khi còn ở status là pending và ai_analyzing 
             const canEditOrDelete =
               alert.status === "pending" || alert.status === "ai_analyzing";
 
@@ -192,7 +195,7 @@ export default function MyReports() {
                         </div>
                       </div>
 
-                      {/* Nút hành động: View, Edit, Delete */}
+                      {/* nút hành động: View, Edit, Delete */}
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
                           variant="ghost"

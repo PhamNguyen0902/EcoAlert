@@ -10,7 +10,7 @@ interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
 }
-// Tạo ngữ cảnh WebSocket để quản lý kết nối socket và cung cấp thông tin trạng thái kết nối trong toàn bộ ứng dụng.
+// tạo ngữ cảnh WebSocket để quản lý kết nối socket và cung cấp thông tin trạng thái kết nối trong toàn bộ ứng dụng.
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,
@@ -34,7 +34,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [t]);
 
   useEffect(() => {
-    // Target API Gateway port 3000 directly or via Vite proxy
+    // trỏ trực tiếp đến api gateway cổng 3000 hoặc qua vite proxy
     const { protocol, hostname, port } = window.location;
     const socketUrl = (port === '5173' || port === '4173') ? `${protocol}//${hostname}:3000` : window.location.origin;
     console.log('[Web Socket] Connecting to:', socketUrl);
@@ -122,7 +122,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     });
 
-    // Nhận kết quả phân tích hình ảnh từ AI và hiển thị thông báo cho người dùng.
+    // nhận kết quả phân tích hình ảnh từ AI và hiển thị thông báo cho người dùng.
     socketInstance.on('image:analyzed', (data: any) => {
       console.log('[Web Socket] Image analyzed by AI:', data);
       playNotificationSound('success');
@@ -157,7 +157,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [queryClient]);
 
-  // Emit join room when user profile updates on existing socket
+  // gửi sự kiện tham gia phòng khi thông tin người dùng được cập nhật trên kết nối hiện có
   useEffect(() => {
     if (socket && isConnected && user?._id) {
       socket.emit('join', {

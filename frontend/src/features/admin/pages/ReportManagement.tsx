@@ -16,7 +16,7 @@ import {
   getIncidentSeverityLabel,
   getIncidentStatusLabel,
 } from "@/lib/incident-presentation";
-//bảng quản lý sự cố và xóa hoặc chuyển đến trang phân công cán bộ
+//bảng quản lý sự cố: tìm kiếm, xóa hoặc xem chi tiết để duyệt và phân công
 export default function ReportManagement() {
   const { t, language } = useLanguage();
   const [page, setPage] = useState(1);
@@ -132,6 +132,7 @@ export default function ReportManagement() {
             </table>
           </div>
           <div className="flex items-center justify-end space-x-2 py-4">
+            {/* chuyển qua trang tiếp theo */}
             <Button
               variant="outline"
               size="sm"
@@ -140,6 +141,7 @@ export default function ReportManagement() {
             >
               {t("reports.prev")}
             </Button>
+            {/* về trang trước */}
             <Button
               variant="outline"
               size="sm"

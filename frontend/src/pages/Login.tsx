@@ -12,7 +12,7 @@ import { getRoleHome } from "../lib/routes";
 
 import { ThemeToggle } from "../components/ui/theme-toggle";
 import { useLanguage } from "../contexts/LanguageContext";
-
+//trang login
 export default function Login() {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -28,7 +28,7 @@ export default function Login() {
       return <Navigate to={targetPath} replace />;
     }
   }
-
+  // xử lý login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     loginMutation.mutate(

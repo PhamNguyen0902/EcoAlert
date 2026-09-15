@@ -2,44 +2,47 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { authService, alertService, gisService } from "../services/services";
 import { CreateAlertData, ResolutionInput } from "@/types";
 
-// ========================
-// AUTH
-// ========================
 
+// nhóm hook xác thực người dùng
+
+
+// hook đăng nhập tài khoản
 export const useLogin = () => {
-  //useMutation: tạo, sửa hoặc xóa dữ liệu
   return useMutation({
     mutationFn: authService.login,
   });
 };
 
+// hook đăng ký tài khoản mới
 export const useRegister = () => {
   return useMutation({
     mutationFn: authService.register,
   });
 };
 
-// ========================
-// ALERT
-// ========================
 
+// nhóm hook quản lý sự cố và báo cáo
+
+
+// hook lấy danh sách sự cố có phân trang và bộ lọc
 export const useAlerts = (
   page = 1,
   limit = 10,
   filters: Record<string, string> = {},
 ) => {
-  //useQuery: lấy dữ liệu
   return useQuery({
     queryKey: ["alerts", page, limit, filters],
     queryFn: () => alertService.getAlerts(page, limit, filters),
   });
 };
 
+// hook lấy thông tin chi tiết một sự cố theo mã định danh
 export const useAlert = (id: string) => {
   return useQuery({
     queryKey: ["alert", id],
     queryFn: () => alertService.getAlert(id),
     enabled: !!id,
+    // tự động làm mới khi sự cố đang chờ trí tuệ nhân tạo phân tích
     refetchInterval: (query) => {
       const alert = query.state.data;
       const analysisPending =
@@ -52,6 +55,7 @@ export const useAlert = (id: string) => {
   });
 };
 
+// hook lấy danh sách nhiệm vụ được giao của cán bộ
 export const useOfficerTasks = (page = 1, limit = 10, status?: string) => {
   return useQuery({
     queryKey: ["officer-tasks", page, limit, status || "all"],
@@ -59,6 +63,7 @@ export const useOfficerTasks = (page = 1, limit = 10, status?: string) => {
   });
 };
 
+// hàm xóa bộ nhớ đệm để làm mới dữ liệu quy trình sự cố
 const invalidateAlertWorkflow = (
   queryClient: ReturnType<typeof useQueryClient>,
   id: string,
@@ -68,6 +73,7 @@ const invalidateAlertWorkflow = (
   queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
 };
 
+// hook phân công cán bộ xử lý sự cố
 export const useAssignOfficer = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -78,6 +84,7 @@ export const useAssignOfficer = () => {
   });
 };
 
+// hook lấy danh sách cán bộ và tình trạng phân công việc
 export const useOfficerAvailability = (enabled = true) =>
   useQuery({
     queryKey: ["officer-availability"],
@@ -86,6 +93,7 @@ export const useOfficerAvailability = (enabled = true) =>
     staleTime: 30_000,
   });
 
+// hook bắt đầu xử lý nhiệm vụ của cán bộ
 export const useStartHandling = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -94,6 +102,7 @@ export const useStartHandling = () => {
   });
 };
 
+// hook cán bộ xác nhận đã đến vị trí hiện trường
 export const useConfirmArrival = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -109,6 +118,7 @@ export const useConfirmArrival = () => {
   });
 };
 
+// hook nộp kết quả và hoàn tất xử lý sự cố
 export const useResolveIncident = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -119,6 +129,7 @@ export const useResolveIncident = () => {
   });
 };
 
+// hook quản trị viên đóng sự cố đã giải quyết
 export const useCloseIncident = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -129,15 +140,14 @@ export const useCloseIncident = () => {
   });
 };
 
+// hook tạo báo cáo sự cố mới từ người dân
 export const useCreateAlert = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    // mutationFn: hàm thực sự gửi yêu cầu
-    // alertService.createAlert: servivce được gọi
-    // onSuccess: thành công sẽ yêu cầu tải lại alerts
     mutationFn: alertService.createAlert,
     onSuccess: () => {
+      // làm mới danh sách sự cố sau khi tạo thành công
       queryClient.invalidateQueries({
         queryKey: ["alerts"],
       });
@@ -145,6 +155,7 @@ export const useCreateAlert = () => {
   });
 };
 
+// hook cập nhật trạng thái sự cố
 export const useUpdateAlertStatus = () => {
   const queryClient = useQueryClient();
 
@@ -153,6 +164,7 @@ export const useUpdateAlertStatus = () => {
       alertService.updateStatus(id, status),
 
     onSuccess: (_, variables) => {
+      // làm mới chi tiết và danh sách sự cố
       queryClient.invalidateQueries({
         queryKey: ["alert", variables.id],
       });
@@ -164,6 +176,7 @@ export const useUpdateAlertStatus = () => {
   });
 };
 
+// hook xóa báo cáo sự cố
 export const useDeleteAlert = () => {
   const queryClient = useQueryClient();
 
@@ -171,6 +184,7 @@ export const useDeleteAlert = () => {
     mutationFn: alertService.deleteAlert,
 
     onSuccess: () => {
+      // làm mới danh sách sau khi xóa
       queryClient.invalidateQueries({
         queryKey: ["alerts"],
       });
@@ -178,6 +192,7 @@ export const useDeleteAlert = () => {
   });
 };
 
+// hook khôi phục báo cáo sự cố đã xóa
 export const useRestoreAlert = () => {
   const queryClient = useQueryClient();
 
@@ -185,12 +200,15 @@ export const useRestoreAlert = () => {
     mutationFn: alertService.restoreAlert,
 
     onSuccess: () => {
+      // làm mới danh sách sau khi khôi phục
       queryClient.invalidateQueries({
         queryKey: ["alerts"],
       });
     },
   });
 };
+
+// hook cập nhật nội dung thông tin sự cố
 export const useUpdateAlert = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -208,6 +226,7 @@ export const useUpdateAlert = () => {
   });
 };
 
+// hook thêm ghi chú cán bộ vào sự cố
 export const useAddOfficerNote = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -220,9 +239,10 @@ export const useAddOfficerNote = () => {
 };
 
 // ========================
-// GIS
+// nhóm hook bản đồ và định vị không gian
 // ========================
 
+// hook tìm kiếm các sự cố lân cận theo tọa độ và bán kính
 export const useNearbyIncidents = (
   lng: number,
   lat: number,

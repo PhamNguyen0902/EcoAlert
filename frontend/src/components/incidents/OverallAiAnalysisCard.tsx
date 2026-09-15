@@ -12,11 +12,13 @@ import {
 
 // Tính mức độ nghiêm trọng dưới dạng % của hình ảnh
 const percentage = (value: number | null | undefined, unavailable: string) =>
+  //kiểm tra dữ liệu rác 
   value === null || value === undefined || !Number.isFinite(value)
     ? unavailable
+    //chặn giá trị từ khoảng [0,1], sau đó nhân 100 và làm tròn
     : `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
 
-// Hiển thị phân tích tổng quan của AI về sự cố môi trường, bao gồm lý do, danh mục gợi ý, độ tin cậy và mức độ nghiêm trọng. Luôn yêu cầu con người xác nhận.
+// phân tích sự cố (nguyên nhân, phân loại, độ tin cậy, mức độ nghiêm trọng), cần người dùng xác nhận
 
 export function OverallAiAnalysisCard({ alert }: { alert: Alert }) {
   const { language } = useLanguage();
