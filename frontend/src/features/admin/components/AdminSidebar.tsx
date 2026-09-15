@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { to: '/admin/reports', key: 'nav.reports', icon: FileText, showBadge: true },
   { to: '/admin/gis', key: 'nav.gis', icon: Map },
 ];
-
+// thanh điều hướng (quản lý báo cáo, bản đồ gis)
 export default function AdminSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { t } = useLanguage();

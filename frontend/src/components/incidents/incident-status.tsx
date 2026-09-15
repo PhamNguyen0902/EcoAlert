@@ -11,7 +11,7 @@ import type { AlertStatus, Severity } from "@/types";
 
 export type NormalizedIncidentStatus = AlertStatus | "unknown";
 
-// Các trạng thái và mức độ nghiêm trọng hợp lệ dựa trên các giá trị được định nghĩa trong backend
+// các trạng thái và mức độ nghiêm trọng hợp lệ dựa trên các giá trị được định nghĩa trong backend
 
 const validStatuses = new Set<AlertStatus>([
   "pending",

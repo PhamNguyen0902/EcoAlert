@@ -1,34 +1,38 @@
 import axios from "axios";
-// Dịch vụ API sử dụng Axios để thực hiện các yêu cầu HTTP đến backend, bao gồm việc gắn token xác thực và xử lý refresh token khi hết hạn.
+
+// xác định đường dẫn gốc cho các yêu cầu mạng
 const getApiBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
   if (typeof window !== "undefined") {
     const { protocol, hostname, port } = window.location;
-    // Nếu chạy qua Vite dev/preview port 5173 hoặc 4173 -> tự động trỏ sang port 3000 của IP/Domain hiện tại
+    // tự động trỏ về cổng backend khi chạy trong môi trường phát triển
     if (port === "5173" || port === "4173") {
       return `${protocol}//${hostname}:3000/api`;
     }
-    // Nếu chạy qua domain/cổng Nginx/Gateway chính
+    // nhận diện tên miền và cổng khi chạy trên hệ thống thực tế
     return `${protocol}//${hostname}${port ? `:${port}` : ""}/api`;
   }
   return "http://localhost:3000/api";
 };
 
+// khởi tạo đối tượng gọi mạng dùng chung
 export const api = axios.create({
   baseURL: getApiBaseUrl(),
   headers: { "Content-Type": "application/json" },
 });
 
-// 1. Chỉ sử dụng MỘT Request Interceptor duy nhất
+// bộ chặn yêu cầu gửi đi để gắn mã xác thực
 api.interceptors.request.use(
   (config) => {
+    // lấy mã truy cập từ bộ nhớ cục bộ
     const token = localStorage.getItem("token");
 
-    // Debug log (Bạn có thể comment lại khi deploy lên production)
+    // ghi log kiểm tra mã gửi đi
     console.log("🔑 Gắn Token vào REQUEST:", config.url);
 
+    // gắn mã vào phần đầu nếu tồn tại
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -38,13 +42,15 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// 2. Logic xử lý hàng đợi (Queue) khi Token hết hạn
+// trạng thái đang làm mới mã xác thực
 let isRefreshing = false;
+// hàng đợi lưu các yêu cầu trong lúc chờ cấp mã mới
 let refreshQueue: {
   resolve: (token: string) => void;
   reject: (err: any) => void;
 }[] = [];
 
+// xử lý giải phóng các yêu cầu đang chờ trong hàng đợi
 const processQueue = (error: any, token: string | null = null) => {
   refreshQueue.forEach(({ resolve, reject }) => {
     if (error) reject(error);
@@ -53,16 +59,16 @@ const processQueue = (error: any, token: string | null = null) => {
   refreshQueue = [];
 };
 
-// 3. Response Interceptor xử lý Refresh Token
+// bộ chặn phản hồi xử lý tự động làm mới mã xác thực khi hết hạn
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Nếu lỗi 401 (Unauthorized) và request này chưa từng được retry
+    // kiểm tra khi gặp lỗi hết phiên đăng nhập và chưa từng thử lại
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // Nếu đang có 1 tiến trình refresh chạy rồi, đưa request vào hàng đợi
+        // đưa yêu cầu vào hàng đợi nếu đang trong quá trình làm mới
         return new Promise((resolve, reject) => {
           refreshQueue.push({
             resolve: (token: string) => {
@@ -74,15 +80,16 @@ api.interceptors.response.use(
         });
       }
 
-      // Đánh dấu request này đã được retry để tránh loop vô hạn
+      // đánh dấu yêu cầu đã thử lại để tránh lặp vô hạn
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
+        // lấy mã làm mới từ bộ nhớ cục bộ
         const refreshToken = localStorage.getItem("refreshToken");
         if (!refreshToken) throw new Error("Không tìm thấy refresh token");
 
-        // Gọi API cấp lại token mới
+        // gọi máy chủ cấp lại mã truy cập mới
         const res = await axios.post(
           `${api.defaults.baseURL}/v1/auth/refresh-token`,
           { refreshToken }
@@ -92,30 +99,30 @@ api.interceptors.response.use(
 
         if (!newToken) throw new Error("Response không chứa accessToken mới");
 
-        // Lưu token mới vào Local Storage
+        // lưu mã truy cập mới vào bộ nhớ cục bộ
         localStorage.setItem("token", newToken);
         if (newRefreshToken) {
           localStorage.setItem("refreshToken", newRefreshToken);
         }
 
-        // Gắn token mới vào request bị lỗi ban đầu và gọi lại
+        // gắn mã mới vào yêu cầu ban đầu và gọi lại
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         processQueue(null, newToken);
         
         return api(originalRequest);
       } catch (err) {
-        // Nếu refresh token cũng lỗi (hết hạn nốt), xóa hết data và đẩy ra ngoài
+        // xóa sạch dữ liệu phiên đăng nhập khi việc cấp mới thất bại
         processQueue(err, null);
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
         
-        // Bắn sự kiện để phía UI (React) bắt được và chuyển hướng về trang /login
+        // phát sự kiện để chuyển hướng người dùng về trang đăng nhập
         window.dispatchEvent(new Event("auth:unauthorized"));
         
         return Promise.reject(err);
       } finally {
-        // Dọn dẹp trạng thái
+        // đặt lại trạng thái kết thúc làm mới
         isRefreshing = false;
       }
     }

@@ -22,7 +22,7 @@ const CATEGORIES = [
   { id: 'construction_waste', name: 'Rác thải xây dựng', icon: Building },
   { id: 'other', name: 'Khác', icon: MoreHorizontal },
 ];
-
+// component hiển thị lưới thẻ lọc sự cố theo từng loại danh mục
 export function CategoryFilter({ selectedCategory, onSelectCategory, alerts }: CategoryFilterProps) {
   const getCategoryCount = (categoryId: string) => {
     return alerts.filter(a => a.category === categoryId as AlertCategory).length;

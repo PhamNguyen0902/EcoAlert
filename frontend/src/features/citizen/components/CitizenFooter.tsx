@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Leaf, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Github } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+// footer của citizen
 export default function CitizenFooter() {
   const { t, language } = useLanguage();
   const currentYear = new Date().getFullYear();
@@ -17,7 +17,7 @@ export default function CitizenFooter() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
           
-          {/* Brand Col */}
+          {/* logo */}
           <div className="space-y-6">
             <Link to="/home" className="flex items-center gap-2 group inline-flex">
               <div className="bg-green-500/20 p-2 rounded-xl">
@@ -32,7 +32,7 @@ export default function CitizenFooter() {
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* liên kết nhanh */}
           <div>
             <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">{t('footer.quick_links')}</h3>
             <ul className="space-y-4 text-sm">
@@ -48,7 +48,7 @@ export default function CitizenFooter() {
             </ul>
           </div>
 
-          {/* Support */}
+          {/* liên hệ hỗ trợ */}
           <div>
             <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">{t('footer.contact')}</h3>
             <ul className="space-y-4 text-sm">
@@ -76,7 +76,7 @@ export default function CitizenFooter() {
             </ul>
           </div>
 
-          {/* Legal */}
+          {/* chính sách */}
           <div>
             <h3 className="text-white font-semibold mb-6 tracking-wide uppercase text-sm">EcoAlert</h3>
             <ul className="space-y-4 text-sm">

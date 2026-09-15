@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
-
+// layout chung cho toàn bộ trang quản trị (admin)
 export default function AdminLayout() {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">

@@ -15,7 +15,7 @@ interface EditReportModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
+// modal chỉnh sửa thông tin báo cáo sự cố (tiêu đề, địa chỉ, mô tả, ảnh minh chứng)
 export default function EditReportModal({ alert, isOpen, onClose }: EditReportModalProps) {
   const { t } = useLanguage();
   const updateAlertMutation = useUpdateAlert();

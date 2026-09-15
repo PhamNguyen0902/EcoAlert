@@ -42,7 +42,7 @@ const statusClasses: Partial<Record<AlertStatus, string>> = {
   resolved: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   closed: "bg-slate-500/10 text-slate-700 dark:text-slate-300",
 };
-
+// component hiển thị danh sách nhiệm vụ được phân công cho cán bộ
 export default function AssignedReports() {
   const [activeTab, setActiveTab] = useState<TaskTab>("assigned");
   const [page, setPage] = useState(1);
@@ -50,7 +50,8 @@ export default function AssignedReports() {
   const status = activeTab === "all" ? undefined : activeTab;
   const { data, isLoading, isError, error, refetch, isFetching } =
     useOfficerTasks(page, PAGE_LIMIT, status);
-
+    
+  // lấy mảng nhiệm vụ từ kết quả trả về
   const tasks = data?.items ?? [];
   // lọc danh sách nhiệm vụ trên client theo từ khóa
   const visibleTasks = search.trim()

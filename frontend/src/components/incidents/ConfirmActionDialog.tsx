@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Hiển thị hộp thoại xác nhận hành động, với khả năng hiển thị trạng thái đang xử lý và nút hủy khi đang xử lý.
+// hiển thị hộp thoại xác nhận hành động, với khả năng hiển thị trạng thái đang xử lý và nút hủy khi đang xử lý.
 
 interface ConfirmActionDialogProps {
   open: boolean;

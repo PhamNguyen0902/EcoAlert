@@ -1,44 +1,60 @@
-import { useRef } from 'react';
-import { ChevronLeft, ChevronRight, MapPin, Clock } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { enUS, vi } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
-import { Alert } from '@/types';
-import { cn } from '@/lib/utils';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { getIncidentCategoryLabel, getIncidentSeverityLabel, getIncidentStatusLabel } from '@/lib/incident-presentation';
+import { useRef } from "react";
+import { ChevronLeft, ChevronRight, MapPin, Clock } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { enUS, vi } from "date-fns/locale";
+import { Link } from "react-router-dom";
+import { Alert } from "@/types";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  getIncidentCategoryLabel,
+  getIncidentSeverityLabel,
+  getIncidentStatusLabel,
+} from "@/lib/incident-presentation";
 
 interface NearbyIncidentsProps {
   alerts: Alert[];
 }
-
+// mục sự cố lân cận: hiển thị danh sách dạng thanh cuộn ngang, hỗ trợ nút trượt trái/phải và hiển thị chi tiết thẻ sự cố
 export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { language } = useLanguage();
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = (direction: "left" | "right") => {
     if (scrollContainerRef.current) {
-      const scrollAmount = direction === 'left' ? -350 : 350;
-      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      const scrollAmount = direction === "left" ? -350 : 350;
+      scrollContainerRef.current.scrollBy({
+        left: scrollAmount,
+        behavior: "smooth",
+      });
     }
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700';
+      case "critical":
+        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+      case "high":
+        return "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'resolved': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400';
-      case 'in_progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'rejected': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
-      default: return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'; // pending
+      case "resolved":
+        return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
+      case "in_progress":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+      case "rejected":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400";
+      default:
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"; // pending
     }
   };
 
@@ -51,8 +67,12 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-800 mb-4">
             <MapPin className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">Không có sự cố lân cận</h3>
-          <p className="text-gray-500 dark:text-gray-400">Hiện tại chưa có báo cáo sự cố môi trường nào trong khu vực của bạn.</p>
+          <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+            Không có sự cố lân cận
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            Hiện tại chưa có báo cáo sự cố môi trường nào trong khu vực của bạn.
+          </p>
         </div>
       </section>
     );
@@ -72,14 +92,14 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => scroll('left')}
+              onClick={() => scroll("left")}
               className="p-2 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
               aria-label="Cuộn sang trái"
             >
               <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </button>
             <button
-              onClick={() => scroll('right')}
+              onClick={() => scroll("right")}
               className="p-2 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
               aria-label="Cuộn sang phải"
             >
@@ -88,10 +108,10 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
           </div>
         </div>
 
-        <div 
+        <div
           ref={scrollContainerRef}
           className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {displayAlerts.map((alert) => (
             <Link
@@ -101,8 +121,8 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
             >
               <div className="h-48 w-full relative overflow-hidden bg-gray-100 dark:bg-slate-800">
                 {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
-                  <img 
-                    src={alert.mediaUrls[0]} 
+                  <img
+                    src={alert.mediaUrls[0]}
                     alt={alert.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -112,31 +132,46 @@ export function NearbyIncidents({ alerts }: NearbyIncidentsProps) {
                   </div>
                 )}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-md", getSeverityColor(alert.severity ?? 'low'))}>
+                  <span
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-md",
+                      getSeverityColor(alert.severity ?? "low"),
+                    )}
+                  >
                     {getIncidentSeverityLabel(alert.severity, language)}
                   </span>
                 </div>
               </div>
-              
+
               <div className="p-5">
                 <div className="flex justify-between items-start mb-3 gap-2">
                   <h3 className="font-semibold text-lg text-gray-900 dark:text-white line-clamp-1 flex-1">
                     {alert.title}
                   </h3>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300">
                     {getIncidentCategoryLabel(alert.category, language)}
                   </span>
-                  <span className={cn("inline-flex items-center px-2 py-1 rounded-md text-xs font-medium", getStatusColor(alert.status))}>
+                  <span
+                    className={cn(
+                      "inline-flex items-center px-2 py-1 rounded-md text-xs font-medium",
+                      getStatusColor(alert.status),
+                    )}
+                  >
                     {getIncidentStatusLabel(alert.status, language)}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-auto pt-4 border-t border-gray-100 dark:border-slate-800">
                   <Clock className="w-4 h-4 mr-1.5" />
-                  <span>{formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true, locale: language === 'vi' ? vi : enUS })}</span>
+                  <span>
+                    {formatDistanceToNow(new Date(alert.createdAt), {
+                      addSuffix: true,
+                      locale: language === "vi" ? vi : enUS,
+                    })}
+                  </span>
                 </div>
               </div>
             </Link>

@@ -3,6 +3,8 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from './button';
 import { isSoundEnabled, playNotificationSound, toggleSoundEnabled } from '@/lib/audio-alert';
 
+
+//bật tắt tiếng noti
 export function SoundToggle({ className }: { className?: string }) {
   const [enabled, setEnabled] = useState(isSoundEnabled);
 

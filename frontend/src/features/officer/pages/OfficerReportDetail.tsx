@@ -101,7 +101,7 @@ interface EvidenceDraft {
 
 const formatTimestamp = (value?: string) =>
   value ? format(new Date(value), "PPp") : "Not completed";
-
+// báo cáo chi tiết của oficer
 export default function OfficerReportDetail() {
   const { id = "" } = useParams<{ id: string }>();
   const { user, role } = useAuth();
@@ -110,6 +110,8 @@ export default function OfficerReportDetail() {
   const { data: officerAvailability } = useOfficerAvailability(
     role === "ADMIN",
   );
+
+    // các hook mutation thực hiện thay đổi dữ liệu
   const assignOfficer = useAssignOfficer();
   const startHandling = useStartHandling();
   const confirmArrival = useConfirmArrival();
@@ -202,6 +204,7 @@ export default function OfficerReportDetail() {
   const selectedAvailability = availability.find(
     (item) => item.officer._id === selectedOfficerId,
   );
+  // cảnh báo khi cán bộ được chọn đang quá tải hoặc ngoài ca làm
   const assignmentWarning =
     selectedAvailability &&
     (selectedAvailability.shiftStatus === "OFF_SHIFT" ||

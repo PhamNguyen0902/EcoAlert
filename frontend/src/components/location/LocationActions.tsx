@@ -17,7 +17,7 @@ interface LocationActionsProps {
   showNavigation?: boolean;
   className?: string;
 }
-// Hiển thị các hành động liên quan đến vị trí, bao gồm mở Google Maps.
+// hiển thị các hành động liên quan đến vị trí, bao gồm mở Google Maps.
 export function LocationActions({
   latitude,
   longitude,
@@ -38,7 +38,7 @@ export function LocationActions({
       }
     };
   }, []);
-
+  // sao chép tọa độ
   const handleCopy = async () => {
     setIsCopying(true);
     const didCopy = await copyCoordinates(latitude, longitude);

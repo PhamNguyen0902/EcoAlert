@@ -21,6 +21,7 @@ import type { Alert } from '@/types';
 const DEFAULT_CENTER: [number, number] = [10.762622, 106.660172];
 const EMPTY_ALERTS: Alert[] = [];
 
+// tự động căn chỉnh tầm nhìn bản đồ bao trọn các điểm sự cố
 function FitInitialMarkerBounds({ incidents }: { incidents: readonly Alert[] }) {
   const map = useMap();
   const hasFitted = useRef(false);
@@ -46,7 +47,7 @@ function FitInitialMarkerBounds({ incidents }: { incidents: readonly Alert[] }) 
   return null;
 }
 
-/** Bản đồ giám sát các sự cố được phân công cho Officer đang đăng nhập. */
+// bản đồ giám sát các sự cố được phân công cho Officer đang đăng nhập. 
 export default function OfficerMap() {
   const { t, language } = useLanguage();
   const { data, isLoading } = useAlerts(1, 1000);
@@ -60,6 +61,7 @@ export default function OfficerMap() {
     [incidents],
   );
 
+  // lọc danh sách sự cố theo từ khóa tìm kiếm
   const visibleIncidents = useMemo(
     () => validIncidents.filter((incident) => {
       const haystack = `${incident.title} ${incident.address ?? ''} ${incident.category ?? ''}`.toLowerCase();

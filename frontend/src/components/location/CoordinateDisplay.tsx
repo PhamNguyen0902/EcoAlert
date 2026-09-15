@@ -6,7 +6,7 @@ interface CoordinateDisplayProps {
   longitude: number;
   className?: string;
 }
-// Hiển thị tọa độ vĩ độ và kinh độ với định dạng số cố định, hỗ trợ đa ngôn ngữ cho nhãn.
+// hiển thị tọa độ vĩ độ và kinh độ với định dạng số cố định
 
 export function CoordinateDisplay({ latitude, longitude, className }: CoordinateDisplayProps) {
   const { language } = useLanguage();

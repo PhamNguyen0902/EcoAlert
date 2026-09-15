@@ -7,10 +7,10 @@ interface GeolocationState {
   error: string | null;
   loading: boolean;
 }
-
+// tọa độ dự phòng mặc định, khi người dùng chặn quyền hoặc lỗi gps
 const FALLBACK_LAT = 10.8231;
 const FALLBACK_LNG = 106.6297;
-
+// hook lấy vị trí hiện tại của người dùng qua trình duyệt (navigator.geolocation), hỗ trợ lấy lại vị trí và tọa độ dự phòng
 export function useGeolocation() {
   const [state, setState] = useState<GeolocationState>({
     latitude: null,

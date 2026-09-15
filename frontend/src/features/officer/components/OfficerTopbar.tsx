@@ -14,12 +14,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
+// component thanh tiêu đề trên cùng của cán bộ
 export default function OfficerTopbar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { t, language } = useLanguage();
-
+// xác định tiêu đề trang dựa theo đường dẫn url
   const getPageTitle = () => {
     const path = location.pathname;
     if (path.includes('assigned')) return t('officer.assigned');
@@ -47,6 +47,7 @@ export default function OfficerTopbar() {
         <ThemeToggle />
 
         <DropdownMenu>
+          {/* ảnh đại diện bấm để mở menu */}
           <DropdownMenuTrigger className="focus:outline-none">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.avatar} />
@@ -54,6 +55,7 @@ export default function OfficerTopbar() {
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
+            {/* thông tin tên và email */}
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.fullName}</p>
@@ -62,6 +64,7 @@ export default function OfficerTopbar() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>
+              {/* đăng xuất */}
               <LogOut className="mr-2 h-4 w-4 text-destructive" />
               <span className="text-destructive">{language === 'vi' ? 'Đăng xuất' : 'Log out'}</span>
             </DropdownMenuItem>

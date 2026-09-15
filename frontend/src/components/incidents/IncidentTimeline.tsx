@@ -17,7 +17,7 @@ import type { TimelineEntry } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getIncidentStatusLabel } from "@/lib/incident-presentation";
 
-// Hiển thị dòng thời gian sự cố môi trường, bao gồm các sự kiện do hệ thống ghi nhận và các hành động của người dùng. Không hiển thị các giai đoạn AI do người dùng tạo ra.
+// timeline sự cố: hiển thị sự kiện hệ thống và thao tác người dùng, trừ giai đoạn AI thủ công.
 interface IncidentTimelineProps {
   entries?: TimelineEntry[];
   createdAt: string;

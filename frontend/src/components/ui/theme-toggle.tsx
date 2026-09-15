@@ -5,6 +5,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
 
+//chuyển đổi theme sáng/tối/hệ thống
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
