@@ -24,6 +24,7 @@ const locationSchema = new Schema<ILocation>({
   title: { type: String, trim: true },
   address: { type: String, trim: true },
   isDeleted: { type: Boolean, default: false },
+  // Định dạng chuẩn GeoJSON: type là 'Point', tọa độ là [Kinh độ (lng), Vĩ độ (lat)]
   location: {
     type: { type: String, enum: ['Point'], required: true },
     coordinates: { type: [Number], required: true },

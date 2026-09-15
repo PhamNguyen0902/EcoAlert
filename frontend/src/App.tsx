@@ -91,7 +91,9 @@ function App() {
             <Route element={<OfficerLayout />}>
               {/* task của officer */}
               <Route path="/officer/assigned" element={<AssignedReports />} />
+              {/* map giám sát, officer mở lên để biết sự cố nằm ở đâu, */}
               <Route path="/officer/map" element={<OfficerMap />} />
+              {/* chi tiết báo cáo */}
               <Route
                 path="/officer/reports/:id"
                 element={<OfficerReportDetail />}
@@ -104,7 +106,9 @@ function App() {
             <Route element={<AdminLayout />}>
               {/* admin quản lý report */}
               <Route path="/admin/reports" element={<ReportManagement />} />
+              {/* bản đồ để xem mật độ ô nhiễm các điểm nóng(citizen hay báo cáo) */}
               <Route path="/admin/gis" element={<AdminGisMap />} />
+              {/* chi tiết báo cáo */}
               <Route
                 path="/admin/reports/:id"
                 element={<OfficerReportDetail />}

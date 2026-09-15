@@ -41,8 +41,7 @@ import "leaflet/dist/leaflet.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-// Trang chi tiết báo cáo sự cố môi trường, hiển thị thông tin chi tiết, hình ảnh minh chứng, phân tích AI và tiến trình xử lý.
-
+// trang chi tiết báo cáo sự cố môi trường, hiển thị thông tin chi tiết, hình ảnh minh chứng, phân tích AI và tiến trình xử lý.
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -62,7 +61,7 @@ const formatDate = (
     ? unavailable
     : format(date, dateFormat, { locale: language === "vi" ? vi : enUS });
 };
-// trang chi tiết sự cố
+// trang chi tiết báo cáo sự cố môi trường, hiển thị thông tin chi tiết, hình ảnh minh chứng, phân tích AI và tiến trình xử lý.
 export default function AlertDetail() {
   const { t, language } = useLanguage();
   const { id = "" } = useParams<{ id: string }>();

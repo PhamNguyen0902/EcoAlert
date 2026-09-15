@@ -801,7 +801,7 @@ export default function OfficerReportDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               {isAdmin ? (
-                /* admin xác nhận hoặc chỉnh sửa danh mục sự cố */
+                // admin xác nhận hoặc chỉnh sửa danh mục sự cố 
                 <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
                   <div>
                     <p className="text-sm font-semibold">
