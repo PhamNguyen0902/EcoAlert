@@ -67,7 +67,7 @@ import "leaflet/dist/leaflet.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
+import { GoongMapLayer } from "@/components/location/GoongMapLayer";
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -111,7 +111,7 @@ export default function OfficerReportDetail() {
     role === "ADMIN",
   );
 
-    // các hook mutation thực hiện thay đổi dữ liệu
+  // các hook mutation thực hiện thay đổi dữ liệu
   const assignOfficer = useAssignOfficer();
   const startHandling = useStartHandling();
   const confirmArrival = useConfirmArrival();
@@ -801,7 +801,7 @@ export default function OfficerReportDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               {isAdmin ? (
-                // admin xác nhận hoặc chỉnh sửa danh mục sự cố 
+                // admin xác nhận hoặc chỉnh sửa danh mục sự cố
                 <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
                   <div>
                     <p className="text-sm font-semibold">
@@ -1221,14 +1221,15 @@ export default function OfficerReportDetail() {
                 <div className="h-64 w-full">
                   <MapContainer
                     center={[latitude, longitude]}
-                    zoom={15}
+                    zoom={13}  maxZoom={19} minZoom={2}
                     scrollWheelZoom={false}
                     style={{ height: "100%", width: "100%" }}
                   >
-                    <TileLayer
+                    {/* <TileLayer
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
+                    /> */}
+                    <GoongMapLayer/>
                     <Marker position={[latitude, longitude]}>
                       <Popup>
                         {alert.address ||

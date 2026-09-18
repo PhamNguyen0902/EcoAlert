@@ -37,7 +37,7 @@ import {
   getAlertDisplaySeverity,
 } from "@/lib/ai-confidence";
 import "leaflet/dist/leaflet.css";
-
+import { GoongMapLayer } from "@/components/location/GoongMapLayer";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
@@ -94,7 +94,7 @@ export default function AlertDetail() {
           Quay lại
         </Button>
       </div>
-    );  
+    );
   }
 
   const [longitude = Number.NaN, latitude = Number.NaN] =
@@ -295,7 +295,7 @@ export default function AlertDetail() {
             </p>
 
             {/*Thẻ AI phân tích dữ liệu trả về từ openrouter*/}
-            
+
             <div className="mt-5 space-y-5">
               <OverallAiAnalysisCard alert={alert} />
             </div>
@@ -392,10 +392,11 @@ export default function AlertDetail() {
                     className="h-full w-full"
                     aria-label="Bản đồ vị trí sự cố"
                   >
-                    <TileLayer
+                    {/* <TileLayer
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
+                    /> */}
+                    <GoongMapLayer/>
                     <Marker position={[latitude, longitude]} />
                   </MapContainer>
                 </div>
