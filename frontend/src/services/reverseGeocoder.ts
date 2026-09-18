@@ -1,5 +1,5 @@
-// đường dẫn máy chủ chuyển đổi tọa độ của openstreetmap
-const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
+const GOONG_REVERSE_URL = "https://rsapi.goong.io/geocode";
+const GOONG_API_KEY = import.meta.env.VITE_GOONG_API_KEY;
 // giới hạn số lượng địa chỉ lưu trong bộ nhớ tạm
 const CACHE_LIMIT = 50;
 // thời gian tối đa chờ phản hồi mạng
@@ -17,24 +17,29 @@ type NominatimAddress = Record<string, unknown>;
 
 // kiểm tra giá trị có phải là một đối tượng hợp lệ
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
+  typeof value === "object" && value !== null;
 
 // kiểm tra và chuẩn hóa chuỗi không rỗng
 const nonEmptyString = (value: unknown): string | null =>
-  typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+  typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 
 // nối các phần của địa chỉ và loại bỏ các phần trùng nhau
 const joinAddressParts = (parts: Array<string | null>): string | null => {
-  const address = Array.from(new Set(parts.filter((part): part is string => Boolean(part)))).join(', ');
+  const address = Array.from(
+    new Set(parts.filter((part): part is string => Boolean(part))),
+  ).join(", ");
   return address || null;
 };
 
 // định dạng các trường địa chỉ chi tiết thành chuỗi hoàn chỉnh
 const formatNominatimAddress = (address: NominatimAddress): string | null => {
   // ghép số nhà và tên đường
-  const street = [nonEmptyString(address.house_number), nonEmptyString(address.road)]
+  const street = [
+    nonEmptyString(address.house_number),
+    nonEmptyString(address.road),
+  ]
     .filter((part): part is string => Boolean(part))
-    .join(' ');
+    .join(" ");
 
   // ghép đầy đủ từ cấp đường, phường xã đến quận huyện và tỉnh thành
   return joinAddressParts([
@@ -71,42 +76,39 @@ export class NominatimReverseGeocoder implements ReverseGeocoder {
   private nextRequestAt = 0;
 
   // hàm thực hiện chuyển đổi tọa độ thành địa chỉ chữ
-  async reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
-    // bỏ qua nếu tọa độ không hợp lệ
-    if (!hasValidCoordinates(latitude, longitude)) {
+   // hàm thực hiện chuyển đổi tọa độ thành địa chỉ chữ bằng Goong API
+  async reverseGeocode(
+    latitude: number,
+    longitude: number,
+  ): Promise<string | null> {
+    // bỏ qua nếu tọa độ không hợp lệ hoặc thiếu API Key
+    if (!hasValidCoordinates(latitude, longitude) || !GOONG_API_KEY) {
       return null;
     }
-
-    // tạo đường dẫn yêu cầu kèm các tham số tọa độ
-    const url = `${NOMINATIM_REVERSE_URL}?format=json&lat=${encodeURIComponent(
-      String(latitude),
-    )}&lon=${encodeURIComponent(String(longitude))}&zoom=18&addressdetails=1`;
-
     try {
       // chờ đến lượt để đảm bảo không vi phạm giới hạn tần suất
       await this.waitForRequestSlot();
+      
       // bộ điều khiển tự động hủy yêu cầu khi quá thời gian chờ
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        REQUEST_TIMEOUT_MS,
+      );
       try {
-        // gửi yêu cầu mạng lấy dữ liệu
-        const response = await fetch(url, { signal: controller.signal });
+        // gửi yêu cầu mạng lấy dữ liệu từ Goong Geocode API
+        const response = await fetch(
+          `${GOONG_REVERSE_URL}?latlng=${latitude},${longitude}&api_key=${GOONG_API_KEY}`,
+          { signal: controller.signal },
+        );
         if (!response.ok) {
           return null;
         }
-
-        const payload: unknown = await response.json();
-        if (!isRecord(payload)) {
-          return null;
+        const data = await response.json();
+        if (data.status === "OK" && Array.isArray(data.results) && data.results.length > 0) {
+          return data.results[0].formatted_address || null;
         }
-
-        // ưu tiên ghép từ các trường chi tiết trước khi dùng tên đầy đủ
-        if (isRecord(payload.address)) {
-          return formatNominatimAddress(payload.address) ?? nonEmptyString(payload.display_name);
-        }
-
-        return nonEmptyString(payload.display_name);
+        return null;
       } finally {
         // xóa bộ đếm thời gian khi nhận được phản hồi
         clearTimeout(timeoutId);
@@ -145,7 +147,7 @@ export class CachedReverseGeocoder implements ReverseGeocoder {
   reverseGeocode(latitude: number, longitude: number): Promise<string | null> {
     const key = coordinateKey(latitude, longitude);
     const cachedAddress = this.cache.get(key);
-    
+
     // nếu đã có trong bộ nhớ tạm thì làm mới vị trí và trả về ngay
     if (cachedAddress) {
       this.cache.delete(key);

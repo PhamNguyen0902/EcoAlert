@@ -16,7 +16,7 @@ import {
   getIncidentStatusLabel,
 } from "@/lib/incident-presentation";
 import type { Alert } from "@/types";
-
+import { GoongMapLayer } from "@/components/location/GoongMapLayer";
 const DEFAULT_CENTER: [number, number] = [10.762622, 106.660172];
 // hiển thị bản đồ quản trị và gom nhóm các sự cố bằng markerclustergroup
 function FitMapToIncidents({ alerts }: { alerts: readonly Alert[] }) {
@@ -109,15 +109,13 @@ export default function AdminGisMap() {
       </aside>
 
       <section className="relative isolate z-0 min-h-[60vh] flex-1 overflow-hidden rounded-xl border bg-muted shadow-sm">
-        <MapContainer
-          center={DEFAULT_CENTER}
-          zoom={12}
-          className="h-full min-h-[60vh] w-full"
-        >
-          <TileLayer
+        <MapContainer center={DEFAULT_CENTER}  zoom={13}  maxZoom={19} minZoom={2} className="w-full h-full z-0">
+          {/* <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          /> */}
+          {/* dùng goong map */}
+          <GoongMapLayer/>
           <FitMapToIncidents alerts={alerts} />
           {/* marker cluster group và chunked loading giúp bản đồ mượt khi có nhiều sự cố */}
           <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
