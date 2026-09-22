@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config(); // BẮT BUỘC Ở DÒNG ĐẦU TIÊN để nạp file .env trước khi import các route và service
+
 import express from 'express';
 import cors from 'cors';
 import { errorHandler } from './middlewares/error-handler.middleware';
