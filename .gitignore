@@ -1,9 +1,11 @@
 # Dependencies
 **/node_modules/
 
-# Build
+# Build & Cache
 **/dist/
 **/build/
+**/__pycache__/
+*.py[cod]
 
 # Environment
 **/.env

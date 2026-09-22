@@ -7,7 +7,7 @@ npm install
 npm run build
 cd ..
 
-# List of services to run
+# List of Node.js services to run
 $services = @("api-gateway", "user-service", "alert-service", "gis-service", "media-service", "notification-service", "ai-service")
 
 # 2. Install dependencies for all services
@@ -23,9 +23,13 @@ foreach ($service in $services) {
 Write-Host "`n====== [3/3] Starting all microservices ======" -ForegroundColor Green
 Write-Host "Opening separate PowerShell windows for each service. Keep them open to see logs." -ForegroundColor Green
 
+# Start Python vision-service
+Write-Host "[>] Starting vision-service (FastAPI + YOLO)..." -ForegroundColor Magenta
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd vision-service; python -m uvicorn main:app --port 8001"
+
+# Start Node.js services
 foreach ($service in $services) {
     Write-Host "[>] Starting $service..." -ForegroundColor Yellow
-    # Opens a new PowerShell window, changes directory to the service, and runs npm run dev
     Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd $service; npm run dev"
 }
 

@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3003;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ecoalert-media-db';
 
 const start = async () => {
-  await connectDB(MONGO_URI);
+  // await connectDB(MONGO_URI);
   app.listen(PORT, () => {
     logger.info(`Media Service is running on port ${PORT}`);
   });

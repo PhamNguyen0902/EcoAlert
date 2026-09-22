@@ -28,8 +28,8 @@ const requireAuth = (req: any, res: any, next: any) => {
 
 router.post(
   '/upload',
-  requireAuth,
   upload.single('image'),
+  requireAuth,
   asyncHandler(uploadController.upload)
 );
 export default router;
