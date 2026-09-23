@@ -249,7 +249,8 @@ export const resetOpenRouterForTests = () => {
 export const parseIncidentAnalysis = (content: string): IncidentAnalysis => {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content);
+    const cleanContent = content.replace(/^```(?:json)?\n?/, '').replace(/```$/, '').trim();
+    parsed = JSON.parse(cleanContent);
   } catch {
     throw new OpenRouterResponseError('OpenRouter trả về dữ liệu JSON không hợp lệ.');
   }
@@ -372,6 +373,9 @@ const incidentCompletionRequest = (
       role: 'system',
       content: [
         'Bạn là trợ lý AI chuyên phân tích và phân loại sự cố môi trường của hệ thống EcoAlert.',
+        'Không phân tích những hình ảnh phong cảnh không liên quan, hình ảnh 2D, 3D hình ảnh hoạt hình',
+        'Phân tích dựa trên các vật thể không dựa vào các vật thể bị phóng to để phân tích',
+        
         'Đánh giá mức độ nghiêm trọng dựa trên diện tích và thể tích của hình ảnh các chất thải độc hại vật tư y tế cũng là nhưng vật thể nguy hại ',
         'Phân tích trực tiếp dựa trên ảnh báo cáo, tiêu đề và mô tả do người dân cung cấp.',
         'Không được suy đoán hoặc bịa ra vật thể, tình trạng hay bằng chứng không xuất hiện trong ảnh hoặc mô tả. Không tiết lộ quá trình suy luận nội bộ.',

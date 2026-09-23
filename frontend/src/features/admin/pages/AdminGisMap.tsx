@@ -45,6 +45,7 @@ function FitMapToIncidents({ alerts }: { alerts: readonly Alert[] }) {
 // Hiển thị các báo cáo có tọa độ thật để Admin mở nhanh hồ sơ cần xác minh
 export default function AdminGisMap() {
   const { language } = useLanguage();
+  
   // tải tối đa một nghìn sự cố rồi lọc tại client; chưa truy vấn theo viewport hoặc bounding box
   const { data, isLoading } = useAlerts(1, 1000);
   const [search, setSearch] = useState("");

@@ -119,7 +119,7 @@ export const useStartHandling = () => {
       queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
     },
   });
-};
+};  
 
 export const useConfirmArrival = () => {
   const queryClient = useQueryClient();
