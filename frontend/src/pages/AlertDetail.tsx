@@ -223,8 +223,8 @@ export default function AlertDetail() {
             altPrefix="Hình ảnh minh chứng"
           />
 
-          {/* Phân tích AI nếu có dữ liệu trả về */}
-          {/* <section className="border-t pt-8" aria-labelledby="ai-analysis-heading"> */}
+          {/*Toàn bộ phần phân tích AI nếu có dữ liệu trả về */}
+
           <section
             className="border-t pt-8"
             aria-labelledby="ai-analysis-heading"
@@ -373,6 +373,8 @@ export default function AlertDetail() {
           ) : null}
         </div>
 
+          {/* Phần hiển thị bản đồ vị trí sự cố và tóm tắt tiến độ xử lý */}
+
         <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
           <Card className="overflow-hidden">
             <CardContent className="p-0">
@@ -385,6 +387,9 @@ export default function AlertDetail() {
               </div>
               {hasCoordinates ? (
                 <div className="h-64 border-t bg-muted">
+
+                  {/* Bản đồ hiển thị vị trí sự cố nếu có tọa độ GPS hợp lệ */}
+                  
                   <MapContainer
                     center={[latitude, longitude]}
                     zoom={15}
@@ -411,6 +416,8 @@ export default function AlertDetail() {
               )}
             </CardContent>
           </Card>
+
+              {/* Tóm tắt tiến độ */}
 
           <Card>
             <CardContent className="p-5">
@@ -460,6 +467,7 @@ export default function AlertDetail() {
           </Card>
         </aside>
 
+      {/* Timeline hiển thị tiến trình xử lý sự cố */}
         <section
           className="min-w-0 border-t pt-8 lg:col-start-1"
           aria-label={t("alert_detail.timeline")}

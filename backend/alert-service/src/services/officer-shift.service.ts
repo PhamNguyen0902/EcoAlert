@@ -50,7 +50,7 @@ export class OfficerShiftService {
   async startShift(actor: WorkflowActor, location: ShiftLocationDto) {
     requireOfficer(actor);
     if (location.accuracyMeters > envConfig.officerMaxGpsAccuracyMeters) {
-      throw new ConflictError('GPS accuracy is insufficient to start a shift. Please retry in a clearer location.');
+      throw new ConflictError('Độ chính xác của GPS không đủ để bắt đầu ca làm việc. Vui lòng thử lại tại vị trí thoáng đãng hơn.');
     }
     try {
       return await OfficerShift.create({
