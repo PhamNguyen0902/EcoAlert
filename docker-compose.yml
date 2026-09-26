@@ -17,8 +17,8 @@ services:
   redis:
     image: redis:7.0-alpine
     container_name: ecoalert_redis
-    ports:
-      - "6379:6379"
+    # Redis is consumed only by EcoAlert containers. Keeping it internal avoids
+    # colliding with another local stack that already owns host port 6379.
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -157,14 +157,38 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+      - VISION_SERVICE_URL=${VISION_SERVICE_URL:-http://vision-service:8001}
     depends_on:
       mongodb:
+        condition: service_healthy
+      vision-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3003/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 12
+    networks:
+      - ecoalert_network
+
+  vision-service:
+    build:
+      context: ./backend/vision-service
+    container_name: ecoalert_vision_service
+    ports:
+      - "8001:8001"
+    environment:
+      - YOLO_MODEL_PATH=models/BEST_ECOALERT_YOLO11N.pt
+      - YOLO_CONFIDENCE=${YOLO_CONFIDENCE:-0.25}
+      - YOLO_IMAGE_SIZE=${YOLO_IMAGE_SIZE:-640}
+      - YOLO_DEVICE=${YOLO_DEVICE:-auto}
+      - YOLO_MAX_UPLOAD_MB=${YOLO_MAX_UPLOAD_MB:-10}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     networks:
       - ecoalert_network
 

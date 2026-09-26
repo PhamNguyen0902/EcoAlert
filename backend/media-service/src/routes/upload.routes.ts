@@ -32,4 +32,6 @@ router.post(
   requireAuth,
   asyncHandler(uploadController.upload)
 );
+// Internal worker route: only callable from the private Docker network.
+router.post('/analyze-url', asyncHandler(uploadController.analyzeRemoteImage));
 export default router;

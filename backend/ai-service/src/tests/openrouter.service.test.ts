@@ -19,6 +19,11 @@ test('sends Vietnamese direct multimodal instructions without secondary evidence
       isIncident: true, incidentConfidence: 0.9, category: 'illegal_dumping', categoryConfidence: 0.85,
       severity: 'high', severityScore: 70, severityConfidence: 0.8,
       overallSummary: 'Báo cáo cho thấy rác bị đổ ven đường.', shortReason: 'Ảnh và mô tả cho thấy chất thải tập trung.',
+      massEstimate: {
+        available: true, minKg: 18, maxKg: 35, mostLikelyKg: 26,
+        confidence: 0.64, scale: 'MEDIUM', reasoningSummary: 'Nhiều bao rác tập trung ven đường.',
+        limitations: ['Một phần chất thải bị che khuất.'],
+      },
     }) } }] };
   } } } };
   const result = await analyzeIncidentWithClient(client, 'openai/gpt-4o-mini', { title: 'Rác ven đường', description: 'Có rác.', imageUrl: 'https://example.com/evidence.jpg' });
@@ -27,6 +32,11 @@ test('sends Vietnamese direct multimodal instructions without secondary evidence
   assert.doesNotMatch(String(messages[0]?.content), /secondary evidence/);
   assert.equal(result.analysisMode, 'IMAGE_AND_TEXT');
   assert.equal(result.category, 'illegal_dumping');
+  assert.deepEqual(result.massEstimate, {
+    available: true, minKg: 18, maxKg: 35, mostLikelyKg: 26,
+    confidence: 0.64, scale: 'MEDIUM', reasoningSummary: 'Nhiều bao rác tập trung ven đường.',
+    limitations: ['Một phần chất thải bị che khuất.'],
+  });
 });
 
 test('rejects malformed direct analysis responses', () => {

@@ -16,6 +16,7 @@ const analysis = (): IAiAnalysisCompletedData => ({
     categoryConfidence: 0.82, classificationStatus: 'AI_SUGGESTED', confidenceTier: 'HIGH_CONFIDENCE',
     severity: Severity.HIGH, severityScore: 70, severityConfidence: 0.8,
     overallSummary: 'Rác tập trung ven đường.', shortReason: 'Ảnh và mô tả phù hợp.',
+    massEstimate: { available: true, minKg: 20, maxKg: 40, mostLikelyKg: 30, confidence: 0.65, scale: 'SMALL', reasoningSummary: 'Ước tính từ toàn cảnh.', limitations: ['Góc chụp hạn chế.'] },
     semanticModel: 'openai/gpt-4o-mini', pipelineVersion: 'openrouter-multimodal-v1',
   },
 });

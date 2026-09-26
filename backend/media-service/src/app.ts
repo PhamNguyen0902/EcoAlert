@@ -1,5 +1,12 @@
 import dotenv from 'dotenv';
-dotenv.config(); // BẮT BUỘC Ở DÒNG ĐẦU TIÊN để nạp file .env trước khi import các route và service
+import { resolve } from 'path';
+
+// Local development starts this service from backend/media-service while the
+// shared infrastructure credentials live in the repository root .env. Docker
+// Compose passes the same values as real environment variables, which dotenv
+// deliberately does not overwrite.
+dotenv.config({ path: resolve(process.cwd(), '../../.env') });
+dotenv.config();
 
 import express from 'express';
 import cors from 'cors';

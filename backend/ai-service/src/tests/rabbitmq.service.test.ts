@@ -19,12 +19,27 @@ test('publishes the direct OpenRouter result before acknowledging the report eve
       analysisMode: 'IMAGE_AND_TEXT', provider: 'openrouter', model: 'openai/gpt-4o-mini',
       pipelineVersion: 'openrouter-multimodal-v1', processingTimeMs: 12,
     }),
+    detectWaste: async (imageUrl) => ({ imageUrl, status: 'ok', detections: [], requiresManualReview: false }),
     publish: async (routingKey, data) => { order.push('publish'); assert.equal(routingKey, EVENTS.AI_ANALYZED); published = data; },
   };
   const result = await settleAlertCreatedMessage(message(), { ack: () => order.push('ack'), nack: () => order.push('nack') } as any, dependencies);
   assert.equal(result.acknowledged, true);
   assert.deepEqual(order, ['publish', 'ack']);
   assert.equal(published.analysisMode, 'IMAGE_AND_TEXT');
+});
+
+test('routes flooding to semantic-only without calling waste detection', async () => {
+  let detectionCalled = false;
+  let published: any;
+  const dependencies: AlertCreatedProcessorDependencies = {
+    analyze: async () => ({ category: AlertCategory.FLOODING, severity: Severity.HIGH, confidence: 0.8, displayConfidenceSource: 'CATEGORY', summary: 'Ngập nước.', reasoningSummary: 'Nước ảnh hưởng giao thông.', analysisMode: 'IMAGE_AND_TEXT', provider: 'openrouter', model: 'openai/gpt-4o-mini', pipelineVersion: 'openrouter-multimodal-v1' }),
+    detectWaste: async () => { detectionCalled = true; throw new Error('must not run'); },
+    publish: async (_routingKey, data) => { published = data; },
+  };
+  const result = await settleAlertCreatedMessage(message(), { ack: () => undefined, nack: () => assert.fail('must not nack') } as any, dependencies);
+  assert.equal(result.acknowledged, true);
+  assert.equal(detectionCalled, false);
+  assert.equal(published.analysisPipeline, 'SEMANTIC_ONLY');
 });
 
 test('publishes FAILED instead of dropping a report when OpenRouter is unavailable', async () => {

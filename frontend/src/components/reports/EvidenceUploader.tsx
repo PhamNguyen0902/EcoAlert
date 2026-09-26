@@ -1,181 +1,47 @@
 import { useRef, useState } from "react";
-import {
-  FileImage,
-  ImagePlus,
-  Loader2,
-  RotateCcw,
-  Trash2,
-  UploadCloud,
-} from "lucide-react";
+import { FileImage, ImagePlus, Loader2, Trash2, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/LanguageContext";
 
-// Hiển thị trình tải lên minh chứng, cho phép người dùng chọn, thay thế hoặc xóa hình ảnh minh chứng.
-
-// component chỉ nhận một ảnh; preview url được tạo tại create alert
 interface EvidenceUploaderProps {
-  file: File | null;
-  previewUrl: string | null;
-  onSelect: (file: File) => void;
-  onRemove: () => void;
+  files: File[];
+  previewUrls: string[];
+  onSelect: (files: File[]) => void;
+  onRemove: (index: number) => void;
   disabled?: boolean;
   isProcessing?: boolean;
 }
 
-// Định dạng ảnh
-const formatFileSize = (bytes: number) => {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
+const formatFileSize = (bytes: number) => bytes < 1024 * 1024
+  ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+  : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
-// Hiển thị trình tải lên minh chứng
-export function EvidenceUploader({
-  file,
-  previewUrl,
-  onSelect,
-  onRemove,
-  disabled = false,
-  isProcessing = false,
-}: EvidenceUploaderProps) {
-  const { language } = useLanguage();
+/** Evidence is selected only here; upload and automatic Vision processing happen on submit. */
+export function EvidenceUploader({ files, previewUrls, onSelect, onRemove, disabled = false, isProcessing = false }: EvidenceUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const text =
-    language === "vi"
-      ? {
-          preview: "Xem trước minh chứng",
-          ready: "Sẵn sàng gửi",
-          secure: "Ảnh này sẽ được tải lên an toàn khi bạn gửi báo cáo.",
-          replace: "Thay ảnh",
-          remove: "Xóa",
-          drag: "Kéo ảnh vào đây hoặc nhấp để chọn",
-          required: "Cần một ảnh minh chứng. JPG, PNG hoặc WEBP, tối đa 10 MB.",
-          choose: "Chọn ảnh",
-          uploading: "Đang tải minh chứng…",
-        }
-      : {
-          preview: "Evidence preview",
-          ready: "Ready to submit",
-          secure:
-            "This image will be uploaded securely when you submit the report.",
-          replace: "Replace",
-          remove: "Remove",
-          drag: "Drag an image here, or click to browse",
-          required:
-            "One evidence image is required. JPG, PNG, or WEBP up to 10 MB.",
-          choose: "Choose image",
-          uploading: "Uploading evidence…",
-        };
-
-  const selectFile = (nextFile?: File) => {
-    if (nextFile) onSelect(nextFile);
-  };
-
-  if (file && previewUrl) {
-    return (
-      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-        <div className="grid gap-0 sm:grid-cols-[minmax(0,1.25fr)_minmax(220px,0.75fr)]">
-          <img
-            src={previewUrl}
-            alt={`${text.preview}: ${file.name}`}
-            className="h-52 w-full bg-muted object-cover sm:h-full sm:min-h-64"
-          />
-          <div className="flex flex-col p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <FileImage className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold" title={file.name}>
-                  {file.name}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatFileSize(file.size)} · {text.ready}
-                </p>
-              </div>
-            </div>
-            <p className="mt-4 text-xs leading-5 text-muted-foreground">
-              {text.secure}
-            </p>
-            <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => inputRef.current?.click()}
-                disabled={disabled}
-              >
-                <RotateCcw className="mr-2 h-3.5 w-3.5" />
-                {text.replace}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onRemove}
-                disabled={disabled}
-              >
-                <Trash2 className="mr-2 h-3.5 w-3.5" />
-                {text.remove}
-              </Button>
-            </div>
-          </div>
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={(event) => {
-            selectFile(event.target.files?.[0]);
-            event.target.value = "";
-          }}
-        />
-      </div>
-    );
-  }
+  const addFiles = (next?: FileList | File[]) => next && onSelect(Array.from(next));
 
   return (
-    <label
-      className={`flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:border-primary/50 hover:bg-muted/45"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
-      onDragOver={(event) => {
-        event.preventDefault();
-        if (!disabled) setIsDragging(true);
-      }}
-      onDragLeave={() => setIsDragging(false)}
-      onDrop={(event) => {
-        event.preventDefault();
-        setIsDragging(false);
-        if (!disabled) selectFile(event.dataTransfer.files?.[0]);
-      }}
-    >
-      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <UploadCloud className="h-6 w-6" aria-hidden="true" />
-      </span>
-      <span className="mt-4 text-sm font-semibold">{text.drag}</span>
-      <span className="mt-2 max-w-sm text-xs leading-5 text-muted-foreground">
-        {text.required}
-      </span>
-      <span className="mt-4 inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs font-medium text-foreground">
-        <ImagePlus className="h-3.5 w-3.5" />
-        {text.choose}
-      </span>
-      {isProcessing ? (
-        <span className="mt-4 inline-flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {text.uploading}
-        </span>
-      ) : null}
-      <input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="sr-only"
-        disabled={disabled}
-        onChange={(event) => {
-          selectFile(event.target.files?.[0]);
-          event.target.value = "";
-        }}
-      />
-    </label>
+    <div className="space-y-4">
+      <label
+        className={`flex min-h-48 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-border bg-muted/20 hover:border-primary/50"} ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+        onDragOver={(event) => { event.preventDefault(); if (!disabled) setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(event) => { event.preventDefault(); setIsDragging(false); if (!disabled) addFiles(event.dataTransfer.files); }}
+      >
+        <UploadCloud className="h-7 w-7 text-primary" />
+        <span className="mt-3 text-sm font-semibold">Kéo ảnh vào đây hoặc nhấp để chọn</span>
+        <span className="mt-2 text-xs text-muted-foreground">Tối đa 6 ảnh · JPG, PNG hoặc WEBP · mỗi ảnh tối đa 10 MB.</span>
+        <span className="mt-4 inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs font-medium"><ImagePlus className="h-3.5 w-3.5" />Thêm ảnh</span>
+        {isProcessing ? <span className="mt-4 inline-flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Đang xử lý báo cáo…</span> : null}
+        <input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={disabled} onChange={(event) => { addFiles(event.target.files); event.target.value = ""; }} />
+      </label>
+      {files.length ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {files.map((file, index) => <div key={`${file.name}-${file.lastModified}-${index}`} className="overflow-hidden rounded-xl border bg-card">
+          <img src={previewUrls[index]} alt={`Minh chứng ${index + 1}`} className="h-36 w-full bg-muted object-cover" />
+          <div className="flex items-center gap-2 p-3"><FileImage className="h-4 w-4 shrink-0 text-primary" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">Ảnh {index + 1}: {file.name}</p><p className="text-[11px] text-muted-foreground">{formatFileSize(file.size)}</p></div><Button type="button" variant="ghost" size="icon" onClick={() => onRemove(index)} disabled={disabled} aria-label={`Xóa ảnh ${index + 1}`}><Trash2 className="h-4 w-4" /></Button></div>
+        </div>)}
+      </div> : null}
+    </div>
   );
 }

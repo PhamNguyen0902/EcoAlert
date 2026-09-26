@@ -6,7 +6,6 @@ import {
   MapContainer,
   Marker,
   Popup,
-  TileLayer,
   useMap,
   useMapEvents,
   ZoomControl,
@@ -25,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { reverseGeocoder } from "@/services/reverseGeocoder";
-import { GoongMapLayer } from "@/components/location/GoongMapLayer";
+import { EcoAlertBaseMap } from "@/components/location/EcoAlertBaseMap";
 // chọn vị trí sự cố trên bản đồ bằng nhấp, kéo marker hoặc GPS; hiển thị địa chỉ, tọa độ, sao chép và mở Google Maps.
 export interface PickedLocation {
   latitude: number;
@@ -263,13 +262,7 @@ export function LocationPickerModal({
             zoomControl={false}
             className="ecoalert-map-modal h-full w-full"
           >
-            {/* <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            /> */}
-            {/* dùng goong map */}
-            <GoongMapLayer
-            />
+            <EcoAlertBaseMap />
             <ZoomControl position="topright" />
             <MapViewport
               position={markerPosition}

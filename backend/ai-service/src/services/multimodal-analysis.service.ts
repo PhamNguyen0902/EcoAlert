@@ -39,6 +39,7 @@ export const analyzeMultimodalIncident = async (
     severityConfidence: result.severityConfidence,
     overallSummary: result.overallSummary,
     shortReason: result.shortReason,
+    massEstimate: result.massEstimate,
     semanticModel: result.model,
     pipelineVersion: 'openrouter-multimodal-v1' as const,
   };

@@ -84,11 +84,11 @@ export const getSeverityBadgeVariant = (
 const statusBadgeClassName = (status?: string | null) => {
   switch (normalizeIncidentStatus(status)) {
     case "verified":
-      return "border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-300";
+      return "border-[#10B981]/30 bg-[#10B981]/10 text-[#047857] dark:text-[#10B981]";
     case "assigned":
-      return "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300";
+      return "border-[#10B981]/30 bg-[#10B981]/10 text-[#047857] dark:text-[#10B981]";
     case "in_progress":
-      return "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300";
+      return "border-[#10B981]/30 bg-[#10B981]/10 text-[#047857] dark:text-[#10B981]";
     case "pending":
     case "ai_analyzing":
       return "border-primary/25 bg-primary/10 text-primary";
@@ -102,7 +102,7 @@ const severityBadgeClassName = (severity?: string | null) => {
     case "low":
       return "border-slate-500/25 bg-slate-500/10 text-slate-700 dark:text-slate-300";
     case "medium":
-      return "border-blue-500/25 bg-blue-500/10 text-blue-700 dark:text-blue-300";
+      return "border-[#10B981]/25 bg-[#10B981]/10 text-[#047857] dark:text-[#10B981]";
     default:
       return "";
   }

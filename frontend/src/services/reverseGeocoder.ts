@@ -1,4 +1,5 @@
 const GOONG_REVERSE_URL = "https://rsapi.goong.io/geocode";
+const NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse";
 const GOONG_API_KEY = import.meta.env.VITE_GOONG_API_KEY;
 // giới hạn số lượng địa chỉ lưu trong bộ nhớ tạm
 const CACHE_LIMIT = 50;
@@ -81,8 +82,7 @@ export class NominatimReverseGeocoder implements ReverseGeocoder {
     latitude: number,
     longitude: number,
   ): Promise<string | null> {
-    // bỏ qua nếu tọa độ không hợp lệ hoặc thiếu API Key
-    if (!hasValidCoordinates(latitude, longitude) || !GOONG_API_KEY) {
+    if (!hasValidCoordinates(latitude, longitude)) {
       return null;
     }
     try {
@@ -96,10 +96,11 @@ export class NominatimReverseGeocoder implements ReverseGeocoder {
         REQUEST_TIMEOUT_MS,
       );
       try {
-        // gửi yêu cầu mạng lấy dữ liệu từ Goong Geocode API
         const response = await fetch(
-          `${GOONG_REVERSE_URL}?latlng=${latitude},${longitude}&api_key=${GOONG_API_KEY}`,
-          { signal: controller.signal },
+          GOONG_API_KEY
+            ? `${GOONG_REVERSE_URL}?latlng=${latitude},${longitude}&api_key=${GOONG_API_KEY}`
+            : `${NOMINATIM_REVERSE_URL}?format=jsonv2&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=vi`,
+          { signal: controller.signal, headers: GOONG_API_KEY ? undefined : { Accept: "application/json" } },
         );
         if (!response.ok) {
           return null;
@@ -108,7 +109,7 @@ export class NominatimReverseGeocoder implements ReverseGeocoder {
         if (data.status === "OK" && Array.isArray(data.results) && data.results.length > 0) {
           return data.results[0].formatted_address || null;
         }
-        return null;
+        return formatNominatimAddress(isRecord(data.address) ? data.address : {}) || nonEmptyString(data.display_name);
       } finally {
         // xóa bộ đếm thời gian khi nhận được phản hồi
         clearTimeout(timeoutId);

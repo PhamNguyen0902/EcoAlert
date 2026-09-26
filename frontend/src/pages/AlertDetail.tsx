@@ -1,15 +1,14 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { enUS, vi } from "date-fns/locale";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { MapContainer, Marker } from "react-leaflet";
 import L from "leaflet";
 import {
   AlertCircle,
   ArrowLeft,
-  Bot,
   CheckCircle2,
-  ClipboardList,
-  FileText,
+  Clock3,
+  Copy,
   Loader2,
   MapPin,
   ShieldCheck,
@@ -20,33 +19,27 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EvidenceGallery } from "@/components/incidents/EvidenceGallery";
+import { IncidentDetailCard } from "@/components/incidents/IncidentDetailCard";
 import {
   formatIncidentCategory,
   getStatusDescription,
-  IncidentStatusProgress,
   normalizeIncidentStatus,
   SeverityBadge,
   StatusBadge,
 } from "@/components/incidents/incident-status";
 import { IncidentTimeline } from "@/components/incidents/IncidentTimeline";
-import { OverallAiAnalysisCard } from "@/components/incidents/OverallAiAnalysisCard";
+import { EnvironmentalAiAnalysis } from "@/components/incidents/EnvironmentalAiAnalysis";
 import { IncidentLocationDetails } from "@/components/location/IncidentLocationDetails";
 import { hasValidCoordinates } from "@/lib/maps";
-import {
-  getAlertDisplayConfidence,
-  getAlertDisplaySeverity,
-} from "@/lib/ai-confidence";
+import { getAlertDisplaySeverity } from "@/lib/ai-confidence";
 import "leaflet/dist/leaflet.css";
-import { GoongMapLayer } from "@/components/location/GoongMapLayer";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { EcoAlertBaseMap } from "@/components/location/EcoAlertBaseMap";
 // trang chi tiết báo cáo sự cố môi trường, hiển thị thông tin chi tiết, hình ảnh minh chứng, phân tích AI và tiến trình xử lý.
-delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
+const incidentLocationIcon = L.divIcon({
+  className: "",
+  html: '<span style="display:block;height:24px;width:24px;border:3px solid #fff;border-radius:9999px;background:#10B981;box-shadow:0 3px 10px rgba(16,185,129,.45)"></span>',
+  iconAnchor: [12, 12],
+  iconSize: [24, 24],
 });
 
 const formatDate = (
@@ -61,6 +54,349 @@ const formatDate = (
     ? unavailable
     : format(date, dateFormat, { locale: language === "vi" ? vi : enUS });
 };
+
+const resolveProgressStep = (status: unknown) => {
+  const value = String(status ?? "").trim().toUpperCase();
+
+  if (
+    [
+      "RESOLVED",
+      "COMPLETED",
+      "COMPLETE",
+      "CLOSED",
+      "DONE",
+      "DA_HOAN_THANH",
+      "HOAN_THANH",
+    ].some((token) => value.includes(token))
+  ) {
+    return 4;
+  }
+
+  if (
+    [
+      "IN_PROGRESS",
+      "PROCESSING",
+      "HANDLING",
+      "WORKING",
+      "DANG_XU_LY",
+      "XU_LY",
+    ].some((token) => value.includes(token))
+  ) {
+    return 3;
+  }
+
+  if (
+    [
+      "RECEIVED",
+      "VERIFIED",
+      "ACCEPTED",
+      "ASSIGNED",
+      "APPROVED",
+      "TIEP_NHAN",
+      "DA_TIEP_NHAN",
+    ].some((token) => value.includes(token))
+  ) {
+    return 2;
+  }
+
+  return 1;
+};
+
+type ReportStatusProgressProps = {
+  status: ReturnType<typeof normalizeIncidentStatus>;
+  createdAt?: string;
+  startedAt?: string;
+  resolvedAt?: string;
+  language: "vi" | "en";
+};
+
+function ReportStatusProgress({
+  status,
+  createdAt,
+  startedAt,
+  resolvedAt,
+  language,
+}: ReportStatusProgressProps) {
+  const currentStep = resolveProgressStep(status);
+  const steps = [
+    {
+      title: language === "vi" ? "Đã gửi" : "Submitted",
+      detail: formatDate(createdAt, language, "HH:mm · dd/MM/yyyy"),
+    },
+    {
+      title: language === "vi" ? "Tiếp nhận" : "Received",
+      detail:
+        currentStep >= 2
+          ? language === "vi"
+            ? "Hồ sơ đã được tiếp nhận"
+            : "Report received"
+          : language === "vi"
+            ? "Chờ tiếp nhận"
+            : "Awaiting receipt",
+    },
+    {
+      title: language === "vi" ? "Đang xử lý" : "In progress",
+      detail: startedAt
+        ? formatDate(startedAt, language, "HH:mm · dd/MM/yyyy")
+        : currentStep >= 3
+          ? language === "vi"
+            ? "Đang phối hợp xử lý"
+            : "Response in progress"
+          : language === "vi"
+            ? "Chờ xử lý"
+            : "Awaiting action",
+    },
+    {
+      title: language === "vi" ? "Nghiệm thu" : "Verification",
+      detail: resolvedAt
+        ? formatDate(resolvedAt, language, "HH:mm · dd/MM/yyyy")
+        : language === "vi"
+          ? "Dự kiến nghiệm thu"
+          : "Awaiting verification",
+    },
+  ];
+
+  const progressPercent =
+    steps.length > 1 ? ((currentStep - 1) / (steps.length - 1)) * 100 : 0;
+
+  return (
+    <section
+      className="mt-6 rounded-xl border border-slate-800/90 bg-[#071321]/75 px-4 py-4 sm:px-5 sm:py-5"
+      aria-label={language === "vi" ? "Tiến độ xử lý báo cáo" : "Report progress"}
+    >
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold text-slate-200">
+            {language === "vi" ? "Tiến độ xử lý" : "Processing progress"}
+          </p>
+          <p className="mt-1 text-[11px] text-slate-500">
+            {language === "vi"
+              ? "Cập nhật theo trạng thái hồ sơ"
+              : "Updated from the report workflow"}
+          </p>
+        </div>
+
+        <span className="shrink-0 rounded-full border border-slate-800 bg-[#0b1727] px-2.5 py-1 text-[10px] font-semibold text-slate-400">
+          {language === "vi"
+            ? `Bước ${currentStep}/${steps.length}`
+            : `Step ${currentStep}/${steps.length}`}
+        </span>
+      </div>
+
+      {/* Desktop / tablet: compact horizontal stepper */}
+      <div className="hidden md:block">
+        <div className="relative">
+          <div
+            className="pointer-events-none absolute left-[12.5%] right-[12.5%] top-[17px] h-px bg-slate-800"
+            aria-hidden="true"
+          >
+            <span
+              className="block h-px bg-[#10B981]/70 transition-[width] duration-500"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
+          <ol className="relative grid grid-cols-4">
+            {steps.map((step, index) => {
+              const stepNumber = index + 1;
+              const isCompleted = stepNumber < currentStep;
+              const isActive = stepNumber === currentStep;
+              const isReached = stepNumber <= currentStep;
+
+              return (
+                <li
+                  key={step.title}
+                  className="min-w-0 px-2 text-center"
+                  aria-current={isActive ? "step" : undefined}
+                >
+                  <span
+                    className={[
+                      "relative z-10 mx-auto flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300",
+                      isCompleted
+                        ? "border-[#10B981]/70 bg-[#10B981] text-[#04110c] shadow-[0_0_0_4px_rgba(16,185,129,0.08)]"
+                        : isActive
+                          ? "border-[#10B981] bg-[#0a1d1a] text-[#34d399] shadow-[0_0_0_5px_rgba(16,185,129,0.08),0_0_18px_rgba(16,185,129,0.18)]"
+                          : "border-slate-700 bg-[#091522] text-slate-500",
+                    ].join(" ")}
+                    aria-hidden="true"
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      stepNumber
+                    )}
+                  </span>
+
+                  <div className="mt-3 min-w-0">
+                    <p
+                      className={[
+                        "truncate text-[13px] font-semibold",
+                        isReached ? "text-slate-100" : "text-slate-500",
+                      ].join(" ")}
+                      title={step.title}
+                    >
+                      {step.title}
+                    </p>
+                    <p
+                      className={[
+                        "mt-1 truncate text-[11px]",
+                        isActive
+                          ? "font-medium text-[#34d399]/90"
+                          : isCompleted
+                            ? "text-slate-400"
+                            : "text-slate-600",
+                      ].join(" ")}
+                      title={step.detail}
+                    >
+                      {step.detail}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </div>
+
+      {/* Mobile: vertical stepper so labels never get squeezed */}
+      <ol className="space-y-0 md:hidden">
+        {steps.map((step, index) => {
+          const stepNumber = index + 1;
+          const isCompleted = stepNumber < currentStep;
+          const isActive = stepNumber === currentStep;
+          const isReached = stepNumber <= currentStep;
+
+          return (
+            <li
+              key={step.title}
+              className="relative flex gap-3 pb-5 last:pb-0"
+              aria-current={isActive ? "step" : undefined}
+            >
+              {index < steps.length - 1 ? (
+                <span
+                  className={[
+                    "absolute left-[17px] top-9 bottom-0 w-px",
+                    stepNumber < currentStep
+                      ? "bg-[#10B981]/60"
+                      : "bg-slate-800",
+                  ].join(" ")}
+                  aria-hidden="true"
+                />
+              ) : null}
+
+              <span
+                className={[
+                  "relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
+                  isCompleted
+                    ? "border-[#10B981]/70 bg-[#10B981] text-[#04110c]"
+                    : isActive
+                      ? "border-[#10B981] bg-[#0a1d1a] text-[#34d399] shadow-[0_0_0_4px_rgba(16,185,129,0.08)]"
+                      : "border-slate-700 bg-[#091522] text-slate-500",
+                ].join(" ")}
+                aria-hidden="true"
+              >
+                {isCompleted ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  stepNumber
+                )}
+              </span>
+
+              <div className="min-w-0 pt-0.5">
+                <p
+                  className={[
+                    "text-sm font-semibold",
+                    isReached ? "text-slate-100" : "text-slate-500",
+                  ].join(" ")}
+                >
+                  {step.title}
+                </p>
+                <p
+                  className={[
+                    "mt-1 text-xs",
+                    isActive
+                      ? "font-medium text-[#34d399]/90"
+                      : isCompleted
+                        ? "text-slate-400"
+                        : "text-slate-600",
+                  ].join(" ")}
+                >
+                  {step.detail}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+type ReportHeroCardProps = {
+  shortId: string;
+  title: string;
+  categoryLabel: string;
+  createdAt?: string;
+  startedAt?: string;
+  resolvedAt?: string;
+  status: ReturnType<typeof normalizeIncidentStatus>;
+  severity: ReturnType<typeof getAlertDisplaySeverity>;
+  language: "vi" | "en";
+};
+
+function ReportHeroCard({
+  shortId,
+  title,
+  categoryLabel,
+  createdAt,
+  startedAt,
+  resolvedAt,
+  status,
+  severity,
+  language,
+}: ReportHeroCardProps) {
+  return (
+    <section className="rounded-2xl border border-slate-800/90 bg-[#0b1727] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.16)] sm:p-6">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span>{language === "vi" ? "Mã hồ sơ:" : "Report ID:"}</span>
+            <code className="rounded-md border border-slate-700/80 bg-[#071321] px-2 py-1 font-mono text-[11px] font-semibold tracking-[0.08em] text-slate-300">
+              #{shortId}
+            </code>
+          </div>
+
+          <h1 className="mt-4 max-w-5xl break-words text-2xl font-bold leading-tight tracking-[-0.02em] text-slate-50 sm:text-[30px]">
+            {title}
+          </h1>
+
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-400 sm:text-sm">
+            <span className="inline-flex items-center rounded-md border border-slate-700/90 bg-[#071321] px-2.5 py-1 text-xs font-medium text-slate-200">
+              {categoryLabel}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock3 className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
+              {formatDate(createdAt, language, "dd/MM/yyyy · HH:mm")}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2 xl:max-w-[300px] xl:justify-end">
+          <StatusBadge status={status} />
+          <SeverityBadge severity={severity} />
+        </div>
+      </div>
+
+      <ReportStatusProgress
+        status={status}
+        createdAt={createdAt}
+        startedAt={startedAt}
+        resolvedAt={resolvedAt}
+        language={language}
+      />
+    </section>
+  );
+}
 // trang chi tiết báo cáo sự cố môi trường, hiển thị thông tin chi tiết, hình ảnh minh chứng, phân tích AI và tiến trình xử lý.
 export default function AlertDetail() {
   const { t, language } = useLanguage();
@@ -70,8 +406,11 @@ export default function AlertDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-80 items-center justify-center" role="status">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div
+        className="dark flex min-h-[70vh] items-center justify-center bg-[#06111f] text-slate-100"
+        role="status"
+      >
+        <Loader2 className="h-8 w-8 animate-spin text-[#10B981]" />
         <span className="sr-only">
           {language === "vi"
             ? "Đang tải báo cáo sự cố"
@@ -83,16 +422,18 @@ export default function AlertDetail() {
 
   if (isError || !alert) {
     return (
-      <div className="mx-auto flex max-w-lg flex-col items-center rounded-xl border border-destructive/30 bg-card px-6 py-12 text-center shadow-sm">
-        <AlertCircle className="h-9 w-9 text-destructive" aria-hidden="true" />
-        <h1 className="mt-4 text-lg font-semibold">{t("report_not_found")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Báo cáo này có thể không còn khả dụng hoặc bạn không có quyền xem.
-        </p>
-        <Button className="mt-6" variant="outline" onClick={() => navigate(-1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Quay lại
-        </Button>
+      <div className="dark min-h-[70vh] bg-[#06111f] px-4 py-16 text-slate-100">
+        <div className="mx-auto flex max-w-lg flex-col items-center rounded-2xl border border-rose-500/20 bg-[#0b1727] px-6 py-12 text-center shadow-[0_18px_60px_rgba(0,0,0,0.18)]">
+          <AlertCircle className="h-9 w-9 text-rose-400" aria-hidden="true" />
+          <h1 className="mt-4 text-lg font-semibold">{t("report_not_found")}</h1>
+          <p className="mt-2 text-sm text-slate-400">
+            Báo cáo này có thể không còn khả dụng hoặc bạn không có quyền xem.
+          </p>
+          <Button className="mt-6" variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Quay lại
+          </Button>
+        </div>
       </div>
     );
   }
@@ -111,195 +452,82 @@ export default function AlertDetail() {
     alert.resolutionNotes ||
     resolutionEvidence.length,
   );
-  const displayConfidence = getAlertDisplayConfidence(alert);
-  const confidence = displayConfidence.value;
   const displaySeverity = getAlertDisplaySeverity(alert);
   const shortId = alert._id.slice(-8).toUpperCase();
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 pb-10">
-      <header className="border-b pb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          aria-label="Quay lại danh sách"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Quay lại
-        </Button>
-        <div className="mt-4 flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-primary">
-              Mã báo cáo #{shortId}
-            </p>
-            <h1 className="mt-1 break-words text-2xl font-bold tracking-tight sm:text-3xl">
-              {alert.title}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-              <span>{formatIncidentCategory(alert.category, language)}</span>
-              <span aria-hidden="true">·</span>
-              <span>
-                {language === "vi" ? "Thời gian gửi" : "Reported"}:{" "}
-                {formatDate(alert.createdAt, language, "PPp")}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 lg:justify-end">
-            <StatusBadge status={status} />
-            <SeverityBadge severity={displaySeverity} />
+    <div className="dark min-h-screen bg-[#06111f] text-slate-100">
+      <div className="mx-auto w-full max-w-[1440px] px-4 pb-12 pt-4 sm:px-6 lg:px-8">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <nav
+            className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500"
+            aria-label="Điều hướng báo cáo"
+          >
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-1.5 rounded-md px-1 py-1 transition-colors hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/50"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              {language === "vi" ? "Báo cáo của tôi" : "My reports"}
+            </button>
+            <span aria-hidden="true" className="text-slate-700">/</span>
+            <span className="truncate font-semibold text-slate-300">
+              {language === "vi" ? "Chi tiết báo cáo" : "Report details"}
+            </span>
+          </nav>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(`#${shortId}`)}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-800 bg-[#0b1727] px-3 text-xs font-medium text-slate-300 transition-colors hover:border-slate-700 hover:bg-[#0e1d30] hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/50"
+              title={language === "vi" ? "Sao chép mã báo cáo" : "Copy report ID"}
+            >
+              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+              {language === "vi" ? "Sao chép mã" : "Copy ID"}
+            </button>
+
+            <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-800 bg-[#0b1727] px-3 text-[11px] font-semibold tracking-wide text-slate-400">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#10B981]/80" aria-hidden="true" />
+              VN-2000
+            </span>
           </div>
         </div>
-      </header>
 
-      <IncidentStatusProgress status={status} />
+        <ReportHeroCard
+          shortId={shortId}
+          title={alert.title}
+          categoryLabel={formatIncidentCategory(alert.category, language)}
+          createdAt={alert.createdAt}
+          startedAt={alert.startedAt}
+          resolvedAt={alert.resolvedAt}
+          status={status}
+          severity={displaySeverity}
+          language={language}
+        />
 
-      <main className="grid gap-6 lg:grid-cols-[minmax(0,2.2fr)_minmax(300px,0.8fr)]">
-        <div className="min-w-0 space-y-8">
-          <section aria-labelledby="incident-details-heading">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <ClipboardList className="h-4 w-4" aria-hidden="true" />
-              </span>
-              <div>
-                <h2
-                  id="incident-details-heading"
-                  className="text-lg font-semibold"
-                >
-                  Chi tiết sự cố
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Thông tin được cung cấp cùng báo cáo gốc.
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 border-y py-5">
-              <dl className="grid gap-5 sm:grid-cols-3">
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {language === "vi" ? "Danh mục" : "Category"}
-                  </dt>
-                  <dd className="mt-1.5 text-sm font-medium">
-                    {formatIncidentCategory(alert.category, language)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {language === "vi" ? "Thời gian gửi" : "Reported"}
-                  </dt>
-                  <dd className="mt-1.5 text-sm font-medium">
-                    {formatDate(alert.createdAt, language, "PPp")}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Trạng thái hiện tại
-                  </dt>
-                  <dd className="mt-1.5">
-                    <StatusBadge status={status} />
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-6 border-t pt-5">
-                <h3 className="flex items-center gap-2 text-sm font-semibold">
-                  <FileText
-                    className="h-4 w-4 text-primary"
-                    aria-hidden="true"
-                  />
-                  Mô tả sự cố
-                </h3>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-foreground">
-                  {alert.description || "Chưa cung cấp mô tả."}
-                </p>
-              </div>
-            </div>
-          </section>
+        <main className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-5">
+          <IncidentDetailCard
+            categoryLabel={formatIncidentCategory(alert.category, language)}
+            reportedAt={formatDate(alert.createdAt, language, "dd/MM/yyyy · HH:mm")}
+            reporterLabel={
+              alert.citizenId ? "Công dân đã xác thực" : "Công dân ẩn danh"
+            }
+            severity={displaySeverity}
+            description={alert.description}
+          />
 
           <EvidenceGallery
-            title="Hình ảnh minh chứng"
-            description="Hình ảnh gốc gửi cùng báo cáo sự cố."
+            title="Hình ảnh minh chứng thực địa"
+            description="Hình ảnh gốc do người dân gửi kèm báo cáo sự cố."
             images={originalEvidence}
             emptyMessage={t("alert_detail.no_media")}
             altPrefix="Hình ảnh minh chứng"
           />
 
-          {/*Toàn bộ phần phân tích AI nếu có dữ liệu trả về */}
-
-          <section
-            className="border-t pt-8"
-            aria-labelledby="ai-analysis-heading"
-          >
-            <div className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Bot className="h-4 w-4" aria-hidden="true" />
-              </span>
-              <div>
-                <h2 id="ai-analysis-heading" className="text-lg font-semibold">
-                  {t("alert_detail.ai_analysis")}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {t("alert_detail.ai_read_only")}
-                </p>
-              </div>
-            </div>
-
-            <dl className="mt-5 grid gap-4 rounded-lg border bg-muted/30 p-4 text-sm sm:grid-cols-3">
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t("alert_detail.detected_category")}
-                </dt>
-                <dd className="mt-1.5 break-words font-medium">
-                  {formatIncidentCategory(alert.category, language)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t("alert_detail.confidence")} ·{" "}
-                  {displayConfidence.source === "SEMANTIC"
-                    ? t("alert_detail.confidence_semantic")
-                    : t("alert_detail.confidence_category")}
-                </dt>
-                <dd className="mt-1.5 font-medium tabular-nums">
-                  {confidence !== null
-                    ? `${Math.round(confidence * 100)}%`
-                    : t("alert_detail.confidence_unavailable")}
-                </dd>
-                {confidence !== null ? (
-                  <div
-                    className="mt-2 h-2 overflow-hidden rounded-full bg-muted"
-                    role="progressbar"
-                    aria-label={t("alert_detail.ai_confidence_aria")}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={Math.round(confidence * 100)}
-                  >
-                    <div
-                      className="h-full bg-primary transition-[width]"
-                      style={{ width: `${confidence * 100}%` }}
-                    />
-                  </div>
-                ) : null}
-              </div>
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t("alert_detail.suggested_severity")}
-                </dt>
-                <dd className="mt-1.5">
-                  <SeverityBadge severity={displaySeverity} />
-                </dd>
-              </div>
-            </dl>
-
-            <p className="mt-4 rounded-lg border bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">
-              {t("alert_detail.ai_disclaimer")}
-            </p>
-
-            {/*Thẻ AI phân tích dữ liệu trả về từ openrouter*/}
-
-            <div className="mt-5 space-y-5">
-              <OverallAiAnalysisCard alert={alert} />
-            </div>
-          </section>
+          <EnvironmentalAiAnalysis alert={alert} />
 
           {hasTreatmentResult ? (
             <section
@@ -375,7 +603,7 @@ export default function AlertDetail() {
 
           {/* Phần hiển thị bản đồ vị trí sự cố và tóm tắt tiến độ xử lý */}
 
-        <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+        <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <Card className="overflow-hidden">
             <CardContent className="p-0">
               <div className="p-5">
@@ -397,12 +625,8 @@ export default function AlertDetail() {
                     className="h-full w-full"
                     aria-label="Bản đồ vị trí sự cố"
                   >
-                    {/* <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    /> */}
-                    <GoongMapLayer/>
-                    <Marker position={[latitude, longitude]} />
+                    <EcoAlertBaseMap />
+                    <Marker position={[latitude, longitude]} icon={incidentLocationIcon} />
                   </MapContainer>
                 </div>
               ) : (
@@ -469,7 +693,7 @@ export default function AlertDetail() {
 
       {/* Timeline hiển thị tiến trình xử lý sự cố */}
         <section
-          className="min-w-0 border-t pt-8 lg:col-start-1"
+          className="min-w-0 xl:col-start-1"
           aria-label={t("alert_detail.timeline")}
         >
           <IncidentTimeline
@@ -478,7 +702,8 @@ export default function AlertDetail() {
             citizenId={alert.citizenId}
           />
         </section>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

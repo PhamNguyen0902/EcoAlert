@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { Loader2, MapPin, Search } from "lucide-react";
 import "leaflet/dist/leaflet.css";
@@ -16,7 +16,7 @@ import {
   getIncidentStatusLabel,
 } from "@/lib/incident-presentation";
 import type { Alert } from "@/types";
-import { GoongMapLayer } from "@/components/location/GoongMapLayer";
+import { EcoAlertBaseMap } from "@/components/location/EcoAlertBaseMap";
 const DEFAULT_CENTER: [number, number] = [10.762622, 106.660172];
 // hiển thị bản đồ quản trị và gom nhóm các sự cố bằng markerclustergroup
 function FitMapToIncidents({ alerts }: { alerts: readonly Alert[] }) {
@@ -46,8 +46,8 @@ function FitMapToIncidents({ alerts }: { alerts: readonly Alert[] }) {
 export default function AdminGisMap() {
   const { language } = useLanguage();
   
-  // tải tối đa một nghìn sự cố rồi lọc tại client; chưa truy vấn theo viewport hoặc bounding box
-  const { data, isLoading } = useAlerts(1, 1000);
+  // Keep initial marker rendering bounded. The API currently caps each page at 100.
+  const { data, isLoading } = useAlerts(1, 100);
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -111,12 +111,7 @@ export default function AdminGisMap() {
 
       <section className="relative isolate z-0 min-h-[60vh] flex-1 overflow-hidden rounded-xl border bg-muted shadow-sm">
         <MapContainer center={DEFAULT_CENTER}  zoom={13}  maxZoom={19} minZoom={2} className="w-full h-full z-0">
-          {/* <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          /> */}
-          {/* dùng goong map */}
-          <GoongMapLayer/>
+          <EcoAlertBaseMap />
           <FitMapToIncidents alerts={alerts} />
           {/* marker cluster group và chunked loading giúp bản đồ mượt khi có nhiều sự cố */}
           <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>

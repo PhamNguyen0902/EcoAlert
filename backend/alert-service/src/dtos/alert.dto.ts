@@ -18,18 +18,34 @@ const citizenClassificationSchema = z
     decision: z.enum(["CONFIRM", "CORRECT"]).optional(),
   })
   .optional();
+
+const visionDetectionSchema = z.object({
+  materialClass: z.string().trim().min(1).max(100),
+  suggestedCategory: z.string().trim().max(100).optional(),
+  confidence: z.number().min(0).max(1),
+  bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+});
+
+const visionEvidenceSchema = z.object({
+  imageUrl: z.string().url(),
+  status: z.enum(['ok', 'no_detection', 'error', 'skipped_not_applicable']),
+  detections: z.array(visionDetectionSchema).max(300),
+  requiresManualReview: z.boolean(),
+});
 //backend kiểm tra  payload ở đây
 export const createAlertSchema = z.object({
   title: z.string().min(5),
   description: z.string().min(10),
   category: categorySchema.optional(),
+  categories: z.array(categorySchema).max(12).optional(),
   severity: z.nativeEnum(Severity).or(z.string()).optional(),
-  mediaUrls: z.array(z.string().url()).optional(),
+  mediaUrls: z.array(z.string().url()).min(1).max(6),
+  visionEvidence: z.array(visionEvidenceSchema).max(6).optional(),
   location: z.object({
     type: z.literal("Point"),
     coordinates: z.tuple([z.number(), z.number()]), // [longitude, latitude]
   }),
-  address: z.string().optional(),
+  address: z.string().trim().min(1).max(500).optional(),
   isAnonymous: z.boolean().optional(),
   voiceNoteUrl: z.string().url().optional().or(z.string().optional()),
   imageValidation: imageValidationSchema.optional(),
@@ -117,6 +133,7 @@ export const updateAlertSchema = z.object({
     .optional(),
   address: z.string().optional(),
   category: z.nativeEnum(AlertCategory).optional(),
+  categories: z.array(categorySchema).max(12).optional(),
   severity: z.nativeEnum(Severity).optional(),
 });
 export type UpdateAlertDto = z.infer<typeof updateAlertSchema>;
