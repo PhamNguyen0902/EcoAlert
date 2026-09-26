@@ -615,9 +615,6 @@ export default function AlertDetail() {
               </div>
               {hasCoordinates ? (
                 <div className="h-64 border-t bg-muted">
-
-                  {/* Bản đồ hiển thị vị trí sự cố nếu có tọa độ GPS hợp lệ */}
-                  
                   <MapContainer
                     center={[latitude, longitude]}
                     zoom={15}
@@ -640,8 +637,6 @@ export default function AlertDetail() {
               )}
             </CardContent>
           </Card>
-
-              {/* Tóm tắt tiến độ */}
 
           <Card>
             <CardContent className="p-5">
@@ -691,7 +686,6 @@ export default function AlertDetail() {
           </Card>
         </aside>
 
-      {/* Timeline hiển thị tiến trình xử lý sự cố */}
         <section
           className="min-w-0 xl:col-start-1"
           aria-label={t("alert_detail.timeline")}

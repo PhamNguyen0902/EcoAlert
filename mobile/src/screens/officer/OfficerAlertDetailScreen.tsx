@@ -188,7 +188,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Danh mục sự cố */}
+        {/* Category & Status */}
         <View style={styles.badgesRow}>
           <Badge
             label={getCategoryLabel(alert.category, language)}
@@ -206,8 +206,8 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
 
-        {/* Bước 1 Chấp nhận xử lý khi Admin giao việc */}
-        <Text style={[styles.sectionHeading, { color: colors.text }]}>Hành động xử lý sự cố</Text>
+        {/* Workflow Quick Action Buttons */}
+        <Text style={[styles.sectionHeading, { color: colors.text }]}>Hành động Xử lý Sự cố</Text>
         <View style={styles.workflowGrid}>
           {currentStatus === "ASSIGNED" ? (
             <Button
@@ -226,10 +226,9 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
                 <Text style={[styles.arrivedBadgeText, { color: isDark ? "#86EFAC" : "#15803D" }]}>Đã đến hiện trường</Text>
               </View>
             ) : (
-              // Bước 2: Xác nhận đã đến hiện trường
               <Button
                 title="Bước 2: Xác nhận đã đến hiện trường"
-                onPress={handleConfirmArrival}            
+                onPress={handleConfirmArrival}
                 loading={confirmArrivalMutation.isPending}
                 variant="outline"
                 style={styles.workflowBtn}
@@ -239,7 +238,6 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           ) : null}
 
           {currentStatus === "IN_PROGRESS" && alert.checkIn?.verified ? (
-            // Bước 3: Đánh dấu đã hoàn thành khi cán bộ đã xử lý xong
             <Button
               title="Bước 3: Đánh dấu Đã hoàn thành"
               onPress={() => setResolutionModalOpen(true)}
@@ -249,7 +247,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           ) : null}
         </View>
 
-        {/* Cán bộ nhập ghi chú của công việc đã thực hiện */}
+        {/* Officer Note Input */}
         <GlassCard style={styles.noteFormCard}>
           <Text style={[styles.sectionHeading, { color: colors.text }]}>Ghi chú kiểm tra / Nghiệp vụ Cán bộ</Text>
           <Input
@@ -278,7 +276,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
 
         <OverallAiAnalysisCard alert={alert} />
 
-        {/* Ảnh chụp xác minh đã xử lý công việc xong  */}
+        {/* Evidence Photos */}
         {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
           <View style={styles.sectionBox}>
             <Text style={[styles.sectionHeading, { color: colors.text }]}>Hình ảnh & Minh chứng</Text>
@@ -290,7 +288,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           </View>
         ) : null}
 
-        {/* Vị trí của sự cố giải quyết */}
+        {/* Map View */}
         <View style={styles.sectionBox}>
           <Text style={[styles.sectionHeading, { color: colors.text }]}>Vị trí Sự cố (Bản đồ)</Text>
           <Card style={styles.mapCard}>

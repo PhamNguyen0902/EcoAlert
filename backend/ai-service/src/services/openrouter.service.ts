@@ -345,8 +345,7 @@ export const parseIncidentAnalysis = (
 ): IncidentAnalysis => {
   let parsed: unknown;
   try {
-    const cleanContent = content.replace(/^```(?:json)?\n?/, '').replace(/```$/, '').trim();
-    parsed = JSON.parse(cleanContent);
+    parsed = JSON.parse(content);
   } catch {
     throw new OpenRouterResponseError('OpenRouter trả về dữ liệu JSON không hợp lệ.');
   }

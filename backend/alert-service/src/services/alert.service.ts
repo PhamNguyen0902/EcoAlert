@@ -10,7 +10,6 @@ import {
   UpdateAlertDto,
   UpdateAlertStatusDto,
 } from "../dtos/alert.dto";
-import { haversineDistanceMeters } from "../utils/geo-evidence.util";
 import {
   IAlert,
   IAlertClassification,
@@ -470,7 +469,6 @@ export class AlertService {
   }
 
   // officer xác nhận đã đến hiện trường
-  // officer xác nhận đã đến hiện trường
   async confirmArrival(
     id: string,
     actor: WorkflowActor,
@@ -481,30 +479,6 @@ export class AlertService {
     if (normStatus(alert.status) !== AlertStatus.IN_PROGRESS)
       throw new ConflictError("Sự cố phải đang xử lý để check-in");
 
-    // 1. Lấy tọa độ của sự cố lưu trong DB (GeoJSON lưu [Kinh độ, Vĩ độ])
-    const incidentLng = alert.location?.coordinates[0];
-    const incidentLat = alert.location?.coordinates[1];
-
-    // 2. Tính khoảng cách thực tế
-    let distanceMeters = 0;
-    if (incidentLat && incidentLng && data.latitude && data.longitude) {
-      distanceMeters = haversineDistanceMeters(
-        incidentLat,
-        incidentLng,
-        data.latitude,
-        data.longitude
-      );
-    }
-
-    // 3. Kiểm tra khoảng cách (Ví dụ: Cho phép tối đa 50 mét)
-    const MAX_RADIUS = 50;
-    if (distanceMeters > MAX_RADIUS) {
-      throw new ConflictError(
-        `Check-in thất bại: Bạn đang đứng cách sự cố ${Math.round(distanceMeters)}m. Vui lòng di chuyển vào phạm vi ${MAX_RADIUS}m để xác nhận.`
-      );
-    }
-
-    // 4. Lưu dữ liệu Check-in với khoảng cách thật
     const checkIn = {
       officerId: actor.id,
       location: {
@@ -512,7 +486,7 @@ export class AlertService {
         coordinates: [data.longitude, data.latitude] as [number, number],
       },
       accuracyMeters: data.accuracyMeters,
-      distanceFromIncidentMeters: Math.round(distanceMeters), // Đã thay 0 thành số thật
+      distanceFromIncidentMeters: 0,
       checkedInAt: new Date(),
       verified: true,
     };
@@ -621,7 +595,6 @@ export class AlertService {
           category: analysis.category || alert.category,
           severity: analysis.severity || alert.severity,
           aiConfidence: displayConfidence.value,
-          aiConfidenceSource: displayConfidence.source,
           aiSummary:
             analysis.overallAnalysis?.overallSummary ?? analysis.summary,
           aiReasoningSummary:

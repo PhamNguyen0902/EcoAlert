@@ -25,7 +25,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { Alert as AlertItem } from "../../types";
 import type { CitizenStackParamList, CitizenTabParamList } from "../../navigation/types";
 import { useAlerts } from "../../hooks/useAlerts";
-import { useProfile, useLogout } from "../../hooks/useAuth";
+import { useProfile } from "../../hooks/useAuth";
 import { useDashboardLocation } from "../../hooks/useDashboardLocation";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
@@ -57,57 +57,55 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
   const profile = useProfile();
-  const logoutMutation = useLogout();
   const alertsQuery = useAlerts(1, 100);
   const [refreshing, setRefreshing] = useState(false);
-
 
   const alerts = alertsQuery.data?.items ?? [];
   const { location } = useDashboardLocation(alerts[0]);
 
   const copy = language === "vi"
     ? {
-      greeting: "Xin chào",
-      greetingBody: "Hãy cùng giữ thành phố xanh hôm nay.",
-      reportTitle: "Báo cáo sự cố môi trường",
-      reportBody: "Phát hiện vấn đề? Chụp ảnh và gửi ngay cho EcoAlert.",
-      reportButton: "Báo cáo sự cố",
-      photo: "Ảnh",
-      gps: "GPS",
-      aiAnalysis: "AI phân tích",
-      statsTitle: "Báo cáo của bạn",
-      total: "Tổng cộng",
-      processing: "Đang xử lý",
-      completed: "Hoàn thành",
-      active: "Đang được xử lý",
-      recent: "Báo cáo gần đây",
-      viewAll: "Xem tất cả",
-      empty: "Bạn chưa có báo cáo nào.",
-      emptyButton: "Tạo báo cáo đầu tiên",
-      aiPending: "AI đang phân tích…",
-      unknownLocation: "Chưa có địa chỉ",
-    }
+        greeting: "Xin chào",
+        greetingBody: "Hãy cùng giữ thành phố xanh hôm nay.",
+        reportTitle: "Báo cáo sự cố môi trường",
+        reportBody: "Phát hiện vấn đề? Chụp ảnh và gửi ngay cho EcoAlert.",
+        reportButton: "Báo cáo sự cố",
+        photo: "Ảnh",
+        gps: "GPS",
+        aiAnalysis: "AI phân tích",
+        statsTitle: "Báo cáo của bạn",
+        total: "Tổng cộng",
+        processing: "Đang xử lý",
+        completed: "Hoàn thành",
+        active: "Đang được xử lý",
+        recent: "Báo cáo gần đây",
+        viewAll: "Xem tất cả",
+        empty: "Bạn chưa có báo cáo nào.",
+        emptyButton: "Tạo báo cáo đầu tiên",
+        aiPending: "AI đang phân tích…",
+        unknownLocation: "Chưa có địa chỉ",
+      }
     : {
-      greeting: "Hello",
-      greetingBody: "Let’s help keep the city green today.",
-      reportTitle: "Report an environmental incident",
-      reportBody: "Spotted a problem? Take a photo and send it to EcoAlert.",
-      reportButton: "Report incident",
-      photo: "Photo",
-      gps: "GPS",
-      aiAnalysis: "AI analysis",
-      statsTitle: "Your reports",
-      total: "Total",
-      processing: "Processing",
-      completed: "Completed",
-      active: "Being handled",
-      recent: "Recent reports",
-      viewAll: "View all",
-      empty: "You have not submitted a report yet.",
-      emptyButton: "Create your first report",
-      aiPending: "AI is analyzing…",
-      unknownLocation: "Address unavailable",
-    };
+        greeting: "Hello",
+        greetingBody: "Let’s help keep the city green today.",
+        reportTitle: "Report an environmental incident",
+        reportBody: "Spotted a problem? Take a photo and send it to EcoAlert.",
+        reportButton: "Report incident",
+        photo: "Photo",
+        gps: "GPS",
+        aiAnalysis: "AI analysis",
+        statsTitle: "Your reports",
+        total: "Total",
+        processing: "Processing",
+        completed: "Completed",
+        active: "Being handled",
+        recent: "Recent reports",
+        viewAll: "View all",
+        empty: "You have not submitted a report yet.",
+        emptyButton: "Create your first report",
+        aiPending: "AI is analyzing…",
+        unknownLocation: "Address unavailable",
+      };
 
   const stats = useMemo(() => {
     let processing = 0;
@@ -142,10 +140,6 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
     } finally {
       setRefreshing(false);
     }
-  };
-
-  const handleLogout = () => {
-    logoutMutation.mutate();
   };
 
   const renderReport = (alert: AlertItem) => {
@@ -214,54 +208,13 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: colors.surface,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.brandRow}>
-          <View
-            style={[
-              styles.brandMark,
-              {
-                backgroundColor: isDark
-                  ? "rgba(34,197,94,0.17)"
-                  : colors.primaryLight,
-              },
-            ]}
-          >
-            <Navigation
-              size={20}
-              color={colors.primary}
-              fill={colors.primary}
-            />
+          <View style={[styles.brandMark, { backgroundColor: isDark ? "rgba(34,197,94,0.17)" : colors.primaryLight }]}>
+            <Navigation size={20} color={colors.primary} fill={colors.primary} />
           </View>
-
-          <Text style={[styles.brandText, { color: colors.text }]}>
-            EcoAlert
-          </Text>
+          <Text style={[styles.brandText, { color: colors.text }]}>EcoAlert</Text>
         </View>
-
-        <TouchableOpacity
-          onPress={handleLogout}
-          disabled={logoutMutation.isPending}
-          style={[
-            styles.logoutButton,
-            {
-              backgroundColor: colors.primaryLight,
-              borderColor: colors.border,
-            },
-          ]}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.logoutText, { color: colors.primary }]}>
-            {logoutMutation.isPending ? "..." : "Đăng xuất"}
-          </Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -416,17 +369,4 @@ const styles = StyleSheet.create({
   aiTitle: { fontSize: 16, fontWeight: "900" },
   aiBody: { fontSize: 12, lineHeight: 17, marginTop: 4 },
   aiLink: { fontSize: 12, fontWeight: "900", marginTop: 9 },
-  logoutButton: {
-    minHeight: 40,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  logoutText: {
-    fontSize: 12,
-    fontWeight: "800",
-  },
 });
