@@ -24,7 +24,14 @@ if (!JWT_SECRET) {
   );
 }
 
-const redisClient = new Redis(REDIS_URL);
+// Redis is used only for the token blacklist. Do not let an unavailable Redis
+// instance hold every authenticated API request in its offline command queue.
+const redisClient = new Redis(REDIS_URL, {
+  connectTimeout: 2_000,
+  enableOfflineQueue: false,
+  maxRetriesPerRequest: 1,
+  retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
+});
 
 redisClient.on("connect", () => logger.info("Gateway connected to Redis"));
 redisClient.on("error", (err) => logger.error("Gateway Redis error:", err));

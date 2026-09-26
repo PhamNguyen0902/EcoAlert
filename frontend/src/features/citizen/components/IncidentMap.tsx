@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, Marker, Popup } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -18,7 +18,7 @@ import {
   getIncidentSeverityLabel,
   getIncidentStatusLabel,
 } from "@/lib/incident-presentation";
-import { GoongMapLayer } from "@/components/location/GoongMapLayer";
+import { EcoAlertBaseMap } from "@/components/location/EcoAlertBaseMap";
 // xử lý lỗi không tải được icon mặc định của leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -102,12 +102,7 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
       className="relative w-full h-[400px] md:h-[600px] rounded-xl overflow-hidden shadow-lg border border-border"
     >
       <MapContainer center={center}  zoom={13}  maxZoom={19} minZoom={2} className="w-full h-full z-0">
-        {/* <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        /> */}
-        {/* chuyển qua dùng goong map  */}
-        <GoongMapLayer/>
+        <EcoAlertBaseMap />
 
         <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
           {filteredAlerts.map((alert) => (

@@ -178,13 +178,19 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
-.dark .leaflet-tile-pane {
-  filter: brightness(0.7) contrast(1.1) saturate(0.8);
-}
 .dark .leaflet-control-zoom a {
   background-color: hsl(var(--card));
   color: hsl(var(--foreground));
   border-color: hsl(var(--border));
+}
+.leaflet-control-layers {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  box-shadow: 0 6px 16px rgb(15 23 42 / 0.18);
+}
+.dark .leaflet-control-layers {
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
 }
 .dark .leaflet-popup-content-wrapper,
 .dark .leaflet-popup-tip {

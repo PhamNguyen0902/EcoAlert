@@ -20,6 +20,8 @@ const getApiBaseUrl = (): string => {
 // khởi tạo đối tượng gọi mạng dùng chung
 export const api = axios.create({
   baseURL: getApiBaseUrl(),
+  // Keep the UI responsive when a downstream service is unavailable.
+  timeout: 15_000,
   headers: { "Content-Type": "application/json" },
 });
 

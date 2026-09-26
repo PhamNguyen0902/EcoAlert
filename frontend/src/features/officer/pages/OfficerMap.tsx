@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { Loader2, MapPin, Search } from "lucide-react";
 import "leaflet/dist/leaflet.css";
@@ -17,7 +17,7 @@ import {
   getIncidentStatusLabel,
 } from "@/lib/incident-presentation";
 import type { Alert } from "@/types";
-import { GoongMapLayer } from "@/components/location/GoongMapLayer";
+import { EcoAlertBaseMap } from "@/components/location/EcoAlertBaseMap";
 const DEFAULT_CENTER: [number, number] = [10.762622, 106.660172];
 const EMPTY_ALERTS: Alert[] = [];
 
@@ -56,7 +56,8 @@ function FitInitialMarkerBounds({
 // bản đồ giám sát các sự cố được phân công cho Officer đang đăng nhập.
 export default function OfficerMap() {
   const { t, language } = useLanguage();
-  const { data, isLoading } = useAlerts(1, 1000);
+  // The API caps pages at 100 records; request that explicit bounded page.
+  const { data, isLoading } = useAlerts(1, 100);
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim().toLowerCase();
   const incidents = data?.items ?? EMPTY_ALERTS;
@@ -123,11 +124,7 @@ export default function OfficerMap() {
           center={DEFAULT_CENTER}  zoom={13}  maxZoom={19} minZoom={2}
           className="h-full min-h-[60vh] w-full"
         >
-          {/* <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          /> */}
-          <GoongMapLayer/>
+          <EcoAlertBaseMap />
           <FitInitialMarkerBounds incidents={validIncidents} />
           <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
             {visibleIncidents.map((incident) => {

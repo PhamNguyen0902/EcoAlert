@@ -4,6 +4,18 @@
 // export type AlertCategory = 'illegal_dumping' | 'water_pollution' | 'air_pollution' | 'illegal_burning' | 'flooding' | 'fallen_tree' | 'illegal_construction_waste' | 'noise_pollution' | 'soil_contamination' | 'wildlife_threat' | 'fire' | 'other' | 'UNCLASSIFIED';
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
 export type AiAnalysisMode = 'TEXT_ONLY' | 'IMAGE_AND_TEXT' | 'FAILED';
+export type AiAnalysisStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+export interface VisionEvidence {
+  imageUrl: string;
+  status: 'ok' | 'no_detection' | 'error' | 'skipped_not_applicable';
+  detections: Array<{ materialClass: string; suggestedCategory?: string; confidence: number; bbox: [number, number, number, number] }>;
+  requiresManualReview: boolean;
+}
+export interface VisualMassEstimate {
+  available: boolean; minKg: number | null; maxKg: number | null; mostLikelyKg: number | null;
+  confidence: number | null; scale: 'VERY_SMALL' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'VERY_LARGE' | null;
+  reasoningSummary: string | null; limitations: string[];
+}
 // Giao diện phân tích tổng thể của AI, bao gồm các thông tin về sự cố môi trường, danh mục đề xuất, mức độ nghiêm trọng, lý do và tóm tắt.
 export type UserRole = "ADMIN" | "OFFICER" | "CITIZEN";
 export type WorkflowActorRole = UserRole | "SYSTEM";
@@ -45,6 +57,7 @@ export interface AiOverallAnalysis {
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
+  massEstimate: VisualMassEstimate;
   semanticModel: string;
   pipelineVersion: "openrouter-multimodal-v1";
 }
@@ -119,10 +132,12 @@ export interface Alert {
   description: string;
   status: AlertStatus;
   category: AlertCategory;
+  categories?: AlertCategory[];
   classification?: AlertClassification;
   imageValidation?: ImageValidation;
   severity: Severity | null;
   mediaUrls: string[];
+  visionEvidence?: VisionEvidence[];
   location: GeoLocation;
   address: string;
   citizenId: string;
@@ -146,6 +161,8 @@ export interface Alert {
   aiSummary?: string | null;
   aiReasoningSummary?: string | null;
   aiAnalysisMode?: AiAnalysisMode;
+  analysisPipeline?: 'WASTE_DETECTION' | 'SEMANTIC_ONLY';
+  aiAnalysisStatus?: AiAnalysisStatus;
   aiAnalysisProvider?: "openrouter";
   aiAnalysisModel?: string;
   aiFailureReason?: string | null;
@@ -350,7 +367,9 @@ export interface CreateAlertData {
   location: GeoLocation;
   address?: string;
   mediaUrls?: string[];
+  visionEvidence?: VisionEvidence[];
   category?: AlertCategory;
+  categories?: AlertCategory[];
   imageValidation?: ImageValidation;
   classification?: {
     selectedCategory?: AlertCategory;

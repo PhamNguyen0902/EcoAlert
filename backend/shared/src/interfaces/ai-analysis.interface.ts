@@ -1,4 +1,5 @@
 import { AlertCategory, Severity } from '../enums';
+import type { VisionPipeline } from '../utils/vision-pipeline';
 
 /** Result mode of the single OpenRouter incident-analysis request. */
 export type AiAnalysisMode = 'TEXT_ONLY' | 'IMAGE_AND_TEXT' | 'FAILED';
@@ -6,6 +7,27 @@ export type AiPipelineVersion = 'openrouter-multimodal-v1';
 export type AiClassificationStatus = 'AI_SUGGESTED' | 'UNCLASSIFIED';
 export type AiSuggestionConfidenceTier = 'HIGH_CONFIDENCE' | 'REVIEW_REQUIRED' | 'UNCLASSIFIED';
 export type AiDisplayConfidenceSource = 'CATEGORY' | 'SEMANTIC' | 'NONE';
+
+export type AiAnalysisStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+export type WasteScale = 'VERY_SMALL' | 'SMALL' | 'MEDIUM' | 'LARGE' | 'VERY_LARGE';
+
+export interface IVisualMassEstimate {
+  available: boolean;
+  minKg: number | null;
+  maxKg: number | null;
+  mostLikelyKg: number | null;
+  confidence: number | null;
+  scale: WasteScale | null;
+  reasoningSummary: string | null;
+  limitations: string[];
+}
+
+export interface IVisionEvidence {
+  imageUrl: string;
+  status: 'ok' | 'no_detection' | 'error' | 'skipped_not_applicable';
+  detections: Array<{ materialClass: string; suggestedCategory?: string; confidence: number; bbox: [number, number, number, number] }>;
+  requiresManualReview: boolean;
+}
 
 /**
  * User-visible interpretation returned directly by OpenRouter. It intentionally
@@ -23,8 +45,10 @@ export interface IAiOverallAnalysis {
   severityConfidence: number;
   overallSummary: string;
   shortReason: string;
+  massEstimate: IVisualMassEstimate;
   semanticModel: string;
   pipelineVersion: AiPipelineVersion;
+  analysisPipeline?: VisionPipeline;
 }
 
 /** Event payload published after AI processing; a failed request preserves the report. */
@@ -44,4 +68,6 @@ export interface IAiAnalysisCompletedData {
   overallAnalysis?: IAiOverallAnalysis;
   processingTimeMs?: number;
   failureReason?: string;
+  analysisPipeline?: VisionPipeline;
+  visionEvidence?: IVisionEvidence[];
 }

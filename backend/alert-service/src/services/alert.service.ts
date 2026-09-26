@@ -130,21 +130,25 @@ export class AlertService {
       imageValidation,
       ...alertData
     } = data;
-    const category =
-      citizenClassification?.selectedCategory || data.category || "UNCLASSIFIED";
+    const categories = Array.from(new Set(data.categories || []));
+    const primaryCategory = citizenClassification?.selectedCategory || data.category || categories[0];
+    const category = primaryCategory || "UNCLASSIFIED";
     const classification: IAlertClassification = {
       status:
-        category === "UNCLASSIFIED"
+        !primaryCategory
           ? "UNCLASSIFIED"
           : citizenClassification?.decision === "CONFIRM"
             ? "USER_CONFIRMED"
             : "USER_CORRECTED",
-      finalCategory: category === "UNCLASSIFIED" ? null : category,
-      finalCategorySource: category === "UNCLASSIFIED" ? null : "CITIZEN",
-      citizenSelectedCategory: category === "UNCLASSIFIED" ? null : category,
-      citizenDecisionAt: category === "UNCLASSIFIED" ? null : createdAt,
-      confirmedBy: category === "UNCLASSIFIED" ? null : actor.id,
-      confirmedAt: category === "UNCLASSIFIED" ? null : createdAt,
+      finalCategory: primaryCategory ?? null,
+      finalCategorySource: primaryCategory ? "CITIZEN" : null,
+      citizenSelectedCategory: primaryCategory ?? null,
+      citizenDecisionAt: primaryCategory ? createdAt : null,
+      confirmedBy: primaryCategory ? actor.id : null,
+      confirmedAt: primaryCategory ? createdAt : null,
+      aiSuggestedCategory: imageValidation?.suggestedCategory ?? null,
+      aiConfidence: imageValidation?.confidence ?? null,
+      aiReason: imageValidation?.reason ?? null,
     };
     const storedImageValidation: IImageValidation | undefined = imageValidation
       ? {
@@ -155,6 +159,7 @@ export class AlertService {
     const alert = await alertRepository.create({
       ...alertData,
       category,
+      categories,
       classification,
       ...(storedImageValidation
         ? { imageValidation: storedImageValidation }
@@ -162,6 +167,7 @@ export class AlertService {
       severity: (data.severity as Severity) || Severity.LOW,
       citizenId: actor.id,
       status: AlertStatus.PENDING,
+      aiAnalysisStatus: 'PROCESSING',
       isAnonymous: Boolean(data.isAnonymous),
       confirmationsCount: 1,
       confirmations: [{ citizenId: actor.id, confirmedAt: createdAt }],
@@ -177,6 +183,7 @@ export class AlertService {
       ],
     });
 
+    // The AI worker receives the persisted evidence and performs one report-level analysis.
     await rabbitMQService.publishEvent(EVENTS.ALERT_CREATED, alert);
     return alert;
   }
@@ -584,6 +591,7 @@ export class AlertService {
       { _id: id },
       {
         $set: {
+          status: alert.status,
           category: analysis.category || alert.category,
           severity: analysis.severity || alert.severity,
           aiConfidence: displayConfidence.value,
@@ -591,6 +599,15 @@ export class AlertService {
             analysis.overallAnalysis?.overallSummary ?? analysis.summary,
           aiReasoningSummary:
             analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
+          aiAnalysisMode: analysis.analysisMode,
+          analysisPipeline: analysis.analysisPipeline,
+          ...(analysis.visionEvidence ? { visionEvidence: analysis.visionEvidence } : {}),
+          aiAnalysisStatus: analysis.analysisMode === 'FAILED' ? 'FAILED' : 'COMPLETED',
+          aiAnalysisProvider: analysis.provider,
+          aiAnalysisModel: analysis.model,
+          aiFailureReason: analysis.failureReason || null,
+          aiPipelineVersion: analysis.pipelineVersion,
+          aiOverallAnalysis: analysis.overallAnalysis,
           aiAnalysisId: analysis.analysisId,
           aiAnalyzedAt: new Date(),
         },

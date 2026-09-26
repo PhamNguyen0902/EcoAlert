@@ -34,6 +34,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [t]);
 
   useEffect(() => {
+    // Realtime updates are meaningful only after an authenticated user exists.
+    // Avoid reconnect traffic while the login page is open or a session expires.
+    if (!user?._id) {
+      setSocket(null);
+      setIsConnected(false);
+      return;
+    }
+
     // trỏ trực tiếp đến api gateway cổng 3000 hoặc qua vite proxy
     const { protocol, hostname, port } = window.location;
     const socketUrl = (port === '5173' || port === '4173') ? `${protocol}//${hostname}:3000` : window.location.origin;
@@ -41,9 +49,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const socketInstance = io(socketUrl, {
       path: '/socket.io',
-      transports: ['polling', 'websocket'],
-      reconnectionAttempts: 15,
-      reconnectionDelay: 2000,
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     socketInstance.on('connect', () => {
@@ -66,12 +75,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
 
     const refreshActiveData = () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['officer-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries();
-      queryClient.refetchQueries({ type: 'active' });
+      // Refetch only views affected by a realtime incident event. Invalidating
+      // all queries caused unrelated screens to reload for every notification.
+      queryClient.invalidateQueries({ queryKey: ['alerts'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['notifications'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['officer-tasks'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['users'], refetchType: 'active' });
     };
 
     const isSelfAction = (data: any) => {
@@ -155,7 +164,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('[Web Socket] Unmounting SocketProvider');
       socketInstance.disconnect();
     };
-  }, [queryClient]);
+  }, [queryClient, user?._id, user?.role]);
 
   // gửi sự kiện tham gia phòng khi thông tin người dùng được cập nhật trên kết nối hiện có
   useEffect(() => {

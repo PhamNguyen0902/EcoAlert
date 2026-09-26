@@ -1,51 +1,46 @@
-from fastapi import FastAPI, File, UploadFile
-from ultralytics import YOLO
-import io
-from PIL import Image
+from contextlib import asynccontextmanager
+import logging
 
-app = FastAPI(title="EcoAlert Vision Service")
-model = YOLO('model/best.pt')
+from fastapi import FastAPI
 
-MATERIAL_TO_CATEGORY = {
-    'bag': 'illegal_dumping',
-    'cardboard': 'illegal_dumping',
-    'furniture': 'illegal_construction_waste',
-    'glass': 'illegal_dumping',
-    'metal': 'illegal_dumping',
-    'paper': 'illegal_dumping',
-    'plastic': 'illegal_dumping',
-    'yard': 'illegal_dumping',
-}
+from routers.detection import router as detection_router
+from services.detector import WasteDetector
+from services.settings import VisionSettings
 
-CONFIDENCE_THRESHOLD = 0.4
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [vision-service] %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
 
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
-    results = model(image)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = VisionSettings.from_environment()
+    logger.info(
+        "Vision startup model_path=%s exists=%s requested_device=%s",
+        settings.model_path,
+        settings.model_path.is_file(),
+        settings.device,
+    )
+    detector = WasteDetector(settings)
+    app.state.detector = detector
 
-    detections = []
-    for box in results[0].boxes:
-        cls_name = model.names[int(box.cls[0])]
-        confidence = float(box.conf[0])
-        detections.append({
-            'materialClass': cls_name,
-            'suggestedCategory': MATERIAL_TO_CATEGORY.get(cls_name, 'OTHER'),
-            'confidence': confidence,
-            'bbox': box.xyxy[0].tolist(),
-        })
+    try:
+        detector.load_model()
+    except Exception:
+        # Keep health available to expose a clear degraded state. /detect and
+        # /predict return 503 until the model can be loaded successfully.
+        logger.exception("Vision model could not be loaded during startup")
 
-    if not detections:
-        return {'status': 'no_detection', 'detections': [], 'requiresManualReview': True}
+    yield
 
-    max_conf = max(d['confidence'] for d in detections)
-    return {
-        'status': 'ok',
-        'detections': detections,
-        'requiresManualReview': max_conf < CONFIDENCE_THRESHOLD,
-    }
+
+app = FastAPI(
+    title="EcoAlert Vision Service",
+    version="1.0.0",
+    description="YOLO11n waste-object detection for EcoAlert.",
+    lifespan=lifespan,
+)
+
+app.include_router(detection_router)

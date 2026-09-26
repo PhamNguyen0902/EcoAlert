@@ -2,6 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 import { baseSchemaPlugin, BaseDocument } from './base.model';
 import {
   AiAnalysisMode,
+  AiAnalysisStatus,
   AiDisplayConfidenceSource,
   AlertStatus,
   AlertCategory,
@@ -49,6 +50,20 @@ export interface IImageValidation {
   validatedAt: Date;
 }
 
+export interface IVisionDetection {
+  materialClass: string;
+  suggestedCategory?: string;
+  confidence: number;
+  bbox: [number, number, number, number];
+}
+
+export interface IVisionEvidence {
+  imageUrl: string;
+  status: 'ok' | 'no_detection' | 'error' | 'skipped_not_applicable';
+  detections: IVisionDetection[];
+  requiresManualReview: boolean;
+}
+
 export interface IOfficerCheckIn {
   officerId: string;
   location: { type: 'Point'; coordinates: [number, number] };
@@ -86,10 +101,13 @@ export interface IAlert extends BaseDocument {
   description: string;
   status: AlertStatus;
   category: AlertCategory | 'UNCLASSIFIED';
+  /** Categories explicitly selected by the citizen; category remains the primary/backward-compatible value. */
+  categories?: AlertCategory[];
   classification?: IAlertClassification;
   imageValidation?: IImageValidation;
   severity: Severity | null;
   mediaUrls: string[];
+  visionEvidence?: IVisionEvidence[];
   // geojson point lưu theo thứ tự longitude, latitude và có chỉ mục 2dsphere
   location: {
     type: 'Point';
@@ -118,6 +136,8 @@ export interface IAlert extends BaseDocument {
   aiSummary?: string | null;
   aiReasoningSummary?: string | null;
   aiAnalysisMode?: AiAnalysisMode;
+  analysisPipeline?: 'WASTE_DETECTION' | 'SEMANTIC_ONLY';
+  aiAnalysisStatus?: AiAnalysisStatus;
   aiAnalysisProvider?: 'openrouter';
   aiAnalysisModel?: string;
   aiFailureReason?: string | null;
@@ -242,6 +262,16 @@ const overallAnalysisSchema = new Schema<IAiOverallAnalysis>({
   severityConfidence: { type: Number, required: true, min: 0, max: 1 },
   overallSummary: { type: String, trim: true, required: true, maxlength: 800 },
   shortReason: { type: String, trim: true, required: true, maxlength: 500 },
+  massEstimate: {
+    available: { type: Boolean, required: true },
+    minKg: { type: Number, min: 0, default: null },
+    maxKg: { type: Number, min: 0, default: null },
+    mostLikelyKg: { type: Number, min: 0, default: null },
+    confidence: { type: Number, min: 0, max: 1, default: null },
+    scale: { type: String, enum: ['VERY_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE', null], default: null },
+    reasoningSummary: { type: String, trim: true, maxlength: 600, default: null },
+    limitations: { type: [String], default: [] },
+  },
   semanticModel: { type: String, trim: true, required: true },
   pipelineVersion: { type: String, enum: ['openrouter-multimodal-v1'], required: true },
 }, { _id: false });
@@ -256,6 +286,7 @@ const alertSchema = new Schema<IAlert>({
     set: (value: unknown) => typeof value === 'string' ? value.toLowerCase() : value,
   },
   category: { type: String, default: 'UNCLASSIFIED' },
+  categories: [{ type: String, enum: Object.values(AlertCategory) }],
   classification: { type: classificationSchema },
   imageValidation: { type: imageValidationSchema },
   severity: {
@@ -265,6 +296,17 @@ const alertSchema = new Schema<IAlert>({
     set: (value: unknown) => typeof value === 'string' ? value.toLowerCase() : value,
   },
   mediaUrls: [{ type: String }],
+  visionEvidence: [{
+    imageUrl: { type: String, required: true },
+    status: { type: String, enum: ['ok', 'no_detection', 'error', 'skipped_not_applicable'], required: true },
+    detections: [{
+      materialClass: { type: String, required: true },
+      suggestedCategory: { type: String },
+      confidence: { type: Number, required: true, min: 0, max: 1 },
+      bbox: { type: [Number], required: true },
+    }],
+    requiresManualReview: { type: Boolean, required: true },
+  }],
   location: {
     type: { type: String, enum: ['Point'], required: true },
     coordinates: { type: [Number], required: true },
@@ -296,6 +338,8 @@ const alertSchema = new Schema<IAlert>({
   aiSummary: { type: String, trim: true },
   aiReasoningSummary: { type: String, trim: true },
   aiAnalysisMode: { type: String, enum: ['TEXT_ONLY', 'IMAGE_AND_TEXT', 'FAILED'] },
+  analysisPipeline: { type: String, enum: ['WASTE_DETECTION', 'SEMANTIC_ONLY'] },
+  aiAnalysisStatus: { type: String, enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'], default: 'PENDING' },
   aiAnalysisProvider: { type: String, enum: ['openrouter'] },
   aiAnalysisModel: { type: String, trim: true },
   aiFailureReason: { type: String, trim: true, default: null },

@@ -11,6 +11,7 @@ import {
   Loader2,
   MapPin,
   Search,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useCreateAlert } from "@/hooks/hooks";
@@ -30,7 +31,7 @@ import { SelectedLocationCard } from "@/components/reports/SelectedLocationCard"
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { PickedLocation } from "@/components/location/LocationPickerModal";
 import { reverseGeocoder } from "@/services/reverseGeocoder";
-import type { AlertCategory, ImageValidation } from "@/types";
+import type { AlertCategory } from "@/types";
 
 // tạo trang báo cáo sự cố môi trường, cho phép người dùng điền thông tin về sự cố.
 const LocationPickerModal = lazy(() =>
@@ -87,8 +88,8 @@ export default function CreateAlert() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedLocation, setSelectedLocation] =
     useState<PickedLocation | null>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [addressQuery, setAddressQuery] = useState("");
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -96,16 +97,9 @@ export default function CreateAlert() {
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
-  const [uploadedMediaUrl, setUploadedMediaUrl] = useState<string | null>(null);
-  const [imageValidation, setImageValidation] =
-    useState<ImageValidation | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<
-    AlertCategory | undefined
-  >();
-  const [classificationDecision, setClassificationDecision] = useState<
-    "CONFIRM" | "CORRECT" | undefined
-  >();
-  const previewUrlRef = useRef<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<AlertCategory[]>([]);
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const previewUrlRef = useRef<string[]>([]);
   const submissionInProgressRef = useRef(false);
 
   const {
@@ -148,7 +142,7 @@ export default function CreateAlert() {
 
   useEffect(
     () => () => {
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current.forEach((url) => URL.revokeObjectURL(url));
     },
     [],
   );
@@ -188,7 +182,7 @@ export default function CreateAlert() {
     );
     return (
       resolvedAddress ||
-      `Location at ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+      "Đã chọn vị trí trên bản đồ"
     );
   };
 
@@ -249,35 +243,32 @@ export default function CreateAlert() {
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
     );
   };
-  // form gửi báo cáo chỉ hỗ trợ chọn một ảnh minh chứng tại một thời điểm.
-  const handleFileSelect = (selectedFile: File) => {
-    if (!selectedFile.type.startsWith("image/")) {
+  const handleFileSelect = (selectedFiles: File[]) => {
+    const remaining = 6 - files.length;
+    const validFiles = selectedFiles.slice(0, remaining).filter((selectedFile) => {
+      if (!selectedFile.type.startsWith("image/")) {
       toast.error(t("toast.select_image_format"));
-      return;
-    }
-    if (selectedFile.size > MAX_EVIDENCE_SIZE) {
+        return false;
+      }
+      if (selectedFile.size > MAX_EVIDENCE_SIZE) {
       toast.error(t("toast.image_max_size"));
-      return;
-    }
-    // thu hồi url cũ và khởi tạo url xem trước mới từ file chọn
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-    const nextPreviewUrl = URL.createObjectURL(selectedFile);
-    previewUrlRef.current = nextPreviewUrl;
-    setFile(selectedFile);
-    setPreviewUrl(nextPreviewUrl);
-    setUploadedMediaUrl(null);
-    setImageValidation(null);
-    setSelectedCategory(undefined);
-    setClassificationDecision(undefined);
+        return false;
+      }
+      return true;
+    });
+    if (selectedFiles.length > remaining) toast("Tối đa 6 ảnh minh chứng cho mỗi báo cáo.", { icon: "ℹ️" });
+    const urls = validFiles.map((item) => URL.createObjectURL(item));
+    previewUrlRef.current = [...previewUrlRef.current, ...urls];
+    setFiles((current) => [...current, ...validFiles]);
+    setPreviewUrls((current) => [...current, ...urls]);
   };
 
-  const handleRemoveFile = () => {
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-    previewUrlRef.current = null;
-    setFile(null);
-    setPreviewUrl(null);
-    setUploadedMediaUrl(null);
-    setImageValidation(null);
+  const handleRemoveFile = (index: number) => {
+    const url = previewUrlRef.current[index];
+    if (url) URL.revokeObjectURL(url);
+    previewUrlRef.current = previewUrlRef.current.filter((_, itemIndex) => itemIndex !== index);
+    setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setPreviewUrls((current) => current.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const handleNext = async () => {
@@ -291,56 +282,10 @@ export default function CreateAlert() {
         return;
       }
     }
-    // tải ảnh bằng formdata lên media service, rồi gửi image url dạng json đến ai service
     if (currentStep === 3) {
-      if (!file) {
+      if (!files.length) {
         toast.error(t("toast.add_evidence_required"));
         return;
-      }
-      try {
-        setIsUploadingEvidence(true);
-        // upload ảnh lên media service để lấy url công khai
-        const mediaUrl =
-          uploadedMediaUrl || (await alertService.uploadMedia(file));
-        setUploadedMediaUrl(mediaUrl);
-        // gửi url ảnh sang ai service để phân tích và nhận gợi ý danh mục
-        const validation = (await alertService.validateImage(
-          mediaUrl,
-        )) as ImageValidation;
-        setImageValidation(validation);
-        if (validation.decision === "INVALID") {
-          toast.error(
-            "Hình ảnh không phù hợp với báo cáo sự cố. Không phát hiện sự cố môi trường rõ ràng trong ảnh. Vui lòng chọn ảnh khác.",
-          );
-          return;
-        }
-        // người dân có thể chọn lại danh mục ai gợi ý trước khi gửi
-        if (validation.suggestedCategory)
-          setSelectedCategory(validation.suggestedCategory);
-        if (validation.decision === "UNCERTAIN")
-          toast(
-            "AI chưa xác định rõ nội dung ảnh. Bạn vẫn có thể gửi để nhân viên kiểm tra.",
-            { icon: "⚠️" },
-          );
-        if (validation.decision === "UNAVAILABLE")
-          toast(
-            "Không thể kiểm tra hình ảnh tự động. Báo cáo vẫn có thể được gửi để nhân viên kiểm tra.",
-            { icon: "ℹ️" },
-          );
-      } catch {
-        setImageValidation({
-          decision: "UNAVAILABLE",
-          isEnvironmentalIncident: null,
-          confidence: null,
-          suggestedCategory: null,
-          reason:
-            "Không thể kiểm tra hình ảnh tự động. Báo cáo vẫn có thể được gửi để nhân viên kiểm tra.",
-          model: null,
-          validatedAt: new Date().toISOString(),
-        });
-        // xử lý khi ai không phản hồi
-      } finally {
-        setIsUploadingEvidence(false);
       }
     }
     setCurrentStep((step) => Math.min(step + 1, steps.length));
@@ -350,7 +295,7 @@ export default function CreateAlert() {
     if (
       isSubmitting ||
       submissionInProgressRef.current ||
-      !file ||
+      !files.length ||
       !selectedLocation
     )
       return;
@@ -362,9 +307,8 @@ export default function CreateAlert() {
       setIsUploadingEvidence(true);
       toast.loading(t("toast.uploading_evidence"), { id: "submit" });
 
-      const mediaUrl =
-        uploadedMediaUrl || (await alertService.uploadMedia(file));
-      toast.loading(t("report_create.submitting"), { id: "submit" });
+      const uploads = await Promise.all(files.map((item) => alertService.uploadMediaWithVision(item, undefined, { includeSemanticAnalysis: false })));
+      toast.loading("AI đang nhận diện hiện trường và lưu báo cáo…", { id: "submit" });
 
       // tạo sự cố mới thông qua createAlertMutation
       await createAlertMutation.mutateAsync({
@@ -375,18 +319,19 @@ export default function CreateAlert() {
           type: "Point",
           coordinates: [selectedLocation.longitude, selectedLocation.latitude],
         },
-        mediaUrls: [mediaUrl],
-        //Người dân có thể giữ hoặc thay đổi danh mục AI gợi ý trước khi gửi.
-        ...(selectedCategory
+        mediaUrls: uploads.map((upload) => upload.url),
+        visionEvidence: uploads.map((upload) => ({ imageUrl: upload.url, ...upload.aiAnalysis })),
+        // Người dân có thể chọn danh mục khi gửi; AI sẽ tạo kết luận riêng ở cấp báo cáo.
+        ...(selectedCategories.length
           ? {
-              category: selectedCategory,
+              category: selectedCategories[0],
+              categories: selectedCategories,
               classification: {
-                selectedCategory,
-                decision: classificationDecision || "CORRECT",
+                selectedCategory: selectedCategories[0],
+                decision: "CORRECT",
               },
             }
           : {}),
-        ...(imageValidation ? { imageValidation } : {}),
       });
 
       toast.success(t("toast.report_submit_success"), { id: "submit" });
@@ -663,8 +608,8 @@ export default function CreateAlert() {
                     </div>
                     {/* đang tải ảnh sẽ khóa thao tác gửi và hiển thị spinner; chưa có skeleton riêng cho kết quả ai */}
                     <EvidenceUploader
-                      file={file}
-                      previewUrl={previewUrl}
+                      files={files}
+                      previewUrls={previewUrls}
                       onSelect={handleFileSelect}
                       onRemove={handleRemoveFile}
                       disabled={isSubmitting}
@@ -695,75 +640,16 @@ export default function CreateAlert() {
                     </div>
 
                     <div className="mb-5 space-y-3 rounded-xl border p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <h3 className="font-semibold">Gợi ý của EcoAlert AI</h3>
-                        <span className="rounded-full bg-muted px-2 py-1 text-xs font-medium">
-                          {imageValidation?.decision || "UNAVAILABLE"}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {imageValidation?.reason ||
-                          "Không thể kiểm tra hình ảnh tự động. Báo cáo vẫn được nhân viên kiểm tra."}
-                      </p>
-                      {imageValidation?.decision === "UNCERTAIN" ? (
-                        <p className="text-sm text-amber-700">
-                          AI chưa xác định rõ nội dung ảnh. Bạn có thể tiếp tục
-                          gửi để nhân viên kiểm tra.
-                        </p>
-                      ) : null}
-                      <Label htmlFor="citizen-category">
-                        Danh mục do bạn xác nhận
-                      </Label>
-                      <select
-                        id="citizen-category"
-                        value={selectedCategory || ""}
-                        onChange={(event) => {
-                          const category =
-                            (event.target.value as AlertCategory) || undefined;
-                          setSelectedCategory(category);
-                          setClassificationDecision(
-                            category &&
-                              category === imageValidation?.suggestedCategory
-                              ? "CONFIRM"
-                              : "CORRECT",
-                          );
-                        }}
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                      >
-                        <option value="">
-                          Chưa phân loại – để Admin kiểm tra
-                        </option>
-                        {INCIDENT_CATEGORIES.map((category) => (
-                          <option key={category.value} value={category.value}>
-                            {category.label}
-                          </option>
-                        ))}
-                      </select>
-                      {imageValidation?.suggestedCategory ? (
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedCategory(
-                                imageValidation.suggestedCategory || undefined,
-                              );
-                              setClassificationDecision("CONFIRM");
-                            }}
-                          >
-                            Xác nhận gợi ý AI
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setClassificationDecision("CORRECT")}
-                          >
-                            Chỉnh sửa
-                          </Button>
-                        </div>
-                      ) : null}
+                      <h3 className="font-semibold">Danh mục liên quan</h3>
+                      <p className="text-sm text-muted-foreground">Vision và AI sẽ tự động phân tích toàn bộ ảnh sau khi bạn gửi báo cáo.</p>
+                      {selectedCategories.length ? <div className="flex flex-wrap gap-2" aria-label="Danh mục đã chọn">
+                        {selectedCategories.map((value) => {
+                          const label = INCIDENT_CATEGORIES.find((item) => item.value === value)?.label ?? value;
+                          return <button key={value} type="button" onClick={() => setSelectedCategories((current) => current.filter((item) => item !== value))} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20">{label}<X className="h-3.5 w-3.5" aria-hidden="true" /><span className="sr-only">Bỏ {label}</span></button>;
+                        })}
+                      </div> : <p className="text-sm text-muted-foreground">Chưa chọn danh mục — AI sẽ tự động phân tích.</p>}
+                      <button type="button" onClick={() => setIsCategoryPickerOpen((current) => !current)} aria-expanded={isCategoryPickerOpen} className="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted">+ Chọn thêm danh mục</button>
+                      {isCategoryPickerOpen ? <fieldset className="grid gap-2 rounded-lg border bg-muted/20 p-3 sm:grid-cols-2"><legend className="sr-only">Chọn danh mục liên quan</legend>{INCIDENT_CATEGORIES.map((category) => { const checked = selectedCategories.includes(category.value); return <label key={category.value} className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-sm hover:bg-background"><input type="checkbox" checked={checked} onChange={() => setSelectedCategories((current) => checked ? current.filter((item) => item !== category.value) : [...current, category.value])} className="h-4 w-4 accent-primary" />{category.label}</label>; })}<button type="button" onClick={() => setSelectedCategories([])} className="text-left text-xs font-medium text-muted-foreground underline sm:col-span-2">Xóa tất cả</button></fieldset> : null}
                     </div>
                     <div className="overflow-hidden rounded-xl border divide-y">
                       <section
@@ -861,20 +747,19 @@ export default function CreateAlert() {
                             Thay đổi hình ảnh
                           </Button>
                         </div>
-                        {previewUrl && file ? (
+                        {previewUrls.length && files.length ? (
                           <div className="mt-4 flex items-center gap-4">
                             <img
-                              src={previewUrl}
-                              alt={`Xem trước minh chứng: ${file.name}`}
+                              src={previewUrls[0]}
+                              alt={`Xem trước minh chứng: ${files[0].name}`}
                               className="h-20 w-24 rounded-lg border object-cover"
                             />
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium">
-                                {file.name}
+                                {files.length} ảnh minh chứng
                               </p>
                               <p className="mt-1 text-xs text-muted-foreground">
-                                {Math.round(file.size / 1024)} KB · Tải lên khi
-                                gửi
+                                Ảnh sẽ được tải lên và AI phân tích tự động khi gửi
                               </p>
                             </div>
                           </div>
