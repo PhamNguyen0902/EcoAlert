@@ -74,10 +74,6 @@ export const alertService = {
     const res = await api.post(`/v1/alerts/${id}/close`, { reviewNote });
     return res.data?.data || res.data;
   },
-  validateImage: async (imageUrl: string) => {
-    const res = await api.post('/v1/ai/validate-image', { imageUrl });
-    return res.data?.data || res.data;
-  },
   reviewClassification: async (id: string, category?: string): Promise<Alert> => {
     const res = await api.post(`/v1/alerts/${id}/classification/review`, { category });
     return res.data?.data || res.data;

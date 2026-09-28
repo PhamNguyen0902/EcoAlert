@@ -117,11 +117,6 @@ export function IncidentTimeline({
                     {getIncidentStatusLabel(entry.status, language)}
                   </Badge>
                 ) : null}
-                {entry.note ? (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {entry.note}
-                  </p>
-                ) : null}
                 {entry.evidenceUrls?.length ? (
                   <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                     {entry.evidenceUrls.map((url) => (

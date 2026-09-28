@@ -35,6 +35,19 @@ export class GisController {
     res.status(200).json(successResponse(results));
   }
 
+  async getRoute(req: Request, res: Response) {
+    const startLat = Number(req.query.startLat);
+    const startLng = Number(req.query.startLng);
+    const endLat = Number(req.query.endLat);
+    const endLng = Number(req.query.endLng);
+    if (!areValidCoordinates(startLat, startLng) || !areValidCoordinates(endLat, endLng)) {
+      throw new BadRequestError('Valid start and end coordinates are required');
+    }
+
+    const route = await gisService.getDrivingRoute(startLat, startLng, endLat, endLng);
+    res.status(200).json(successResponse(route));
+  }
+
   async getIncidentHeatmap(req: Request, res: Response) {
     this.requireAdmin(req);
     const filters = parseIncidentFilters(req);
@@ -59,15 +72,14 @@ const parseCoordinates = (
 ): { lat: number; lng: number } | null => {
   const lat = Number(req.query.lat);
   const lng = Number(req.query.lng);
-  return Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    lat >= -90 &&
-    lat <= 90 &&
-    lng >= -180 &&
-    lng <= 180
+  return areValidCoordinates(lat, lng)
     ? { lat, lng }
     : null;
 };
+
+const areValidCoordinates = (lat: number, lng: number) =>
+  Number.isFinite(lat) && lat >= -90 && lat <= 90 &&
+  Number.isFinite(lng) && lng >= -180 && lng <= 180;
 
 export const gisController = new GisController();
 

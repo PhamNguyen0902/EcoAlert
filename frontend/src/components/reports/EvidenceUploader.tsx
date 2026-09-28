@@ -34,7 +34,7 @@ export function EvidenceUploader({ files, previewUrls, onSelect, onRemove, disab
         <span className="mt-2 text-xs text-muted-foreground">Tối đa 6 ảnh · JPG, PNG hoặc WEBP · mỗi ảnh tối đa 10 MB.</span>
         <span className="mt-4 inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs font-medium"><ImagePlus className="h-3.5 w-3.5" />Thêm ảnh</span>
         {isProcessing ? <span className="mt-4 inline-flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Đang xử lý báo cáo…</span> : null}
-        <input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={disabled} onChange={(event) => { addFiles(event.target.files); event.target.value = ""; }} />
+        <input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={disabled} onChange={(event) => { addFiles(event.target.files ?? undefined); event.target.value = ""; }} />
       </label>
       {files.length ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {files.map((file, index) => <div key={`${file.name}-${file.lastModified}-${index}`} className="overflow-hidden rounded-xl border bg-card">

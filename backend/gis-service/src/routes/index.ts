@@ -7,6 +7,7 @@ const router = Router();
 // /api/v1/gis is proxied here as /
 router.get('/nearby', asyncHandler(gisController.getNearby));
 router.get('/radius', asyncHandler(gisController.getRadius));
+router.get('/route', asyncHandler(gisController.getRoute));
 router.get('/incidents/heatmap', asyncHandler(gisController.getIncidentHeatmap.bind(gisController)));
 router.get('/incidents/nearby', asyncHandler(gisController.getIncidentDrilldown.bind(gisController)));
 

@@ -1,9 +1,87 @@
 import { Location } from '../models/location.model';
-import { createLogger } from '@ecoalert/shared';
+import { AppError, createLogger } from '@ecoalert/shared';
+
+export interface DrivingRoute {
+  distanceMeters: number;
+  durationSeconds: number;
+  geometry: {
+    type: 'LineString';
+    coordinates: [number, number][];
+  };
+}
+
+interface OsrmRouteResponse {
+  code?: string;
+  routes?: Array<{
+    distance?: number;
+    duration?: number;
+    geometry?: {
+      type?: string;
+      coordinates?: unknown;
+    };
+  }>;
+}
 
 const logger = createLogger('gis-service');
 // Dịch vụ GIS để quản lý dữ liệu vị trí của các sự cố môi trường, bao gồm lưu trữ, truy vấn và tạo bản đồ nhiệt.
 export class GisService {
+  /**
+   * Gets a road route from OSRM and keeps the result in GeoJSON coordinate order
+   * ([longitude, latitude]) so it remains transport- and map-library-neutral.
+   */
+  async getDrivingRoute(startLat: number, startLng: number, endLat: number, endLng: number): Promise<DrivingRoute> {
+    const coordinates = `${startLng},${startLat};${endLng},${endLat}`;
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`;
+
+    let response: Response;
+    try {
+      response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+    } catch (error) {
+      logger.warn('OSRM route request failed', error);
+      throw new AppError('Unable to reach the routing provider', 502);
+    }
+
+    if (!response.ok) {
+      logger.warn(`OSRM route request returned ${response.status}`);
+      throw new AppError('Unable to find a route', 502);
+    }
+
+    const payload = await response.json() as OsrmRouteResponse;
+    const route = payload.routes?.[0];
+    const coordinatesResult = route?.geometry?.coordinates;
+    if (
+      payload.code !== 'Ok' ||
+      route?.geometry?.type !== 'LineString' ||
+      !Array.isArray(coordinatesResult) ||
+      !Number.isFinite(route.distance) ||
+      !Number.isFinite(route.duration)
+    ) {
+      throw new AppError('No suitable route was found', 404);
+    }
+
+    const validCoordinates = coordinatesResult.every(
+      (point): point is [number, number] =>
+        Array.isArray(point) &&
+        point.length >= 2 &&
+        typeof point[0] === 'number' &&
+        typeof point[1] === 'number' &&
+        Number.isFinite(point[0]) &&
+        Number.isFinite(point[1]),
+    );
+    if (!validCoordinates) {
+      throw new AppError('The routing provider returned invalid geometry', 502);
+    }
+
+    const distanceMeters = route.distance!;
+    const durationSeconds = route.duration!;
+
+    return {
+      distanceMeters,
+      durationSeconds,
+      geometry: { type: 'LineString', coordinates: coordinatesResult },
+    };
+  }
+
   // Lưu trữ hoặc cập nhật vị trí của sự cố môi trường.
   async saveLocation(alertData: any) {
     try {

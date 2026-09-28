@@ -1,6 +1,8 @@
 import type { Alert } from "@/types";
 import { EnvironmentalAiAnalysisContent } from "./VisionAnalysisTestPanel";
 
+// A read-only component for displaying environmental AI analysis results based on an alert.
+
 interface EnvironmentalAiAnalysisProps {
   alert: Alert;
 }

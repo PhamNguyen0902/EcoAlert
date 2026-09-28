@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { Link, useParams } from "react-router-dom";
-import { MapContainer, Marker, Popup } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import {
   AlertCircle,
@@ -33,7 +33,7 @@ import {
   useStartHandling,
   useOfficerAvailability,
 } from "@/hooks/hooks";
-import { alertService } from "@/services/services";
+import { alertService, gisService } from "@/services/services";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -99,6 +99,52 @@ interface EvidenceDraft {
   error?: string;
 }
 
+interface OfficerLocation {
+  lat: number;
+  lng: number;
+}
+
+interface ActiveRoute {
+  distanceMeters: number;
+  durationSeconds: number;
+  geometry: { type: "LineString"; coordinates: [number, number][] };
+}
+
+function RouteMapController({ coordinates }: { coordinates: [number, number][] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (coordinates.length < 2) return;
+    map.fitBounds(L.latLngBounds(coordinates), { padding: [40, 40], maxZoom: 15 });
+  }, [coordinates, map]);
+
+  return null;
+}
+
+const getOfficerLocation = () => new Promise<OfficerLocation>((resolve, reject) => {
+  if (!navigator.geolocation) {
+    reject(new Error("GEOLOCATION_UNAVAILABLE"));
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+    reject,
+    { enableHighAccuracy: true, timeout: 12_000, maximumAge: 30_000 },
+  );
+});
+
+const formatRouteDistance = (distanceMeters: number) =>
+  distanceMeters < 1000
+    ? `${Math.round(distanceMeters)} m`
+    : `${(distanceMeters / 1000).toFixed(1)} km`;
+
+const formatRouteDuration = (durationSeconds: number) => {
+  const totalMinutes = Math.max(1, Math.round(durationSeconds / 60));
+  if (totalMinutes < 60) return `${totalMinutes} phút`;
+  return `${Math.floor(totalMinutes / 60)} giờ ${totalMinutes % 60} phút`;
+};
+
 const formatTimestamp = (value?: string) =>
   value ? format(new Date(value), "PPp") : "Not completed";
 // báo cáo chi tiết của oficer
@@ -136,6 +182,10 @@ export default function OfficerReportDetail() {
   >("");
   const [isReviewingClassification, setIsReviewingClassification] =
     useState(false);
+  const [officerLocation, setOfficerLocation] = useState<OfficerLocation | null>(null);
+  const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
+  const [isRouting, setIsRouting] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
   const evidenceRef = useRef<EvidenceDraft[]>([]);
 
   useEffect(() => {
@@ -189,6 +239,48 @@ export default function OfficerReportDetail() {
   const [longitude = Number.NaN, latitude = Number.NaN] =
     alert.location?.coordinates ?? [];
   const hasCoordinates = hasValidCoordinates(latitude, longitude);
+  const routeLeafletCoordinates: [number, number][] = activeRoute
+    ? activeRoute.geometry.coordinates.map(([lng, lat]) => [lat, lng])
+    : [];
+  const routeBoundsCoordinates: [number, number][] = officerLocation && activeRoute
+    ? [
+      [officerLocation.lat, officerLocation.lng],
+      ...routeLeafletCoordinates,
+      [latitude, longitude],
+    ]
+    : [];
+
+  const handleStartNavigation = async () => {
+    if (!hasCoordinates || isRouting) return;
+
+    setIsRouting(true);
+    setRouteError(null);
+    try {
+      const currentLocation = await getOfficerLocation();
+      setOfficerLocation(currentLocation);
+      const route = await gisService.getDrivingRoute(currentLocation, {
+        lat: latitude,
+        lng: longitude,
+      });
+      setActiveRoute(route);
+    } catch (routeFailure) {
+      const isGeolocationFailure = routeFailure instanceof GeolocationPositionError ||
+        (routeFailure instanceof Error && routeFailure.message === "GEOLOCATION_UNAVAILABLE");
+      const message = isGeolocationFailure
+        ? "Không thể lấy vị trí hiện tại. Vui lòng cho phép EcoAlert truy cập vị trí."
+        : "Không tìm được tuyến đường phù hợp. Vui lòng thử lại.";
+      setRouteError(message);
+      toast.error(message);
+    } finally {
+      setIsRouting(false);
+    }
+  };
+
+  const handleStopNavigation = () => {
+    setActiveRoute(null);
+    setOfficerLocation(null);
+    setRouteError(null);
+  };
   const isOfficer = role === "OFFICER";
   const isAdmin = role === "ADMIN";
   const normalizedAlertStatus = alert.status.toLowerCase();
@@ -1214,8 +1306,30 @@ export default function OfficerReportDetail() {
                 address={alert.address}
                 latitude={latitude}
                 longitude={longitude}
+                onStartNavigation={handleStartNavigation}
+                isStartingNavigation={isRouting}
               />
             </CardContent>
+            {/* Logic chỉ đường và hiển thị bản đồ */}
+            {activeRoute ? (
+              <CardContent className="border-t px-5 py-4">
+                <div className="rounded-lg border border-primary/30 bg-primary/10 p-3" aria-live="polite">
+                  <p className="text-sm font-semibold">Đường đi đến sự cố</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {formatRouteDistance(activeRoute.distanceMeters)} · khoảng {formatRouteDuration(activeRoute.durationSeconds)}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">Điểm đến: {alert.address || "Vị trí sự cố"}</p>
+                  <Button className="mt-3" size="sm" variant="outline" onClick={handleStopNavigation}>
+                    Kết thúc chỉ đường
+                  </Button>
+                </div>
+              </CardContent>
+            ) : null}
+            {routeError ? (
+              <CardContent className="border-t px-5 py-3">
+                <p className="text-sm text-destructive" role="alert">{routeError}</p>
+              </CardContent>
+            ) : null}
             <CardContent className="overflow-hidden rounded-b-xl border-t p-0">
               {hasCoordinates ? (
                 <div className="h-64 w-full">
@@ -1224,9 +1338,27 @@ export default function OfficerReportDetail() {
                     zoom={13}  maxZoom={19} minZoom={2}
                     scrollWheelZoom={false}
                     style={{ height: "100%", width: "100%" }}
-                  >
-                    <EcoAlertBaseMap />
-                    <Marker position={[latitude, longitude]}>
+                    >
+                      <EcoAlertBaseMap />
+                      {activeRoute && routeLeafletCoordinates.length > 1 ? (
+                        <>
+                          <Polyline
+                            positions={routeLeafletCoordinates}
+                            pathOptions={{ color: "#10B981", weight: 5, opacity: 0.9 }}
+                          />
+                          <RouteMapController coordinates={routeBoundsCoordinates} />
+                        </>
+                      ) : null}
+                      {officerLocation ? (
+                        <CircleMarker
+                          center={[officerLocation.lat, officerLocation.lng]}
+                          radius={9}
+                          pathOptions={{ color: "#0EA5E9", fillColor: "#38BDF8", fillOpacity: 1, weight: 3 }}
+                        >
+                          <Popup>Vị trí của bạn</Popup>
+                        </CircleMarker>
+                      ) : null}
+                      <Marker position={[latitude, longitude]}>
                       <Popup>
                         {alert.address ||
                           `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`}

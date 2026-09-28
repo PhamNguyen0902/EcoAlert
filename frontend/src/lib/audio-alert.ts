@@ -20,22 +20,8 @@ export function toggleSoundEnabled(): boolean {
   return next;
 }
 
-let audioCtx: AudioContext | null = null;
-
-function getAudioContext(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  if (!AudioContextClass) return null;
-  if (!audioCtx) {
-    audioCtx = new AudioContextClass();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
-  }
-  return audioCtx;
-}
-
 export function playNotificationSound(type: 'success' | 'alert' | 'info' = 'info'): void {
+  void type;
   return;
 
   // try {

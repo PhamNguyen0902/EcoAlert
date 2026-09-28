@@ -160,6 +160,8 @@ function ReportStatusProgress({
     steps.length > 1 ? ((currentStep - 1) / (steps.length - 1)) * 100 : 0;
 
   return (
+
+    //
     <section
       className="mt-6 rounded-xl border border-slate-800/90 bg-[#071321]/75 px-4 py-4 sm:px-5 sm:py-5"
       aria-label={language === "vi" ? "Tiến độ xử lý báo cáo" : "Report progress"}
@@ -356,7 +358,9 @@ function ReportHeroCard({
   language,
 }: ReportHeroCardProps) {
   return (
+    // 
     <section className="rounded-2xl border border-slate-800/90 bg-[#0b1727] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.16)] sm:p-6">
+      {/*Bố cục thông tin báo cáo sự cố môi trường, hiển thị tiêu đề, danh mục, trạng thái và mức độ nghiêm trọng. */} 
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -507,6 +511,7 @@ export default function AlertDetail() {
           language={language}
         />
 
+        {/* Bố cục thông tin báo cáo sự cố môi trường, hiển thị tiêu đề, danh mục, trạng thái và mức độ nghiêm trọng. */}
         <main className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-5">
           <IncidentDetailCard
@@ -519,6 +524,7 @@ export default function AlertDetail() {
             description={alert.description}
           />
 
+          {/* Bố cục hiển thị hình ảnh minh chứng thực địa*/}
           <EvidenceGallery
             title="Hình ảnh minh chứng thực địa"
             description="Hình ảnh gốc do người dân gửi kèm báo cáo sự cố."
@@ -527,6 +533,7 @@ export default function AlertDetail() {
             altPrefix="Hình ảnh minh chứng"
           />
 
+          {/* Bố cục hiển thị kết quả phân tích AI môi trường */}
           <EnvironmentalAiAnalysis alert={alert} />
 
           {hasTreatmentResult ? (
@@ -638,6 +645,7 @@ export default function AlertDetail() {
             </CardContent>
           </Card>
 
+          {/* Phần hiển thị tóm tắt tiến độ xử lý báo cáo sự cố môi trường */}
           <Card>
             <CardContent className="p-5">
               <div className="flex items-center gap-2">

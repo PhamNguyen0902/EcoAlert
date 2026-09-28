@@ -16,6 +16,8 @@ interface LocationActionsProps {
   presentation?: 'full' | 'compact';
   showNavigation?: boolean;
   className?: string;
+  onStartNavigation?: () => void;
+  isStartingNavigation?: boolean;
 }
 // hiển thị các hành động liên quan đến vị trí, bao gồm mở Google Maps.
 export function LocationActions({
@@ -24,6 +26,8 @@ export function LocationActions({
   presentation = 'full',
   showNavigation = true,
   className,
+  onStartNavigation,
+  isStartingNavigation = false,
 }: LocationActionsProps) {
   const { language } = useLanguage();
   const [copied, setCopied] = useState(false);
@@ -97,13 +101,14 @@ export function LocationActions({
           variant={isCompact ? 'outline' : 'default'}
           size={isCompact ? 'sm' : 'default'}
           className={buttonClassName}
-          onClick={() => startGoogleMapsNavigation(latitude, longitude)}
-          disabled={!hasCoordinates}
+          onClick={onStartNavigation ?? (() => startGoogleMapsNavigation(latitude, longitude))}
+          disabled={!hasCoordinates || isStartingNavigation}
           aria-label={text.navigate}
+          aria-busy={isStartingNavigation}
           title={text.startNavigation}
         >
-          <Navigation className="h-4 w-4" />
-          <span className="ml-2">{isCompact ? text.startNavigation : text.startNavigation}</span>
+          {isStartingNavigation ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+          <span className="ml-2">{isStartingNavigation ? (language === 'vi' ? 'Đang tìm đường...' : 'Finding route...') : text.startNavigation}</span>
         </Button>
       ) : null}
 

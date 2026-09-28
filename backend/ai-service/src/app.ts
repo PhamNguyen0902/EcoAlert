@@ -6,7 +6,6 @@ import {
   analyzeIncidentWithOpenRouter,
   safeOpenRouterErrorMetadata,
 } from './services/openrouter.service';
-import { validateIncidentImage } from './services/image-validation.service';
 
 const logger = createLogger('ai-service');
 
@@ -69,15 +68,7 @@ app.post('/validate-image', async (req, res) => {
   }
 
   try {
-    // Keep the report-creation validation flow compatible with existing callers
-    // that only send imageUrl. The Vision upload flow always sends visionSummary.
-    if (!input.visionSummary && !input.title && !input.description) {
-      const validation = await validateIncidentImage(input.imageUrl);
-      return res.status(200).json({ success: true, data: validation });
-    }
-
-    // This endpoint is invoked after Media Service returns YOLO detections.
-    // OpenRouter receives the public image itself plus only the compact summary.
+    // OpenRouter receives the public image itself plus only the compact YOLO summary.
     const result = await analyzeIncidentWithOpenRouter(input);
     return res.status(200).json({ success: true, data: result });
   } catch (error) {

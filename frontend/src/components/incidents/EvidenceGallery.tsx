@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,6 +16,11 @@ type EvidenceGalleryProps = {
 };
 
 const MAX_VISIBLE_THUMBNAILS = 4;
+const MIN_IMAGE_ZOOM = 1;
+const MAX_IMAGE_ZOOM = 4;
+const IMAGE_ZOOM_STEP = 0.2;
+
+type ImageOffset = { x: number; y: number };
 
 export function EvidenceGallery({
   title,
@@ -31,12 +36,45 @@ export function EvidenceGallery({
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [imageZoom, setImageZoom] = useState(MIN_IMAGE_ZOOM);
+  const [imageOffset, setImageOffset] = useState<ImageOffset>({ x: 0, y: 0 });
+  const lightboxImageRef = useRef<HTMLImageElement>(null);
+  const imageViewportRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    offset: ImageOffset;
+  } | null>(null);
+
+  const clampImageOffset = (offset: ImageOffset, zoom = imageZoom): ImageOffset => {
+    const image = lightboxImageRef.current;
+    const viewport = imageViewportRef.current;
+    if (!image || !viewport) return offset;
+
+    const maxX = Math.max(0, (image.clientWidth * zoom - viewport.clientWidth) / 2);
+    const maxY = Math.max(0, (image.clientHeight * zoom - viewport.clientHeight) / 2);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, offset.x)),
+      y: Math.max(-maxY, Math.min(maxY, offset.y)),
+    };
+  };
 
   useEffect(() => {
     if (activeIndex >= validImages.length) {
       setActiveIndex(0);
     }
   }, [activeIndex, validImages.length]);
+
+  useEffect(() => {
+    setImageZoom(MIN_IMAGE_ZOOM);
+    setImageOffset({ x: 0, y: 0 });
+    dragStateRef.current = null;
+  }, [activeIndex, isLightboxOpen]);
+
+  useEffect(() => {
+    setImageOffset((current) => clampImageOffset(current));
+  }, [imageZoom]);
 
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -207,73 +245,75 @@ export function EvidenceGallery({
             ) : null}
           </div>
 
-          <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
-            {validImages
-              .slice(0, MAX_VISIBLE_THUMBNAILS)
-              .map((image, index) => {
-                const isActive = index === activeIndex;
+          {validImages.length > 1 ? (
+            <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
+              {validImages
+                .slice(0, MAX_VISIBLE_THUMBNAILS)
+                .map((image, index) => {
+                  const isActive = index === activeIndex;
 
-                return (
-                  <button
-                    key={`${image}-${index}`}
-                    type="button"
-                    onClick={() => setActiveIndex(index)}
-                    className={[
-                      "group/thumb relative aspect-[4/2.7] overflow-hidden rounded-lg border bg-[#071321] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/60",
-                      isActive
-                        ? "border-[#10B981]/70 ring-1 ring-[#10B981]/20"
-                        : "border-slate-800 hover:border-slate-600",
-                    ].join(" ")}
-                    aria-label={`Chọn ${altPrefix} ${index + 1}`}
-                    aria-current={isActive ? "true" : undefined}
-                  >
-                    <img
-                      src={image}
-                      alt=""
+                  return (
+                    <button
+                      key={`${image}-${index}`}
+                      type="button"
+                      onClick={() => setActiveIndex(index)}
                       className={[
-                        "h-full w-full object-cover transition duration-200",
+                        "group/thumb relative aspect-[4/2.7] overflow-hidden rounded-lg border bg-[#071321] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/60",
                         isActive
-                          ? "opacity-100"
-                          : "opacity-65 group-hover/thumb:opacity-100",
+                          ? "border-[#10B981]/70 ring-1 ring-[#10B981]/20"
+                          : "border-slate-800 hover:border-slate-600",
                       ].join(" ")}
-                      loading="lazy"
-                    />
-                    <span className="absolute bottom-1 right-1 rounded bg-black/65 px-1.5 py-0.5 text-[9px] font-semibold text-white/80">
-                      #{index + 1}
-                    </span>
-                  </button>
-                );
-              })}
+                      aria-label={`Chọn ${altPrefix} ${index + 1}`}
+                      aria-current={isActive ? "true" : undefined}
+                    >
+                      <img
+                        src={image}
+                        alt=""
+                        className={[
+                          "h-full w-full object-cover transition duration-200",
+                          isActive
+                            ? "opacity-100"
+                            : "opacity-65 group-hover/thumb:opacity-100",
+                        ].join(" ")}
+                        loading="lazy"
+                      />
+                      <span className="absolute bottom-1 right-1 rounded bg-black/65 px-1.5 py-0.5 text-[9px] font-semibold text-white/80">
+                        #{index + 1}
+                      </span>
+                    </button>
+                  );
+                })}
 
-            {hiddenImageCount > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveIndex(MAX_VISIBLE_THUMBNAILS);
-                  setIsLightboxOpen(true);
-                }}
-                className="relative aspect-[4/2.7] overflow-hidden rounded-lg border border-slate-800 bg-[#071321] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/60"
-                aria-label={`Xem thêm ${hiddenImageCount} ảnh`}
-              >
-                <img
-                  src={validImages[MAX_VISIBLE_THUMBNAILS]}
-                  alt=""
-                  className="h-full w-full object-cover opacity-25"
-                  loading="lazy"
-                />
-                <span className="absolute inset-0 flex flex-col items-center justify-center bg-[#02070d]/45 text-center">
-                  <span className="text-base font-bold text-slate-100">
-                    +{hiddenImageCount}
+              {hiddenImageCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveIndex(MAX_VISIBLE_THUMBNAILS);
+                    setIsLightboxOpen(true);
+                  }}
+                  className="relative aspect-[4/2.7] overflow-hidden rounded-lg border border-slate-800 bg-[#071321] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/60"
+                  aria-label={`Xem thêm ${hiddenImageCount} ảnh`}
+                >
+                  <img
+                    src={validImages[MAX_VISIBLE_THUMBNAILS]}
+                    alt=""
+                    className="h-full w-full object-cover opacity-25"
+                    loading="lazy"
+                  />
+                  <span className="absolute inset-0 flex flex-col items-center justify-center bg-[#02070d]/45 text-center">
+                    <span className="text-base font-bold text-slate-100">
+                      +{hiddenImageCount}
+                    </span>
+                    <span className="mt-0.5 text-[10px] font-medium text-slate-400">
+                      ảnh khác
+                    </span>
                   </span>
-                  <span className="mt-0.5 text-[10px] font-medium text-slate-400">
-                    ảnh khác
-                  </span>
-                </span>
-              </button>
-            ) : validImages.length < 5 ? (
-              <div className="hidden aspect-[4/2.7] rounded-lg border border-dashed border-slate-800/70 bg-[#071321]/35 sm:block" />
-            ) : null}
-          </div>
+                </button>
+              ) : validImages.length < 5 ? (
+                <div className="hidden aspect-[4/2.7] rounded-lg border border-dashed border-slate-800/70 bg-[#071321]/35 sm:block" />
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -307,14 +347,64 @@ export function EvidenceGallery({
             </button>
           ) : null}
 
-          <figure className="flex max-h-full max-w-[min(1400px,94vw)] flex-col items-center">
-            <img
-              src={activeImage}
-              alt={`${altPrefix} ${activeIndex + 1}`}
-              className="max-h-[84vh] max-w-full rounded-xl object-contain shadow-2xl"
-            />
+          <figure
+            className="flex max-h-full w-[min(1400px,94vw)] flex-col items-center"
+            onWheel={(event) => {
+              event.preventDefault();
+              setImageZoom((current) => {
+                const direction = event.deltaY < 0 ? 1 : -1;
+                return Math.min(
+                  MAX_IMAGE_ZOOM,
+                  Math.max(MIN_IMAGE_ZOOM, current + direction * IMAGE_ZOOM_STEP),
+                );
+              });
+            }}
+          >
+            <div
+              ref={imageViewportRef}
+              className={[
+                "flex max-h-[84vh] w-full items-center justify-center overflow-hidden rounded-xl",
+                imageZoom > MIN_IMAGE_ZOOM ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in",
+              ].join(" ")}
+              style={{ touchAction: "none" }}
+              onPointerDown={(event) => {
+                if (imageZoom <= MIN_IMAGE_ZOOM) return;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                dragStateRef.current = {
+                  pointerId: event.pointerId,
+                  startX: event.clientX,
+                  startY: event.clientY,
+                  offset: imageOffset,
+                };
+              }}
+              onPointerMove={(event) => {
+                const dragState = dragStateRef.current;
+                if (!dragState || dragState.pointerId !== event.pointerId) return;
+                setImageOffset(clampImageOffset({
+                  x: dragState.offset.x + event.clientX - dragState.startX,
+                  y: dragState.offset.y + event.clientY - dragState.startY,
+                }));
+              }}
+              onPointerUp={(event) => {
+                if (dragStateRef.current?.pointerId !== event.pointerId) return;
+                dragStateRef.current = null;
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }}
+              onPointerCancel={() => {
+                dragStateRef.current = null;
+              }}
+            >
+              <img
+                ref={lightboxImageRef}
+                src={activeImage}
+                alt={`${altPrefix} ${activeIndex + 1}`}
+                className="h-auto max-h-[84vh] w-full rounded-xl object-contain shadow-2xl transition-transform duration-150"
+                draggable={false}
+                style={{ transform: `translate(${imageOffset.x}px, ${imageOffset.y}px) scale(${imageZoom})` }}
+              />
+            </div>
             <figcaption className="mt-3 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-xs text-slate-300">
-              {activeIndex + 1} / {validImages.length}
+              {activeIndex + 1} / {validImages.length} · Lăn chuột để zoom, giữ và kéo để xem ảnh ({Math.round(imageZoom * 100)}%)
             </figcaption>
           </figure>
 

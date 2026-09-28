@@ -1,9 +1,9 @@
 
 import { api } from "./api";
+import axios from "axios";
 import type {
   Alert,
   CreateAlertData,
-  ImageValidation,
   PaginatedResult,
   RegisterData,
   ResolutionInput,
@@ -249,14 +249,6 @@ export const alertService = {
   },
   // Gửi URL ảnh sang AI Service/OpenRouter để phân tích ngữ nghĩa và ước tính khối lượng.
   // Endpoint này chạy SAU bước upload + YOLO để UI có thể hiển thị cả detection và massEstimate.
-  // Legacy report-creation validation: sends only imageUrl and receives the
-  // image-validation contract (VALID / UNCERTAIN / INVALID).
-  validateImageForReport: async (
-    imageUrl: string,
-  ): Promise<ImageValidation> => {
-    const res = await api.post("/v1/ai/validate-image", { imageUrl });
-    return res.data.data;
-  },
   // Semantic Vision analysis: sends the YOLO summary so OpenRouter can inspect
   // the image and return an independent visual mass estimate.
   validateImage: async (
@@ -392,6 +384,62 @@ export const alertService = {
 
 // nhóm dịch vụ bản đồ và xử lý không gian địa lý
 export const gisService = {
+  getDrivingRoute: async (
+    start: { lat: number; lng: number },
+    end: { lat: number; lng: number },
+  ): Promise<{
+    distanceMeters: number;
+    durationSeconds: number;
+    geometry: { type: 'LineString'; coordinates: [number, number][] };
+  }> => {
+    const params = new URLSearchParams({
+      startLat: String(start.lat),
+      startLng: String(start.lng),
+      endLat: String(end.lat),
+      endLng: String(end.lng),
+    });
+    try {
+      const res = await api.get(`/v1/gis/route?${params.toString()}`);
+      return res.data.data;
+    } catch (proxyError) {
+      // Some local Docker environments block outbound requests from containers.
+      // Keep the GIS proxy as the primary path, but let an authenticated browser
+      // use the same public OSRM provider when the proxy cannot reach it.
+      const status = axios.isAxiosError(proxyError) ? proxyError.response?.status : undefined;
+      if (status !== 502 && status !== 504) throw proxyError;
+
+      const coordinates = `${start.lng},${start.lat};${end.lng},${end.lat}`;
+      const response = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`,
+      );
+      if (!response.ok) throw proxyError;
+
+      const payload = await response.json() as {
+        code?: string;
+        routes?: Array<{
+          distance?: number;
+          duration?: number;
+          geometry?: { type?: string; coordinates?: [number, number][] };
+        }>;
+      };
+      const route = payload.routes?.[0];
+      if (
+        payload.code !== 'Ok' ||
+        route?.geometry?.type !== 'LineString' ||
+        !Array.isArray(route.geometry.coordinates) ||
+        !Number.isFinite(route.distance) ||
+        !Number.isFinite(route.duration)
+      ) {
+        throw proxyError;
+      }
+
+      return {
+        distanceMeters: route.distance!,
+        durationSeconds: route.duration!,
+        geometry: { type: 'LineString', coordinates: route.geometry.coordinates },
+      };
+    }
+  },
   // lấy danh sách sự cố xung quanh tọa độ theo bán kính mét
   getNearby: async (lng: number, lat: number, maxDistance = 5000) => {
     const res = await api.get(

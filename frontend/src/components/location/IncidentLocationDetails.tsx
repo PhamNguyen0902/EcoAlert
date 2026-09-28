@@ -8,6 +8,8 @@ interface IncidentLocationDetailsProps {
   address?: string;
   latitude?: number;
   longitude?: number;
+  onStartNavigation?: () => void;
+  isStartingNavigation?: boolean;
 }
 
 // hiển thị chi tiết vị trí sự cố môi trường, bao gồm địa chỉ, tọa độ GPS và các hành động liên quan đến vị trí.
@@ -15,6 +17,8 @@ export function IncidentLocationDetails({
   address,
   latitude,
   longitude,
+  onStartNavigation,
+  isStartingNavigation,
 }: IncidentLocationDetailsProps) {
   const { language } = useLanguage();
   const text = language === 'vi'
@@ -49,7 +53,12 @@ export function IncidentLocationDetails({
         <p className="text-sm text-muted-foreground">{text.noCoordinates}</p>
       )}
 
-      <LocationActions latitude={latitude} longitude={longitude} />
+      <LocationActions
+        latitude={latitude}
+        longitude={longitude}
+        onStartNavigation={onStartNavigation}
+        isStartingNavigation={isStartingNavigation}
+      />
     </div>
   );
 }
