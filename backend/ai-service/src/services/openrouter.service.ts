@@ -49,7 +49,7 @@ export interface VisionDetectionSummary {
   classes?: VisionDetectionClassSummary[];
 }
 
-// Kết quả phân tích sự cố môi trường do AI đưa ra.
+// kết quả phân tích sự cố môi trường do ai đưa ra
 export interface IncidentAnalysis {
   category: ClassifiedAlertCategory;
   severity: Severity;
@@ -79,7 +79,7 @@ const rawMassEstimateSchema = z.object({
   limitations: z.array(z.string().trim().min(1).max(250)).max(5),
 }).strict();
 
-// Backward-compatible parsing: các message cũ có thể chưa chứa massEstimate.
+// xử lý tương thích ngược cho các bản tin cũ chưa có trường ước tính khối lượng
 const rawIncidentAnalysisSchema = z.object({
   isIncident: z.boolean().optional(),
   incidentConfidence: z.number().min(0).max(1).optional(),
@@ -117,7 +117,7 @@ export interface IncidentAnalysisInput {
 
 type OpenRouterClientOptions = ConstructorParameters<typeof OpenAI>[0];
 
-// Kết quả trả về từ OpenRouter, bao gồm phản hồi, mô hình được cấu hình, mô hình thực tế và độ trễ
+// kết quả trả về từ openrouter gồm phản hồi mô hình cấu hình mô hình thực tế và độ trễ
 export interface OpenAiCompletionResponse {
   choices: Array<{ message: { content: string | null } }>;
   model?: string;
@@ -127,7 +127,7 @@ export interface OpenAiCompletionResponse {
     total_tokens?: number | null;
   };
 }
- // Giao diện cho client SDK OpenAI, bao gồm phương thức tạo hoàn thành chat
+// giao diện client sdk openai hỗ trợ tạo phản hồi hội thoại
 export interface OpenAiSdkClient {
   chat: {
     completions: {
@@ -144,7 +144,7 @@ export interface OpenRouterGenerationResult {
   model: string;
   latencyMs: number;
 }
- // Lỗi xảy ra khi OpenRouter trả về phản hồi không hợp lệ hoặc không thể phân tích được
+// lỗi phát sinh khi openrouter trả về dữ liệu không hợp lệ hoặc lỗi phân tích
 export class OpenRouterResponseError extends Error {
   constructor(message: string) {
     super(message);
@@ -166,7 +166,7 @@ export class OpenRouterProviderError extends Error {
 const defaultClientFactory: OpenAiClientFactory = (options) =>
   new OpenAI(options) as unknown as OpenAiSdkClient;
 
- // Tạo client OpenRouter với cấu hình và factory được cung cấp
+// khởi tạo client openrouter theo cấu hình cung cấp
 export const createOpenRouterClient = (
   config: OpenRouterConfig,
   factory: OpenAiClientFactory = defaultClientFactory,
@@ -184,7 +184,7 @@ export const createOpenRouterClient = (
 const numberOrUndefined = (value: unknown): number | undefined =>
   typeof value === 'number' ? value : undefined;
 
-// Lấy mô hình được cấu hình cho một tác vụ AI cụ thể, dựa trên cấu hình OpenRouter
+// quản lý và điều phối mô hình ai theo từng tác vụ cụ thể dựa trên cấu hình openrouter
 export class OpenRouterProvider {
   constructor(
     private readonly client: OpenAiSdkClient,
@@ -209,7 +209,7 @@ export class OpenRouterProvider {
     });
 
     try {
-      // The routed model is written last so callers cannot override task routing.
+      // mô hình định tuyến được gán cuối cùng để tránh bị ghi đè
       const response = await this.client.chat.completions.create({
         ...request,
         model: configuredModel,
@@ -406,7 +406,7 @@ export const parseIncidentAnalysis = (
     massEstimate: normalizeMassEstimate(raw.massEstimate, allowVisualMassEstimate),
   };
 };
- // Sau khi phân tích ảnh xong thì AI sẽ phân tích mức độ nghiêm trọng và đánh giá tổng quan cho người dùng từ 0 đến 100%
+// tính điểm số nghiêm trọng từ không đến một trăm phần trăm dựa trên mức độ nghiêm trọng
 const severityScoreFor = (severity: Severity): number => ({
   [Severity.LOW]: 20,
   [Severity.MEDIUM]: 45,
@@ -414,7 +414,7 @@ const severityScoreFor = (severity: Severity): number => ({
   [Severity.CRITICAL]: 90,
 }[severity]);
   
-// Định dạng phản hồi JSON Schema mà AI trả về cho việc phân tích sự cố môi trường
+// định dạng phản hồi json schema mà ai trả về khi phân tích sự cố môi trường
 const structuredResponseFormat = {
   type: 'json_schema',
   json_schema: {
@@ -524,7 +524,7 @@ const buildUserContent = (input: IncidentAnalysisInput, includeImage: boolean) =
   ];
 };
 
-// Sau khi phân tích ảnh xong thì AI sẽ phân tích mức độ nghiêm trọng và đánh giá tổng quan cho người dùng
+// xây dựng yêu cầu phân tích mức độ nghiêm trọng và đánh giá tổng quan sự cố môi trường
 const incidentCompletionRequest = (
   input: IncidentAnalysisInput,
   includeImage: boolean,
@@ -717,7 +717,7 @@ export const analyzeIncidentWithClient = async (
 export const analyzeIncidentWithOpenRouter = async (
   input: IncidentAnalysisInput,
 ): Promise<IncidentAnalysisResult> => {
-  // Model quan sát trực tiếp ảnh và nội dung báo cáo, sau đó trả JSON theo schema sự cố.
+  // mô hình quan sát trực tiếp ảnh và nội dung báo cáo sau đó trả kết quả json theo cấu trúc quy định
   const provider = getOpenRouterProvider();
   const configuredModel = provider.getModel(AiTask.INCIDENT_ANALYSIS);
   logger.info('Vision mass estimation request', {

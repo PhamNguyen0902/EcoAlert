@@ -101,7 +101,7 @@ export interface IAlert extends BaseDocument {
   description: string;
   status: AlertStatus;
   category: AlertCategory | 'UNCLASSIFIED';
-  /** Categories explicitly selected by the citizen; category remains the primary/backward-compatible value. */
+  // danh sách các danh mục do người dân lựa chọn đảm bảo tương thích ngược với trường danh mục chính
   categories?: AlertCategory[];
   classification?: IAlertClassification;
   imageValidation?: IImageValidation;
@@ -130,6 +130,7 @@ export interface IAlert extends BaseDocument {
     accuracy?: number;
   };
   checkIn?: IOfficerCheckIn;
+  // các trường metadata lưu trữ kết quả và tiến trình phân tích của hệ thống ai
   aiConfidence?: number | null;
   aiConfidenceSource?: AiDisplayConfidenceSource;
   aiSuggestedPriority?: Severity | null;

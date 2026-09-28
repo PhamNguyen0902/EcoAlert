@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class DetectorUnavailableError(RuntimeError):
-    """Raised when inference is requested before the model is available."""
+    # lỗi phát sinh khi yêu cầu nhận diện nhưng mô hình chưa sẵn sàng
+    pass
 
 
 @dataclass(frozen=True)
@@ -37,7 +38,7 @@ class DetectionBatch:
 
 
 class WasteDetector:
-    """Keeps a single YOLO model in memory for the lifetime of the service."""
+    # quản lý và lưu trữ một mô hình yolo duy nhất trong bộ nhớ suốt vòng đời dịch vụ
 
     def __init__(self, settings: VisionSettings):
         self.settings = settings

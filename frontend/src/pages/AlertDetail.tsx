@@ -56,7 +56,9 @@ const formatDate = (
 };
 
 const resolveProgressStep = (status: unknown) => {
-  const value = String(status ?? "").trim().toUpperCase();
+  const value = String(status ?? "")
+    .trim()
+    .toUpperCase();
 
   if (
     [
@@ -162,7 +164,9 @@ function ReportStatusProgress({
   return (
     <section
       className="mt-6 rounded-xl border border-slate-800/90 bg-[#071321]/75 px-4 py-4 sm:px-5 sm:py-5"
-      aria-label={language === "vi" ? "Tiến độ xử lý báo cáo" : "Report progress"}
+      aria-label={
+        language === "vi" ? "Tiến độ xử lý báo cáo" : "Report progress"
+      }
     >
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
@@ -375,7 +379,10 @@ function ReportHeroCard({
               {categoryLabel}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Clock3 className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
+              <Clock3
+                className="h-3.5 w-3.5 text-slate-500"
+                aria-hidden="true"
+              />
               {formatDate(createdAt, language, "dd/MM/yyyy · HH:mm")}
             </span>
           </div>
@@ -425,11 +432,17 @@ export default function AlertDetail() {
       <div className="dark min-h-[70vh] bg-[#06111f] px-4 py-16 text-slate-100">
         <div className="mx-auto flex max-w-lg flex-col items-center rounded-2xl border border-rose-500/20 bg-[#0b1727] px-6 py-12 text-center shadow-[0_18px_60px_rgba(0,0,0,0.18)]">
           <AlertCircle className="h-9 w-9 text-rose-400" aria-hidden="true" />
-          <h1 className="mt-4 text-lg font-semibold">{t("report_not_found")}</h1>
+          <h1 className="mt-4 text-lg font-semibold">
+            {t("report_not_found")}
+          </h1>
           <p className="mt-2 text-sm text-slate-400">
             Báo cáo này có thể không còn khả dụng hoặc bạn không có quyền xem.
           </p>
-          <Button className="mt-6" variant="outline" onClick={() => navigate(-1)}>
+          <Button
+            className="mt-6"
+            variant="outline"
+            onClick={() => navigate(-1)}
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Quay lại
           </Button>
@@ -471,7 +484,9 @@ export default function AlertDetail() {
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               {language === "vi" ? "Báo cáo của tôi" : "My reports"}
             </button>
-            <span aria-hidden="true" className="text-slate-700">/</span>
+            <span aria-hidden="true" className="text-slate-700">
+              /
+            </span>
             <span className="truncate font-semibold text-slate-300">
               {language === "vi" ? "Chi tiết báo cáo" : "Report details"}
             </span>
@@ -482,14 +497,19 @@ export default function AlertDetail() {
               type="button"
               onClick={() => void navigator.clipboard?.writeText(`#${shortId}`)}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-800 bg-[#0b1727] px-3 text-xs font-medium text-slate-300 transition-colors hover:border-slate-700 hover:bg-[#0e1d30] hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]/50"
-              title={language === "vi" ? "Sao chép mã báo cáo" : "Copy report ID"}
+              title={
+                language === "vi" ? "Sao chép mã báo cáo" : "Copy report ID"
+              }
             >
               <Copy className="h-3.5 w-3.5" aria-hidden="true" />
               {language === "vi" ? "Sao chép mã" : "Copy ID"}
             </button>
 
             <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-800 bg-[#0b1727] px-3 text-[11px] font-semibold tracking-wide text-slate-400">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#10B981]/80" aria-hidden="true" />
+              <ShieldCheck
+                className="h-3.5 w-3.5 text-[#10B981]/80"
+                aria-hidden="true"
+              />
               VN-2000
             </span>
           </div>
@@ -508,194 +528,203 @@ export default function AlertDetail() {
         />
 
         <main className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 space-y-5">
-          <IncidentDetailCard
-            categoryLabel={formatIncidentCategory(alert.category, language)}
-            reportedAt={formatDate(alert.createdAt, language, "dd/MM/yyyy · HH:mm")}
-            reporterLabel={
-              alert.citizenId ? "Công dân đã xác thực" : "Công dân ẩn danh"
-            }
-            severity={displaySeverity}
-            description={alert.description}
-          />
+          <div className="min-w-0 space-y-5">
+            <IncidentDetailCard
+              categoryLabel={formatIncidentCategory(alert.category, language)}
+              reportedAt={formatDate(
+                alert.createdAt,
+                language,
+                "dd/MM/yyyy · HH:mm",
+              )}
+              reporterLabel={
+                alert.citizenId ? "Công dân đã xác thực" : "Công dân ẩn danh"
+              }
+              severity={displaySeverity}
+              description={alert.description}
+            />
+            {/* hình ảnh minh chứng */}
+            <EvidenceGallery
+              title="Hình ảnh minh chứng"
+              description="Hình ảnh gốc do người dân gửi kèm báo cáo sự cố."
+              images={originalEvidence}
+              emptyMessage={t("alert_detail.no_media")}
+              altPrefix="Hình ảnh minh chứng"
+            />
 
-          <EvidenceGallery
-            title="Hình ảnh minh chứng thực địa"
-            description="Hình ảnh gốc do người dân gửi kèm báo cáo sự cố."
-            images={originalEvidence}
-            emptyMessage={t("alert_detail.no_media")}
-            altPrefix="Hình ảnh minh chứng"
-          />
+            <EnvironmentalAiAnalysis alert={alert} />
 
-          <EnvironmentalAiAnalysis alert={alert} />
-
-          {hasTreatmentResult ? (
-            <section
-              className="border-t pt-8"
-              aria-labelledby="treatment-result-heading"
-            >
-              <div className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <div>
-                  <h2
-                    id="treatment-result-heading"
-                    className="text-lg font-semibold"
-                  >
-                    Kết quả xử lý của Cán bộ
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Hồ sơ xử lý được lưu trữ độc lập với bằng chứng ban đầu của
-                    người dân.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-5 grid gap-5 border-y py-5 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Tóm tắt kết quả
-                  </p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
-                    {alert.resolutionSummary || "Chưa cung cấp"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Phương pháp xử lý
-                  </p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
-                    {alert.treatmentMethod || "Chưa cung cấp"}
-                  </p>
-                </div>
-                {alert.materialsUsed ? (
+            {hasTreatmentResult ? (
+              <section
+                className="border-t pt-8"
+                aria-labelledby="treatment-result-heading"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                  </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Vật tư & Thiết bị
-                    </p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
-                      {alert.materialsUsed}
+                    <h2
+                      id="treatment-result-heading"
+                      className="text-lg font-semibold"
+                    >
+                      Kết quả xử lý của Cán bộ
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Hồ sơ xử lý được lưu trữ độc lập với bằng chứng ban đầu
+                      của người dân.
                     </p>
                   </div>
-                ) : null}
-                {alert.resolutionNotes ? (
+                </div>
+                <div className="mt-5 grid gap-5 border-y py-5 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Ghi chú bổ sung
+                      Tóm tắt kết quả
                     </p>
                     <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
-                      {alert.resolutionNotes}
+                      {alert.resolutionSummary || "Chưa cung cấp"}
                     </p>
                   </div>
-                ) : null}
-              </div>
-              <div className="mt-6">
-                <EvidenceGallery
-                  title="Hình ảnh sau xử lý"
-                  images={resolutionEvidence}
-                  emptyMessage="Chưa có hình ảnh sau xử lý."
-                  altPrefix="Hình ảnh sau xử lý"
-                />
-              </div>
-            </section>
-          ) : null}
-        </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Phương pháp xử lý
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                      {alert.treatmentMethod || "Chưa cung cấp"}
+                    </p>
+                  </div>
+                  {alert.materialsUsed ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Vật tư & Thiết bị
+                      </p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                        {alert.materialsUsed}
+                      </p>
+                    </div>
+                  ) : null}
+                  {alert.resolutionNotes ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Ghi chú bổ sung
+                      </p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6">
+                        {alert.resolutionNotes}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="mt-6">
+                  <EvidenceGallery
+                    title="Hình ảnh sau xử lý"
+                    images={resolutionEvidence}
+                    emptyMessage="Chưa có hình ảnh sau xử lý."
+                    altPrefix="Hình ảnh sau xử lý"
+                  />
+                </div>
+              </section>
+            ) : null}
+          </div>
 
           {/* Phần hiển thị bản đồ vị trí sự cố và tóm tắt tiến độ xử lý */}
 
-        <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
-          <Card className="overflow-hidden">
-            <CardContent className="p-0">
-              <div className="p-5">
-                <IncidentLocationDetails
-                  address={alert.address}
-                  latitude={latitude}
-                  longitude={longitude}
-                />
-              </div>
-              {hasCoordinates ? (
-                <div className="h-64 border-t bg-muted">
-                  <MapContainer
-                    center={[latitude, longitude]}
-                    zoom={15}
-                    scrollWheelZoom={false}
-                    className="h-full w-full"
-                    aria-label="Bản đồ vị trí sự cố"
-                  >
-                    <EcoAlertBaseMap />
-                    <Marker position={[latitude, longitude]} icon={incidentLocationIcon} />
-                  </MapContainer>
+          <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="p-5">
+                  <IncidentLocationDetails
+                    address={alert.address}
+                    latitude={latitude}
+                    longitude={longitude}
+                  />
                 </div>
-              ) : (
-                <div className="flex min-h-36 flex-col items-center justify-center border-t px-5 text-center text-sm text-muted-foreground">
-                  <MapPin className="h-5 w-5" aria-hidden="true" />
-                  <p className="mt-2">
-                    Không thể hiển thị bản đồ vì báo cáo chưa có tọa độ GPS xác
-                    thực.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                {hasCoordinates ? (
+                  <div className="h-64 border-t bg-muted">
+                    <MapContainer
+                      center={[latitude, longitude]}
+                      zoom={15}
+                      scrollWheelZoom={false}
+                      className="h-full w-full"
+                      aria-label="Bản đồ vị trí sự cố"
+                    >
+                      <EcoAlertBaseMap />
+                      <Marker
+                        position={[latitude, longitude]}
+                        icon={incidentLocationIcon}
+                      />
+                    </MapContainer>
+                  </div>
+                ) : (
+                  <div className="flex min-h-36 flex-col items-center justify-center border-t px-5 text-center text-sm text-muted-foreground">
+                    <MapPin className="h-5 w-5" aria-hidden="true" />
+                    <p className="mt-2">
+                      Không thể hiển thị bản đồ vì báo cáo chưa có tọa độ GPS
+                      xác thực.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center gap-2">
-                <UserCheck
-                  className="h-4 w-4 text-primary"
-                  aria-hidden="true"
-                />
-                <h2 className="font-semibold">Tóm tắt tiến độ</h2>
-              </div>
-              <dl className="mt-5 space-y-3 text-sm">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Phân công</dt>
-                  <dd className="text-right font-medium">
-                    {alert.assignedOfficerId
-                      ? "Đã phân công cán bộ"
-                      : "Đang chờ phân công"}
-                  </dd>
+            <Card>
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2">
+                  <UserCheck
+                    className="h-4 w-4 text-primary"
+                    aria-hidden="true"
+                  />
+                  <h2 className="font-semibold">Tóm tắt tiến độ</h2>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Bắt đầu xử lý</dt>
-                  <dd className="text-right">
-                    {formatDate(alert.startedAt, language)}
-                  </dd>
+                <dl className="mt-5 space-y-3 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Phân công</dt>
+                    <dd className="text-right font-medium">
+                      {alert.assignedOfficerId
+                        ? "Đã phân công cán bộ"
+                        : "Đang chờ phân công"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Bắt đầu xử lý</dt>
+                    <dd className="text-right">
+                      {formatDate(alert.startedAt, language)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">
+                      Đã đến hiện trường
+                    </dt>
+                    <dd className="text-right">
+                      {formatDate(alert.arrivedAt, language)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Hoàn thành xử lý</dt>
+                    <dd className="text-right">
+                      {formatDate(alert.resolvedAt, language)}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="mt-5 rounded-lg bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">
+                  <CheckCircle2
+                    className="mr-1 inline h-3.5 w-3.5 text-primary"
+                    aria-hidden="true"
+                  />
+                  {getStatusDescription(status, language)}
                 </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Đã đến hiện trường</dt>
-                  <dd className="text-right">
-                    {formatDate(alert.arrivedAt, language)}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Hoàn thành xử lý</dt>
-                  <dd className="text-right">
-                    {formatDate(alert.resolvedAt, language)}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-5 rounded-lg bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">
-                <CheckCircle2
-                  className="mr-1 inline h-3.5 w-3.5 text-primary"
-                  aria-hidden="true"
-                />
-                {getStatusDescription(status, language)}
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
+              </CardContent>
+            </Card>
+          </aside>
 
-        <section
-          className="min-w-0 xl:col-start-1"
-          aria-label={t("alert_detail.timeline")}
-        >
-          <IncidentTimeline
-            entries={alert.timeline}
-            createdAt={alert.createdAt}
-            citizenId={alert.citizenId}
-          />
-        </section>
+          <section
+            className="min-w-0 xl:col-start-1"
+            aria-label={t("alert_detail.timeline")}
+          >
+            <IncidentTimeline
+              entries={alert.timeline}
+              createdAt={alert.createdAt}
+              citizenId={alert.citizenId}
+            />
+          </section>
         </main>
       </div>
     </div>

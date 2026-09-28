@@ -22,6 +22,7 @@ const toPercentValue = (value: number | null | undefined) => {
   return Math.round(Math.max(0, Math.min(1, value)) * 100);
 };
 
+// thẻ hiển thị chi tiết kết quả phân tích tổng quan từ mô hình ai bao gồm độ tin cậy và tóm tắt nguyên nhân
 export function OverallAiAnalysisCard({ alert }: { alert: Alert }) {
   const { language } = useLanguage();
   const presentation = getPresentationCopy(language);

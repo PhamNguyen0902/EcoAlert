@@ -17,6 +17,7 @@ type EvidenceGalleryProps = {
 
 const MAX_VISIBLE_THUMBNAILS = 4;
 
+// thư viện hiển thị hình ảnh minh chứng sự cố kèm chế độ xem phóng to
 export function EvidenceGallery({
   title,
   description,

@@ -74,6 +74,7 @@ def serialize_detection_response(batch: DetectionBatch) -> DetectionResponse:
     )
 
 
+# thực hiện suy luận nhận diện vật thể từ ảnh tải lên
 async def infer(file: UploadFile, confidence: float | None, detector: WasteDetector) -> DetectionBatch:
     if not detector.is_ready():
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Vision model is not ready")
@@ -94,6 +95,7 @@ async def infer(file: UploadFile, confidence: float | None, detector: WasteDetec
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Image inference failed") from None
 
 
+# kiểm tra trạng thái hoạt động của dịch vụ và mô hình nhận diện
 @router.get("/health")
 async def health(request: Request):
     detector = get_detector(request)
@@ -106,6 +108,7 @@ async def health(request: Request):
     }
 
 
+# nhận diện đối tượng từ hình ảnh và trả về danh sách bounding box
 @router.post("/detect", response_model=DetectionResponse)
 async def detect(
     request: Request,
@@ -116,12 +119,12 @@ async def detect(
     return serialize_detection_response(batch)
 
 
+# định dạng phản hồi cũ duy trì tính tương thích với media-service
 @router.post("/predict")
 async def predict_legacy(
     request: Request,
     file: Annotated[UploadFile, File(description="JPG, JPEG, PNG, or WEBP image")],
 ):
-    """Legacy response retained for media-service compatibility."""
     detector = get_detector(request)
     batch = await infer(file, None, detector)
     detections = [
