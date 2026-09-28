@@ -22,6 +22,7 @@ const IMAGE_ZOOM_STEP = 0.2;
 
 type ImageOffset = { x: number; y: number };
 
+// thư viện hiển thị hình ảnh minh chứng sự cố kèm chế độ xem phóng to
 export function EvidenceGallery({
   title,
   description,

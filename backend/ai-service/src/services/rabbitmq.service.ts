@@ -84,13 +84,13 @@ export const processAlertCreatedEvent = async (
   event: IEventMessage<AlertCreatedData>,
   dependencies: AlertCreatedProcessorDependencies,
 ) => {
-  // Nhận alert.created, phân tích bất đồng bộ và luôn phát một kết quả có trạng thái rõ ràng.
+  // nhận sự kiện tạo báo cáo phân tích bất đồng bộ và luôn phát kết quả có trạng thái rõ ràng
   const alert = event.data;
   if (!alert?._id) throw new Error('alert.created event is missing data._id');
 
   let analysis: MultimodalAnalysisResult;
   try {
-    // First classify the report semantically. Never send an unknown/non-waste report to YOLO.
+    // phân loại ngữ nghĩa sự cố trước không gửi báo cáo không liên quan đến rác sang mô hình yolo
     analysis = await dependencies.analyze({
       alertId: alert._id,
       title: alert.title,
@@ -104,7 +104,7 @@ export const processAlertCreatedEvent = async (
     if (pipeline === 'WASTE_DETECTION') {
       const urls = alert.mediaUrls?.filter((url) => typeof url === 'string' && url.length > 0).slice(0, 6) ?? [];
       const visionEvidence = await Promise.all(urls.map((url) => (dependencies.detectWaste || detectWasteFromMedia)(url)));
-      // A second semantic request incorporates only valid waste evidence for the report-level result.
+      // gửi yêu cầu ngữ nghĩa lần hai kết hợp minh chứng nhận diện rác thải hợp lệ cho kết quả tổng quan
       analysis = await dependencies.analyze({ alertId: alert._id, title: alert.title, description: alert.description || '', imageUrls: urls, reportVisionSummary: buildReportVisionSummary(visionEvidence) });
       analysis.analysisPipeline = pipeline;
       analysis.visionEvidence = visionEvidence;
@@ -113,7 +113,7 @@ export const processAlertCreatedEvent = async (
       if (analysis.overallAnalysis) analysis.overallAnalysis.massEstimate = noWasteMassEstimate();
     }
   } catch (error) {
-    // Không làm mất báo cáo khi nhà cung cấp lỗi; Alert Service sẽ hiển thị AI unavailable.
+    // không làm gián đoạn báo cáo khi nhà cung cấp lỗi hệ thống sẽ đánh dấu tạm thời chờ xử lý
     const failureReason = 'Dịch vụ OpenRouter tạm thời không khả dụng; báo cáo vẫn đang chờ nhân viên xử lý.';
     logger.warn(`AI analysis failed for alert ${alert._id}`, {
       ...safeOpenRouterErrorMetadata(error),

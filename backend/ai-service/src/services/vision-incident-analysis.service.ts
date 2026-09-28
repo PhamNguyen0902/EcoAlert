@@ -22,6 +22,7 @@ export interface VisionIncidentAnalysisInput {
 const clampConfidence = (value: number) =>
   Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
 
+// tổng hợp danh sách đối tượng phát hiện được và tính độ tin cậy trung bình theo từng nhóm
 export const buildVisionDetectionSummary = (
   detections: VisionDetectionInput[],
 ): VisionDetectionSummary => {
@@ -73,13 +74,7 @@ export const buildVisionDetectionSummary = (
   };
 };
 
-/**
- * Kết hợp YOLO detection với OpenRouter Vision.
- *
- * - YOLO chịu trách nhiệm nhận diện class/bounding box.
- * - OpenRouter quan sát toàn cảnh ảnh và dùng YOLO summary như tín hiệu hỗ trợ.
- * - Không tính khối lượng bằng số detection nhân trọng lượng cố định.
- */
+// kết hợp kết quả nhận diện của yolo với openrouter vision để phân tích chi tiết sự cố
 export const analyzeVisionIncident = async (
   input: VisionIncidentAnalysisInput,
 ): Promise<IncidentAnalysisResult> => {

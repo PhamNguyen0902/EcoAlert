@@ -7,10 +7,7 @@ const GOOGLE_SATELLITE_URL =
 const OPEN_STREET_MAP_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const GOOGLE_SUBDOMAINS = ["mt0", "mt1", "mt2", "mt3"];
 
-/**
- * Base layers shared by every Leaflet map in EcoAlert.
- * Google Road is the default and does not use the Google Maps JavaScript API.
- */
+// các lớp bản đồ nền dùng chung cho bản đồ leaflet trong toàn bộ hệ thống ecoalert
 export function EcoAlertBaseMap() {
   return (
     <LayersControl position="bottomright">

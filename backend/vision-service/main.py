@@ -29,8 +29,7 @@ async def lifespan(app: FastAPI):
     try:
         detector.load_model()
     except Exception:
-        # Keep health available to expose a clear degraded state. /detect and
-        # /predict return 503 until the model can be loaded successfully.
+        # giữ endpoint health khả dụng để báo trạng thái suy giảm trong khi các endpoint detect trả về mã 503 đến khi nạp mô hình thành công
         logger.exception("Vision model could not be loaded during startup")
 
     yield

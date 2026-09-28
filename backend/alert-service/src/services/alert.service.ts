@@ -130,6 +130,7 @@ export class AlertService {
       imageValidation,
       ...alertData
     } = data;
+    // trích xuất danh mục và thiết lập thông tin phân loại ban đầu cho sự cố
     const categories = Array.from(new Set(data.categories || []));
     const primaryCategory = citizenClassification?.selectedCategory || data.category || categories[0];
     const category = primaryCategory || "UNCLASSIFIED";
@@ -183,7 +184,7 @@ export class AlertService {
       ],
     });
 
-    // The AI worker receives the persisted evidence and performs one report-level analysis.
+    // worker ai nhận dữ liệu minh chứng đã lưu và thực hiện phân tích sự cố
     await rabbitMQService.publishEvent(EVENTS.ALERT_CREATED, alert);
     return alert;
   }
@@ -599,6 +600,7 @@ export class AlertService {
             analysis.overallAnalysis?.overallSummary ?? analysis.summary,
           aiReasoningSummary:
             analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
+          // lưu thông tin phân tích ai và dữ liệu nhận diện thị giác vào cơ sở dữ liệu
           aiAnalysisMode: analysis.analysisMode,
           analysisPipeline: analysis.analysisPipeline,
           ...(analysis.visionEvidence ? { visionEvidence: analysis.visionEvidence } : {}),

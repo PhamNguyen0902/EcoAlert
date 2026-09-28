@@ -1,7 +1,7 @@
 import { AlertCategory, Severity } from '../enums';
 import type { VisionPipeline } from '../utils/vision-pipeline';
 
-/** Result mode of the single OpenRouter incident-analysis request. */
+// chế độ phân tích của yêu cầu xử lý sự cố openrouter
 export type AiAnalysisMode = 'TEXT_ONLY' | 'IMAGE_AND_TEXT' | 'FAILED';
 export type AiPipelineVersion = 'openrouter-multimodal-v1';
 export type AiClassificationStatus = 'AI_SUGGESTED' | 'UNCLASSIFIED';
@@ -29,10 +29,7 @@ export interface IVisionEvidence {
   requiresManualReview: boolean;
 }
 
-/**
- * User-visible interpretation returned directly by OpenRouter. It intentionally
- * has no detector, bounding-box, or secondary-analysis fields.
- */
+// kết quả phân tích tổng quan do mô hình ai trả về phục vụ hiển thị trực tiếp cho người dùng
 export interface IAiOverallAnalysis {
   isIncident: boolean;
   incidentConfidence: number;
@@ -51,7 +48,7 @@ export interface IAiOverallAnalysis {
   analysisPipeline?: VisionPipeline;
 }
 
-/** Event payload published after AI processing; a failed request preserves the report. */
+// dữ liệu sự kiện phát ra sau khi phân tích ai hoàn tất luôn bảo toàn báo cáo ngay cả khi lỗi
 export interface IAiAnalysisCompletedData {
   alertId: string;
   analysisId: string;
