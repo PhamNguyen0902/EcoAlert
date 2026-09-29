@@ -37,6 +37,7 @@ const semanticAnalysisRequestSchema = z.object({
   visionSummary: visionSummarySchema.optional(),
 }).strict();
 
+// kiểm tra và chuẩn hóa dữ liệu yêu cầu phân tích ngữ nghĩa sự cố
 const parseSemanticAnalysisInput = (body: unknown) => {
   const parsed = semanticAnalysisRequestSchema.safeParse(body);
   if (!parsed.success) return null;
@@ -46,7 +47,7 @@ const parseSemanticAnalysisInput = (body: unknown) => {
   };
 };
 
-/** Direct OpenRouter analysis endpoint used by the gateway. */
+// tiếp nhận yêu cầu phân tích trực tiếp sự cố từ cổng kết nối
 app.post('/analyze', async (req, res) => {
   try {
     const input = parseSemanticAnalysisInput(req.body);
@@ -61,6 +62,7 @@ app.post('/analyze', async (req, res) => {
   }
 });
 
+// kiểm tra và phân tích ngữ nghĩa hình ảnh sự cố
 app.post('/validate-image', async (req, res) => {
   const input = parseSemanticAnalysisInput(req.body);
   if (!input) {
@@ -68,7 +70,6 @@ app.post('/validate-image', async (req, res) => {
   }
 
   try {
-    // OpenRouter receives the public image itself plus only the compact YOLO summary.
     const result = await analyzeIncidentWithOpenRouter(input);
     return res.status(200).json({ success: true, data: result });
   } catch (error) {

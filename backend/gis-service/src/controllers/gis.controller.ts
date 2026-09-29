@@ -35,6 +35,7 @@ export class GisController {
     res.status(200).json(successResponse(results));
   }
 
+  // tiếp nhận yêu cầu tìm đường đi và trả về lộ trình đường bộ
   async getRoute(req: Request, res: Response) {
     const startLat = Number(req.query.startLat);
     const startLng = Number(req.query.startLng);
@@ -55,6 +56,7 @@ export class GisController {
     res.status(200).json(successResponse(result));
   }
 
+  // lấy thông tin chi tiết các sự cố theo bán kính từ điểm chọn trên bản đồ nhiệt
   async getIncidentDrilldown(req: Request, res: Response) {
     this.requireAdmin(req);
     const coordinates = parseCoordinates(req);
@@ -77,6 +79,7 @@ const parseCoordinates = (
     : null;
 };
 
+// kiểm tra tính hợp lệ của tọa độ vĩ độ và kinh độ
 const areValidCoordinates = (lat: number, lng: number) =>
   Number.isFinite(lat) && lat >= -90 && lat <= 90 &&
   Number.isFinite(lng) && lng >= -180 && lng <= 180;

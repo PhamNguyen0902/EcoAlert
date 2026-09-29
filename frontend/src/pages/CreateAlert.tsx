@@ -81,6 +81,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+// trang tạo báo cáo sự cố môi trường theo từng bước của người dân
 export default function CreateAlert() {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -147,6 +148,7 @@ export default function CreateAlert() {
     [],
   );
 
+  // tìm kiếm gợi ý địa chỉ thông qua dịch vụ gợi ý bản đồ
   const searchAddress = async (query: string) => {
     setIsSearching(true);
     try {
@@ -243,6 +245,7 @@ export default function CreateAlert() {
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
     );
   };
+  // xử lý chọn tập tin ảnh minh chứng và tạo đường dẫn xem trước
   const handleFileSelect = (selectedFiles: File[]) => {
     const remaining = 6 - files.length;
     const validFiles = selectedFiles.slice(0, remaining).filter((selectedFile) => {
@@ -263,6 +266,7 @@ export default function CreateAlert() {
     setPreviewUrls((current) => [...current, ...urls]);
   };
 
+  // xóa tập tin ảnh minh chứng khỏi danh sách đính kèm
   const handleRemoveFile = (index: number) => {
     const url = previewUrlRef.current[index];
     if (url) URL.revokeObjectURL(url);
@@ -271,6 +275,7 @@ export default function CreateAlert() {
     setPreviewUrls((current) => current.filter((_, itemIndex) => itemIndex !== index));
   };
 
+  // kiểm tra tính hợp lệ của bước hiện tại và chuyển sang bước tiếp theo
   const handleNext = async () => {
     if (currentStep === 1) {
       if (!(await trigger(["title", "description"]))) return;

@@ -74,15 +74,15 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsConnected(false);
     });
 
+    // làm mới các dữ liệu đang hoạt động khi nhận được sự kiện thời gian thực
     const refreshActiveData = () => {
-      // Refetch only views affected by a realtime incident event. Invalidating
-      // all queries caused unrelated screens to reload for every notification.
       queryClient.invalidateQueries({ queryKey: ['alerts'], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ['notifications'], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ['officer-tasks'], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ['users'], refetchType: 'active' });
     };
 
+    // kiểm tra xem hành động vừa nhận qua kết nối mạng có phải do chính người dùng hiện tại thực hiện hay không
     const isSelfAction = (data: any) => {
       const currentUserId = userRef.current?._id || (userRef.current as any)?.id;
       if (!currentUserId || !data) return false;

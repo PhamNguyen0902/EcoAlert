@@ -85,12 +85,15 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
     return counts;
   }, [alerts]);
 
+  // lấy nhãn hiển thị cho bộ lọc mức độ nghiêm trọng trên bản đồ
   const severityFilterLabel = (severity: Severity | "all") =>
     severity === "all"
       ? language === "vi"
         ? "Tất cả"
         : "All"
       : getIncidentSeverityLabel(severity, language);
+
+  // lấy nhãn chú giải mức độ nghiêm trọng hiển thị trên bản đồ
   const severityLegendLabel = (severity: Severity) =>
     language === "vi"
       ? `Mức độ ${getIncidentSeverityLabel(severity, language)}`

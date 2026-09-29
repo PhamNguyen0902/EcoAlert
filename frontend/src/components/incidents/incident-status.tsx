@@ -81,6 +81,7 @@ export const getSeverityBadgeVariant = (
   return "outline";
 };
 
+// trả về lớp định kiểu cho huy hiệu trạng thái sự cố
 const statusBadgeClassName = (status?: string | null) => {
   switch (normalizeIncidentStatus(status)) {
     case "verified":
@@ -97,6 +98,7 @@ const statusBadgeClassName = (status?: string | null) => {
   }
 };
 
+// trả về lớp định kiểu cho huy hiệu mức độ nghiêm trọng
 const severityBadgeClassName = (severity?: string | null) => {
   switch (normalizeSeverity(severity)) {
     case "low":

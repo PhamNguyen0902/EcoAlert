@@ -23,10 +23,12 @@ MATERIAL_TO_CATEGORY = {
 }
 
 
+# lấy thể hiện bộ nhận diện yolo từ trạng thái ứng dụng
 def get_detector(request: Request) -> WasteDetector:
     return request.app.state.detector
 
 
+# đọc và kiểm tra tính hợp lệ về định dạng và kích thước của tập tin ảnh tải lên
 async def read_valid_image(file: UploadFile, detector: WasteDetector) -> bytes:
     extension = f".{file.filename.rsplit('.', 1)[-1].lower()}" if file.filename and "." in file.filename else ""
     if not file.content_type or not file.content_type.startswith("image/") or extension not in ALLOWED_EXTENSIONS:
@@ -46,6 +48,7 @@ async def read_valid_image(file: UploadFile, detector: WasteDetector) -> bytes:
     return image_bytes
 
 
+# giải mã mảng byte hình ảnh sang ma trận bằng thư viện xử lý ảnh
 def decode_image(image_bytes: bytes) -> np.ndarray:
     image = cv2.imdecode(np.frombuffer(image_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
     if image is None or image.size == 0:
@@ -53,6 +56,7 @@ def decode_image(image_bytes: bytes) -> np.ndarray:
     return image
 
 
+# chuyển đổi kết quả phát hiện hàng loạt sang định dạng phản hồi chuẩn
 def serialize_detection_response(batch: DetectionBatch) -> DetectionResponse:
     return DetectionResponse(
         image=ImageMetadata(width=batch.width, height=batch.height),

@@ -14,6 +14,7 @@ class VisionSettings:
     device: str
     max_upload_bytes: int
 
+    # đọc và xác thực các tham số cấu hình dịch vụ thị giác từ biến môi trường
     @classmethod
     def from_environment(cls) -> "VisionSettings":
         raw_path = Path(os.getenv("YOLO_MODEL_PATH", "models/BEST_ECOALERT_YOLO11N.pt"))

@@ -45,6 +45,7 @@ const PROCESSING_STATUSES = new Set(["PENDING", "AI_ANALYZING", "VERIFIED", "ASS
 const COMPLETED_STATUSES = new Set(["RESOLVED", "CLOSED"]);
 const INACTIVE_STATUSES = new Set(["RESOLVED", "CLOSED", "REJECTED"]);
 
+// lấy tên hiển thị ngắn gọn từ họ tên người dùng
 const displayName = (fullName?: string): string => {
   const normalized = fullName?.trim();
   if (!normalized) return "EcoAlert Citizen";
@@ -52,6 +53,7 @@ const displayName = (fullName?: string): string => {
   return parts.at(-1) ?? normalized;
 };
 
+// màn hình tổng quan và thống kê báo cáo của người dân trên ứng dụng di động
 export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();

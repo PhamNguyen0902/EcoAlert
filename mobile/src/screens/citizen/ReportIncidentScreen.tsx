@@ -65,8 +65,10 @@ interface FormErrors {
   location?: string;
 }
 
+// kiểm tra xem đường dẫn hình ảnh có phải là liên kết hợp lệ từ máy chủ hay không
 const isBackendMediaUrl = (value: string): boolean => /^https?:\/\//i.test(value);
 
+// trích xuất thông báo lỗi từ phản hồi mạng hoặc trả về thông báo mặc định
 const requestErrorMessage = (error: unknown, fallback: string): string => {
   const requestError = error as {
     response?: { data?: { message?: string } };
@@ -75,6 +77,7 @@ const requestErrorMessage = (error: unknown, fallback: string): string => {
   return requestError.response?.data?.message || requestError.message || fallback;
 };
 
+// màn hình tạo và gửi báo cáo sự cố môi trường trên ứng dụng di động
 export const ReportIncidentScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();

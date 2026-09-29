@@ -55,6 +55,7 @@ const formatDate = (
     : format(date, dateFormat, { locale: language === "vi" ? vi : enUS });
 };
 
+// xác định bước tiến trình xử lý từ trạng thái của sự cố
 const resolveProgressStep = (status: unknown) => {
   const value = String(status ?? "").trim().toUpperCase();
 
@@ -110,6 +111,7 @@ type ReportStatusProgressProps = {
   language: "vi" | "en";
 };
 
+// thanh tiến trình hiển thị bốn bước xử lý sự cố từ lúc gửi đến hoàn thành
 function ReportStatusProgress({
   status,
   createdAt,
@@ -346,6 +348,7 @@ type ReportHeroCardProps = {
   language: "vi" | "en";
 };
 
+// thẻ nổi bật hiển thị tiêu đề mã sự cố danh mục mức độ và thanh tiến trình
 function ReportHeroCard({
   shortId,
   title,
@@ -358,7 +361,6 @@ function ReportHeroCard({
   language,
 }: ReportHeroCardProps) {
   return (
-    // 
     <section className="rounded-2xl border border-slate-800/90 bg-[#0b1727] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.16)] sm:p-6">
       {/*Bố cục thông tin báo cáo sự cố môi trường, hiển thị tiêu đề, danh mục, trạng thái và mức độ nghiêm trọng. */} 
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">

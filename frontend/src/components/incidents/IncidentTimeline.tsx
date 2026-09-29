@@ -35,7 +35,7 @@ const iconForEvent = (eventType: string) => {
   return CircleDot;
 };
 
-/** Renders the server-owned workflow history without client-generated AI stages. */
+// dòng thời gian hiển thị lịch sử và tiến trình xử lý sự cố từ máy chủ
 export function IncidentTimeline({
   entries = [],
   createdAt,

@@ -48,6 +48,7 @@ export function EvidenceGallery({
     offset: ImageOffset;
   } | null>(null);
 
+  // giới hạn phạm vi dịch chuyển tọa độ ảnh khi đang phóng to
   const clampImageOffset = (offset: ImageOffset, zoom = imageZoom): ImageOffset => {
     const image = lightboxImageRef.current;
     const viewport = imageViewportRef.current;
@@ -83,6 +84,7 @@ export function EvidenceGallery({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    // xử lý phím bấm điều hướng bàn phím khi mở xem ảnh toàn màn hình
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsLightboxOpen(false);
@@ -117,6 +119,7 @@ export function EvidenceGallery({
     0,
   );
 
+  // chuyển về xem ảnh minh chứng liền trước
   const goPrevious = () => {
     if (validImages.length <= 1) return;
     setActiveIndex((current) =>
@@ -124,6 +127,7 @@ export function EvidenceGallery({
     );
   };
 
+  // chuyển sang xem ảnh minh chứng kế tiếp
   const goNext = () => {
     if (validImages.length <= 1) return;
     setActiveIndex((current) =>

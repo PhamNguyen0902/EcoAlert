@@ -107,6 +107,7 @@ export interface ValidateImageInput {
   visionSummary?: VisionDetectionSummary;
 }
 
+// tổng hợp danh sách đối tượng phát hiện được và tính độ tin cậy trung bình theo từng nhóm
 export const buildVisionDetectionSummary = (
   detections: VisionDetection[],
 ): VisionDetectionSummary => {
@@ -143,6 +144,7 @@ export const buildVisionDetectionSummary = (
   };
 };
 
+// trích xuất thông báo lỗi từ phản hồi mạng hoặc trả về thông báo mặc định
 const getServiceErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim()) return error.message;
 
@@ -247,10 +249,7 @@ export const alertService = {
     const res = await api.post(`/v1/alerts/${id}/close`, { reviewNote });
     return res.data.data;
   },
-  // Gửi URL ảnh sang AI Service/OpenRouter để phân tích ngữ nghĩa và ước tính khối lượng.
-  // Endpoint này chạy SAU bước upload + YOLO để UI có thể hiển thị cả detection và massEstimate.
-  // Semantic Vision analysis: sends the YOLO summary so OpenRouter can inspect
-  // the image and return an independent visual mass estimate.
+  // gửi ảnh sang dịch vụ trí tuệ nhân tạo để phân tích ngữ nghĩa và khối lượng
   validateImage: async (
     input: ValidateImageInput,
   ): Promise<VisionSemanticAnalysis> => {
@@ -287,7 +286,7 @@ export const alertService = {
     const res = await api.delete(`/v1/alerts/${id}`);
     return res.data.data;
   },
-  // Upload stores evidence; the backend worker decides whether YOLO applies after semantic classification.
+  // tải tập tin hình ảnh đính kèm của sự cố lên hệ thống
   uploadMedia: async (
     file: File,
     onProgress?: (percentage: number) => void,
@@ -299,8 +298,7 @@ export const alertService = {
     );
     return result.url;
   },
-
-  /**
+   /**
    * Luồng Vision dành cho màn hình phân tích:
    *
    * 1. POST /v1/media/upload
@@ -314,6 +312,8 @@ export const alertService = {
    *
    * Không tính kg ở frontend từ số detection.
    */
+
+  // tải ảnh lên và thực hiện phân tích thị giác nhận diện vật thể
   uploadMediaWithVision: async (
     file: File,
     onProgress?: (percentage: number) => void,
@@ -384,6 +384,7 @@ export const alertService = {
 
 // nhóm dịch vụ bản đồ và xử lý không gian địa lý
 export const gisService = {
+  // lấy lộ trình di chuyển đường bộ giữa hai điểm tọa độ
   getDrivingRoute: async (
     start: { lat: number; lng: number },
     end: { lat: number; lng: number },
@@ -402,9 +403,6 @@ export const gisService = {
       const res = await api.get(`/v1/gis/route?${params.toString()}`);
       return res.data.data;
     } catch (proxyError) {
-      // Some local Docker environments block outbound requests from containers.
-      // Keep the GIS proxy as the primary path, but let an authenticated browser
-      // use the same public OSRM provider when the proxy cannot reach it.
       const status = axios.isAxiosError(proxyError) ? proxyError.response?.status : undefined;
       if (status !== 502 && status !== 504) throw proxyError;
 

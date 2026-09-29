@@ -110,6 +110,7 @@ interface ActiveRoute {
   geometry: { type: "LineString"; coordinates: [number, number][] };
 }
 
+// bộ điều khiển bản đồ tự động căn chỉnh khung nhìn vừa vặn với tuyến đường
 function RouteMapController({ coordinates }: { coordinates: [number, number][] }) {
   const map = useMap();
 
@@ -121,6 +122,7 @@ function RouteMapController({ coordinates }: { coordinates: [number, number][] }
   return null;
 }
 
+// lấy vị trí địa lý hiện tại của cán bộ qua định vị trình duyệt
 const getOfficerLocation = () => new Promise<OfficerLocation>((resolve, reject) => {
   if (!navigator.geolocation) {
     reject(new Error("GEOLOCATION_UNAVAILABLE"));
@@ -134,17 +136,20 @@ const getOfficerLocation = () => new Promise<OfficerLocation>((resolve, reject) 
   );
 });
 
+// định dạng khoảng cách tuyến đường sang mét hoặc ki lô mét
 const formatRouteDistance = (distanceMeters: number) =>
   distanceMeters < 1000
     ? `${Math.round(distanceMeters)} m`
     : `${(distanceMeters / 1000).toFixed(1)} km`;
 
+// định dạng thời gian di chuyển tuyến đường sang phút hoặc giờ
 const formatRouteDuration = (durationSeconds: number) => {
   const totalMinutes = Math.max(1, Math.round(durationSeconds / 60));
   if (totalMinutes < 60) return `${totalMinutes} phút`;
   return `${Math.floor(totalMinutes / 60)} giờ ${totalMinutes % 60} phút`;
 };
 
+// định dạng mốc thời gian hiển thị ngày giờ
 const formatTimestamp = (value?: string) =>
   value ? format(new Date(value), "PPp") : "Not completed";
 // báo cáo chi tiết của oficer
@@ -250,6 +255,7 @@ export default function OfficerReportDetail() {
     ]
     : [];
 
+  // bắt đầu chỉ đường từ vị trí hiện tại của cán bộ đến địa điểm sự cố
   const handleStartNavigation = async () => {
     if (!hasCoordinates || isRouting) return;
 
@@ -276,6 +282,7 @@ export default function OfficerReportDetail() {
     }
   };
 
+  // dừng chỉ đường và xóa tuyến đường đang hiển thị trên bản đồ
   const handleStopNavigation = () => {
     setActiveRoute(null);
     setOfficerLocation(null);

@@ -14,6 +14,7 @@ import {
   getPresentationCopy,
 } from "@/lib/incident-presentation";
 
+// quy đổi giá trị số thập phân sang phần trăm nguyên
 const toPercentValue = (value: number | null | undefined) => {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return null;

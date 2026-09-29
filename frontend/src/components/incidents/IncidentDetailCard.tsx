@@ -10,6 +10,7 @@ type IncidentDetailCardProps = {
   severity: ComponentProps<typeof SeverityBadge>["severity"];
 };
 
+// thẻ hiển thị thông tin chi tiết của sự cố gồm danh mục thời gian và mô tả
 export function IncidentDetailCard({
   categoryLabel,
   reportedAt,

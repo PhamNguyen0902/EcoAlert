@@ -287,6 +287,7 @@ export const resetOpenRouterForTests = () => {
   legacyWarningEmitted = false;
 };
 
+// ước tính khối lượng không khả dụng khi phân tích chỉ dùng văn bản
 const unavailableMassEstimate = (reason: string): VisualMassEstimate => ({
   available: false,
   minKg: null,
@@ -298,6 +299,7 @@ const unavailableMassEstimate = (reason: string): VisualMassEstimate => ({
   limitations: ['Phân tích đang chạy ở chế độ TEXT_ONLY.'],
 });
 
+// chuẩn hóa kết quả ước tính khối lượng từ mô hình trí tuệ nhân tạo
 const normalizeMassEstimate = (
   raw: z.infer<typeof rawMassEstimateSchema> | undefined,
   allowVisualMassEstimate: boolean,
@@ -339,6 +341,7 @@ const normalizeMassEstimate = (
   return raw;
 };
 
+// phân tích cú pháp dữ liệu kết quả phân tích sự cố trả về từ mô hình
 export const parseIncidentAnalysis = (
   content: string,
   allowVisualMassEstimate = true,
@@ -481,6 +484,7 @@ const structuredResponseFormat = {
   },
 };
 
+// tạo đoạn văn bản tóm tắt kết quả nhận diện từ mô hình yolo
 const buildVisionSummaryText = (summary?: VisionDetectionSummary): string => {
   if (!summary) return '';
 
@@ -507,6 +511,7 @@ const buildVisionSummaryText = (summary?: VisionDetectionSummary): string => {
   return lines.join('\n');
 };
 
+// chuẩn bị nội dung yêu cầu gửi đến mô hình trí tuệ nhân tạo
 const buildUserContent = (input: IncidentAnalysisInput, includeImage: boolean) => {
   const text = [
     'Bạn đang phân tích MỘT báo cáo sự cố môi trường. Các ảnh là nhiều góc nhìn của CÙNG MỘT hiện trường; không coi mỗi ảnh là một đống rác độc lập và không cộng khối lượng giữa ảnh.',
@@ -638,6 +643,7 @@ export const mapProviderError = (error: unknown): Error => {
   );
 };
 
+// kiểm tra đường dẫn hình ảnh có hợp lệ và sử dụng được hay không
 const isUsableImageUrl = (imageUrl?: string) => {
   if (!imageUrl) return false;
   try {
@@ -652,6 +658,7 @@ type IncidentRequester = (
   includeImage: boolean,
 ) => Promise<{ analysis: IncidentAnalysis; model: string; latencyMs?: number }>;
 
+// gửi yêu cầu phân tích sự cố môi trường đến nhà cung cấp mô hình
 const analyzeIncident = async (
   request: IncidentRequester,
   input: IncidentAnalysisInput,

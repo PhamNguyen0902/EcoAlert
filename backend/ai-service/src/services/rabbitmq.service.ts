@@ -35,6 +35,7 @@ interface AlertCreatedData {
   }>;
 }
 
+// tạo chuỗi tóm tắt thông tin các vùng nhận diện rác thải của báo cáo
 const buildReportVisionSummary = (evidence: AlertCreatedData['visionEvidence']): string | undefined => {
   if (!evidence?.length) return undefined;
   const validEvidence = evidence.filter((item) => item && typeof item.imageUrl === 'string');
@@ -63,12 +64,14 @@ export interface AlertCreatedProcessorDependencies {
   detectWaste?: (imageUrl: string) => Promise<IVisionEvidence>;
 }
 
+// gửi ảnh sang dịch vụ đa phương tiện để phân tích nhận diện rác thải
 const detectWasteFromMedia = async (imageUrl: string): Promise<IVisionEvidence> => {
   const response = await axios.post(`${process.env.MEDIA_SERVICE_URL || 'http://media-service:3003'}/analyze-url`, { imageUrl }, { timeout: 25_000 });
   const data = response.data?.data;
   return { imageUrl, ...data.aiAnalysis } as IVisionEvidence;
 };
 
+// trả về đối tượng ước tính khối lượng rác trống khi không phát hiện rác
 const noWasteMassEstimate = () => ({ available: false, minKg: null, maxKg: null, mostLikelyKg: null, confidence: null, scale: null, reasoningSummary: null, limitations: [] });
 
 interface SettlementChannel {
