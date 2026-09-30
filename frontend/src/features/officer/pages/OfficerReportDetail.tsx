@@ -64,16 +64,8 @@ import type {
 } from "@/types";
 import "leaflet/dist/leaflet.css";
 
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { EcoAlertBaseMap } from "@/components/location/EcoAlertBaseMap";
-delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
+import { redMapMarkerIcon } from "@/lib/red-map-marker";
 
 const MAX_EVIDENCE_SIZE = 10 * 1024 * 1024;
 const MAX_EVIDENCE_COUNT = 20;
@@ -99,6 +91,7 @@ interface EvidenceDraft {
   error?: string;
 }
 
+// Lấy tọa độ hiện tại của cán bộ.
 interface OfficerLocation {
   lat: number;
   lng: number;
@@ -241,6 +234,7 @@ export default function OfficerReportDetail() {
     );
   }
 
+  // Lấy tọa độ sự cố ở dạng [longitude, latitude] từ dữ liệu alert trong mongoDB.
   const [longitude = Number.NaN, latitude = Number.NaN] =
     alert.location?.coordinates ?? [];
   const hasCoordinates = hasValidCoordinates(latitude, longitude);
@@ -1349,6 +1343,7 @@ export default function OfficerReportDetail() {
                       <EcoAlertBaseMap />
                       {activeRoute && routeLeafletCoordinates.length > 1 ? (
                         <>
+                        {/*polyline là thư viện Leaflet để vẽ đường đi */ }
                           <Polyline
                             positions={routeLeafletCoordinates}
                             pathOptions={{ color: "#10B981", weight: 5, opacity: 0.9 }}
@@ -1365,7 +1360,7 @@ export default function OfficerReportDetail() {
                           <Popup>Vị trí của bạn</Popup>
                         </CircleMarker>
                       ) : null}
-                      <Marker position={[latitude, longitude]}>
+                      <Marker position={[latitude, longitude]} icon={redMapMarkerIcon}>
                       <Popup>
                         {alert.address ||
                           `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`}

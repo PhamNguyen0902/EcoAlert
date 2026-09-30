@@ -10,6 +10,7 @@ interface CategoryFilterProps {
   selectedCategory: string | null;
   onSelectCategory: (cat: string | null) => void;
   alerts: Alert[];
+  compact?: boolean;
 }
 
 const CATEGORIES = [
@@ -23,14 +24,14 @@ const CATEGORIES = [
   { id: 'other', name: 'Khác', icon: MoreHorizontal },
 ];
 // component hiển thị lưới thẻ lọc sự cố theo từng loại danh mục
-export function CategoryFilter({ selectedCategory, onSelectCategory, alerts }: CategoryFilterProps) {
+export function CategoryFilter({ selectedCategory, onSelectCategory, alerts, compact = false }: CategoryFilterProps) {
   const getCategoryCount = (categoryId: string) => {
     return alerts.filter(a => a.category === categoryId as AlertCategory).length;
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className={compact ? "w-full" : "mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"}>
+      <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"}>
         {CATEGORIES.map((category) => {
           const Icon = category.icon;
           const isSelected = selectedCategory === category.id;
@@ -43,7 +44,9 @@ export function CategoryFilter({ selectedCategory, onSelectCategory, alerts }: C
               whileTap={{ scale: 0.98 }}
               onClick={() => onSelectCategory(isSelected ? null : category.id)}
               className={cn(
-                "flex items-center p-4 rounded-xl text-left transition-colors border",
+                compact
+                  ? "flex min-w-0 items-center rounded-lg border p-2.5 text-left transition-colors"
+                  : "flex items-center rounded-xl border p-4 text-left transition-colors",
                 "bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm hover:shadow-md",
                 isSelected 
                   ? "border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary" 
@@ -51,21 +54,21 @@ export function CategoryFilter({ selectedCategory, onSelectCategory, alerts }: C
               )}
             >
               <div className={cn(
-                "p-3 rounded-lg mr-4",
+                compact ? "mr-2 rounded-md p-2" : "mr-4 rounded-lg p-3",
                 isSelected 
                   ? "bg-primary text-primary-foreground" 
                   : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300"
               )}>
-                <Icon className="w-5 h-5" />
+                <Icon className={compact ? "h-4 w-4" : "h-5 w-5"} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className={cn(
-                  "font-medium text-sm truncate",
+                  compact ? "truncate text-xs font-medium" : "truncate text-sm font-medium",
                   isSelected ? "text-primary dark:text-primary-foreground" : "text-gray-900 dark:text-gray-100"
                 )}>
                   {category.name}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <p className={compact ? "mt-0.5 text-[10px] text-gray-500 dark:text-gray-400" : "mt-0.5 text-xs text-gray-500 dark:text-gray-400"}>
                   {count} sự cố
                 </p>
               </div>

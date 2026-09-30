@@ -379,6 +379,12 @@
   margin: 0.8rem 1rem;
 }
 
+/* Keep the standard, familiar Leaflet pin shape while making all EcoAlert
+   incident-location pins consistently red. */
+.leaflet-marker-icon.ecoalert-red-map-marker {
+  filter: hue-rotate(145deg) saturate(1.65) brightness(0.94);
+}
+
 @keyframes ecoalert-location-pulse {
   0% { transform: translate(-50%, -50%) scale(0.62); opacity: 0.9; }
   100% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }

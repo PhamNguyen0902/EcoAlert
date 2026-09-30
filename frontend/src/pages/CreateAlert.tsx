@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,12 +10,12 @@ import {
   Image as ImageIcon,
   Loader2,
   MapPin,
-  Search,
+  Sparkles,
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useCreateAlert } from "@/hooks/hooks";
-import { alertService } from "@/services/services";
+import { alertService, type MediaUploadResult } from "@/services/services";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,16 +29,8 @@ import {
 import { ReportPageHeader } from "@/components/reports/ReportPageHeader";
 import { SelectedLocationCard } from "@/components/reports/SelectedLocationCard";
 import { useLanguage } from "@/contexts/LanguageContext";
-import type { PickedLocation } from "@/components/location/LocationPickerModal";
 import { reverseGeocoder } from "@/services/reverseGeocoder";
 import type { AlertCategory } from "@/types";
-
-// tạo trang báo cáo sự cố môi trường, cho phép người dùng điền thông tin về sự cố.
-const LocationPickerModal = lazy(() =>
-  import("@/components/location/LocationPickerModal").then(
-    ({ LocationPickerModal: Picker }) => ({ default: Picker }),
-  ),
-);
 
 const schema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -48,16 +40,15 @@ const schema = z.object({
 
 type ReportFormValues = z.infer<typeof schema>;
 
-interface AddressSuggestion {
-  display_name: string;
-  lat: string;
-  lon: string;
+interface CurrentLocation {
+  latitude: number;
+  longitude: number;
+  address: string;
 }
 
-const DEFAULT_MAP_POSITION: [number, number] = [10.8494, 106.7537];
 const MAX_EVIDENCE_SIZE = 10 * 1024 * 1024;
 const INCIDENT_CATEGORIES: Array<{ value: AlertCategory; label: string }> = [
-  { value: "illegal_dumping", label: "Rác thải / đổ trộm" },
+  { value: "illegal_dumping", label: "Rác thải" },
   { value: "water_pollution", label: "Ô nhiễm nước" },
   { value: "air_pollution", label: "Ô nhiễm không khí" },
   { value: "illegal_burning", label: "Đốt rác trái phép" },
@@ -70,6 +61,10 @@ const INCIDENT_CATEGORIES: Array<{ value: AlertCategory; label: string }> = [
   { value: "fire", label: "Hỏa hoạn" },
   { value: "other", label: "Khác" },
 ];
+
+const isKnownCategory = (value: unknown): value is AlertCategory =>
+  typeof value === "string" &&
+  INCIDENT_CATEGORIES.some((category) => category.value === value);
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (typeof error === "object" && error !== null && "response" in error) {
@@ -88,19 +83,21 @@ export default function CreateAlert() {
   const createAlertMutation = useCreateAlert();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedLocation, setSelectedLocation] =
-    useState<PickedLocation | null>(null);
+    useState<CurrentLocation | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [addressQuery, setAddressQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [aiAnalysisNotice, setAiAnalysisNotice] = useState<string | null>(null);
+  const [analyzedUploads, setAnalyzedUploads] = useState<Array<{
+    file: File;
+    result: MediaUploadResult;
+  }>>([]);
   const [selectedCategories, setSelectedCategories] = useState<AlertCategory[]>([]);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const previewUrlRef = useRef<string[]>([]);
+  const aiImageInputRef = useRef<HTMLInputElement>(null);
   const submissionInProgressRef = useRef(false);
 
   const {
@@ -129,17 +126,6 @@ export default function CreateAlert() {
     { id: 3, label: t("report_create.step3"), icon: ImageIcon },
     { id: 4, label: t("report_create.step4"), icon: CheckCircle2 },
   ];
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (addressQuery.trim() && showSuggestions) {
-        void searchAddress(addressQuery);
-      } else {
-        setSuggestions([]);
-      }
-    }, 450);
-    return () => window.clearTimeout(timer);
-  }, [addressQuery, showSuggestions]);
 
   useEffect(
     () => () => {
@@ -184,30 +170,16 @@ export default function CreateAlert() {
     );
     return (
       resolvedAddress ||
-      "Đã chọn vị trí trên bản đồ"
+      "Vị trí hiện tại đã xác nhận"
     );
   };
 
-  const confirmLocation = (location: PickedLocation) => {
+  const confirmLocation = (location: CurrentLocation) => {
     setSelectedLocation(location);
     setValue("address", location.address, {
       shouldValidate: true,
       shouldDirty: true,
     });
-    setAddressQuery(location.address);
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setIsLocationPickerOpen(false);
-  };
-
-  const handleSelectSuggestion = (suggestion: AddressSuggestion) => {
-    const latitude = Number.parseFloat(suggestion.lat);
-    const longitude = Number.parseFloat(suggestion.lon);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      toast.error(t("toast.invalid_address_location"));
-      return;
-    }
-    confirmLocation({ latitude, longitude, address: suggestion.display_name });
   };
   // lấy vị trí tọa độ hiện tại qua geolocation api của trình duyệt
   const handleGetCurrentLocation = () => {
@@ -269,13 +241,81 @@ export default function CreateAlert() {
   // xóa tập tin ảnh minh chứng khỏi danh sách đính kèm
   const handleRemoveFile = (index: number) => {
     const url = previewUrlRef.current[index];
+    const fileToRemove = files[index];
     if (url) URL.revokeObjectURL(url);
     previewUrlRef.current = previewUrlRef.current.filter((_, itemIndex) => itemIndex !== index);
+    if (fileToRemove) {
+      setAnalyzedUploads((uploads) => uploads.filter((upload) => upload.file !== fileToRemove));
+    }
     setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
     setPreviewUrls((current) => current.filter((_, itemIndex) => itemIndex !== index));
   };
 
-  // kiểm tra tính hợp lệ của bước hiện tại và chuyển sang bước tiếp theo
+  const analyzeImageWithAi = async (file: File) => {
+    if (isAnalyzingImage) return;
+
+    setIsAnalyzingImage(true);
+    setAiAnalysisNotice(null);
+    try {
+      const result = await alertService.uploadMediaWithVision(file);
+      setAnalyzedUploads((current) => [
+        ...current.filter((upload) => upload.file !== file),
+        { file, result },
+      ]);
+
+      const semantic = result.semanticAnalysis;
+      const detectedCategory = semantic?.category
+        ?? result.aiAnalysis.detections.find((detection) => isKnownCategory(detection.suggestedCategory))?.suggestedCategory;
+      const category = isKnownCategory(detectedCategory) ? detectedCategory : undefined;
+      const summary = semantic?.overallSummary
+        ?? semantic?.summary
+        ?? semantic?.reasoningSummary
+        ?? semantic?.shortReason;
+
+      if (semantic?.isIncident === false || (!category && !summary)) {
+        setAiAnalysisNotice("AI chưa xác định được sự cố. Vui lòng nhập thông tin thủ công.");
+        return;
+      }
+
+      // Nếu AI xác định được category hoặc summary, điền vào form và cho phép người dùng chỉnh sửa
+      if (category) {
+        const categoryLabel = INCIDENT_CATEGORIES.find((item) => item.value === category)?.label ?? category;
+        setValue("title", `Sự cố: ${categoryLabel}`, { shouldDirty: true, shouldValidate: true });
+        setSelectedCategories([category]);
+      }
+      if (summary) {
+        setValue("description", summary, { shouldDirty: true, shouldValidate: true });
+      }
+
+      setAiAnalysisNotice("AI đã điền gợi ý. Bạn có thể chỉnh sửa lại trước khi tiếp tục.");
+    } catch {
+      setAiAnalysisNotice("AI chưa xác định được sự cố. Vui lòng nhập thông tin thủ công.");
+    } finally {
+      setIsAnalyzingImage(false);
+    }
+  };
+
+  const handleAiImageSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("toast.select_image_format"));
+      return;
+    }
+    if (file.size > MAX_EVIDENCE_SIZE) {
+      toast.error(t("toast.image_max_size"));
+      return;
+    }
+    if (files.length >= 6) {
+      toast.error("Tối đa 6 ảnh minh chứng cho mỗi báo cáo.");
+      return;
+    }
+
+    handleFileSelect([file]);
+    void analyzeImageWithAi(file);
+  };
+
   const handleNext = async () => {
     if (currentStep === 1) {
       if (!(await trigger(["title", "description"]))) return;
@@ -312,7 +352,10 @@ export default function CreateAlert() {
       setIsUploadingEvidence(true);
       toast.loading(t("toast.uploading_evidence"), { id: "submit" });
 
-      const uploads = await Promise.all(files.map((item) => alertService.uploadMediaWithVision(item, undefined, { includeSemanticAnalysis: false })));
+      const uploads = await Promise.all(files.map((item) =>
+        analyzedUploads.find((upload) => upload.file === item)?.result
+        ?? alertService.uploadMediaWithVision(item, undefined, { includeSemanticAnalysis: false }),
+      ));
       toast.loading("AI đang nhận diện hiện trường và lưu báo cáo…", { id: "submit" });
 
       // tạo sự cố mới thông qua createAlertMutation
@@ -403,7 +446,30 @@ export default function CreateAlert() {
                       </p>
                     </div>
 
+
+                    {/* Gợi ý AI để điền thông tin chọn ảnh */}
                     <div className="space-y-6">
+                      <div className="rounded-xl border bg-primary/5 p-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex min-w-0 items-center gap-3">
+                            {previewUrls[0] ? (
+                              <img src={previewUrls[0]} alt="Ảnh dùng để AI phân tích" className="h-14 w-14 rounded-lg border object-cover" />
+                            ) : (
+                              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Sparkles className="h-5 w-5" /></span>
+                            )}
+                            <div>
+                              <p className="text-sm font-semibold">Gợi ý nhanh bằng AI</p>
+                              <p className="mt-1 text-xs leading-5 text-muted-foreground">Chọn một ảnh để AI gợi ý tiêu đề, loại sự cố và mô tả. Bạn luôn có thể sửa lại.</p>
+                            </div>
+                          </div>
+                          <Button type="button" variant="outline" onClick={() => files[0] ? void analyzeImageWithAi(files[0]) : aiImageInputRef.current?.click()} disabled={isAnalyzingImage || isSubmitting} className="shrink-0">
+                            {isAnalyzingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+                            {isAnalyzingImage ? "Đang phân tích hình ảnh..." : "Phân tích ảnh bằng AI"}
+                          </Button>
+                          <input ref={aiImageInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handleAiImageSelect} />
+                        </div>
+                        {aiAnalysisNotice ? <p className="mt-3 text-xs text-muted-foreground" role="status">{aiAnalysisNotice}</p> : null}
+                      </div>
                       <div>
                         <div className="flex items-baseline justify-between gap-3">
                           <Label htmlFor="title" className="font-semibold">
@@ -494,95 +560,15 @@ export default function CreateAlert() {
                         id="location-heading"
                         className="mt-1 text-2xl font-semibold tracking-tight"
                       >
-                        Sự cố ở đâu?
+                        Xác nhận vị trí hiện tại
                       </h2>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        Chọn vị trí chính xác nhất có thể. Bản đồ cho phép bạn
-                        điều chỉnh lại trước khi xác nhận.
+                        Vì quyền riêng tư, EcoAlert chỉ sử dụng vị trí GPS nơi bạn đang đứng sau khi bạn cho phép. Không hỗ trợ tìm kiếm địa chỉ hoặc chọn điểm trên bản đồ.
                       </p>
-                    </div>
-
-                    <div className="relative">
-                      <Label htmlFor="address-search" className="font-semibold">
-                        {t("report_create.field_address")}{" "}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        Tìm kiếm địa chỉ, sau đó chọn một kết quả để xác nhận.
-                      </p>
-                      <div className="relative mt-2">
-                        <Search
-                          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                          aria-hidden="true"
-                        />
-                        <Input
-                          id="address-search"
-                          value={addressQuery}
-                          className="h-11 pl-10 pr-10"
-                          placeholder={t(
-                            "report_create.field_address_placeholder",
-                          )}
-                          aria-invalid={Boolean(errors.address)}
-                          aria-controls="location-search-results"
-                          aria-expanded={
-                            showSuggestions && suggestions.length > 0
-                          }
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            setAddressQuery(value);
-                            setValue("address", value, {
-                              shouldValidate: false,
-                              shouldDirty: true,
-                            });
-                            setSelectedLocation(null);
-                            setShowSuggestions(true);
-                          }}
-                          onFocus={() => setShowSuggestions(true)}
-                        />
-                        {isSearching ? (
-                          <Loader2
-                            className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground"
-                            aria-label="Đang tìm kiếm địa chỉ"
-                          />
-                        ) : null}
-                      </div>
-                      {showSuggestions && suggestions.length > 0 ? (
-                        <ul
-                          id="location-search-results"
-                          role="listbox"
-                          className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg"
-                        >
-                          {suggestions.map((suggestion) => (
-                            <li
-                              key={`${suggestion.lat}-${suggestion.lon}`}
-                              role="option"
-                            >
-                              <button
-                                type="button"
-                                className="w-full rounded-md px-3 py-2.5 text-left text-sm leading-5 hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
-                                onClick={() =>
-                                  handleSelectSuggestion(suggestion)
-                                }
-                              >
-                                {suggestion.display_name}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                      {errors.address ? (
-                        <p
-                          role="alert"
-                          className="mt-1.5 text-xs font-medium text-destructive"
-                        >
-                          {errors.address.message}
-                        </p>
-                      ) : null}
                     </div>
 
                     <SelectedLocationCard
                       location={selectedLocation}
-                      onChooseOnMap={() => setIsLocationPickerOpen(true)}
                       onUseCurrentLocation={handleGetCurrentLocation}
                       isLocating={isLocating}
                       disabled={isSubmitting}
@@ -694,7 +680,7 @@ export default function CreateAlert() {
                             id="review-location-heading"
                             className="font-semibold"
                           >
-                            Vị trí đã chọn
+                            Vị trí hiện tại đã xác nhận
                           </h3>
                           <Button
                             type="button"
@@ -708,26 +694,7 @@ export default function CreateAlert() {
                           </Button>
                         </div>
                         <p className="mt-4 text-sm leading-6">{address}</p>
-                        {selectedLocation ? (
-                          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                            <div className="rounded-lg bg-muted/45 p-3">
-                              <dt className="text-xs text-muted-foreground">
-                                Vĩ độ
-                              </dt>
-                              <dd className="mt-1 font-mono font-medium tabular-nums">
-                                {selectedLocation.latitude.toFixed(6)}
-                              </dd>
-                            </div>
-                            <div className="rounded-lg bg-muted/45 p-3">
-                              <dt className="text-xs text-muted-foreground">
-                                Kinh độ
-                              </dt>
-                              <dd className="mt-1 font-mono font-medium tabular-nums">
-                                {selectedLocation.longitude.toFixed(6)}
-                              </dd>
-                            </div>
-                          </dl>
-                        ) : null}
+                        <p className="mt-2 text-xs text-muted-foreground">Địa chỉ được xác nhận từ vị trí hiện tại của thiết bị.</p>
                       </section>
 
                       <section
@@ -818,29 +785,6 @@ export default function CreateAlert() {
         </CardContent>
       </Card>
 
-      {isLocationPickerOpen ? (
-        <Suspense
-          fallback={
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75">
-              <Loader2 className="h-8 w-8 animate-spin text-white" />
-            </div>
-          }
-        >
-          <LocationPickerModal
-            open={isLocationPickerOpen}
-            initialPosition={
-              selectedLocation
-                ? [selectedLocation.latitude, selectedLocation.longitude]
-                : DEFAULT_MAP_POSITION
-            }
-            initialAddress={
-              selectedLocation?.address || addressQuery || getValues("address")
-            }
-            onOpenChange={setIsLocationPickerOpen}
-            onConfirm={confirmLocation}
-          />
-        </Suspense>
-      ) : null}
     </div>
   );
 }
