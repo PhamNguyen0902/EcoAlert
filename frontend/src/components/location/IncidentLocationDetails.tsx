@@ -8,6 +8,7 @@ interface IncidentLocationDetailsProps {
   address?: string;
   latitude?: number;
   longitude?: number;
+  showNavigation?: boolean;
   onStartNavigation?: () => void;
   isStartingNavigation?: boolean;
 }
@@ -17,6 +18,7 @@ export function IncidentLocationDetails({
   address,
   latitude,
   longitude,
+  showNavigation = true,
   onStartNavigation,
   isStartingNavigation,
 }: IncidentLocationDetailsProps) {
@@ -56,6 +58,7 @@ export function IncidentLocationDetails({
       <LocationActions
         latitude={latitude}
         longitude={longitude}
+        showNavigation={showNavigation}
         onStartNavigation={onStartNavigation}
         isStartingNavigation={isStartingNavigation}
       />

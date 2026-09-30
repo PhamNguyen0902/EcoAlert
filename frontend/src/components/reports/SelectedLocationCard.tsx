@@ -1,11 +1,12 @@
-import { LocateFixed, MapPin } from 'lucide-react';
+import { LocateFixed, MapPin, ShieldCheck } from 'lucide-react';
+import { MapContainer, Marker } from 'react-leaflet';
 import { Button } from '@/components/ui/button';
-import { CoordinateDisplay } from '@/components/location/CoordinateDisplay';
-import type { PickedLocation } from '@/components/location/LocationPickerModal';
+import { EcoAlertBaseMap } from '@/components/location/EcoAlertBaseMap';
+import { redMapMarkerIcon } from '@/lib/red-map-marker';
+import 'leaflet/dist/leaflet.css';
 
 interface SelectedLocationCardProps {
-  location: PickedLocation | null;
-  onChooseOnMap: () => void;
+  location: { latitude: number; longitude: number; address: string } | null;
   onUseCurrentLocation: () => void;
   isLocating?: boolean;
   disabled?: boolean;
@@ -14,7 +15,6 @@ interface SelectedLocationCardProps {
 // hiển thị thẻ vị trí đã chọn, cho phép người dùng xác nhận vị trí sự cố môi trường.
 export function SelectedLocationCard({
   location,
-  onChooseOnMap,
   onUseCurrentLocation,
   isLocating = false,
   disabled = false,
@@ -27,36 +27,59 @@ export function SelectedLocationCard({
             <MapPin className="h-4 w-4" aria-hidden="true" />
           </span>
           <div>
-            <h4 id="selected-location-heading" className="font-semibold">Vị trí đã chọn</h4>
-            <p className="text-xs text-muted-foreground">Xác nhận vị trí chính xác nơi sự cố đang xảy ra.</p>
+            <h4 id="selected-location-heading" className="font-semibold">Vị trí hiện tại</h4>
+            <p className="text-xs text-muted-foreground">Chỉ lấy vị trí bạn đang đứng sau khi bạn cho phép.</p>
           </div>
         </div>
       </div>
 
       <div className="p-4 sm:p-5">
         {location ? (
-          <div className="space-y-4">
+          <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/[0.04] p-4">
             <p className="text-sm leading-6 text-foreground">{location.address}</p>
-            <CoordinateDisplay
-              latitude={location.latitude}
-              longitude={location.longitude}
-              className="rounded-lg border bg-muted/35 px-3 py-2.5"
-            />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" />
+              Vị trí được xác nhận từ thiết bị của bạn.
+            </div>
+            <div className="relative overflow-hidden rounded-lg border bg-muted" aria-label="Bản đồ chỉ xem vị trí hiện tại">
+              <div className="pointer-events-none h-48 w-full">
+                <MapContainer
+                  key={`${location.latitude}-${location.longitude}`}
+                  center={[location.latitude, location.longitude]}
+                  zoom={16}
+                  className="h-full w-full"
+                  dragging={false}
+                  doubleClickZoom={false}
+                  scrollWheelZoom={false}
+                  touchZoom={false}
+                  keyboard={false}
+                  zoomControl={false}
+                  attributionControl={false}
+                >
+                  <EcoAlertBaseMap />
+                  <Marker
+                    position={[location.latitude, location.longitude]}
+                    icon={redMapMarkerIcon}
+                  />
+                </MapContainer>
+              </div>
+              <span className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-slate-950/75 px-2.5 py-1.5 text-[11px] font-semibold text-white backdrop-blur">
+                <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                Chỉ xem vị trí hiện tại
+              </span>
+            </div>
           </div>
         ) : (
           <div className="rounded-lg border border-dashed bg-muted/25 px-4 py-7 text-center">
             <MapPin className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden="true" />
-            <p className="mt-2 text-sm font-medium">Chưa chọn vị trí sự cố</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">Tìm kiếm một địa chỉ, sử dụng vị trí GPS của bạn, hoặc đánh dấu trên bản đồ.</p>
+            <p className="mt-2 text-sm font-medium">Chưa xác nhận vị trí hiện tại</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">EcoAlert chỉ dùng GPS của thiết bị khi bạn chủ động cho phép; không hỗ trợ tìm kiếm hay chọn điểm trên bản đồ.</p>
           </div>
         )}
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <Button type="button" onClick={onChooseOnMap} disabled={disabled}>
-            <MapPin className="mr-2 h-4 w-4" />Chọn trên bản đồ
-          </Button>
-          <Button type="button" variant="outline" onClick={onUseCurrentLocation} disabled={disabled || isLocating}>
-            <LocateFixed className="mr-2 h-4 w-4" />{isLocating ? 'Đang tìm vị trí...' : 'Vị trí của tôi'}
+        <div className="mt-4">
+          <Button type="button" className="w-full" onClick={onUseCurrentLocation} disabled={disabled || isLocating}>
+            <LocateFixed className="mr-2 h-4 w-4" />{isLocating ? 'Đang xác nhận vị trí...' : location ? 'Làm mới vị trí hiện tại' : 'Dùng vị trí hiện tại'}
           </Button>
         </div>
       </div>

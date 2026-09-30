@@ -57,21 +57,23 @@ export const openGoogleMaps = (
     : googleMapsUrl(validLatitude, validLongitude);
 
   try {
-    const newTab = window.open(url, '_blank', 'noopener,noreferrer');
-
+    // Do not use the `noopener` feature here. Some browsers return `null` for
+    // that call even after opening the new tab, which previously made the
+    // fallback below redirect the EcoAlert tab as well.
+    const newTab = window.open(url, '_blank');
     if (!newTab) {
-      window.location.href = url;
-    }
-
-    return true;
-  } catch {
-    try {
-      window.location.href = url;
-      return true;
-    } catch {
-      toast.error(getLang() === 'en' ? 'Unable to open Google Maps. Please try again.' : 'Không thể mở Google Maps. Vui lòng thử lại.');
+      toast.error(getLang() === 'en'
+        ? 'Google Maps was blocked. Please allow pop-ups and try again.'
+        : 'Trình duyệt đã chặn Google Maps. Hãy cho phép cửa sổ bật lên rồi thử lại.');
       return false;
     }
+
+    // Keep the destination isolated while preserving the current EcoAlert tab.
+    newTab.opener = null;
+    return true;
+  } catch {
+    toast.error(getLang() === 'en' ? 'Unable to open Google Maps. Please try again.' : 'Không thể mở Google Maps. Vui lòng thử lại.');
+    return false;
   }
 };
 

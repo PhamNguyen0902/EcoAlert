@@ -2,7 +2,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { enUS, vi } from "date-fns/locale";
 import { MapContainer, Marker } from "react-leaflet";
-import L from "leaflet";
 import {
   AlertCircle,
   ArrowLeft,
@@ -34,14 +33,8 @@ import { hasValidCoordinates } from "@/lib/maps";
 import { getAlertDisplaySeverity } from "@/lib/ai-confidence";
 import "leaflet/dist/leaflet.css";
 import { EcoAlertBaseMap } from "@/components/location/EcoAlertBaseMap";
+import { redMapMarkerIcon } from "@/lib/red-map-marker";
 // trang chi tiết báo cáo sự cố môi trường, hiển thị thông tin chi tiết, hình ảnh minh chứng, phân tích AI và tiến trình xử lý.
-const incidentLocationIcon = L.divIcon({
-  className: "",
-  html: '<span style="display:block;height:24px;width:24px;border:3px solid #fff;border-radius:9999px;background:#10B981;box-shadow:0 3px 10px rgba(16,185,129,.45)"></span>',
-  iconAnchor: [12, 12],
-  iconSize: [24, 24],
-});
-
 const formatDate = (
   value: string | undefined,
   language: "vi" | "en",
@@ -618,6 +611,7 @@ export default function AlertDetail() {
                   address={alert.address}
                   latitude={latitude}
                   longitude={longitude}
+                  showNavigation={false}
                 />
               </div>
               {hasCoordinates ? (
@@ -630,7 +624,7 @@ export default function AlertDetail() {
                     aria-label="Bản đồ vị trí sự cố"
                   >
                     <EcoAlertBaseMap />
-                    <Marker position={[latitude, longitude]} icon={incidentLocationIcon} />
+                    <Marker position={[latitude, longitude]} icon={redMapMarkerIcon} />
                   </MapContainer>
                 </div>
               ) : (

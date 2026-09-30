@@ -17,38 +17,37 @@ export default function CitizenHome() {
       <HeroSection />
 
       <section className="py-8" id="map-section">
-        <div className="max-w-7xl mx-auto px-4 mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Bản đồ sự cố trực tiếp
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Các sự cố môi trường theo thời gian thực tại khu vực của bạn
-          </p>
-        </div>
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-5">
+            <h2 className="text-3xl font-bold tracking-tight">
+              Bản đồ sự cố trực tiếp
+            </h2>
+            <p className="mt-1 text-muted-foreground">
+              Các sự cố môi trường theo thời gian thực tại khu vực của bạn
+            </p>
+          </div>
           <IncidentMap
             alerts={alerts}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
+            categoryFilter={
+              <>
+                <h2 className="text-base font-semibold tracking-tight">Lọc theo danh mục</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Chọn danh mục để xem các sự cố tương ứng trên bản đồ.
+                </p>
+                <div className="mt-3">
+                  <CategoryFilter
+                    selectedCategory={selectedCategory}
+                    onSelectCategory={setSelectedCategory}
+                    alerts={alerts}
+                    compact
+                  />
+                </div>
+              </>
+            }
           />
         </div>
-      </section>
-
-      {/* lọc theo danh mục */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Lọc theo danh mục
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Nhấn vào một danh mục để lọc các sự cố trên bản đồ
-          </p>
-        </div>
-        <CategoryFilter
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-          alerts={alerts}
-        />
       </section>
 
       {/* Các sự cố lân cận */}
