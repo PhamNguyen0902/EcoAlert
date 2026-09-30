@@ -19,6 +19,7 @@ export interface VisionIncidentAnalysisInput {
   detections: VisionDetectionInput[];
 }
 
+// giới hạn độ tin cậy trong khoảng từ không đến một
 const clampConfidence = (value: number) =>
   Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
 

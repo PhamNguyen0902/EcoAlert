@@ -13,6 +13,7 @@ const s3Client = new S3Client({
 });
 
 export class S3Service {
+  // tải tập tin hình ảnh lên kho lưu trữ và trả về liên kết công khai
   async uploadImage(file: Express.Multer.File, folder = 'ecoalert/alerts') {
     const requiredSettings = [
       'AWS_REGION',

@@ -11,14 +11,16 @@ interface EvidenceUploaderProps {
   isProcessing?: boolean;
 }
 
+// định dạng kích thước tập tin sang ki lô byte hoặc mê ga byte
 const formatFileSize = (bytes: number) => bytes < 1024 * 1024
   ? `${Math.max(1, Math.round(bytes / 1024))} KB`
   : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
-/** Evidence is selected only here; upload and automatic Vision processing happen on submit. */
+// khung tải lên và quản lý ảnh minh chứng đính kèm sự cố
 export function EvidenceUploader({ files, previewUrls, onSelect, onRemove, disabled = false, isProcessing = false }: EvidenceUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  // thêm danh sách tập tin ảnh đã chọn vào trạng thái biểu mẫu
   const addFiles = (next?: FileList | File[]) => next && onSelect(Array.from(next));
 
   return (

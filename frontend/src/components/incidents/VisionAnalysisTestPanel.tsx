@@ -4,10 +4,13 @@ import type { Alert, VisionEvidence } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getIncidentCategoryLabel, getIncidentSeverityLabel } from "@/lib/incident-presentation";
 
+// định dạng giá trị khối lượng sang đơn vị ki lô gam hoặc tấn
 const formatMass = (value: number) => value >= 1000 ? `${(value / 1000).toFixed(1)} tấn` : `${Math.round(value)} kg`;
+
+// định dạng tỷ lệ phần trăm từ số thập phân để hiển thị giao diện
 const percent = (value: number | null | undefined) => typeof value === "number" ? `${Math.round(value * 100)}%` : "—";
 
-/** Display-only report-level AI evidence. No upload, no client-side re-analysis. */
+// bảng chi tiết kết quả phân tích hiện trường từ mô hình thị giác
 export function EnvironmentalAiAnalysisContent({ alert }: { alert: Alert }) {
   const { language } = useLanguage();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -15,7 +18,6 @@ export function EnvironmentalAiAnalysisContent({ alert }: { alert: Alert }) {
   const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
   const analysis = alert.aiOverallAnalysis;
   const isWastePipeline = alert.analysisPipeline === "WASTE_DETECTION";
-  // Legacy detections are deliberately ignored unless the backend explicitly routed this report to waste detection.
   const evidence = isWastePipeline ? (alert.visionEvidence ?? []) : [];
   const selectedEvidence = evidence[selectedImage];
   const detections = selectedEvidence?.detections ?? [];
@@ -52,5 +54,8 @@ export function EnvironmentalAiAnalysisContent({ alert }: { alert: Alert }) {
   </section>;
 }
 
+// khối giao diện hiển thị từng chỉ số đo lường hoặc đánh giá của mô hình
 function Metric({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) { return <div className="rounded-lg border border-slate-800 bg-[#0b1727] p-3"><p className="text-[10px] uppercase tracking-wide text-slate-500">{label}</p><p className={`mt-2 text-sm font-bold ${accent ? "text-[#10B981]" : "text-slate-100"}`}>{value}</p></div>; }
+
+// hiển thị chi tiết kỹ thuật các vùng nhận diện vật thể và giới hạn của mô hình
 function TechnicalDetails({ evidence, groups, limitations }: { evidence: VisionEvidence[]; groups: [string, number][]; limitations: string[] }) { return <div className="mt-3 rounded-xl border border-slate-800 bg-[#071321] p-4 text-xs text-slate-300"><p className="font-semibold">Chi tiết nhận diện kỹ thuật</p><div className="mt-3 space-y-1 text-slate-400">{evidence.map((item, index) => <p key={item.imageUrl}>Ảnh {index + 1}: {item.detections.length} vùng phát hiện ({item.status}).</p>)}</div>{groups.length ? <p className="mt-3">Nhóm vật liệu: {groups.map(([name, count]) => `${name} (${count} vùng)`).join(", ")}.</p> : null}{limitations.length ? <p className="mt-3 text-slate-500">Giới hạn: {limitations.join("; ")}</p> : null}</div>; }

@@ -76,6 +76,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+// trang tạo báo cáo sự cố môi trường theo từng bước của người dân
 export default function CreateAlert() {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -132,6 +133,32 @@ export default function CreateAlert() {
     },
     [],
   );
+
+  // tìm kiếm gợi ý địa chỉ thông qua dịch vụ gợi ý bản đồ
+  const searchAddress = async (query: string) => {
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=vn`,
+      );
+      if (!response.ok) throw new Error("Unable to search address");
+      const results: unknown = await response.json();
+      setSuggestions(
+        Array.isArray(results)
+          ? results.filter(
+              (item): item is AddressSuggestion =>
+                typeof item?.display_name === "string" &&
+                typeof item?.lat === "string" &&
+                typeof item?.lon === "string",
+            )
+          : [],
+      );
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const getAddressForCoordinates = async (
     latitude: number,
@@ -190,6 +217,7 @@ export default function CreateAlert() {
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
     );
   };
+  // xử lý chọn tập tin ảnh minh chứng và tạo đường dẫn xem trước
   const handleFileSelect = (selectedFiles: File[]) => {
     const remaining = 6 - files.length;
     const validFiles = selectedFiles.slice(0, remaining).filter((selectedFile) => {
@@ -210,6 +238,7 @@ export default function CreateAlert() {
     setPreviewUrls((current) => [...current, ...urls]);
   };
 
+  // xóa tập tin ảnh minh chứng khỏi danh sách đính kèm
   const handleRemoveFile = (index: number) => {
     const url = previewUrlRef.current[index];
     const fileToRemove = files[index];

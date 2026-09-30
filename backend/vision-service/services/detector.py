@@ -46,6 +46,7 @@ class WasteDetector:
         self._device = self._resolve_device(settings.device)
         self._lock = Lock()
 
+    # xác định thiết bị tính toán phù hợp giữa xử lý đồ họa và vi xử lý trung tâm
     @staticmethod
     def _resolve_device(requested_device: str) -> str:
         if requested_device == "auto":
@@ -55,6 +56,7 @@ class WasteDetector:
             return "cpu"
         return requested_device
 
+    # nạp mô hình yolo từ tập tin trọng số vào bộ nhớ
     def load_model(self) -> None:
         if self._model is not None:
             return
@@ -70,19 +72,23 @@ class WasteDetector:
             self._model = YOLO(str(model_path))
             logger.info("YOLO model loaded successfully with classes: %s", self.get_classes())
 
+    # kiểm tra xem mô hình yolo đã được nạp sẵn sàng hay chưa
     def is_ready(self) -> bool:
         return self._model is not None
 
+    # lấy tên thiết bị đang chạy mô hình
     @property
     def device(self) -> str:
         return self._device
 
+    # lấy danh sách các lớp đối tượng được mô hình hỗ trợ
     def get_classes(self) -> dict[int, str]:
         if self._model is None:
             return {}
         names = self._model.names
         return {int(class_id): str(name) for class_id, name in names.items()}
 
+    # chạy suy luận nhận diện các vùng rác thải trên ảnh đầu vào
     def detect_image(self, image: np.ndarray, confidence: float | None = None) -> DetectionBatch:
         if self._model is None:
             raise DetectorUnavailableError("YOLO model is not loaded")

@@ -1,18 +1,18 @@
 const SOUND_STORAGE_KEY = 'ecoalert_sound_enabled';
 
+// kiểm tra cài đặt âm thanh thông báo có đang bật hay không
 export function isSoundEnabled(): boolean {
-  // if (typeof window === 'undefined') return true;
-  // const stored = localStorage.getItem(SOUND_STORAGE_KEY);
-  // return stored === null ? true : stored === 'true';
   return false
 }
 
+// lưu trạng thái bật hoặc tắt âm thanh thông báo vào bộ nhớ trình duyệt
 export function setSoundEnabled(enabled: boolean): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem(SOUND_STORAGE_KEY, String(enabled));
   }
 }
 
+// chuyển đổi qua lại giữa bật và tắt âm thanh thông báo
 export function toggleSoundEnabled(): boolean {
   const current = isSoundEnabled();
   const next = !current;
@@ -20,6 +20,7 @@ export function toggleSoundEnabled(): boolean {
   return next;
 }
 
+// phát âm thanh thông báo cho các sự kiện của hệ thống
 export function playNotificationSound(type: 'success' | 'alert' | 'info' = 'info'): void {
   void type;
   return;

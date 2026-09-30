@@ -25,7 +25,7 @@ interface OsrmRouteResponse {
 const logger = createLogger('gis-service');
 // Dịch vụ GIS để quản lý dữ liệu vị trí của các sự cố môi trường, bao gồm lưu trữ, truy vấn và tạo bản đồ nhiệt.
 export class GisService {
-  // Lấy tuyến đường lái xe từ điểm A đến điểm B bằng OSRM (Open Source Routing Machine).
+  // tính toán lộ trình đường đi qua dịch vụ điều hướng và trả về tọa độ
   async getDrivingRoute(startLat: number, startLng: number, endLat: number, endLng: number): Promise<DrivingRoute> {
     const coordinates = `${startLng},${startLat};${endLng},${endLat}`;
     const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`;

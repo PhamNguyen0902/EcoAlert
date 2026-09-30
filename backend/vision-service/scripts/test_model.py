@@ -1,4 +1,3 @@
-"""Minimal smoke test for the configured EcoAlert YOLO model."""
 from pathlib import Path
 import sys
 
@@ -21,6 +20,7 @@ EXPECTED_CLASSES = {
 }
 
 
+# kiểm tra nhanh việc nạp mô hình yolo và chạy thử nghiệm nhận diện ảnh thực tế
 def main() -> int:
     settings = VisionSettings.from_environment()
     detector = WasteDetector(settings)

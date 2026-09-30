@@ -5,13 +5,12 @@ import { successResponse, BadRequestError } from "@ecoalert/shared";
 import axios from "axios";
 
 export class UploadController {
+  // tải ảnh minh chứng lên kho lưu trữ đám mây
   async upload(req: Request, res: Response) {
     if (!req.file) {
       throw new BadRequestError("No image file provided");
     }
 
-    // Upload is intentionally semantic-only. The AI worker invokes waste detection
-    // after it has classified the report domain.
     const imageUrl = await s3Service.uploadImage(req.file);
     const aiAnalysis = { status: 'skipped_not_applicable', detections: [], requiresManualReview: false };
 
@@ -26,6 +25,7 @@ export class UploadController {
     );
   }
 
+  // tải ảnh từ đường dẫn từ xa và gửi sang dịch vụ thị giác yolo để nhận diện
   async analyzeRemoteImage(req: Request, res: Response) {
     const imageUrl = typeof req.body?.imageUrl === 'string' ? req.body.imageUrl : '';
     if (!/^https?:\/\//i.test(imageUrl)) throw new BadRequestError('A public imageUrl is required');

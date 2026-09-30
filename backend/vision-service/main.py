@@ -14,6 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# quản lý vòng đời ứng dụng khởi tạo cấu hình và nạp mô hình yolo khi khởi động
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = VisionSettings.from_environment()
