@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import type { CaptureMetadata } from "../types";
+import type { AlertCategory, CaptureMetadata, ImageValidation } from "../types";
 
 export interface OfflineReportDraft {
   id: string;
@@ -16,6 +16,8 @@ export interface OfflineReportDraft {
   displayLocalUri?: string;
   // Optional so drafts created by previous app versions remain syncable.
   captureMetadata?: CaptureMetadata;
+  imageValidation?: ImageValidation;
+  category?: AlertCategory;
   isAnonymous?: boolean;
   createdAt: string;
 }

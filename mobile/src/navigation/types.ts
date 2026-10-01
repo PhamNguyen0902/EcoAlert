@@ -8,7 +8,7 @@ export type ReportFlowParamList = {
   ReportPhotoReview: undefined;
   ReportImageValidation: undefined;
   ReportConfirm: undefined;
-  ReportSuccess: { alertId: string };
+  ReportSuccess: { alertId?: string; queued?: boolean };
 };
 export type CitizenStackParamList = { CitizenTabs: NavigatorScreenParams<CitizenTabParamList> | undefined; ReportFlow: NavigatorScreenParams<ReportFlowParamList> | undefined; AlertDetail: { id: string }; LocationPicker: { initialLocation?: LocationSelection }; };
 export type RootStackParamList = { AdminApp: undefined; OfficerApp: undefined; CitizenApp: undefined; CitizenAppGuest: undefined; Login: undefined; Register: undefined; };
