@@ -189,6 +189,32 @@ export interface VisionEvidence {
   requiresManualReview?: boolean;
 }
 
+export interface PreSubmitVisionResult {
+  imageUrl: string;
+  status: "ok" | "no_detection" | "error";
+  detections: Array<{
+    materialClass: string;
+    suggestedCategory?: string;
+    confidence: number;
+    bbox?: [number, number, number, number];
+  }>;
+  requiresManualReview: boolean;
+}
+
+export interface PreSubmitSemanticResult {
+  category: AlertCategory | null;
+  severity: Severity;
+  confidence: number;
+  summary: string;
+  reasoningSummary: string;
+  isIncident: boolean;
+  incidentConfidence: number;
+  categoryConfidence: number;
+  overallSummary: string;
+  shortReason: string;
+  model: string;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   total: number;
