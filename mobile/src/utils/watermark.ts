@@ -5,6 +5,7 @@ export interface WatermarkData {
   latitude?: number;
   longitude?: number;
   address?: string;
+  accuracyMeters?: number;
   timestamp?: Date;
   brandTag?: string;
 }
@@ -16,23 +17,37 @@ export interface FormattedWatermark {
   brandStr: string;
 }
 
+export const formatCaptureTimestamp = (timestamp?: Date): string =>
+  format(timestamp || new Date(), "dd/MM/yyyy HH:mm:ss");
+
+export const formatCaptureCoordinates = (
+  latitude?: number,
+  longitude?: number,
+  accuracyMeters?: number,
+): string => {
+  if (typeof latitude !== "number" || typeof longitude !== "number") return "GPS: Unavailable";
+  const accuracy = typeof accuracyMeters === "number" ? ` · ±${Math.round(accuracyMeters)}m` : "";
+  return `GPS: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}${accuracy}`;
+};
+
+export const formatCaptureAddress = (address?: string): string =>
+  address?.trim() || "Địa điểm: Chưa xác định";
+
 /**
  * Formats field-capture information for overlaying on photos.
  * A capture is not called "verified" until backend/officer checks have completed.
  */
 export function formatWatermarkData(data: WatermarkData, language: Language = "vi"): FormattedWatermark {
-  const date = data.timestamp || new Date();
-  const dateTimeStr = format(date, "yyyy-MM-dd HH:mm:ss");
+  const dateTimeStr = `Captured: ${formatCaptureTimestamp(data.timestamp)}`;
 
   const text = language === "vi"
     ? { gpsUnavailable: "GPS: Không có", addressUnavailable: "Địa điểm: Chưa xác định", brand: "ECOALERT FIELD CAPTURE" }
     : { gpsUnavailable: "GPS: Unavailable", addressUnavailable: "Location: Unspecified", brand: "ECOALERT FIELD CAPTURE" };
-  let locationStr = text.gpsUnavailable;
-  if (typeof data.latitude === "number" && typeof data.longitude === "number") {
-    locationStr = `GPS: ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
-  }
+  const locationStr = typeof data.latitude === "number" && typeof data.longitude === "number"
+    ? formatCaptureCoordinates(data.latitude, data.longitude, data.accuracyMeters)
+    : text.gpsUnavailable;
 
-  const addressStr = data.address ? data.address.trim() : text.addressUnavailable;
+  const addressStr = data.address ? formatCaptureAddress(data.address) : text.addressUnavailable;
   const brandStr = data.brandTag || text.brand;
 
   return {

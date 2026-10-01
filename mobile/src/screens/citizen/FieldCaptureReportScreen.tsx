@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert as RNAlert,
@@ -16,6 +16,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import ViewShot, { captureRef, type ViewShotRef } from "react-native-view-shot";
 import {
   Camera,
   CheckCircle2,
@@ -45,20 +46,19 @@ type Props = BottomTabScreenProps<CitizenTabParamList, "ReportTab">;
 const MAX_FIELD_GPS_ACCURACY_METERS = 50;
 
 interface CapturedEvidence {
-  localUri: string;
-  uploadedUrl: string;
+  originalLocalUri: string;
+  displayLocalUri?: string;
+  originalUploadedUrl?: string;
+  displayUploadedUrl?: string;
   capturedAt: string;
-  accuracyMeters: number | null;
+  accuracyMeters: number;
   address: string;
   latitude: number;
   longitude: number;
+  aspectRatio: number;
 }
 
 const createCaptureMetadata = (evidence: CapturedEvidence): CaptureMetadata => {
-  if (evidence.accuracyMeters === null) {
-    throw new Error("A live GPS accuracy value is required for field capture.");
-  }
-
   return {
     method: "LIVE_CAMERA",
     capturedAt: evidence.capturedAt,
@@ -104,7 +104,11 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
   const [description, setDescription] = useState("");
   const [evidence, setEvidence] = useState<CapturedEvidence | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadCount, setUploadCount] = useState(0);
+  const isUploading = uploadCount > 0;
+  const [isRenderingWatermark, setIsRenderingWatermark] = useState(false);
+  const watermarkCaptureRef = useRef<ViewShotRef>(null);
+  const capturedDisplayForOriginalRef = useRef<string | null>(null);
 
   const copy = language === "vi"
     ? {
@@ -135,6 +139,7 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
         accuracyRequired: `GPS hiện tại chưa đủ chính xác. Hãy thử lại đến khi sai số không quá ${MAX_FIELD_GPS_ACCURACY_METERS} m.`,
         cameraPermission: "EcoAlert cần quyền camera để chụp ảnh hiện trường.",
         photoRequired: "Hãy chụp ít nhất một ảnh hiện trường.",
+        evidencePreparing: "Đang tạo và tải ảnh minh chứng. Vui lòng chờ một chút.",
         titleRequired: "Tiêu đề cần ít nhất 5 ký tự.",
         descriptionRequired: "Mô tả cần ít nhất 10 ký tự.",
         success: "Báo cáo đã được gửi. EcoAlert AI đang phân tích ảnh.",
@@ -168,6 +173,7 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
         accuracyRequired: `GPS accuracy is too weak. Retry until the error is within ${MAX_FIELD_GPS_ACCURACY_METERS} m.`,
         cameraPermission: "EcoAlert needs camera permission for field capture.",
         photoRequired: "Capture at least one field photo.",
+        evidencePreparing: "Preparing and uploading field evidence. Please wait a moment.",
         titleRequired: "Title must contain at least 5 characters.",
         descriptionRequired: "Description must contain at least 10 characters.",
         success: "Report submitted. EcoAlert AI is analyzing the evidence.",
@@ -187,6 +193,7 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
       {
         latitude: evidence.latitude,
         longitude: evidence.longitude,
+        accuracyMeters: evidence.accuracyMeters,
         address: evidence.address,
         timestamp: new Date(evidence.capturedAt),
         brandTag: copy.fieldCapture,
@@ -194,6 +201,49 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
       language,
     );
   }, [copy.fieldCapture, evidence, language]);
+
+  const createWatermarkedDisplayImage = useCallback(async () => {
+    if (!evidence || !watermarkCaptureRef.current) return;
+    if (capturedDisplayForOriginalRef.current === evidence.originalLocalUri) return;
+
+    capturedDisplayForOriginalRef.current = evidence.originalLocalUri;
+    try {
+      const displayLocalUri = await captureRef(watermarkCaptureRef, {
+        format: "jpg",
+        quality: 0.95,
+        result: "tmpfile",
+      });
+
+      setEvidence((current) => current?.originalLocalUri === evidence.originalLocalUri
+        ? { ...current, displayLocalUri }
+        : current);
+
+      if (isConnected !== false) {
+        setUploadCount((count) => count + 1);
+        try {
+          const displayUploadedUrl = await uploadMediaMutation.mutateAsync({
+            fileUri: displayLocalUri,
+            fileName: `field_display_${Date.now()}.jpg`,
+            fileType: "image/jpeg",
+          });
+          if (displayUploadedUrl && isBackendMediaUrl(displayUploadedUrl)) {
+            setEvidence((current) => current?.originalLocalUri === evidence.originalLocalUri
+              ? { ...current, displayLocalUri, displayUploadedUrl }
+              : current);
+          }
+        } catch (error) {
+          console.warn("[FieldCapture] Watermarked display upload failed:", error);
+        } finally {
+          setUploadCount((count) => Math.max(0, count - 1));
+        }
+      }
+    } catch (error) {
+      capturedDisplayForOriginalRef.current = null;
+      console.warn("[FieldCapture] Watermark rasterization failed:", error);
+    } finally {
+      setIsRenderingWatermark(false);
+    }
+  }, [evidence, isConnected, uploadMediaMutation]);
 
   const handleCapture = async () => {
     setIsCapturing(true);
@@ -230,33 +280,41 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
       if (result.canceled || !result.assets?.length) return;
 
       const asset = result.assets[0];
-      let uploadedUrl = asset.uri;
-      setIsUploading(true);
-      try {
-        if (isConnected !== false) {
-          const resultUrl = await uploadMediaMutation.mutateAsync({
-            fileUri: asset.uri,
-            fileName: asset.fileName || `field_${Date.now()}.jpg`,
-            fileType: asset.mimeType || "image/jpeg",
-          });
-          if (resultUrl && isBackendMediaUrl(resultUrl)) uploadedUrl = resultUrl;
-        }
-      } catch (error) {
-        console.warn("[FieldCapture] Upload deferred for offline sync:", error);
-      } finally {
-        setIsUploading(false);
-      }
-
       const [longitude, latitude] = liveLocation.coords.coordinates;
-      setEvidence({
-        localUri: asset.uri,
-        uploadedUrl,
+      const capturedEvidence: CapturedEvidence = {
+        originalLocalUri: asset.uri,
         capturedAt: liveLocation.capturedAt || new Date().toISOString(),
         accuracyMeters: liveLocation.accuracyMeters,
         address: liveLocation.address,
         latitude,
         longitude,
-      });
+        aspectRatio: asset.width && asset.height ? asset.width / asset.height : 4 / 3,
+      };
+      capturedDisplayForOriginalRef.current = null;
+      setIsRenderingWatermark(true);
+      setEvidence(capturedEvidence);
+
+      let originalUploadedUrl: string | undefined;
+      setUploadCount((count) => count + 1);
+      try {
+        if (isConnected !== false) {
+          const resultUrl = await uploadMediaMutation.mutateAsync({
+            fileUri: asset.uri,
+            fileName: asset.fileName || `field_original_${Date.now()}.jpg`,
+            fileType: asset.mimeType || "image/jpeg",
+          });
+          if (resultUrl && isBackendMediaUrl(resultUrl)) originalUploadedUrl = resultUrl;
+        }
+      } catch (error) {
+        console.warn("[FieldCapture] Upload deferred for offline sync:", error);
+      } finally {
+        setUploadCount((count) => Math.max(0, count - 1));
+      }
+      if (originalUploadedUrl) {
+        setEvidence((current) => current?.originalLocalUri === asset.uri
+          ? { ...current, originalUploadedUrl }
+          : current);
+      }
     } finally {
       setIsCapturing(false);
     }
@@ -274,6 +332,7 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
       return copy.accuracyRequired;
     }
     if (!evidence) return copy.photoRequired;
+    if (isRenderingWatermark || isUploading) return copy.evidencePreparing;
     if (title.trim().length < 5) return copy.titleRequired;
     if (description.trim().length < 10) return copy.descriptionRequired;
     return null;
@@ -289,13 +348,15 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
 
     const captureMetadata = createCaptureMetadata(evidence);
 
-    if (isOffline || !isBackendMediaUrl(evidence.uploadedUrl)) {
+    if (isOffline || !isBackendMediaUrl(evidence.originalUploadedUrl || "")) {
       await offlineQueue.saveOfflineDraft({
         title: title.trim(),
         description: description.trim(),
         address: evidence.address,
         location: { type: "Point", coordinates: [evidence.longitude, evidence.latitude] },
-        localMediaUris: [evidence.localUri],
+        localMediaUris: [evidence.originalLocalUri],
+        originalLocalUri: evidence.originalLocalUri,
+        displayLocalUri: evidence.displayLocalUri,
         captureMetadata,
         isAnonymous: false,
       });
@@ -303,13 +364,22 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
+    const originalUploadedUrl = evidence.originalUploadedUrl;
+    if (!originalUploadedUrl) return;
+
     try {
       const created = await createAlertMutation.mutateAsync({
         title: title.trim(),
         description: description.trim(),
         address: evidence.address,
         location: { type: "Point", coordinates: [evidence.longitude, evidence.latitude] },
-        mediaUrls: [evidence.uploadedUrl],
+        mediaUrls: [originalUploadedUrl],
+        fieldEvidence: [{
+          originalUrl: originalUploadedUrl,
+          ...(evidence.displayUploadedUrl ? { displayUrl: evidence.displayUploadedUrl } : {}),
+          capturedAt: evidence.capturedAt,
+          gpsAccuracyMeters: evidence.accuracyMeters,
+        }],
         captureMetadata,
         isAnonymous: false,
       });
@@ -402,16 +472,22 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
 
             {evidence ? (
               <View style={styles.previewContainer}>
-                <Image source={{ uri: evidence.localUri }} style={styles.previewImage} />
+                <ViewShot ref={watermarkCaptureRef} options={{ format: "jpg", quality: 0.95, result: "tmpfile" }}>
+                  <Image
+                    source={{ uri: evidence.originalLocalUri }}
+                    style={[styles.previewImage, { aspectRatio: evidence.aspectRatio }]}
+                    onLoadEnd={() => void createWatermarkedDisplayImage()}
+                  />
                 <View style={styles.watermarkOverlay}>
                   <View style={styles.watermarkBrandRow}>
                     <ShieldCheck size={14} color="#4ADE80" />
                     <Text style={styles.watermarkBrand}>{watermark?.brandStr}</Text>
                   </View>
-                  <Text style={styles.watermarkLine}>{watermark?.addressStr}</Text>
+                  <Text style={styles.watermarkLine} numberOfLines={2}>{watermark?.addressStr}</Text>
                   <Text style={styles.watermarkLine}>{watermark?.locationStr}</Text>
                   <Text style={styles.watermarkLine}>{watermark?.dateTimeStr}</Text>
                 </View>
+                </ViewShot>
                 <TouchableOpacity style={styles.removePhoto} onPress={() => setEvidence(null)}>
                   <X size={18} color="#FFF" />
                 </TouchableOpacity>

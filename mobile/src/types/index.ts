@@ -122,6 +122,7 @@ export interface Alert {
   mediaUrls: string[];
   /** Device-supplied field-capture context. It is informational, not verification. */
   captureMetadata?: CaptureMetadata;
+  fieldEvidence?: FieldEvidence[];
   location: GeoLocation;
   address: string;
   citizenId: string | User;
@@ -164,6 +165,14 @@ export interface CaptureMetadata {
   locationSource: "DEVICE_GPS";
 }
 
+/** Links the AI source image to the citizen-facing watermarked rendition. */
+export interface FieldEvidence {
+  originalUrl: string;
+  displayUrl?: string;
+  capturedAt: string;
+  gpsAccuracyMeters: number;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   total: number;
@@ -200,6 +209,7 @@ export interface CreateAlertData {
   address?: string;
   mediaUrls?: string[];
   captureMetadata?: CaptureMetadata;
+  fieldEvidence?: FieldEvidence[];
   isAnonymous?: boolean;
   voiceNoteUrl?: string;
   category?: AlertCategory;
