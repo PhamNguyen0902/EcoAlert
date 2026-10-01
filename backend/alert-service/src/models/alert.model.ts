@@ -90,6 +90,13 @@ export interface ICaptureMetadata {
   locationSource: 'DEVICE_GPS';
 }
 
+export interface IFieldEvidence {
+  originalUrl: string;
+  displayUrl?: string;
+  capturedAt: Date;
+  gpsAccuracyMeters: number;
+}
+
 export interface ITimelineEntry {
   eventType: string;
   label: string;
@@ -116,6 +123,7 @@ export interface IAlert extends BaseDocument {
   mediaUrls: string[];
   // Device-provided capture context. Verification remains an officer/system concern.
   captureMetadata?: ICaptureMetadata;
+  fieldEvidence?: IFieldEvidence[];
   visionEvidence?: IVisionEvidence[];
   // geojson point lưu theo thứ tự longitude, latitude và có chỉ mục 2dsphere
   location: {
@@ -312,6 +320,12 @@ const alertSchema = new Schema<IAlert>({
     gpsAccuracyMeters: { type: Number, min: 0, max: 10000 },
     locationSource: { type: String, enum: ['DEVICE_GPS'] },
   },
+  fieldEvidence: [{
+    originalUrl: { type: String, required: true },
+    displayUrl: { type: String },
+    capturedAt: { type: Date, required: true },
+    gpsAccuracyMeters: { type: Number, required: true, min: 0, max: 10000 },
+  }],
   visionEvidence: [{
     imageUrl: { type: String, required: true },
     status: { type: String, enum: ['ok', 'no_detection', 'error', 'skipped_not_applicable'], required: true },
