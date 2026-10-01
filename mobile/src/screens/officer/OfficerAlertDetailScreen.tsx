@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   Image,
   Alert as RNAlert,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import {
   ArrowLeft,
@@ -297,6 +298,7 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
           <Card style={styles.mapCard}>
             {incidentCoordinates ? (
               <MapView
+                provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
                 style={styles.map}
                 initialRegion={{
                   ...incidentCoordinates,

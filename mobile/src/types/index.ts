@@ -138,10 +138,13 @@ export interface Alert {
   aiAnalysisProvider?: "openrouter" | null;
   aiAnalysisModel?: string | null;
   aiFailureReason?: string | null;
+  /** Server-side AI job state. This remains PROCESSING while Vision/Semantic analysis runs. */
+  aiAnalysisStatus?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   aiAnalysisId?: string | null;
   aiAnalyzedAt?: string | null;
   aiPipelineVersion?: "openrouter-multimodal-v1" | null;
   aiOverallAnalysis?: AiOverallAnalysis | null;
+  visionEvidence?: VisionEvidence[];
   aiSemanticProcessingTimeMs?: number | null;
   officerNote?: string;
   arrivedAt?: string;
@@ -171,6 +174,19 @@ export interface FieldEvidence {
   displayUrl?: string;
   capturedAt: string;
   gpsAccuracyMeters: number;
+}
+
+/** Per-image result returned by the asynchronous YOLO Vision pipeline. */
+export interface VisionEvidence {
+  imageUrl: string;
+  status: "ok" | "no_detection" | "error" | "skipped_not_applicable";
+  detections: Array<{
+    materialClass: string;
+    suggestedCategory?: AlertCategory | null;
+    confidence: number;
+    bbox?: [number, number, number, number];
+  }>;
+  requiresManualReview?: boolean;
 }
 
 export interface PaginatedResult<T> {

@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import {
   ArrowLeft,
   MapPin,
@@ -525,6 +526,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
           <Text style={[styles.sectionHeading, { color: colors.text }]}>{pageCopy.location}</Text>
           <Card style={styles.mapCard}>
             <MapView
+              provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
               style={styles.map}
               initialRegion={{
                 latitude,

@@ -5,9 +5,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import MapView, { Marker, Region } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Check, MapPin } from "lucide-react-native";
 import { useLocation } from "../hooks/useLocation";
@@ -148,6 +149,7 @@ export const LocationPickerScreen: React.FC<Props> = ({ navigation, route }) => 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <MapView
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
         ref={mapRef}
         style={styles.map}
         initialRegion={regionFor(selection.latitude, selection.longitude)}
