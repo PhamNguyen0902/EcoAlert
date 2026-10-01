@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert as RNAlert,
@@ -12,8 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import ViewShot, { captureRef, type ViewShotRef } from "react-native-view-shot";
@@ -39,11 +38,11 @@ import { GlassCard } from "../../components/ui/GlassCard";
 import { Button } from "../../components/ui/Button";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
-import type { CitizenStackParamList, CitizenTabParamList } from "../../navigation/types";
+import type { CitizenStackParamList, ReportFlowParamList } from "../../navigation/types";
+import { useFieldReport } from "../../features/report/FieldReportContext";
+import { MAX_FIELD_GPS_ACCURACY_METERS } from "../../features/report/types";
 
-type Props = BottomTabScreenProps<CitizenTabParamList, "ReportTab">;
-
-const MAX_FIELD_GPS_ACCURACY_METERS = 50;
+type Props = NativeStackScreenProps<ReportFlowParamList, "ReportLocation">;
 
 interface CapturedEvidence {
   originalLocalUri: string;
@@ -86,6 +85,7 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
+  const { setDraft, resetDraft } = useFieldReport();
   const createAlertMutation = useCreateAlert();
   const uploadMediaMutation = useUploadMedia();
   const { isOffline, isConnected } = useOfflineSync();
@@ -109,6 +109,35 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
   const [isRenderingWatermark, setIsRenderingWatermark] = useState(false);
   const watermarkCaptureRef = useRef<ViewShotRef>(null);
   const capturedDisplayForOriginalRef = useRef<string | null>(null);
+
+  // Bridge the production legacy screen into the shared report draft while
+  // individual state-machine screens are migrated in the next steps.
+  useEffect(() => {
+    setDraft((current) => ({
+      ...current,
+      title,
+      description,
+      location: coords && source === "device" && accuracyMeters !== null && capturedAt
+        ? {
+            latitude: coords.coordinates[1],
+            longitude: coords.coordinates[0],
+            accuracyMeters,
+            address,
+            capturedAt,
+            source: "DEVICE_GPS",
+          }
+        : current.location,
+      capture: evidence
+        ? {
+            originalLocalUri: evidence.originalLocalUri,
+            displayLocalUri: evidence.displayLocalUri,
+            originalUploadedUrl: evidence.originalUploadedUrl,
+            displayUploadedUrl: evidence.displayUploadedUrl,
+            capturedAt: evidence.capturedAt,
+          }
+        : current.capture,
+    }));
+  }, [accuracyMeters, address, capturedAt, coords, description, evidence, setDraft, source, title]);
 
   const copy = language === "vi"
     ? {
@@ -328,6 +357,7 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
     setTitle("");
     setDescription("");
     setEvidence(null);
+    resetDraft();
   };
 
   const validate = (): string | null => {

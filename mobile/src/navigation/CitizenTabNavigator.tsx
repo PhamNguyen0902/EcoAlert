@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FileText, LayoutDashboard, Plus, UserCircle2 } from 'lucide-react-native';
 import { CitizenDashboardScreen } from '../screens/citizen/CitizenDashboardScreen';
-import { FieldCaptureReportScreen } from '../screens/citizen/FieldCaptureReportScreen';
 import { MyReportsScreen } from '../screens/citizen/MyReportsScreen';
 import { CitizenProfileScreen } from '../screens/citizen/CitizenProfileScreen';
 import { AlertDetailScreen } from '../screens/citizen/AlertDetailScreen';
@@ -11,6 +10,8 @@ import { LocationPickerScreen } from '../screens/LocationPickerScreen';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import type { CitizenStackParamList, CitizenTabParamList } from './types';
+import { ReportFlowNavigator } from '../features/report/ReportFlowNavigator';
+import { ReportTabLauncherScreen } from '../features/report/ReportTabLauncherScreen';
 
 const Tab = createBottomTabNavigator<CitizenTabParamList>();
 const Stack = createNativeStackNavigator<CitizenStackParamList>();
@@ -58,7 +59,7 @@ const CitizenTabs = () => {
       />
       <Tab.Screen
         name="ReportTab"
-        component={FieldCaptureReportScreen}
+        component={ReportTabLauncherScreen}
         options={{
           tabBarLabel: t('tabs.reportIncident'),
           tabBarIconStyle: {
@@ -89,6 +90,7 @@ const CitizenTabs = () => {
 export const CitizenTabNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="CitizenTabs" component={CitizenTabs} />
+    <Stack.Screen name="ReportFlow" component={ReportFlowNavigator} />
     <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
     {/* Kept for legacy/admin-compatible navigation. Field reporting no longer exposes manual relocation. */}
     <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
