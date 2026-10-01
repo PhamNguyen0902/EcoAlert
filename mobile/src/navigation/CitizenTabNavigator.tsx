@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { FileText, LayoutDashboard, PlusCircle, UserCircle2 } from 'lucide-react-native';
+import { FileText, LayoutDashboard, Plus, UserCircle2 } from 'lucide-react-native';
 import { CitizenDashboardScreen } from '../screens/citizen/CitizenDashboardScreen';
 import { FieldCaptureReportScreen } from '../screens/citizen/FieldCaptureReportScreen';
 import { MyReportsScreen } from '../screens/citizen/MyReportsScreen';
@@ -28,16 +28,22 @@ const CitizenTabs = () => {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 8,
+          borderTopWidth: 1,
+          height: 72,
+          paddingBottom: 9,
           paddingTop: 8,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.12,
+          shadowRadius: 10,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
         tabBarIcon: ({ color, size }) =>
           route.name === 'DashboardTab' ? (
             <LayoutDashboard color={color} size={size} />
           ) : route.name === 'ReportTab' ? (
-            <PlusCircle color={color} size={size + 4} />
+            <Plus color="#07101F" size={size + 5} strokeWidth={3} />
           ) : route.name === 'ProfileTab' ? (
             <UserCircle2 color={color} size={size} />
           ) : (
@@ -53,7 +59,18 @@ const CitizenTabs = () => {
       <Tab.Screen
         name="ReportTab"
         component={FieldCaptureReportScreen}
-        options={{ tabBarLabel: t('tabs.reportIncident') }}
+        options={{
+          tabBarLabel: t('tabs.reportIncident'),
+          tabBarIconStyle: {
+            width: 44,
+            height: 44,
+            marginTop: -14,
+            borderRadius: 22,
+            backgroundColor: colors.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+        }}
       />
       <Tab.Screen
         name="MyReportsTab"
