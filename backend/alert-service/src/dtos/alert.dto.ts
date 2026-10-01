@@ -19,6 +19,20 @@ const citizenClassificationSchema = z
   })
   .optional();
 
+const captureMetadataSchema = z.object({
+  method: z.literal("LIVE_CAMERA"),
+  capturedAt: z.string().datetime(),
+  gpsAccuracyMeters: z.number().finite().nonnegative().max(10_000),
+  locationSource: z.literal("DEVICE_GPS"),
+});
+
+const fieldEvidenceSchema = z.object({
+  originalUrl: z.string().url(),
+  displayUrl: z.string().url().optional(),
+  capturedAt: z.string().datetime(),
+  gpsAccuracyMeters: z.number().finite().nonnegative().max(10_000),
+});
+
 const visionDetectionSchema = z.object({
   materialClass: z.string().trim().min(1).max(100),
   suggestedCategory: z.string().trim().max(100).optional(),
@@ -40,6 +54,9 @@ export const createAlertSchema = z.object({
   categories: z.array(categorySchema).max(12).optional(),
   severity: z.nativeEnum(Severity).or(z.string()).optional(),
   mediaUrls: z.array(z.string().url()).min(1).max(6),
+  // This records client context only; it is not proof that the evidence is valid.
+  captureMetadata: captureMetadataSchema.optional(),
+  fieldEvidence: z.array(fieldEvidenceSchema).max(6).optional(),
   visionEvidence: z.array(visionEvidenceSchema).max(6).optional(),
   location: z.object({
     type: z.literal("Point"),
@@ -50,6 +67,16 @@ export const createAlertSchema = z.object({
   voiceNoteUrl: z.string().url().optional().or(z.string().optional()),
   imageValidation: imageValidationSchema.optional(),
   classification: citizenClassificationSchema,
+}).superRefine((value, context) => {
+  value.fieldEvidence?.forEach((evidence, index) => {
+    if (!value.mediaUrls.includes(evidence.originalUrl)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['fieldEvidence', index, 'originalUrl'],
+        message: 'Field evidence originalUrl must be included in mediaUrls',
+      });
+    }
+  });
 });
 export type CreateAlertDto = z.infer<typeof createAlertSchema>;
 

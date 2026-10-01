@@ -120,6 +120,9 @@ export interface Alert {
   imageValidation?: ImageValidation | null;
   severity?: Severity | null;
   mediaUrls: string[];
+  /** Device-supplied field-capture context. It is informational, not verification. */
+  captureMetadata?: CaptureMetadata;
+  fieldEvidence?: FieldEvidence[];
   location: GeoLocation;
   address: string;
   citizenId: string | User;
@@ -153,6 +156,21 @@ export interface Alert {
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CaptureMetadata {
+  method: "LIVE_CAMERA";
+  capturedAt: string;
+  gpsAccuracyMeters: number;
+  locationSource: "DEVICE_GPS";
+}
+
+/** Links the AI source image to the citizen-facing watermarked rendition. */
+export interface FieldEvidence {
+  originalUrl: string;
+  displayUrl?: string;
+  capturedAt: string;
+  gpsAccuracyMeters: number;
 }
 
 export interface PaginatedResult<T> {
@@ -190,6 +208,8 @@ export interface CreateAlertData {
   location: GeoLocation;
   address?: string;
   mediaUrls?: string[];
+  captureMetadata?: CaptureMetadata;
+  fieldEvidence?: FieldEvidence[];
   isAnonymous?: boolean;
   voiceNoteUrl?: string;
   category?: AlertCategory;

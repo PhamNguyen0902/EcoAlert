@@ -45,21 +45,31 @@ export const useLogout = () => {
 };
 
 export const useProfile = () => {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
       const token = await storage.getToken();
       if (!token) return null;
+
+      // Render from the securely cached session first. This keeps Expo Go usable
+      // while a phone is reconnecting to a LAN-hosted API Gateway.
+      const localUser = await storage.getUser();
+      if (localUser) {
+        void authService.getProfile()
+          .then((remoteUser) => queryClient.setQueryData(["profile"], remoteUser))
+          .catch(() => undefined);
+        return localUser;
+      }
+
       try {
-        const remoteUser = await authService.getProfile();
-        return remoteUser;
-      } catch (e) {
-        // Fallback to locally saved user in storage if API call fails
-        const localUser = await storage.getUser();
-        if (localUser) return localUser;
+        return await authService.getProfile();
+      } catch {
         return null;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false,
   });
 };

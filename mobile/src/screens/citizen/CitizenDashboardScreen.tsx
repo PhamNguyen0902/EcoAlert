@@ -59,7 +59,7 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
   const profile = useProfile();
-  const alertsQuery = useAlerts(1, 100);
+  const alertsQuery = useAlerts(1, 30);
   const [refreshing, setRefreshing] = useState(false);
 
   const alerts = alertsQuery.data?.items ?? [];

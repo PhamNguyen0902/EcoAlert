@@ -123,6 +123,10 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     ? alert.assignedOfficerId
     : (fetchedOfficer || officerData?.find((u) => u._id === alert?.assignedOfficerId));
 
+  const evidencePhotoUrls = alert?.fieldEvidence?.length
+    ? alert.fieldEvidence.map((item) => item.displayUrl || item.originalUrl)
+    : (alert?.mediaUrls || []);
+
   const officerDisplayName =
     alert?.assignedOfficerName ||
     assignedOfficerObj?.fullName ||
@@ -505,11 +509,11 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         ) : null}
 
         {/* Photos Gallery */}
-        {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
+        {evidencePhotoUrls.length > 0 ? (
           <View style={styles.sectionBox}>
             <Text style={[styles.sectionHeading, { color: colors.text }]}>{pageCopy.photos}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
-              {alert.mediaUrls.map((url, idx) => (
+              {evidencePhotoUrls.map((url, idx) => (
                 <Image key={idx} source={{ uri: url }} style={styles.evidenceImage} />
               ))}
             </ScrollView>

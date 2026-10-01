@@ -83,6 +83,20 @@ export interface IStatusHistoryEntry {
   correlationId?: string;
 }
 
+export interface ICaptureMetadata {
+  method: 'LIVE_CAMERA';
+  capturedAt: Date;
+  gpsAccuracyMeters: number;
+  locationSource: 'DEVICE_GPS';
+}
+
+export interface IFieldEvidence {
+  originalUrl: string;
+  displayUrl?: string;
+  capturedAt: Date;
+  gpsAccuracyMeters: number;
+}
+
 export interface ITimelineEntry {
   eventType: string;
   label: string;
@@ -107,6 +121,9 @@ export interface IAlert extends BaseDocument {
   imageValidation?: IImageValidation;
   severity: Severity | null;
   mediaUrls: string[];
+  // Device-provided capture context. Verification remains an officer/system concern.
+  captureMetadata?: ICaptureMetadata;
+  fieldEvidence?: IFieldEvidence[];
   visionEvidence?: IVisionEvidence[];
   // geojson point lưu theo thứ tự longitude, latitude và có chỉ mục 2dsphere
   location: {
@@ -297,6 +314,18 @@ const alertSchema = new Schema<IAlert>({
     set: (value: unknown) => typeof value === 'string' ? value.toLowerCase() : value,
   },
   mediaUrls: [{ type: String }],
+  captureMetadata: {
+    method: { type: String, enum: ['LIVE_CAMERA'] },
+    capturedAt: { type: Date },
+    gpsAccuracyMeters: { type: Number, min: 0, max: 10000 },
+    locationSource: { type: String, enum: ['DEVICE_GPS'] },
+  },
+  fieldEvidence: [{
+    originalUrl: { type: String, required: true },
+    displayUrl: { type: String },
+    capturedAt: { type: Date, required: true },
+    gpsAccuracyMeters: { type: Number, required: true, min: 0, max: 10000 },
+  }],
   visionEvidence: [{
     imageUrl: { type: String, required: true },
     status: { type: String, enum: ['ok', 'no_detection', 'error', 'skipped_not_applicable'], required: true },

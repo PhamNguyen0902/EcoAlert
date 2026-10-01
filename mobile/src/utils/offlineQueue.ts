@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import type { CaptureMetadata } from "../types";
 
 export interface OfflineReportDraft {
   id: string;
@@ -9,7 +10,12 @@ export interface OfflineReportDraft {
     type: "Point";
     coordinates: [number, number]; // [longitude, latitude]
   };
+  // Kept for legacy drafts created before field-capture evidence was split.
   localMediaUris: string[];
+  originalLocalUri?: string;
+  displayLocalUri?: string;
+  // Optional so drafts created by previous app versions remain syncable.
+  captureMetadata?: CaptureMetadata;
   isAnonymous?: boolean;
   createdAt: string;
 }

@@ -26,20 +26,40 @@ export function useOfflineSync() {
 
     for (const draft of currentDrafts) {
       try {
-        // Upload media files first if any
-        const uploadedMediaUrls: string[] = [];
-        for (const localUri of draft.localMediaUris) {
+        // Legacy drafts only have localMediaUris. Field-capture drafts preserve
+        // the original/display relationship explicitly so AI still uses original.
+        const originalLocalUri = draft.originalLocalUri || draft.localMediaUris[0];
+        if (!originalLocalUri) throw new Error("Offline draft has no original evidence image");
+
+        const uploadLocalImage = async (localUri: string, fileName: string): Promise<string> => {
           if (localUri.startsWith("http://") || localUri.startsWith("https://")) {
-            uploadedMediaUrls.push(localUri);
-          } else {
-            const fileName = `offline_${Date.now()}.jpg`;
-            const uploadedUrl = await alertService.uploadMedia(localUri, fileName, "image/jpeg");
-            if (uploadedUrl) {
-              uploadedMediaUrls.push(uploadedUrl);
-            }
+            return localUri;
+          }
+          return alertService.uploadMedia(localUri, fileName, "image/jpeg");
+        };
+
+        const originalUploadedUrl = await uploadLocalImage(
+          originalLocalUri,
+          `offline_original_${draft.id}.jpg`,
+        );
+        let displayUploadedUrl: string | undefined;
+        if (draft.displayLocalUri) {
+          try {
+            displayUploadedUrl = await uploadLocalImage(draft.displayLocalUri, `offline_display_${draft.id}.jpg`);
+          } catch (displayError) {
+            // Original evidence remains sufficient for AI/report creation.
+            console.warn(`[OfflineSync] Display evidence upload failed for ${draft.id}:`, displayError);
           }
         }
 
+        const uploadedMediaUrls = draft.originalLocalUri
+          ? [originalUploadedUrl]
+          : [
+              originalUploadedUrl,
+              ...await Promise.all(draft.localMediaUris.slice(1).map((localUri, index) =>
+                uploadLocalImage(localUri, `offline_${draft.id}_${index + 1}.jpg`),
+              )),
+            ];
         // Submit alert to backend
         await alertService.createAlert({
           title: draft.title,
@@ -47,6 +67,15 @@ export function useOfflineSync() {
           address: draft.address,
           location: draft.location,
           mediaUrls: uploadedMediaUrls,
+          captureMetadata: draft.captureMetadata,
+          fieldEvidence: draft.originalLocalUri && draft.captureMetadata
+            ? [{
+                originalUrl: originalUploadedUrl,
+                ...(displayUploadedUrl ? { displayUrl: displayUploadedUrl } : {}),
+                capturedAt: draft.captureMetadata.capturedAt,
+                gpsAccuracyMeters: draft.captureMetadata.gpsAccuracyMeters,
+              }]
+            : undefined,
           isAnonymous: draft.isAnonymous,
         });
 

@@ -1,10 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { FileText, LayoutDashboard, PlusCircle } from 'lucide-react-native';
+import { FileText, LayoutDashboard, PlusCircle, UserCircle2 } from 'lucide-react-native';
 import { CitizenDashboardScreen } from '../screens/citizen/CitizenDashboardScreen';
 import { FieldCaptureReportScreen } from '../screens/citizen/FieldCaptureReportScreen';
 import { MyReportsScreen } from '../screens/citizen/MyReportsScreen';
+import { CitizenProfileScreen } from '../screens/citizen/CitizenProfileScreen';
 import { AlertDetailScreen } from '../screens/citizen/AlertDetailScreen';
 import { LocationPickerScreen } from '../screens/LocationPickerScreen';
 import { useTheme } from '../context/ThemeContext';
@@ -37,6 +38,8 @@ const CitizenTabs = () => {
             <LayoutDashboard color={color} size={size} />
           ) : route.name === 'ReportTab' ? (
             <PlusCircle color={color} size={size + 4} />
+          ) : route.name === 'ProfileTab' ? (
+            <UserCircle2 color={color} size={size} />
           ) : (
             <FileText color={color} size={size} />
           ),
@@ -56,6 +59,11 @@ const CitizenTabs = () => {
         name="MyReportsTab"
         component={MyReportsScreen}
         options={{ tabBarLabel: t('tabs.myReports', 'My Reports') }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={CitizenProfileScreen}
+        options={{ tabBarLabel: t('tabs.profile', 'Cá nhân') }}
       />
     </Tab.Navigator>
   );

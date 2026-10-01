@@ -87,6 +87,9 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
   }
 
   const incidentCoordinates = getGeoJsonMapCoordinates(alert.location?.coordinates);
+  const evidencePhotoUrls = alert.fieldEvidence?.length
+    ? alert.fieldEvidence.map((item) => item.displayUrl || item.originalUrl)
+    : alert.mediaUrls || [];
 
   const displaySeverity = getAlertDisplaySeverity(alert);
   const sevColor = displaySeverity ? (SEVERITY_COLORS[displaySeverity] || { bg: "#F1F5F9", text: "#475569" }) : { bg: "#F1F5F9", text: "#475569" };
@@ -277,11 +280,11 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         <OverallAiAnalysisCard alert={alert} />
 
         {/* Evidence Photos */}
-        {alert.mediaUrls && alert.mediaUrls.length > 0 ? (
+        {evidencePhotoUrls.length > 0 ? (
           <View style={styles.sectionBox}>
             <Text style={[styles.sectionHeading, { color: colors.text }]}>Hình ảnh & Minh chứng</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
-              {alert.mediaUrls.map((url, idx) => (
+              {evidencePhotoUrls.map((url, idx) => (
                 <Image key={idx} source={{ uri: url }} style={styles.evidenceImage} />
               ))}
             </ScrollView>
