@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import * as FileSystem from "expo-file-system/legacy";
 import type { Language } from "../context/LanguageContext";
 
 export interface WatermarkData {
@@ -32,6 +33,22 @@ export const formatCaptureCoordinates = (
 
 export const formatCaptureAddress = (address?: string): string =>
   address?.trim() || "Địa điểm: Chưa xác định";
+
+/** Moves a rasterized ViewShot result out of the temporary cache for offline sync. */
+export const persistWatermarkedDisplayImage = async (
+  temporaryUri: string,
+  capturedAt: string,
+): Promise<string> => {
+  const documentDirectory = FileSystem.documentDirectory;
+  if (!documentDirectory) throw new Error("Persistent app storage is unavailable");
+
+  const directory = `${documentDirectory}field-evidence/`;
+  await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
+  const safeTimestamp = capturedAt.replace(/[^0-9]/g, "");
+  const destinationUri = `${directory}display_${safeTimestamp}_${Date.now()}.jpg`;
+  await FileSystem.copyAsync({ from: temporaryUri, to: destinationUri });
+  return destinationUri;
+};
 
 /**
  * Formats field-capture information for overlaying on photos.

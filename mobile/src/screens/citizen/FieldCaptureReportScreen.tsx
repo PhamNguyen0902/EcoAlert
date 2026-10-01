@@ -32,7 +32,7 @@ import { useCreateAlert, useUploadMedia } from "../../hooks/useAlerts";
 import { useLocation } from "../../hooks/useLocation";
 import { useOfflineSync } from "../../hooks/useOfflineSync";
 import { offlineQueue } from "../../utils/offlineQueue";
-import { formatWatermarkData } from "../../utils/watermark";
+import { formatWatermarkData, persistWatermarkedDisplayImage } from "../../utils/watermark";
 import { Card } from "../../components/ui/Card";
 import type { CaptureMetadata } from "../../types";
 import { GlassCard } from "../../components/ui/GlassCard";
@@ -208,11 +208,15 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
 
     capturedDisplayForOriginalRef.current = evidence.originalLocalUri;
     try {
-      const displayLocalUri = await captureRef(watermarkCaptureRef, {
+      const temporaryDisplayUri = await captureRef(watermarkCaptureRef, {
         format: "jpg",
         quality: 0.95,
         result: "tmpfile",
       });
+      const displayLocalUri = await persistWatermarkedDisplayImage(
+        temporaryDisplayUri,
+        evidence.capturedAt,
+      );
 
       setEvidence((current) => current?.originalLocalUri === evidence.originalLocalUri
         ? { ...current, displayLocalUri }
