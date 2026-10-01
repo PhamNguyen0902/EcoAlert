@@ -19,6 +19,13 @@ const citizenClassificationSchema = z
   })
   .optional();
 
+const captureMetadataSchema = z.object({
+  method: z.literal("LIVE_CAMERA"),
+  capturedAt: z.string().datetime(),
+  gpsAccuracyMeters: z.number().finite().nonnegative().max(10_000),
+  locationSource: z.literal("DEVICE_GPS"),
+});
+
 const visionDetectionSchema = z.object({
   materialClass: z.string().trim().min(1).max(100),
   suggestedCategory: z.string().trim().max(100).optional(),
@@ -40,6 +47,8 @@ export const createAlertSchema = z.object({
   categories: z.array(categorySchema).max(12).optional(),
   severity: z.nativeEnum(Severity).or(z.string()).optional(),
   mediaUrls: z.array(z.string().url()).min(1).max(6),
+  // This records client context only; it is not proof that the evidence is valid.
+  captureMetadata: captureMetadataSchema.optional(),
   visionEvidence: z.array(visionEvidenceSchema).max(6).optional(),
   location: z.object({
     type: z.literal("Point"),

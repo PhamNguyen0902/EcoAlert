@@ -33,6 +33,7 @@ import { useOfflineSync } from "../../hooks/useOfflineSync";
 import { offlineQueue } from "../../utils/offlineQueue";
 import { formatWatermarkData } from "../../utils/watermark";
 import { Card } from "../../components/ui/Card";
+import type { CaptureMetadata } from "../../types";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Button } from "../../components/ui/Button";
 import { useTheme } from "../../context/ThemeContext";
@@ -52,6 +53,19 @@ interface CapturedEvidence {
   latitude: number;
   longitude: number;
 }
+
+const createCaptureMetadata = (evidence: CapturedEvidence): CaptureMetadata => {
+  if (evidence.accuracyMeters === null) {
+    throw new Error("A live GPS accuracy value is required for field capture.");
+  }
+
+  return {
+    method: "LIVE_CAMERA",
+    capturedAt: evidence.capturedAt,
+    gpsAccuracyMeters: evidence.accuracyMeters,
+    locationSource: "DEVICE_GPS",
+  };
+};
 
 const isBackendMediaUrl = (value: string): boolean => /^https?:\/\//i.test(value);
 
@@ -273,6 +287,8 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
     }
     if (!evidence || !coords) return;
 
+    const captureMetadata = createCaptureMetadata(evidence);
+
     if (isOffline || !isBackendMediaUrl(evidence.uploadedUrl)) {
       await offlineQueue.saveOfflineDraft({
         title: title.trim(),
@@ -280,6 +296,7 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
         address: evidence.address,
         location: { type: "Point", coordinates: [evidence.longitude, evidence.latitude] },
         localMediaUris: [evidence.localUri],
+        captureMetadata,
         isAnonymous: false,
       });
       RNAlert.alert(copy.pageTitle, copy.offlineSuccess, [{ text: "OK", onPress: resetForm }]);
@@ -293,6 +310,7 @@ export const FieldCaptureReportScreen: React.FC<Props> = ({ navigation }) => {
         address: evidence.address,
         location: { type: "Point", coordinates: [evidence.longitude, evidence.latitude] },
         mediaUrls: [evidence.uploadedUrl],
+        captureMetadata,
         isAnonymous: false,
       });
 

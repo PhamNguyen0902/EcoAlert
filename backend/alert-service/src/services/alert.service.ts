@@ -128,6 +128,7 @@ export class AlertService {
     const {
       classification: citizenClassification,
       imageValidation,
+      captureMetadata,
       ...alertData
     } = data;
     // trích xuất danh mục và thiết lập thông tin phân loại ban đầu cho sự cố
@@ -157,6 +158,12 @@ export class AlertService {
           validatedAt: new Date(imageValidation.validatedAt),
         }
       : undefined;
+    const storedCaptureMetadata = captureMetadata
+      ? {
+          ...captureMetadata,
+          capturedAt: new Date(captureMetadata.capturedAt),
+        }
+      : undefined;
     const alert = await alertRepository.create({
       ...alertData,
       category,
@@ -165,6 +172,7 @@ export class AlertService {
       ...(storedImageValidation
         ? { imageValidation: storedImageValidation }
         : {}),
+      ...(storedCaptureMetadata ? { captureMetadata: storedCaptureMetadata } : {}),
       severity: (data.severity as Severity) || Severity.LOW,
       citizenId: actor.id,
       status: AlertStatus.PENDING,

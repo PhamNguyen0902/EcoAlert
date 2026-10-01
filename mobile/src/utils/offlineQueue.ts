@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import type { CaptureMetadata } from "../types";
 
 export interface OfflineReportDraft {
   id: string;
@@ -10,6 +11,8 @@ export interface OfflineReportDraft {
     coordinates: [number, number]; // [longitude, latitude]
   };
   localMediaUris: string[];
+  // Optional so drafts created by previous app versions remain syncable.
+  captureMetadata?: CaptureMetadata;
   isAnonymous?: boolean;
   createdAt: string;
 }

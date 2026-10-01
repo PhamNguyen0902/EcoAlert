@@ -120,6 +120,8 @@ export interface Alert {
   imageValidation?: ImageValidation | null;
   severity?: Severity | null;
   mediaUrls: string[];
+  /** Device-supplied field-capture context. It is informational, not verification. */
+  captureMetadata?: CaptureMetadata;
   location: GeoLocation;
   address: string;
   citizenId: string | User;
@@ -153,6 +155,13 @@ export interface Alert {
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CaptureMetadata {
+  method: "LIVE_CAMERA";
+  capturedAt: string;
+  gpsAccuracyMeters: number;
+  locationSource: "DEVICE_GPS";
 }
 
 export interface PaginatedResult<T> {
@@ -190,6 +199,7 @@ export interface CreateAlertData {
   location: GeoLocation;
   address?: string;
   mediaUrls?: string[];
+  captureMetadata?: CaptureMetadata;
   isAnonymous?: boolean;
   voiceNoteUrl?: string;
   category?: AlertCategory;

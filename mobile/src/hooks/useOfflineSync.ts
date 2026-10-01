@@ -47,6 +47,7 @@ export function useOfflineSync() {
           address: draft.address,
           location: draft.location,
           mediaUrls: uploadedMediaUrls,
+          captureMetadata: draft.captureMetadata,
           isAnonymous: draft.isAnonymous,
         });
 
