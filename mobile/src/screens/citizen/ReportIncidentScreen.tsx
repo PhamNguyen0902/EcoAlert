@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
   gpsText: { fontSize: 12, fontWeight: "700" },
   mapCard: { padding: 0, overflow: "hidden", marginBottom: 16 },
   mapContainer: { height: 220, width: "100%" },
-  map: { ...StyleSheet.absoluteFillObject },
+  map: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
   fullMapButton: {
     position: "absolute",
     right: 12,
