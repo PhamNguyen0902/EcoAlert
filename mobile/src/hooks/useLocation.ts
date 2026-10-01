@@ -16,6 +16,8 @@ export interface LocationState {
   source: LocationSource;
   loading: boolean;
   error: string | null;
+  errorCode: "PERMISSION_DENIED" | "UNAVAILABLE" | null;
+  addressResolved: boolean;
 }
 
 export const useLocation = (
@@ -29,10 +31,12 @@ export const useLocation = (
     source: null,
     loading: false,
     error: null,
+    errorCode: null,
+    addressResolved: false,
   });
 
   const fetchLocation = useCallback(async () => {
-    setState((prev) => ({ ...prev, loading: true, error: null }));
+    setState((prev) => ({ ...prev, loading: true, error: null, errorCode: null }));
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
@@ -40,6 +44,7 @@ export const useLocation = (
           ...prev,
           loading: false,
           error: "Permission to access location was denied. Please enable GPS in settings.",
+          errorCode: "PERMISSION_DENIED",
         }));
         return null;
       }
@@ -61,6 +66,7 @@ export const useLocation = (
 
       // Reverse geocoding failures leave the already-available coordinates as the address.
       let addressStr = `${location.coords.latitude.toFixed(5)}, ${location.coords.longitude.toFixed(5)}`;
+      let addressResolved = false;
       try {
         const resolvedAddress = await reverseGeocoder.reverseGeocode(
           location.coords.latitude,
@@ -68,6 +74,7 @@ export const useLocation = (
         );
         if (resolvedAddress) {
           addressStr = resolvedAddress;
+          addressResolved = true;
         }
       } catch {
         // Fallback to coordinates string.
@@ -81,6 +88,8 @@ export const useLocation = (
         source: "device",
         loading: false,
         error: null,
+        errorCode: null,
+        addressResolved,
       });
 
       return {
@@ -89,12 +98,15 @@ export const useLocation = (
         accuracyMeters,
         capturedAt,
         source: "device" as const,
+        addressResolved,
       };
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to retrieve location";
       setState((prev) => ({
         ...prev,
         loading: false,
-        error: err?.message || "Failed to retrieve location",
+        error: message,
+        errorCode: "UNAVAILABLE",
       }));
       return null;
     }
@@ -115,6 +127,8 @@ export const useLocation = (
       capturedAt: null,
       source: "manual",
       error: null,
+      errorCode: null,
+      addressResolved: Boolean(address),
     }));
   }, []);
 

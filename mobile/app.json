@@ -23,7 +23,13 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "EcoAlert cần quyền Camera để chụp ảnh hiện trường."
+        }
+      ]
     ]
   }
 }
