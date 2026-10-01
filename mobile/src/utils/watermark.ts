@@ -17,15 +17,16 @@ export interface FormattedWatermark {
 }
 
 /**
- * Formats watermark information for overlaying on photos.
+ * Formats field-capture information for overlaying on photos.
+ * A capture is not called "verified" until backend/officer checks have completed.
  */
 export function formatWatermarkData(data: WatermarkData, language: Language = "vi"): FormattedWatermark {
   const date = data.timestamp || new Date();
   const dateTimeStr = format(date, "yyyy-MM-dd HH:mm:ss");
 
   const text = language === "vi"
-    ? { gpsUnavailable: "GPS: Không có", addressUnavailable: "Địa điểm: Chưa xác định", brand: "Sự cố đã xác minh EcoAlert" }
-    : { gpsUnavailable: "GPS: Unavailable", addressUnavailable: "Location: Unspecified", brand: "EcoAlert Verified Incident" };
+    ? { gpsUnavailable: "GPS: Không có", addressUnavailable: "Địa điểm: Chưa xác định", brand: "ECOALERT FIELD CAPTURE" }
+    : { gpsUnavailable: "GPS: Unavailable", addressUnavailable: "Location: Unspecified", brand: "ECOALERT FIELD CAPTURE" };
   let locationStr = text.gpsUnavailable;
   if (typeof data.latitude === "number" && typeof data.longitude === "number") {
     locationStr = `GPS: ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
