@@ -22,15 +22,12 @@ export const authService = {
   },
 
   logout: async () => {
-    try {
-      const refreshToken = await storage.getRefreshToken();
-      if (refreshToken) {
-        await api.post("/v1/auth/logout", { refreshToken });
-      }
-    } catch (e) {
-      // Silently ignore network / backend logout errors during logout flow
-    } finally {
-      await storage.clearAll();
+    const refreshToken = await storage.getRefreshToken();
+    // Local logout must never wait for a development gateway that may be
+    // unavailable from Expo Go. Server-side token invalidation is best effort.
+    await storage.clearAll();
+    if (refreshToken) {
+      void api.post("/v1/auth/logout", { refreshToken }).catch(() => undefined);
     }
   },
 
