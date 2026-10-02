@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Maximize2 } from "lucide-react-native";
 import type { ImageSize } from "../../../utils/visionBoundingBox";
 import { calculateReportImageHeight } from "../../../utils/visionBoundingBox";
 
@@ -7,22 +8,27 @@ import { calculateReportImageHeight } from "../../../utils/visionBoundingBox";
 export const ReportEvidenceImage = (props: {
   imageUri: string;
   fallbackUri: string;
+  onPress?: (renderedUri: string) => void;
 }) => <EvidenceImageSession key={props.imageUri} {...props} />;
 
 function EvidenceImageSession({
   imageUri,
   fallbackUri,
+  onPress,
 }: {
   imageUri: string;
   fallbackUri: string;
+  onPress?: (renderedUri: string) => void;
 }) {
   const [uri, setUri] = useState(imageUri);
   const [size, setSize] = useState<ImageSize | null>(null);
   const [width, setWidth] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     let active = true;
     setSize(null);
+    setLoaded(false);
     Image.getSize(
       uri,
       (imageWidth, imageHeight) => {
@@ -37,7 +43,12 @@ function EvidenceImageSession({
     };
   }, [uri]);
   return (
-    <View
+    <Pressable
+      onPress={() => onPress?.(uri)}
+      disabled={!onPress || !loaded || failed}
+      accessibilityRole={onPress ? "button" : undefined}
+      accessibilityLabel="Xem ảnh hiện trường toàn màn hình"
+      accessibilityHint="Chạm để phóng to ảnh"
       style={[
         styles.frame,
         { height: calculateReportImageHeight(size, width, "confirmation") },
@@ -50,6 +61,7 @@ function EvidenceImageSession({
         resizeMode="contain"
         accessibilityLabel="Ảnh hiện trường gửi kèm báo cáo"
         onLoad={({ nativeEvent: { source } }) => {
+          setLoaded(true);
           if (source?.width && source.height)
             setSize(
               (current) =>
@@ -57,6 +69,7 @@ function EvidenceImageSession({
             );
         }}
         onError={() => {
+          setLoaded(false);
           if (uri !== fallbackUri) setUri(fallbackUri);
           else setFailed(true);
         }}
@@ -64,7 +77,12 @@ function EvidenceImageSession({
       {failed ? (
         <Text style={styles.error}>Không thể tải ảnh hiện trường.</Text>
       ) : null}
-    </View>
+      {onPress && loaded && !failed ? (
+        <View style={styles.expand} pointerEvents="none">
+          <Maximize2 size={17} color="#F8FAFC" />
+        </View>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -74,6 +92,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: "#050D17",
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(148,163,184,0.10)",
+  },
+  expand: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(7,16,31,0.72)",
   },
   error: {
     color: "#94A3B8",

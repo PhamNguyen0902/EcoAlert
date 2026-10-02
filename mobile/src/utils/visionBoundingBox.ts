@@ -37,7 +37,7 @@ export function calculateReportImageHeight(
   )
     return 240;
   const naturalHeight = width * (original.height / original.width);
-  if (variant === "confirmation") return clamp(naturalHeight, 180, 320);
+  if (variant === "confirmation") return clamp(naturalHeight, 220, 420);
   return original.height > original.width
     ? clamp(naturalHeight, 360, 440)
     : clamp(naturalHeight, 240, 320);

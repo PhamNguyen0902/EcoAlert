@@ -50,6 +50,7 @@ import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { ReportEvidenceImage } from "../components/ReportEvidenceImage";
+import { ZoomableImageViewer } from "../../../components/media/ZoomableImageViewer";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportConfirm">;
 const isBackendUrl = (value?: string): value is string =>
@@ -67,6 +68,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(true);
   const [descriptionFocused, setDescriptionFocused] = useState(false);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
   const location = draft.location;
   const capture = draft.capture;
   const nearby = useCheckNearbyAlerts(
@@ -275,12 +277,16 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             <ReportEvidenceImage
               imageUri={capture.displayLocalUri || capture.originalLocalUri}
               fallbackUri={capture.originalLocalUri}
+              onPress={setViewerUri}
             />
             <View style={styles.imageBadge}>
               <CheckCircle2 size={12} color="#22C55E" />
               <Text style={styles.imageBadgeText}>ẢNH PHÙ HỢP</Text>
             </View>
           </View>
+          <Text style={[styles.viewerHint, { color: colors.textMuted }]}>
+            Chạm để phóng to ảnh
+          </Text>
           <View style={styles.analysisMetadata}>
             <View style={styles.analysisField}>
               <Text
@@ -571,6 +577,12 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
         </ReportBottomActions>
+        <ZoomableImageViewer
+          visible={viewerUri !== null}
+          imageUri={viewerUri ?? ""}
+          onClose={() => setViewerUri(null)}
+          altLabel="Ảnh hiện trường"
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -592,6 +604,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   heroImage: { borderRadius: 16, overflow: "hidden" },
+  viewerHint: {
+    marginTop: -10,
+    fontSize: 11,
+    lineHeight: 17,
+    textAlign: "center",
+  },
   imageBadge: {
     position: "absolute",
     top: 12,

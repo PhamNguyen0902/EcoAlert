@@ -45,7 +45,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test:vision": "node --test tests/visionBoundingBox.test.cjs tests/fieldCaptureImage.test.cjs"
+    "test:vision": "node --test tests/visionBoundingBox.test.cjs tests/fieldCaptureImage.test.cjs tests/imageViewer.test.cjs"
   },
   "private": true
 }

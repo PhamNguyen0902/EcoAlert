@@ -215,7 +215,7 @@ test("image height adapts to portrait/landscape and stays capped at four mobile 
     assert.equal(utils.calculateReportImageHeight(landscape, width), 240);
     assert.equal(
       utils.calculateReportImageHeight(portrait, width, "confirmation"),
-      320,
+      420,
     );
     const rect = contain(portrait, { width, height: 440 });
     const box = transform([100, 200, 900, 1700], portrait, rect);
@@ -232,6 +232,32 @@ test("image height adapts to portrait/landscape and stays capped at four mobile 
   assert.equal(
     utils.calculateReportImageHeight({ width: 100, height: 200 }, NaN),
     240,
+  );
+});
+
+test("confirm portrait/landscape/tall fit keeps ratio without crop or stretch", () => {
+  const width = 358;
+  for (const original of [
+    { width: 1080, height: 1920 },
+    { width: 1920, height: 1080 },
+    { width: 600, height: 4000 },
+  ]) {
+    const height = utils.calculateReportImageHeight(
+      original,
+      width,
+      "confirmation",
+    );
+    const rect = contain(original, { width, height });
+    assert.ok(height <= 420 && height >= 220);
+    assert.ok(
+      Math.abs(rect.width / rect.height - original.width / original.height) <
+        1e-10,
+    );
+    assert.ok(rect.width <= width && rect.height <= 420);
+  }
+  assert.equal(
+    contain({ width: 1080, height: 1920 }, { width, height: 420 }).width,
+    236.25,
   );
 });
 
