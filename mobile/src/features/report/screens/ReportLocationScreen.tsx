@@ -1,10 +1,27 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { CheckCircle2, Crosshair, MapPin, Navigation, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react-native";
+import {
+  ActivityIndicator,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
+  Camera,
+  CheckCircle2,
+  Crosshair,
+  RefreshCw,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
-import { useTheme } from "../../../context/ThemeContext";
+import { useReportTheme } from "../useReportTheme";
+import { ReportScreenIntro } from "../components/ReportScreenIntro";
+import { ReportBottomActions } from "../components/ReportBottomActions";
 import { useLocation } from "../../../hooks/useLocation";
 import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
@@ -13,49 +30,381 @@ import { ReportProgress } from "../components/ReportProgress";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportLocation">;
 
-const accuracyTone = (accuracy: number | null) => accuracy === null ? "missing" : accuracy <= 15 ? "excellent" : accuracy <= 30 ? "good" : accuracy <= 50 ? "acceptable" : "weak";
+const accuracyTone = (accuracy: number | null) =>
+  accuracy === null
+    ? "missing"
+    : accuracy <= 15
+      ? "excellent"
+      : accuracy <= 30
+        ? "good"
+        : accuracy <= 50
+          ? "acceptable"
+          : "weak";
 
 export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
+  const { colors } = useReportTheme();
   const { draft, setDraft } = useFieldReport();
-  const { coords, address, accuracyMeters, capturedAt, source, loading, error, errorCode, addressResolved, fetchLocation } = useLocation();
+  const {
+    coords,
+    address,
+    accuracyMeters,
+    capturedAt,
+    source,
+    loading,
+    error,
+    errorCode,
+    addressResolved,
+    fetchLocation,
+  } = useLocation();
   const requestedRef = useRef(false);
 
   const acquireLocation = useCallback(async () => {
     const result = await fetchLocation();
     if (!result?.coords || result.accuracyMeters === null) return;
     const accuracy = result.accuracyMeters;
-    setDraft((current) => ({ ...current, location: { latitude: result.coords.coordinates[1], longitude: result.coords.coordinates[0], accuracyMeters: accuracy, address: result.address, capturedAt: result.capturedAt, source: "DEVICE_GPS" } }));
+    setDraft((current) => ({
+      ...current,
+      location: {
+        latitude: result.coords.coordinates[1],
+        longitude: result.coords.coordinates[0],
+        accuracyMeters: accuracy,
+        address: result.address,
+        capturedAt: result.capturedAt,
+        source: "DEVICE_GPS",
+      },
+    }));
   }, [fetchLocation, setDraft]);
 
-  useEffect(() => { if (!draft.location && !requestedRef.current) { requestedRef.current = true; void acquireLocation(); } }, [acquireLocation, draft.location]);
+  useEffect(() => {
+    if (!draft.location && !requestedRef.current) {
+      requestedRef.current = true;
+      void acquireLocation();
+    }
+  }, [acquireLocation, draft.location]);
 
-  const shownLocation = coords && accuracyMeters !== null && capturedAt ? { latitude: coords.coordinates[1], longitude: coords.coordinates[0], accuracyMeters, address, capturedAt, source: source === "device" ? "DEVICE_GPS" as const : undefined } : draft.location;
-  const ready = Boolean(shownLocation?.source === "DEVICE_GPS" && shownLocation.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS);
+  const shownLocation =
+    coords && accuracyMeters !== null && capturedAt
+      ? {
+          latitude: coords.coordinates[1],
+          longitude: coords.coordinates[0],
+          accuracyMeters,
+          address,
+          capturedAt,
+          source: source === "device" ? ("DEVICE_GPS" as const) : undefined,
+        }
+      : draft.location;
+  const ready = Boolean(
+    shownLocation?.source === "DEVICE_GPS" &&
+    shownLocation.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS,
+  );
   const tone = accuracyTone(shownLocation?.accuracyMeters ?? null);
-  const toneColor = tone === "weak" ? colors.destructive : tone === "acceptable" ? colors.accent : tone === "missing" ? colors.textMuted : tone === "good" ? colors.secondary : colors.primary;
-  const accuracyLabel = useMemo(() => tone === "excellent" ? "Rất tốt" : tone === "good" ? "Tốt" : tone === "acceptable" ? "Chấp nhận được" : tone === "weak" ? "Kém" : "Chưa có", [tone]);
+  const toneColor =
+    tone === "weak"
+      ? colors.destructive
+      : tone === "acceptable"
+        ? colors.accent
+        : tone === "missing"
+          ? colors.textMuted
+          : tone === "good"
+            ? colors.secondary
+            : colors.primary;
+  const accuracyLabel = useMemo(
+    () =>
+      tone === "excellent"
+        ? "Rất tốt"
+        : tone === "good"
+          ? "Tốt"
+          : tone === "acceptable"
+            ? "Chấp nhận được"
+            : tone === "weak"
+              ? "Kém"
+              : "Chưa có",
+    [tone],
+  );
 
-  return <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-    <ReportHeader onBack={navigation.goBack} />
-    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) + 16 }]} showsVerticalScrollIndicator={false}>
-      <ReportProgress step={1} />
-      <View><Text style={[styles.title, { color: colors.text }]}>Xác minh vị trí hiện trường</Text><Text style={[styles.subtitle, { color: colors.textMuted }]}>EcoAlert yêu cầu vị trí GPS trực tiếp từ thiết bị tại thời điểm chụp để tăng độ tin cậy của báo cáo.</Text></View>
-      <View style={[styles.technicalBar, { backgroundColor: colors.surface, borderColor: colors.border }]}><View style={styles.technicalItem}><Crosshair size={14} color={ready ? colors.primary : toneColor} /><Text style={[styles.technicalText, { color: ready ? colors.primary : toneColor }]}>{loading ? "GPS DEVICE FIX..." : ready ? "GPS DEVICE FIX ACTIVE" : "GPS DEVICE FIX REQUIRED"}</Text></View><Text style={[styles.technicalAccuracy, { color: colors.textMuted }]}>{shownLocation ? `±${Math.round(shownLocation.accuracyMeters)}m ACCURACY` : "NO FIX"}</Text></View>
-      {shownLocation ? <View style={[styles.locationCard, { backgroundColor: colors.card, borderColor: ready ? "rgba(34,197,94,0.35)" : colors.border }]}>
-        <View style={styles.locationStatusRow}><View style={[styles.statusPill, { backgroundColor: ready ? "rgba(34,197,94,0.14)" : "rgba(245,158,11,0.14)" }]}>{ready ? <CheckCircle2 size={13} color={colors.primary} /> : <TriangleAlert size={13} color={colors.accent} />}<Text style={[styles.statusText, { color: ready ? colors.primary : colors.accent }]}>{ready ? "VỊ TRÍ ĐỦ CHÍNH XÁC" : "TÍN HIỆU VỊ TRÍ YẾU"}</Text></View><Text style={[styles.deviceChip, { color: colors.secondary, borderColor: colors.border }]}>DEVICE GPS</Text></View>
-        <View style={styles.addressRow}><View style={[styles.pinBox, { backgroundColor: isDark ? "rgba(56,189,248,0.12)" : "#E0F2FE" }]}><MapPin size={19} color={colors.secondary} /></View><View style={styles.addressCopy}><Text style={[styles.addressLabel, { color: colors.textMuted }]}>ĐỊA CHỈ HIỆN TRƯỜNG</Text><Text style={[styles.address, { color: colors.text }]}>{addressResolved || draft.location ? shownLocation.address : "Đã ghi nhận vị trí GPS"}</Text>{!addressResolved && !draft.location ? <Text style={[styles.geocodeWarning, { color: colors.accent }]}>Chưa thể xác định địa chỉ, tọa độ vẫn được giữ lại.</Text> : null}</View></View>
-        <View style={[styles.metrics, { borderTopColor: colors.border }]}><View style={styles.metric}><Text style={[styles.metricLabel, { color: colors.textMuted }]}>TỌA ĐỘ GPS</Text><Text style={[styles.metricValue, { color: colors.text }]}>{shownLocation.latitude.toFixed(6)},</Text><Text style={[styles.metricValue, { color: colors.text }]}>{shownLocation.longitude.toFixed(6)}</Text></View><View style={[styles.metric, styles.metricRight, { borderLeftColor: colors.border }]}><Text style={[styles.metricLabel, { color: colors.textMuted }]}>ĐỘ CHÍNH XÁC</Text><Text style={[styles.accuracyValue, { color: toneColor }]}>±{Math.round(shownLocation.accuracyMeters)}m</Text><Text style={[styles.accuracyRating, { color: toneColor }]}>{accuracyLabel}</Text></View></View>
-      </View> : <View style={[styles.locationCard, styles.emptyLocation, { backgroundColor: colors.card, borderColor: colors.border }]}>{loading ? <ActivityIndicator color={colors.primary} size="large" /> : <Navigation size={28} color={colors.textMuted} />}<Text style={[styles.emptyLocationText, { color: colors.textMuted }]}>{loading ? "Đang lấy vị trí GPS..." : "Chưa có dữ liệu vị trí thiết bị"}</Text></View>}
-      <View style={[styles.integrityNote, { backgroundColor: colors.surface, borderColor: colors.border }]}><ShieldCheck size={18} color={colors.primary} /><View style={styles.noteCopy}><Text style={[styles.noteTitle, { color: colors.text }]}>Vị trí lấy trực tiếp từ GPS thiết bị</Text><Text style={[styles.noteBody, { color: colors.textMuted }]}>{addressResolved ? "Địa chỉ được xác định tự động từ tọa độ hiện tại." : "EcoAlert giữ nguyên tọa độ nếu dịch vụ địa chỉ tạm thời không khả dụng."}</Text></View></View>
-      {error ? <View style={[styles.errorCard, { borderColor: "rgba(248,113,113,0.35)", backgroundColor: "rgba(248,113,113,0.08)" }]}><TriangleAlert size={18} color={colors.destructive} /><View style={styles.noteCopy}><Text style={[styles.noteTitle, { color: colors.text }]}>{errorCode === "PERMISSION_DENIED" ? "Cần quyền vị trí" : "Không thể lấy vị trí GPS"}</Text><Text style={[styles.noteBody, { color: colors.textMuted }]}>{errorCode === "PERMISSION_DENIED" ? "EcoAlert cần quyền vị trí để tạo báo cáo tại hiện trường." : "Hãy kiểm tra GPS và thử lại."}</Text>{errorCode === "PERMISSION_DENIED" ? <TouchableOpacity onPress={() => void Linking.openSettings()} style={styles.settingsButton} accessibilityRole="button"><Text style={[styles.settingsText, { color: colors.secondary }]}>MỞ CÀI ĐẶT</Text></TouchableOpacity> : null}</View></View> : null}
-      {!ready && shownLocation ? <View style={[styles.warningCard, { backgroundColor: "rgba(245,158,11,0.10)", borderColor: "rgba(245,158,11,0.28)" }]}><TriangleAlert size={18} color={colors.accent} /><View style={styles.noteCopy}><Text style={[styles.noteTitle, { color: colors.accent }]}>Tín hiệu vị trí yếu</Text><Text style={[styles.noteBody, { color: colors.textMuted }]}>Vị trí GPS hiện chưa đủ chính xác. Vui lòng di chuyển đến nơi thoáng hơn hoặc bật độ chính xác cao rồi thử lại.</Text></View></View> : null}
-      <TouchableOpacity onPress={() => void acquireLocation()} disabled={loading} style={[styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.card }]} accessibilityRole="button"><RefreshCw size={17} color={colors.text} /><Text style={[styles.secondaryButtonText, { color: colors.text }]}>{loading ? "Đang lấy vị trí..." : shownLocation ? "LẤY LẠI GPS" : "LẤY VỊ TRÍ GPS"}</Text></TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate("ReportCamera")} disabled={!ready || loading} style={[styles.primaryButton, { backgroundColor: colors.primary, opacity: ready && !loading ? 1 : 0.45 }]} accessibilityRole="button" accessibilityLabel="Tiếp tục chụp ảnh"><Text style={styles.primaryButtonText}>TIẾP TỤC CHỤP ẢNH</Text><ChevronIcon /></TouchableOpacity>
-    </ScrollView>
-  </View>;
+  const addressParts =
+    shownLocation?.address
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean) ?? [];
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
+      <ReportHeader onBack={navigation.goBack} />
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <ReportProgress step={1} />
+        <ReportScreenIntro
+          eyebrow="XÁC MINH HIỆN TRƯỜNG"
+          title="Xác minh vị trí"
+          description="EcoAlert sử dụng vị trí thiết bị tại thời điểm chụp để tăng độ tin cậy của báo cáo."
+        />
+        <View
+          style={[
+            styles.locationCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: shownLocation
+                ? ready
+                  ? "rgba(34,197,94,0.22)"
+                  : "rgba(245,158,11,0.30)"
+                : colors.border,
+            },
+          ]}
+        >
+          <View style={styles.statusRow}>
+            <View
+              style={[
+                styles.statusPill,
+                {
+                  backgroundColor: loading
+                    ? colors.cyanSoft
+                    : ready
+                      ? colors.greenSoft
+                      : "rgba(245,158,11,0.12)",
+                },
+              ]}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.secondary} />
+              ) : ready ? (
+                <CheckCircle2 size={14} color={colors.primary} />
+              ) : (
+                <Crosshair size={14} color={colors.accent} />
+              )}
+              <Text
+                style={[
+                  styles.statusText,
+                  {
+                    color: loading
+                      ? colors.secondary
+                      : ready
+                        ? colors.primary
+                        : colors.accent,
+                  },
+                ]}
+              >
+                {loading
+                  ? "ĐANG LẤY VỊ TRÍ"
+                  : ready
+                    ? "VỊ TRÍ ĐỦ CHÍNH XÁC"
+                    : shownLocation
+                      ? "TÍN HIỆU YẾU"
+                      : "CHƯA CÓ VỊ TRÍ"}
+              </Text>
+            </View>
+            <Text style={[styles.deviceLabel, { color: colors.subtle }]}>
+              DEVICE GPS
+            </Text>
+          </View>
+          <View style={styles.addressBlock}>
+            <Text style={[styles.label, { color: colors.textMuted }]}>
+              VỊ TRÍ HIỆN TẠI
+            </Text>
+            <Text style={[styles.address, { color: colors.text }]}>
+              {shownLocation
+                ? addressParts[0] || "Đã ghi nhận vị trí GPS"
+                : loading
+                  ? "Đang xác định vị trí…"
+                  : "Chờ vị trí thiết bị"}
+            </Text>
+            <Text
+              style={[styles.addressDetail, { color: colors.textSecondary }]}
+            >
+              {shownLocation
+                ? addressParts.slice(1).join(", ") ||
+                  "Tọa độ được ghi nhận từ thiết bị."
+                : "Bật GPS và cho phép EcoAlert truy cập vị trí."}
+            </Text>
+          </View>
+          <View style={[styles.metrics, { backgroundColor: colors.elevated }]}>
+            <View style={styles.metric}>
+              <Text style={[styles.label, { color: colors.textMuted }]}>
+                TỌA ĐỘ GPS
+              </Text>
+              <Text style={[styles.coordinate, { color: colors.text }]}>
+                {shownLocation?.latitude.toFixed(6) ?? "—"}
+              </Text>
+              <Text style={[styles.coordinate, { color: colors.text }]}>
+                {shownLocation?.longitude.toFixed(6) ?? "—"}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.metric,
+                styles.metricRight,
+                { borderLeftColor: colors.divider },
+              ]}
+            >
+              <Text style={[styles.label, { color: colors.textMuted }]}>
+                ĐỘ CHÍNH XÁC
+              </Text>
+              <Text style={[styles.accuracy, { color: toneColor }]}>
+                {shownLocation
+                  ? `±${Math.round(shownLocation.accuracyMeters)} m`
+                  : "—"}
+              </Text>
+              <Text style={[styles.rating, { color: toneColor }]}>
+                {accuracyLabel}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.trustNote}>
+            <ShieldCheck size={16} color={colors.primary} />
+            <Text style={[styles.trustText, { color: colors.textMuted }]}>
+              {addressResolved
+                ? "Địa chỉ được xác định tự động từ GPS thiết bị."
+                : "Tọa độ được lấy trực tiếp từ thiết bị. Địa chỉ sẽ hiển thị khi dịch vụ khả dụng."}
+            </Text>
+          </View>
+        </View>
+        {error ? (
+          <View
+            style={[
+              styles.errorCard,
+              { backgroundColor: "rgba(248,113,113,0.12)" },
+            ]}
+          >
+            <TriangleAlert size={20} color={colors.destructive} />
+            <View style={styles.errorCopy}>
+              <Text style={[styles.errorTitle, { color: colors.text }]}>
+                {errorCode === "PERMISSION_DENIED"
+                  ? "Cần quyền vị trí"
+                  : "Chưa thể lấy GPS"}
+              </Text>
+              <Text style={[styles.errorBody, { color: colors.textSecondary }]}>
+                {errorCode === "PERMISSION_DENIED"
+                  ? "Cho phép truy cập vị trí để tạo báo cáo tại hiện trường."
+                  : "Hãy kiểm tra GPS và thử lại."}
+              </Text>
+              {errorCode === "PERMISSION_DENIED" ? (
+                <TouchableOpacity
+                  onPress={() => void Linking.openSettings()}
+                  style={styles.textButton}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={[styles.textButtonText, { color: colors.secondary }]}
+                  >
+                    MỞ CÀI ĐẶT
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+        {!ready && shownLocation ? (
+          <Text style={[styles.warningText, { color: colors.accent }]}>
+            Vị trí hiện chưa đủ chính xác. Hãy di chuyển đến nơi thoáng hơn hoặc
+            bật độ chính xác cao rồi lấy lại GPS.
+          </Text>
+        ) : null}
+      </ScrollView>
+      <ReportBottomActions>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("ReportCamera")}
+          disabled={!ready || loading}
+          style={[
+            styles.primaryButton,
+            {
+              backgroundColor: colors.primary,
+              opacity: ready && !loading ? 1 : 0.45,
+            },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Tiếp tục chụp ảnh"
+        >
+          <Camera size={18} color="#07101F" />
+          <Text style={styles.primaryText}>TIẾP TỤC CHỤP ẢNH</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => void acquireLocation()}
+          disabled={loading}
+          style={styles.textButton}
+          accessibilityRole="button"
+        >
+          <RefreshCw size={15} color={colors.textMuted} />
+          <Text style={[styles.textButtonText, { color: colors.textMuted }]}>
+            {loading ? "Đang lấy vị trí…" : "LẤY LẠI GPS"}
+          </Text>
+        </TouchableOpacity>
+      </ReportBottomActions>
+    </View>
+  );
 };
-
-const ChevronIcon = () => <Text style={styles.chevron}>→</Text>;
-const styles = StyleSheet.create({ container: { flex: 1 }, content: { padding: 16, gap: 18 }, title: { fontSize: 22, lineHeight: 28, fontWeight: "900", letterSpacing: -0.45 }, subtitle: { marginTop: 7, fontSize: 13, lineHeight: 19 }, technicalBar: { minHeight: 42, borderWidth: 1, borderRadius: 10, paddingHorizontal: 11, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, technicalItem: { flexDirection: "row", alignItems: "center", gap: 6 }, technicalText: { fontSize: 9, fontWeight: "900", letterSpacing: 0.8 }, technicalAccuracy: { fontSize: 9, fontWeight: "800" }, locationCard: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 15 }, emptyLocation: { minHeight: 180, alignItems: "center", justifyContent: "center" }, emptyLocationText: { marginTop: 9, fontSize: 12, fontWeight: "700" }, locationStatusRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, statusPill: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 6 }, statusText: { fontSize: 9, fontWeight: "900", letterSpacing: 0.4 }, deviceChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 5, fontSize: 8, fontWeight: "900", letterSpacing: 0.7 }, addressRow: { flexDirection: "row", gap: 10 }, pinBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" }, addressCopy: { flex: 1 }, addressLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.8 }, address: { marginTop: 4, fontSize: 15, lineHeight: 21, fontWeight: "800" }, geocodeWarning: { marginTop: 4, fontSize: 10, lineHeight: 15 }, metrics: { borderTopWidth: 1, paddingTop: 14, flexDirection: "row" }, metric: { flex: 1 }, metricRight: { borderLeftWidth: 1, paddingLeft: 16 }, metricLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.8 }, metricValue: { marginTop: 5, fontSize: 13, fontWeight: "800", fontVariant: ["tabular-nums"] }, accuracyValue: { marginTop: 5, fontSize: 21, fontWeight: "900" }, accuracyRating: { fontSize: 10, fontWeight: "800" }, integrityNote: { borderWidth: 1, borderRadius: 13, padding: 13, flexDirection: "row", gap: 10 }, noteCopy: { flex: 1 }, noteTitle: { fontSize: 12, fontWeight: "800" }, noteBody: { marginTop: 3, fontSize: 11, lineHeight: 16 }, errorCard: { borderWidth: 1, borderRadius: 13, padding: 13, flexDirection: "row", gap: 10 }, warningCard: { borderWidth: 1, borderRadius: 13, padding: 13, flexDirection: "row", gap: 10 }, settingsButton: { minHeight: 36, alignSelf: "flex-start", justifyContent: "center", marginTop: 5 }, settingsText: { fontSize: 10, fontWeight: "900", letterSpacing: 0.5 }, secondaryButton: { minHeight: 48, borderWidth: 1, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }, secondaryButtonText: { fontSize: 12, fontWeight: "900", letterSpacing: 0.4 }, primaryButton: { minHeight: 52, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }, primaryButtonText: { color: "#07101F", fontSize: 13, fontWeight: "900", letterSpacing: 0.45 }, chevron: { color: "#07101F", fontSize: 19, fontWeight: "900" } });
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  content: { padding: 16, paddingBottom: 24, gap: 24 },
+  locationCard: { borderWidth: 1, borderRadius: 18, padding: 20, gap: 24 },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  statusText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
+  deviceLabel: { fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
+  addressBlock: { gap: 8 },
+  label: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
+  address: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: "800",
+    letterSpacing: -0.4,
+  },
+  addressDetail: { fontSize: 13, lineHeight: 19 },
+  metrics: { flexDirection: "row", padding: 16, borderRadius: 12 },
+  metric: { flex: 1, gap: 8 },
+  metricRight: { borderLeftWidth: 1, paddingLeft: 16 },
+  coordinate: {
+    fontSize: 15,
+    fontWeight: "700",
+    fontVariant: ["tabular-nums"],
+  },
+  accuracy: { fontSize: 22, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  rating: { fontSize: 11, fontWeight: "600" },
+  trustNote: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
+  trustText: { flex: 1, fontSize: 11, lineHeight: 16 },
+  errorCard: { borderRadius: 16, padding: 16, flexDirection: "row", gap: 12 },
+  errorCopy: { flex: 1 },
+  errorTitle: { fontSize: 15, fontWeight: "700" },
+  errorBody: { fontSize: 13, lineHeight: 19, marginTop: 4 },
+  warningText: { fontSize: 13, lineHeight: 19 },
+  primaryButton: {
+    minHeight: 52,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  primaryText: {
+    color: "#07101F",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+  },
+  textButton: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  textButtonText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6 },
+});
