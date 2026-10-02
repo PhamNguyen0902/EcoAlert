@@ -1,7 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
-  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -33,6 +38,7 @@ import { WasteDetectionChips } from "../components/WasteDetectionChips";
 import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
+import { WasteDetectionImage } from "../../../components/vision/WasteDetectionImage";
 
 type Props = NativeStackScreenProps<
   ReportFlowParamList,
@@ -55,6 +61,19 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
   const [guideVisible, setGuideVisible] = useState(false);
   const runningRef = useRef(false);
   const capture = draft.capture;
+  const requiresManualReview =
+    draft.imageValidation.backendValidation?.decision === "UNCERTAIN";
+  const imageDetections = useMemo(
+    () =>
+      draft.imageValidation.state === "VALID"
+        ? draft.imageValidation.detectedObjects.map((item) => ({
+            materialClass: item.label,
+            confidence: item.confidence ?? NaN,
+            bbox: item.bbox,
+          }))
+        : [],
+    [draft.imageValidation.state, draft.imageValidation.detectedObjects],
+  );
 
   const analyze = useCallback(async () => {
     if (!capture || runningRef.current) return;
@@ -250,24 +269,29 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
           description="Nhận diện nội dung rác thải trước khi gửi báo cáo."
         />
         <View style={styles.previewFrame}>
-          <Image
-            source={{
-              uri: capture.displayLocalUri || capture.originalLocalUri,
-            }}
-            style={styles.preview}
-            resizeMode="cover"
+          <WasteDetectionImage
+            imageUri={capture.originalLocalUri}
+            detections={imageDetections}
+            height={240}
           />
           <Text
             style={[
               styles.previewBadge,
               {
-                color: state === "VALID" ? colors.primary : "#F8FAFC",
+                color:
+                  state === "VALID"
+                    ? requiresManualReview
+                      ? colors.accent
+                      : colors.primary
+                    : "#F8FAFC",
                 backgroundColor: "rgba(7,16,31,0.82)",
               },
             ]}
           >
             {state === "VALID"
-              ? "PHÙ HỢP"
+              ? requiresManualReview
+                ? "CẦN KIỂM TRA THÊM"
+                : "ĐÃ NHẬN DIỆN"
               : state === "PROCESSING"
                 ? "ĐANG PHÂN TÍCH"
                 : "ẢNH HIỆN TRƯỜNG"}
@@ -315,12 +339,15 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
                 </View>
                 <View style={styles.resultCopy}>
                   <Text style={[styles.resultTitle, { color: colors.text }]}>
-                    Ảnh hợp lệ
+                    {requiresManualReview
+                      ? "Cần kiểm tra thêm"
+                      : "Đã nhận diện rác thải"}
                   </Text>
                   <Text
                     style={[styles.resultBody, { color: colors.textMuted }]}
                   >
-                    Phát hiện nội dung phù hợp với báo cáo rác.
+                    {draft.imageValidation.detectedObjects.length} vùng được
+                    phát hiện
                   </Text>
                 </View>
               </View>
@@ -349,14 +376,20 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
                 </View>
               ) : null}
             </View>
+            {requiresManualReview ? (
+              <Text style={{ color: "#F59E0B", fontSize: 12, lineHeight: 18 }}>
+                Kết quả cần được cán bộ kiểm tra thêm.
+              </Text>
+            ) : null}
             <View style={styles.detectionSection}>
               <Text
                 style={[styles.technicalLabel, { color: colors.textMuted }]}
               >
-                ĐỐI TƯỢNG PHÁT HIỆN
+                PHÁT HIỆN TRONG ẢNH
               </Text>
               <WasteDetectionChips
                 detections={draft.imageValidation.detectedObjects}
+                showCount
               />
             </View>
             {draft.imageValidation.summary ? (
@@ -398,7 +431,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
             </Text>
             <Text style={[styles.invalidBody, { color: colors.textSecondary }]}>
               {state === "INVALID"
-                ? "EcoAlert chưa phát hiện đủ bằng chứng về rác trong ảnh này."
+                ? "Ảnh chưa có vùng rác được nhận diện."
                 : draft.imageValidation.reason}
             </Text>
             {state === "INVALID" ? (
@@ -555,7 +588,6 @@ const styles = StyleSheet.create({
   },
   centerTitle: { marginTop: 16, fontSize: 22, fontWeight: "800" },
   previewFrame: { borderRadius: 16, overflow: "hidden" },
-  preview: { width: "100%", height: 200, backgroundColor: "#081522" },
   previewBadge: {
     position: "absolute",
     top: 12,

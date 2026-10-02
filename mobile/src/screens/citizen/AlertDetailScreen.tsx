@@ -37,6 +37,8 @@ import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
+import { WasteDetectionEvidence } from "../../components/vision/WasteDetectionEvidence";
+import { matchVisionEvidence } from "../../utils/visionBoundingBox";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
@@ -127,6 +129,12 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
   const evidencePhotoUrls = alert?.fieldEvidence?.length
     ? alert.fieldEvidence.map((item) => item.displayUrl || item.originalUrl)
     : (alert?.mediaUrls || []);
+  const originalEvidenceUrls = alert?.fieldEvidence?.length
+    ? alert.fieldEvidence.map((item) => item.originalUrl)
+    : (alert?.mediaUrls || []);
+  const matchedVisionEvidence = alert?.analysisPipeline === "WASTE_DETECTION"
+    ? matchVisionEvidence(originalEvidenceUrls, alert.visionEvidence ?? [])
+    : [];
 
   const officerDisplayName =
     alert?.assignedOfficerName ||
@@ -520,6 +528,8 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
             </ScrollView>
           </View>
         ) : null}
+
+        {matchedVisionEvidence.map(evidence => <WasteDetectionEvidence key={evidence.imageUrl} evidence={evidence} />)}
 
         {/* Location Map */}
         <View style={styles.sectionBox}>

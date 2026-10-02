@@ -145,6 +145,8 @@ export interface Alert {
   aiPipelineVersion?: "openrouter-multimodal-v1" | null;
   aiOverallAnalysis?: AiOverallAnalysis | null;
   visionEvidence?: VisionEvidence[];
+  /** Existing backend pipeline discriminator; used only to choose the detection viewer. */
+  analysisPipeline?: "WASTE_DETECTION" | "SEMANTIC_ONLY";
   aiSemanticProcessingTimeMs?: number | null;
   officerNote?: string;
   arrivedAt?: string;
