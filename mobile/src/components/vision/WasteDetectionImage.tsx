@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Animated,
   Image,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -17,9 +18,13 @@ import type { ImageLoadEvent } from "react-native";
 import type { VisionEvidence } from "../../types";
 import {
   calculateContainedImageRect,
+  calculateReportImageHeight,
   formatDetectionConfidence,
+  getDetectionConfidenceColor,
+  getShortWasteDetectionLabel,
   getWasteDetectionLabel,
   positionDetectionLabel,
+  shouldNumberDetectionLabels,
   transformBoundingBox,
 } from "../../utils/visionBoundingBox";
 import type {
@@ -45,7 +50,7 @@ export const WasteDetectionImage = (props: WasteDetectionImageProps) => (
 function DetectionImageSession({
   imageUri,
   detections,
-  height = 240,
+  height,
   showLabels = true,
   resizeMode = "contain",
   emptyMessage,
@@ -57,6 +62,7 @@ function DetectionImageSession({
   });
   const [loaded, setLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const active = useRef(true);
   const handleImageLoad = useCallback(({ nativeEvent }: ImageLoadEvent) => {
@@ -119,6 +125,10 @@ function DetectionImageSession({
         : [];
     });
   }, [original, rect, loaded, imageError, detections]);
+  const numbered = shouldNumberDetectionLabels(boxes.map(({ box }) => box));
+  const selected = boxes.find(({ key }) => key === selectedKey);
+  const frameHeight =
+    height ?? calculateReportImageHeight(original, container.width);
 
   useEffect(() => {
     opacity.setValue(0);
@@ -134,7 +144,7 @@ function DetectionImageSession({
   return (
     <View>
       <View
-        style={[styles.frame, { height }]}
+        style={[styles.frame, { height: frameHeight }]}
         onLayout={({ nativeEvent: { layout } }) => {
           setContainer((current) =>
             current.width === layout.width && current.height === layout.height
@@ -165,31 +175,79 @@ function DetectionImageSession({
         ) : null}
         <Animated.View
           style={[StyleSheet.absoluteFill, { opacity }]}
-          pointerEvents="none"
+          pointerEvents="box-none"
           accessible={false}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         >
           {rect &&
-            boxes.map(({ box, detection, key }) => (
+            boxes.map(({ box, detection, key }, index) => (
               <React.Fragment key={key}>
-                <View style={[styles.box, box]} />
-                {showLabels && rect.height >= 24 ? (
+                <Pressable
+                  onPress={() =>
+                    setSelectedKey((current) => (current === key ? null : key))
+                  }
+                  style={[
+                    styles.box,
+                    box,
+                    key === selectedKey && styles.selectedBox,
+                  ]}
+                  accessible={false}
+                />
+                {showLabels &&
+                rect.height >= 24 &&
+                !(
+                  key === selectedKey &&
+                  !numbered &&
+                  box.width >= 80 &&
+                  box.height >= 36
+                ) ? (
                   <DetectionLabel
                     box={box}
                     rect={rect}
-                    text={[
-                      getWasteDetectionLabel(detection.materialClass),
-                      formatDetectionConfidence(detection.confidence),
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    numbered={numbered || box.width < 80 || box.height < 36}
+                    color={getDetectionConfidenceColor(detection.confidence)}
+                    onPress={() =>
+                      setSelectedKey((current) =>
+                        current === key ? null : key,
+                      )
+                    }
+                    text={
+                      numbered || box.width < 80 || box.height < 36
+                        ? String(index + 1)
+                        : [
+                            getShortWasteDetectionLabel(
+                              detection.materialClass,
+                            ),
+                            formatDetectionConfidence(detection.confidence),
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                    }
                   />
                 ) : null}
               </React.Fragment>
             ))}
+          {showLabels && selected && rect ? (
+            <DetectionLabel
+              box={selected.box}
+              rect={rect}
+              color={getDetectionConfidenceColor(selected.detection.confidence)}
+              text={[
+                getWasteDetectionLabel(selected.detection.materialClass),
+                formatDetectionConfidence(selected.detection.confidence),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+          ) : null}
         </Animated.View>
       </View>
+      {showLabels && boxes.length ? (
+        <Text style={styles.message}>
+          {boxes.length} vùng được đánh dấu · Chạm một vùng để xem chi tiết.
+        </Text>
+      ) : null}
       {loaded && !imageError && !original ? (
         <Text style={styles.message}>
           Chưa xác định được kích thước ảnh để vẽ vùng nhận diện.
@@ -206,18 +264,36 @@ function DetectionLabel({
   box,
   rect,
   text,
+  numbered = false,
+  color,
+  onPress,
 }: {
   box: ScreenBoundingBox;
   rect: ContainedImageRect;
   text: string;
+  numbered?: boolean;
+  color: string;
+  onPress?: () => void;
 }) {
-  const [size, setSize] = useState<ImageSize>({ width: 140, height: 22 });
+  const [size, setSize] = useState<ImageSize>({
+    width: numbered ? 18 : 90,
+    height: numbered ? 18 : 22,
+  });
   const position = positionDetectionLabel(box, size, rect);
   return (
-    <View
+    <Pressable
+      onPress={onPress}
+      pointerEvents={onPress ? "auto" : "none"}
+      accessible={false}
       style={[
         styles.label,
-        { left: position.left, top: position.top, maxWidth: rect.width },
+        numbered && styles.numberBadge,
+        {
+          left: position.left,
+          top: position.top,
+          maxWidth: rect.width,
+          borderColor: color,
+        },
       ]}
       onLayout={({ nativeEvent: { layout } }) =>
         setSize((current) =>
@@ -227,10 +303,10 @@ function DetectionLabel({
         )
       }
     >
-      <Text style={styles.labelText} numberOfLines={1}>
+      <Text style={[styles.labelText, { color }]} numberOfLines={1}>
         {text}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -238,16 +314,17 @@ const styles = StyleSheet.create({
   frame: {
     width: "100%",
     overflow: "hidden",
-    borderRadius: 12,
-    backgroundColor: "#07101F",
+    borderRadius: 16,
+    backgroundColor: "#050D17",
   },
   box: {
     position: "absolute",
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: "#22C55E",
-    backgroundColor: "rgba(34,197,94,0.05)",
-    borderRadius: 4,
+    backgroundColor: "rgba(34,197,94,0.025)",
+    borderRadius: 3,
   },
+  selectedBox: { borderWidth: 3, backgroundColor: "rgba(34,197,94,0.1)" },
   label: {
     position: "absolute",
     borderRadius: 4,
@@ -262,6 +339,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 14,
     fontWeight: "700",
+  },
+  numberBadge: {
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 3,
+    paddingVertical: 0,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
   },
   loading: {
     position: "absolute",

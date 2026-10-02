@@ -205,3 +205,78 @@ test("extreme numeric inputs cannot create infinite or collapsed rectangles", ()
     null,
   );
 });
+
+test("image height adapts to portrait/landscape and stays capped at four mobile widths", () => {
+  for (const screenWidth of [360, 390, 412, 430]) {
+    const width = screenWidth - 32;
+    const portrait = { width: 1080, height: 1920 };
+    const landscape = { width: 1920, height: 1080 };
+    assert.equal(utils.calculateReportImageHeight(portrait, width), 440);
+    assert.equal(utils.calculateReportImageHeight(landscape, width), 240);
+    assert.equal(
+      utils.calculateReportImageHeight(portrait, width, "confirmation"),
+      320,
+    );
+    const rect = contain(portrait, { width, height: 440 });
+    const box = transform([100, 200, 900, 1700], portrait, rect);
+    assert.equal(box.left, rect.offsetX + 100 * rect.scale);
+    assert.equal(box.top, 200 * rect.scale);
+    assert.ok(box.left + box.width <= width);
+    assert.ok(box.top + box.height <= 440);
+  }
+  assert.equal(utils.calculateReportImageHeight(null, 390), 240);
+  assert.equal(
+    utils.calculateReportImageHeight({ width: 0, height: 0 }, 390),
+    240,
+  );
+  assert.equal(
+    utils.calculateReportImageHeight({ width: 100, height: 200 }, NaN),
+    240,
+  );
+});
+
+test("one/four separated boxes allow short labels, thirteen boxes require numbers", () => {
+  const boxes = Array.from({ length: 13 }, (_, index) => ({
+    left: index * 25,
+    top: 0,
+    width: 20,
+    height: 40,
+  }));
+  assert.equal(utils.shouldNumberDetectionLabels(boxes.slice(0, 1)), false);
+  assert.equal(utils.shouldNumberDetectionLabels(boxes.slice(0, 4)), false);
+  assert.equal(utils.shouldNumberDetectionLabels(boxes), true);
+  assert.equal(utils.shouldNumberDetectionLabels([]), false);
+});
+
+test("overlapping boxes switch to numbers even when there are fewer than six", () => {
+  assert.equal(
+    utils.shouldNumberDetectionLabels([
+      { left: 10, top: 10, width: 100, height: 100 },
+      { left: 20, top: 20, width: 100, height: 100 },
+    ]),
+    true,
+  );
+});
+
+test("confidence colors do not filter or reclassify low-confidence detections", () => {
+  const values = [0.7, 0.69, 0.45, 0.44, 0.3, 0.29];
+  assert.deepEqual(values.map(utils.getDetectionConfidenceColor), [
+    "#22C55E",
+    "#38BDF8",
+    "#38BDF8",
+    "#F59E0B",
+    "#F59E0B",
+    "#94A3B8",
+  ]);
+  assert.equal(utils.getDetectionConfidenceColor(undefined), "#94A3B8");
+  assert.equal(utils.getDetectionConfidenceColor(1.1), "#94A3B8");
+  assert.equal(
+    group(
+      values.map((confidence) => ({
+        materialClass: "plastic_bag",
+        confidence,
+      })),
+    )[0].count,
+    6,
+  );
+});

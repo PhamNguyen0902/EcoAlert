@@ -53,10 +53,11 @@ export const ReportProgress = ({ step }: { step: 1 | 2 | 3 | 4 }) => {
               {
                 color:
                   index + 1 === step
-                    ? colors.text
+                    ? colors.primary
                     : index + 1 < step
                       ? colors.primary
                       : colors.subtle,
+                opacity: index + 1 < step ? 0.6 : 1,
               },
             ]}
             numberOfLines={1}

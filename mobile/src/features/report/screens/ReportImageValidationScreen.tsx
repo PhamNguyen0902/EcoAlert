@@ -259,6 +259,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
     >
       <ReportHeader onBack={navigation.goBack} />
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -266,32 +267,30 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         <ReportScreenIntro
           eyebrow="KIỂM TRA NỘI DUNG"
           title="Kiểm tra ảnh hiện trường"
-          description="Nhận diện nội dung rác thải trước khi gửi báo cáo."
+          description={
+            state === "PROCESSING"
+              ? "EcoAlert đang phân tích ảnh..."
+              : state === "VALID"
+                ? "EcoAlert đã phân tích ảnh để xác định các vùng rác được phát hiện."
+                : "Kiểm tra nội dung ảnh trước khi gửi báo cáo."
+          }
         />
         <View style={styles.previewFrame}>
           <WasteDetectionImage
             imageUri={capture.originalLocalUri}
             detections={imageDetections}
-            height={240}
           />
           <Text
             style={[
               styles.previewBadge,
               {
-                color:
-                  state === "VALID"
-                    ? requiresManualReview
-                      ? colors.accent
-                      : colors.primary
-                    : "#F8FAFC",
+                color: state === "VALID" ? colors.primary : "#F8FAFC",
                 backgroundColor: "rgba(7,16,31,0.82)",
               },
             ]}
           >
             {state === "VALID"
-              ? requiresManualReview
-                ? "CẦN KIỂM TRA THÊM"
-                : "ĐÃ NHẬN DIỆN"
+              ? "✓ ĐÃ PHÂN TÍCH"
               : state === "PROCESSING"
                 ? "ĐANG PHÂN TÍCH"
                 : "ẢNH HIỆN TRƯỜNG"}
@@ -325,7 +324,10 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
             <View
               style={[
                 styles.analysisCard,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                {
+                  backgroundColor: colors.soft,
+                  borderColor: "rgba(34,197,94,0.20)",
+                },
               ]}
             >
               <View style={styles.resultHeading}>
@@ -335,7 +337,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
                     { backgroundColor: colors.greenSoft },
                   ]}
                 >
-                  <CheckCircle2 size={22} color={colors.primary} />
+                  <CheckCircle2 size={20} color={colors.primary} />
                 </View>
                 <View style={styles.resultCopy}>
                   <Text style={[styles.resultTitle, { color: colors.text }]}>
@@ -351,36 +353,12 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
                   </Text>
                 </View>
               </View>
-              <View style={styles.completedRow}>
-                <CheckCircle2 size={16} color={colors.primary} />
-                <Text
-                  style={[
-                    styles.completedText,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  Nhận diện rác thải hoàn tất
-                </Text>
-              </View>
-              {draft.imageValidation.summary ? (
-                <View style={styles.completedRow}>
-                  <CheckCircle2 size={16} color={colors.primary} />
-                  <Text
-                    style={[
-                      styles.completedText,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    Đã có kết quả phân tích bối cảnh
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-            {requiresManualReview ? (
-              <Text style={{ color: "#F59E0B", fontSize: 12, lineHeight: 18 }}>
-                Kết quả cần được cán bộ kiểm tra thêm.
+              <Text style={[styles.resultSubline, { color: colors.textMuted }]}>
+                {requiresManualReview
+                  ? "Kết quả nhận diện cần được cán bộ kiểm tra thêm."
+                  : "Ảnh có nội dung phù hợp với phạm vi báo cáo."}
               </Text>
-            ) : null}
+            </View>
             <View style={styles.detectionSection}>
               <Text
                 style={[styles.technicalLabel, { color: colors.textMuted }]}
@@ -579,7 +557,8 @@ const Guide = ({
 );
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 24, gap: 24 },
+  scroll: { flex: 1, minHeight: 0 },
+  content: { padding: 16, paddingBottom: 24, gap: 20 },
   centered: {
     flex: 1,
     alignItems: "center",
@@ -592,11 +571,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 12,
     right: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     borderRadius: 8,
     overflow: "hidden",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
     letterSpacing: 0.6,
   },
@@ -617,17 +596,16 @@ const styles = StyleSheet.create({
   processingHint: { fontSize: 11, lineHeight: 16 },
   resultHeading: { flexDirection: "row", alignItems: "center", gap: 12 },
   resultIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
   resultCopy: { flex: 1 },
-  resultTitle: { fontSize: 18, fontWeight: "800" },
+  resultTitle: { fontSize: 15, fontWeight: "700" },
   resultBody: { marginTop: 4, fontSize: 13, lineHeight: 19 },
-  completedRow: { flexDirection: "row", gap: 8, alignItems: "center" },
-  completedText: { flex: 1, fontSize: 13, lineHeight: 19 },
+  resultSubline: { fontSize: 12, lineHeight: 18 },
   detectionSection: { gap: 12 },
   contextSection: { gap: 8 },
   contextText: { fontSize: 13, lineHeight: 19 },

@@ -26,5 +26,12 @@ export const ReportBottomActions = ({
   );
 };
 const styles = StyleSheet.create({
-  actions: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, gap: 8 },
+  // A non-shrinking sibling of ScrollView reserves footer space without an absolute overlay.
+  actions: {
+    flexShrink: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    gap: 8,
+  },
 });

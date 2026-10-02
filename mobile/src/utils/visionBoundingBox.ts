@@ -23,6 +23,54 @@ const validSize = ({ width, height }: ImageSize) =>
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(value, max));
 
+/** Derive height from the real image, then cap it for a mobile report (contain, never crop). */
+export function calculateReportImageHeight(
+  original: ImageSize | null,
+  width: number,
+  variant: "analysis" | "confirmation" = "analysis",
+) {
+  if (
+    !original ||
+    !validSize(original) ||
+    !Number.isFinite(width) ||
+    width <= 0
+  )
+    return 240;
+  const naturalHeight = width * (original.height / original.width);
+  if (variant === "confirmation") return clamp(naturalHeight, 180, 320);
+  return original.height > original.width
+    ? clamp(naturalHeight, 360, 440)
+    : clamp(naturalHeight, 240, 320);
+}
+
+/** Presentation only: never filters detections or changes the model's threshold. */
+export function getDetectionConfidenceColor(confidence?: number | null) {
+  if (formatDetectionConfidence(confidence ?? undefined) === null)
+    return "#94A3B8";
+  if (confidence! >= 0.7) return "#22C55E";
+  if (confidence! >= 0.45) return "#38BDF8";
+  if (confidence! >= 0.3) return "#F59E0B";
+  return "#94A3B8";
+}
+
+export function shouldNumberDetectionLabels(
+  boxes: readonly ScreenBoundingBox[],
+) {
+  if (boxes.length > 5) return true;
+  // Overlapping boxes also use numbers; at most the selected box gets a text label.
+  return boxes.some((box, index) =>
+    boxes
+      .slice(index + 1)
+      .some(
+        (other) =>
+          box.left < other.left + other.width &&
+          box.left + box.width > other.left &&
+          box.top < other.top + other.height &&
+          box.top + box.height > other.top,
+      ),
+  );
+}
+
 export function calculateContainedImageRect(
   original: ImageSize,
   container: ImageSize,
@@ -156,6 +204,17 @@ const MATERIAL_LABELS: Readonly<Record<string, string>> = {
 };
 export const getWasteDetectionLabel = (materialClass: string) =>
   MATERIAL_LABELS[materialClass] ?? materialClass;
+
+const SHORT_MATERIAL_LABELS: Readonly<Record<string, string>> = {
+  plastic_bag: "Túi",
+  plastic_bottle: "Chai",
+  plastic_cup: "Cốc",
+  metal_can: "Lon",
+  glass_bottle: "Chai thủy tinh",
+  cardboard: "Carton",
+};
+export const getShortWasteDetectionLabel = (materialClass: string) =>
+  SHORT_MATERIAL_LABELS[materialClass] ?? getWasteDetectionLabel(materialClass);
 
 /** Exact URL match deliberately preserves paths/query strings; no index or displayUrl fallback. */
 export function matchVisionEvidence<T extends { imageUrl: string }>(

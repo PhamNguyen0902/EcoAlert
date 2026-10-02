@@ -25,6 +25,7 @@ import { useReportTheme } from "../useReportTheme";
 import { LinearGradient } from "expo-linear-gradient";
 import { formatCaptureTimestamp } from "../../../utils/watermark";
 import { persistOriginalFieldImage } from "../../../utils/watermark";
+import { normalizeFieldCaptureImage } from "../../../utils/fieldCaptureImage";
 import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 
@@ -82,8 +83,9 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       });
       if (!picture?.uri) throw new Error("Camera did not return an image");
       const capturedAt = new Date().toISOString();
+      const normalized = await normalizeFieldCaptureImage(picture.uri);
       const originalLocalUri = await persistOriginalFieldImage(
-        picture.uri,
+        normalized.uri,
         capturedAt,
       );
       setDraft((current) => ({
@@ -91,8 +93,8 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         capture: {
           originalLocalUri,
           capturedAt,
-          width: picture.width,
-          height: picture.height,
+          width: normalized.width,
+          height: normalized.height,
         },
         imageValidation: { state: "IDLE", detectedObjects: [] },
       }));
@@ -207,6 +209,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           facing="back"
           flash={flash}
           mode="picture"
+          responsiveOrientationWhenOrientationLocked
           onCameraReady={() => setCameraReady(true)}
           onMountError={() => {
             setCameraReady(false);

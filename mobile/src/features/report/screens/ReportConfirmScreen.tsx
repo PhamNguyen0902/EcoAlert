@@ -1,7 +1,6 @@
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -50,6 +49,7 @@ import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
+import { ReportEvidenceImage } from "../components/ReportEvidenceImage";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportConfirm">;
 const isBackendUrl = (value?: string): value is string =>
@@ -239,7 +239,14 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
       ? colors.primary
       : draft.imageValidation.severity?.toLowerCase() === "critical"
         ? colors.destructive
-        : colors.accent;
+        : draft.imageValidation.severity?.toLowerCase() === "high"
+          ? colors.accent
+          : colors.secondary;
+  // UNCLASSIFIED is a real API outcome, not a completed category or a made-up default.
+  const categoryReady = Boolean(
+    draft.imageValidation.suggestedCategory &&
+    draft.imageValidation.suggestedCategory !== "UNCLASSIFIED",
+  );
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -253,6 +260,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
       >
         <ReportHeader onBack={navigation.goBack} />
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -264,45 +272,79 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             description="Kiểm tra thông tin và bổ sung mô tả trước khi gửi."
           />
           <View style={styles.heroImage}>
-            <Image
-              source={{
-                uri: capture.displayLocalUri || capture.originalLocalUri,
-              }}
-              style={styles.image}
-              resizeMode="cover"
+            <ReportEvidenceImage
+              imageUri={capture.displayLocalUri || capture.originalLocalUri}
+              fallbackUri={capture.originalLocalUri}
             />
             <View style={styles.imageBadge}>
               <CheckCircle2 size={12} color="#22C55E" />
               <Text style={styles.imageBadgeText}>ẢNH PHÙ HỢP</Text>
             </View>
           </View>
-          <View style={styles.chips}>
-            <View style={[styles.chip, { backgroundColor: colors.greenSoft }]}>
-              <Text style={[styles.chipText, { color: colors.primary }]}>
-                {draft.imageValidation.suggestedCategory
-                  ? getCategoryLabel(
-                      draft.imageValidation.suggestedCategory,
-                      "vi",
-                    ).toUpperCase()
-                  : "CHƯA XÁC ĐỊNH"}
+          <View style={styles.analysisMetadata}>
+            <View style={styles.analysisField}>
+              <Text
+                style={[styles.technicalLabel, { color: colors.textMuted }]}
+              >
+                PHÂN LOẠI
               </Text>
+              <View style={styles.analysisValueRow}>
+                {!categoryReady ? (
+                  <View
+                    style={[
+                      styles.pendingDot,
+                      { backgroundColor: colors.secondary },
+                    ]}
+                  />
+                ) : null}
+                <Text
+                  style={[
+                    styles.analysisValue,
+                    {
+                      color: categoryReady ? colors.text : colors.secondary,
+                    },
+                  ]}
+                >
+                  {categoryReady && draft.imageValidation.suggestedCategory
+                    ? getCategoryLabel(
+                        draft.imageValidation.suggestedCategory,
+                        "vi",
+                      )
+                    : draft.imageValidation.suggestedCategory === "UNCLASSIFIED"
+                      ? "Chờ cán bộ xác nhận"
+                      : "Đang hoàn tất"}
+                </Text>
+              </View>
             </View>
-            <View
-              style={[
-                styles.chip,
-                { backgroundColor: "rgba(245,158,11,0.12)" },
-              ]}
-            >
-              <Text style={[styles.chipText, { color: severityColor }]}>
-                {draft.imageValidation.severity
-                  ? getSeverityLabel(
-                      draft.imageValidation.severity,
-                      "vi",
-                    ).toUpperCase()
-                  : "ĐANG ĐÁNH GIÁ"}
+            <View style={styles.analysisField}>
+              <Text
+                style={[styles.technicalLabel, { color: colors.textMuted }]}
+              >
+                MỨC ĐỘ
               </Text>
+              <View style={styles.analysisValueRow}>
+                {!draft.imageValidation.severity ? (
+                  <View
+                    style={[
+                      styles.pendingDot,
+                      { backgroundColor: colors.secondary },
+                    ]}
+                  />
+                ) : null}
+                <Text style={[styles.analysisValue, { color: severityColor }]}>
+                  {draft.imageValidation.severity
+                    ? getSeverityLabel(draft.imageValidation.severity, "vi")
+                    : "Đang đánh giá"}
+                </Text>
+              </View>
             </View>
           </View>
+          {!categoryReady || !draft.imageValidation.severity ? (
+            <Text style={[styles.pendingNote, { color: colors.textMuted }]}>
+              Chưa có đủ kết quả phân tích bối cảnh. AI sẽ tiếp tục phân tích
+              sau khi gửi báo cáo; cán bộ sẽ xác nhận kết quả.
+            </Text>
+          ) : null}
           {draft.imageValidation.detectedObjects.length ? (
             <View style={styles.detectionSection}>
               <Text
@@ -535,7 +577,8 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
 };
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 24, gap: 24 },
+  scroll: { flex: 1, minHeight: 0 },
+  content: { padding: 16, paddingBottom: 24, gap: 20 },
   centered: {
     flex: 1,
     alignItems: "center",
@@ -549,13 +592,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   heroImage: { borderRadius: 16, overflow: "hidden" },
-  image: { width: "100%", height: 220, backgroundColor: "#081522" },
   imageBadge: {
     position: "absolute",
     top: 12,
     right: 12,
     borderRadius: 8,
-    padding: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -567,19 +610,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.6,
   },
-  chips: { marginTop: -12, flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    maxWidth: "100%",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  analysisMetadata: { flexDirection: "row", gap: 16 },
+  analysisField: { flex: 1, minWidth: 0, gap: 6 },
+  analysisValueRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  analysisValue: {
+    flexShrink: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: "600",
   },
-  chipText: {
-    fontSize: 10,
-    lineHeight: 16,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-  },
+  pendingDot: { width: 6, height: 6, borderRadius: 3 },
+  pendingNote: { marginTop: -8, fontSize: 11, lineHeight: 17 },
   technicalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
   detectionSection: { gap: 12 },
   locationCard: {
