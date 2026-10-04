@@ -13,7 +13,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import {
-  ArrowLeft,
   MapPin,
   Calendar,
   ShieldCheck,
@@ -26,20 +25,29 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react-native";
-import { useAlert, useAssignOfficer, useDeleteAlert, useRestoreAlert } from "../../hooks/useAlerts";
+import {
+  useAlert,
+  useAssignOfficer,
+  useDeleteAlert,
+  useRestoreAlert,
+} from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
 import { useOfficers, useUser } from "../../hooks/useUsers";
 import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
 import { CloseIncidentModal } from "../../components/modals/CloseIncidentModal";
 import { EditAlertModal } from "../../components/modals/EditAlertModal";
-import { GlassCard } from "../../components/ui/GlassCard";
+import { CitizenHeader } from "../../components/citizen/CitizenHeader";
+import {
+  civicSpace as space,
+  civicRadius as radius,
+} from "../../theme/civicDesign";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
 import { WasteDetectionEvidence } from "../../components/vision/WasteDetectionEvidence";
 import { matchVisionEvidence } from "../../utils/visionBoundingBox";
-import { useTheme } from "../../context/ThemeContext";
+import { useCivicTheme } from "../../theme/useCivicTheme";
 import { useLanguage } from "../../context/LanguageContext";
 import { SEVERITY_COLORS } from "../../utils/constants";
 import type { User } from "../../types";
@@ -60,12 +68,17 @@ const getRequestErrorMessage = (error: unknown, fallback: string): string => {
     response?: { data?: { message?: string } };
     message?: string;
   };
-  return requestError.response?.data?.message || requestError.message || fallback;
+  return (
+    requestError.response?.data?.message || requestError.message || fallback
+  );
 };
 
-export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ route, navigation }) => {
+export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
+  route,
+  navigation,
+}) => {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
+  const { colors, isDark } = useCivicTheme();
   const { language, t } = useLanguage();
   const alertId = route.params?.id;
   const { data: alert, isLoading, error } = useAlert(alertId);
@@ -73,19 +86,68 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
   const assignOfficer = useAssignOfficer();
   const deleteAlertMutation = useDeleteAlert();
   const restoreAlertMutation = useRestoreAlert();
-  const pageCopy = language === "vi"
-    ? {
-      assignmentSuccess: "Đã phân công cán bộ", assignmentSuccessBody: (name: string) => `${name} đã được phân công xử lý sự cố này.`, assignError: "Không thể phân công cán bộ", retry: "Vui lòng làm mới báo cáo và thử lại.",
-      deleteTitle: "Xóa báo cáo sự cố", deleteQuestion: (title: string) => `Bạn có chắc muốn xóa báo cáo “${title}” không?`, cancel: "Hủy", delete: "Xóa", restoreError: "Lỗi khôi phục", restoreFailed: "Không thể khôi phục báo cáo.",
-      detailsUnavailable: "Không thể tải chi tiết báo cáo. Báo cáo có thể đã bị xóa hoặc không còn khả dụng.", title: "Chi tiết sự cố", officersResolved: "Cán bộ đã xử lý sự cố này. Nhấn bên dưới để xác minh và đóng báo cáo.",
-      description: "Mô tả", assign: "Phân công cán bộ", assignBody: "Chọn cán bộ chịu trách nhiệm xử lý sự cố này.", photos: "Hình ảnh & minh chứng", location: "Vị trí gắn thẻ", officerResponse: "Phản hồi của cán bộ môi trường", coordinates: "Tọa độ", submitted: "Thời điểm gửi:", updated: "Cập nhật gần nhất:", unavailable: "Không có", connection: "Vui lòng kiểm tra kết nối và thử lại.",
-    }
-    : {
-      assignmentSuccess: "Officer assigned", assignmentSuccessBody: (name: string) => `${name} has been assigned to this incident.`, assignError: "Unable to assign officer", retry: "Please refresh the incident and try again.",
-      deleteTitle: "Delete incident report", deleteQuestion: (title: string) => `Are you sure you want to delete report “${title}”?`, cancel: "Cancel", delete: "Delete", restoreError: "Restore error", restoreFailed: "Failed to restore report.",
-      detailsUnavailable: "Could not fetch details for this alert. It may have been removed or unavailable.", title: "Incident details", officersResolved: "Officers have resolved this issue. Click below to verify and close the report.",
-      description: "Description", assign: "Assign to officer", assignBody: "Choose an officer to take ownership of this incident.", photos: "Photos & evidence", location: "Location geotag", officerResponse: "Environmental officer response", coordinates: "Coordinates", submitted: "Submitted on:", updated: "Last updated:", unavailable: "Not available", connection: "Please check your connection and try again.",
-    };
+  const pageCopy =
+    language === "vi"
+      ? {
+          assignmentSuccess: "Đã phân công cán bộ",
+          assignmentSuccessBody: (name: string) =>
+            `${name} đã được phân công xử lý sự cố này.`,
+          assignError: "Không thể phân công cán bộ",
+          retry: "Vui lòng làm mới báo cáo và thử lại.",
+          deleteTitle: "Xóa báo cáo sự cố",
+          deleteQuestion: (title: string) =>
+            `Bạn có chắc muốn xóa báo cáo “${title}” không?`,
+          cancel: "Hủy",
+          delete: "Xóa",
+          restoreError: "Lỗi khôi phục",
+          restoreFailed: "Không thể khôi phục báo cáo.",
+          detailsUnavailable:
+            "Không thể tải chi tiết báo cáo. Báo cáo có thể đã bị xóa hoặc không còn khả dụng.",
+          title: "Chi tiết sự cố",
+          officersResolved:
+            "Cán bộ đã xử lý sự cố này. Nhấn bên dưới để xác minh và đóng báo cáo.",
+          description: "Mô tả",
+          assign: "Phân công cán bộ",
+          assignBody: "Chọn cán bộ chịu trách nhiệm xử lý sự cố này.",
+          photos: "Hình ảnh & minh chứng",
+          location: "Vị trí gắn thẻ",
+          officerResponse: "Phản hồi của cán bộ môi trường",
+          coordinates: "Tọa độ",
+          submitted: "Thời điểm gửi:",
+          updated: "Cập nhật gần nhất:",
+          unavailable: "Không có",
+          connection: "Vui lòng kiểm tra kết nối và thử lại.",
+        }
+      : {
+          assignmentSuccess: "Officer assigned",
+          assignmentSuccessBody: (name: string) =>
+            `${name} has been assigned to this incident.`,
+          assignError: "Unable to assign officer",
+          retry: "Please refresh the incident and try again.",
+          deleteTitle: "Delete incident report",
+          deleteQuestion: (title: string) =>
+            `Are you sure you want to delete report “${title}”?`,
+          cancel: "Cancel",
+          delete: "Delete",
+          restoreError: "Restore error",
+          restoreFailed: "Failed to restore report.",
+          detailsUnavailable:
+            "Could not fetch details for this alert. It may have been removed or unavailable.",
+          title: "Incident details",
+          officersResolved:
+            "Officers have resolved this issue. Click below to verify and close the report.",
+          description: "Description",
+          assign: "Assign to officer",
+          assignBody: "Choose an officer to take ownership of this incident.",
+          photos: "Photos & evidence",
+          location: "Location geotag",
+          officerResponse: "Environmental officer response",
+          coordinates: "Coordinates",
+          submitted: "Submitted on:",
+          updated: "Last updated:",
+          unavailable: "Not available",
+          connection: "Please check your connection and try again.",
+        };
 
   const [isOfficerPickerOpen, setOfficerPickerOpen] = useState(false);
   const [isCloseModalOpen, setCloseModalOpen] = useState(false);
@@ -93,7 +155,10 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
 
   const normalizedStatus = alert?.status?.toUpperCase();
   const isAdmin = profile?.role?.toUpperCase() === "ADMIN";
-  const citizenIdStr = typeof alert?.citizenId === "object" ? alert.citizenId._id : alert?.citizenId;
+  const citizenIdStr =
+    typeof alert?.citizenId === "object"
+      ? alert.citizenId._id
+      : alert?.citizenId;
   const isOwnReport = profile?._id && citizenIdStr === profile._id;
 
   const canAssign =
@@ -108,9 +173,10 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     (normalizedStatus === "PENDING" || normalizedStatus === "AI_ANALYZING");
   const canDelete = isOwnReport || isAdmin;
 
-  const assignedOfficerIdStr = typeof alert?.assignedOfficerId === "object"
-    ? alert.assignedOfficerId._id
-    : alert?.assignedOfficerId;
+  const assignedOfficerIdStr =
+    typeof alert?.assignedOfficerId === "object"
+      ? alert.assignedOfficerId._id
+      : alert?.assignedOfficerId;
 
   const { data: fetchedOfficer } = useUser(assignedOfficerIdStr);
 
@@ -122,25 +188,30 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     refetch: refetchOfficers,
   } = useOfficers(Boolean(canAssign));
 
-  const assignedOfficerObj = typeof alert?.assignedOfficerId === "object"
-    ? alert.assignedOfficerId
-    : (fetchedOfficer || officerData?.find((u) => u._id === alert?.assignedOfficerId));
+  const assignedOfficerObj =
+    typeof alert?.assignedOfficerId === "object"
+      ? alert.assignedOfficerId
+      : fetchedOfficer ||
+        officerData?.find((u) => u._id === alert?.assignedOfficerId);
 
   const evidencePhotoUrls = alert?.fieldEvidence?.length
     ? alert.fieldEvidence.map((item) => item.displayUrl || item.originalUrl)
-    : (alert?.mediaUrls || []);
+    : alert?.mediaUrls || [];
   const originalEvidenceUrls = alert?.fieldEvidence?.length
     ? alert.fieldEvidence.map((item) => item.originalUrl)
-    : (alert?.mediaUrls || []);
-  const matchedVisionEvidence = alert?.analysisPipeline === "WASTE_DETECTION"
-    ? matchVisionEvidence(originalEvidenceUrls, alert.visionEvidence ?? [])
-    : [];
+    : alert?.mediaUrls || [];
+  const matchedVisionEvidence =
+    alert?.analysisPipeline === "WASTE_DETECTION"
+      ? matchVisionEvidence(originalEvidenceUrls, alert.visionEvidence ?? [])
+      : [];
 
   const officerDisplayName =
     alert?.assignedOfficerName ||
     assignedOfficerObj?.fullName ||
     fetchedOfficer?.fullName ||
-    (typeof alert?.assignedOfficerId === "string" ? `Cán bộ (${alert.assignedOfficerId.slice(-6)})` : undefined);
+    (typeof alert?.assignedOfficerId === "string"
+      ? `Cán bộ (${alert.assignedOfficerId.slice(-6)})`
+      : undefined);
 
   const officerDisplayEmail =
     alert?.assignedOfficerEmail ||
@@ -190,11 +261,14 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               ReactNativeAlert.alert("Đã xóa", "Báo cáo sự cố đã bị gỡ.");
               navigation.goBack();
             } catch (err: any) {
-              ReactNativeAlert.alert("Lỗi xóa", getRequestErrorMessage(err, "Không thể xóa báo cáo."));
+              ReactNativeAlert.alert(
+                "Lỗi xóa",
+                getRequestErrorMessage(err, "Không thể xóa báo cáo."),
+              );
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -202,31 +276,68 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
     if (!alert) return;
     try {
       await restoreAlertMutation.mutateAsync(alert._id);
-      ReactNativeAlert.alert("Đã khôi phục", "Khôi phục báo cáo sự cố thành công.");
+      ReactNativeAlert.alert(
+        "Đã khôi phục",
+        "Khôi phục báo cáo sự cố thành công.",
+      );
     } catch (err: any) {
-      ReactNativeAlert.alert(pageCopy.restoreError, getRequestErrorMessage(err, pageCopy.restoreFailed));
+      ReactNativeAlert.alert(
+        pageCopy.restoreError,
+        getRequestErrorMessage(err, pageCopy.restoreFailed),
+      );
     }
   };
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: colors.background, paddingTop: insets.top },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textMuted }]}>Đang tải chi tiết sự cố...</Text>
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+          Đang tải chi tiết sự cố...
+        </Text>
       </View>
     );
   }
 
   if (error || !alert) {
     return (
-      <View style={[styles.errorContainer, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.errorContainer,
+          { backgroundColor: colors.background, paddingTop: insets.top },
+        ]}
+      >
         <AlertTriangle size={48} color={colors.destructive} />
-        <Text style={[styles.errorTitle, { color: colors.text }]}>Không tìm thấy báo cáo</Text>
+        <Text style={[styles.errorTitle, { color: colors.text }]}>
+          Không tìm thấy báo cáo
+        </Text>
         <Text style={[styles.errorSub, { color: colors.textMuted }]}>
           {pageCopy.detailsUnavailable}
         </Text>
-        <TouchableOpacity style={[styles.backBtn, { backgroundColor: isDark ? "rgba(22, 163, 74, 0.25)" : colors.primaryLight }]} onPress={() => navigation.goBack()}>
-          <Text style={[styles.backBtnText, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>Quay lại</Text>
+        <TouchableOpacity
+          style={[
+            styles.backBtn,
+            {
+              backgroundColor: isDark
+                ? "rgba(22, 163, 74, 0.25)"
+                : colors.primaryLight,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text
+            style={[
+              styles.backBtnText,
+              { color: isDark ? "#4ADE80" : colors.primaryDark },
+            ]}
+          >
+            Quay lại
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -237,41 +348,65 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
   const longitude = coords ? coords[0] : 106.660172;
   const aiState = getAiAnalysisState(alert);
   const displaySeverity = getAlertDisplaySeverity(alert);
-  const sevColor = displaySeverity ? (SEVERITY_COLORS[displaySeverity] || { bg: "#F1F5F9", text: "#475569" }) : { bg: "#F1F5F9", text: "#475569" };
+  const sevColor = displaySeverity
+    ? SEVERITY_COLORS[displaySeverity] || { bg: "#F1F5F9", text: "#475569" }
+    : { bg: "#F1F5F9", text: "#475569" };
   const displayConfidence = getAlertDisplayConfidence(alert);
   const confidencePercentage = getConfidencePercentage(displayConfidence.value);
   const workflowStatusLabel = getWorkflowStatusLabel(alert.status, language);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header Bar */}
-      <View style={[styles.topBar, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={[styles.circleBtn, { backgroundColor: colors.background }]} onPress={() => navigation.goBack()} accessibilityRole="button">
-          <ArrowLeft size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.topBarTitle, { color: colors.text }]} numberOfLines={1}>
-          {pageCopy.title}
-        </Text>
-        <View style={styles.topRightActions}>
-          {canEdit ? (
-            <TouchableOpacity style={[styles.iconActionBtn, { backgroundColor: colors.background }]} onPress={() => setEditModalOpen(true)}>
-              <Edit2 size={18} color={colors.primary} />
-            </TouchableOpacity>
-          ) : null}
-          {canDelete ? (
-            <TouchableOpacity style={[styles.iconActionBtn, { backgroundColor: colors.background }]} onPress={handleDeleteAlert}>
-              <Trash2 size={18} color={isDark ? "#FCA5A5" : "#DC2626"} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
+      <CitizenHeader
+        title={pageCopy.title}
+        onBack={() => navigation.goBack()}
+        trailing={
+          <View style={styles.topRightActions}>
+            {canEdit ? (
+              <TouchableOpacity
+                style={[
+                  styles.iconActionBtn,
+                  { backgroundColor: colors.background },
+                ]}
+                onPress={() => setEditModalOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Sửa báo cáo"
+              >
+                <Edit2 size={18} color={colors.primary} />
+              </TouchableOpacity>
+            ) : null}
+            {canDelete ? (
+              <TouchableOpacity
+                style={[
+                  styles.iconActionBtn,
+                  { backgroundColor: colors.background },
+                ]}
+                onPress={handleDeleteAlert}
+                accessibilityRole="button"
+                accessibilityLabel="Xóa báo cáo"
+              >
+                <Trash2 size={18} color={isDark ? "#FCA5A5" : "#DC2626"} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        }
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Workflow and AI badges */}
         <View style={styles.badgesRow}>
           {aiState === "COMPLETED" ? (
             <>
               <Badge
+                appearance="civic"
                 label={getCategoryLabel(alert.category, language)}
                 type="custom"
                 bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
@@ -279,36 +414,62 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               />
               <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
                 <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-                  {getSeverityLabel(displaySeverity, language)} · {t("aiAnalysis.aiAssessed", "AI assessed")}
+                  {getSeverityLabel(displaySeverity, language)} ·{" "}
+                  {t("aiAnalysis.aiAssessed", "AI assessed")}
                 </Text>
               </View>
             </>
           ) : null}
-          <Badge label={workflowStatusLabel} statusValue={alert.status} type="status" />
+          <Badge
+            appearance="civic"
+            label={workflowStatusLabel}
+            statusValue={alert.status}
+            type="status"
+          />
           {alert.isAnonymous ? (
-            <Badge label="ẨN DANH 👤" type="custom" bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"} textColor={isDark ? colors.text : "#475569"} />
+            <Badge
+              appearance="civic"
+              label="ẨN DANH 👤"
+              type="custom"
+              bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
+              textColor={isDark ? colors.text : "#475569"}
+            />
           ) : null}
           {alert.confirmationsCount && alert.confirmationsCount > 1 ? (
-            <Badge label={`${alert.confirmationsCount} XÁC NHẬN 👍`} type="custom" bgColor={isDark ? "rgba(22,163,74,0.25)" : "#DCFCE7"} textColor={isDark ? "#86EFAC" : "#166534"} />
+            <Badge
+              appearance="civic"
+              label={`${alert.confirmationsCount} XÁC NHẬN 👍`}
+              type="custom"
+              bgColor={isDark ? "rgba(22,163,74,0.25)" : "#DCFCE7"}
+              textColor={isDark ? "#86EFAC" : "#166534"}
+            />
           ) : null}
           {alert.isDeleted ? (
-            <Badge label="ĐÃ XÓA" type="custom" bgColor={isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2"} textColor={isDark ? "#FCA5A5" : "#DC2626"} />
+            <Badge
+              appearance="civic"
+              label="ĐÃ XÓA"
+              type="custom"
+              bgColor={isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2"}
+              textColor={isDark ? "#FCA5A5" : "#DC2626"}
+            />
           ) : null}
         </View>
 
         {/* Title & Description */}
-        <Text style={[styles.title, { color: colors.text }]}>{alert.title}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {alert.title}
+        </Text>
 
         {/* Close Incident Action Banner for Admin */}
         {canClose ? (
-          <GlassCard style={styles.closeCard}>
+          <Card appearance="civic" style={styles.closeCard}>
             <View style={styles.closeHeader}>
               <CheckSquare size={22} color="#16A34A" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.closeTitle}>Sự cố được đánh dấu đã giải quyết</Text>
-                <Text style={styles.closeSub}>
-                  {pageCopy.officersResolved}
+                <Text style={styles.closeTitle}>
+                  Sự cố được đánh dấu đã giải quyết
                 </Text>
+                <Text style={styles.closeSub}>{pageCopy.officersResolved}</Text>
               </View>
             </View>
             <Button
@@ -316,52 +477,98 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               onPress={() => setCloseModalOpen(true)}
               style={styles.closeBtnAction}
             />
-          </GlassCard>
+          </Card>
         ) : isPendingAdminReview ? (
-          <GlassCard style={[styles.closeCard, { borderColor: isDark ? "rgba(34,197,94,0.3)" : "#BBF7D0", backgroundColor: isDark ? "rgba(22,163,74,0.15)" : "#F0FDF4" }]}>
+          <Card
+            appearance="civic"
+            style={[
+              styles.closeCard,
+              {
+                borderColor: isDark ? "rgba(34,197,94,0.3)" : "#BBF7D0",
+                backgroundColor: isDark ? "rgba(22,163,74,0.15)" : "#F0FDF4",
+              },
+            ]}
+          >
             <View style={styles.closeHeader}>
               <CheckSquare size={22} color="#16A34A" />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.closeTitle, { color: isDark ? "#86EFAC" : "#15803D" }]}>Sự cố đã được Cán bộ xử lý</Text>
-                <Text style={[styles.closeSub, { color: isDark ? "#CBD5E1" : "#475569" }]}>
-                  Cán bộ đã hoàn thành xử lý sự cố. Hồ sơ đang được Admin kiểm tra và duyệt nghiệm thu.
+                <Text
+                  style={[
+                    styles.closeTitle,
+                    { color: isDark ? "#86EFAC" : "#15803D" },
+                  ]}
+                >
+                  Sự cố đã được Cán bộ xử lý
+                </Text>
+                <Text
+                  style={[
+                    styles.closeSub,
+                    { color: isDark ? "#CBD5E1" : "#475569" },
+                  ]}
+                >
+                  Cán bộ đã hoàn thành xử lý sự cố. Hồ sơ đang được Admin kiểm
+                  tra và duyệt nghiệm thu.
                 </Text>
               </View>
             </View>
-          </GlassCard>
+          </Card>
         ) : null}
 
         {/* Restore Banner if soft-deleted (Admin) */}
         {alert.isDeleted && isAdmin ? (
-          <View style={[styles.restoreCard, { backgroundColor: isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2" }]}>
-            <Text style={[styles.restoreText, { color: isDark ? "#FCA5A5" : "#DC2626" }]}>Báo cáo sự cố này đã bị xóa tạm thời.</Text>
+          <View
+            style={[
+              styles.restoreCard,
+              { backgroundColor: isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2" },
+            ]}
+          >
+            <Text
+              style={[
+                styles.restoreText,
+                { color: isDark ? "#FCA5A5" : "#DC2626" },
+              ]}
+            >
+              Báo cáo sự cố này đã bị xóa tạm thời.
+            </Text>
             <Button
               title="Khôi phục báo cáo"
               onPress={handleRestoreAlert}
               loading={restoreAlertMutation.isPending}
               variant="outline"
-              icon={<RotateCcw size={16} color={colors.primary} style={{ marginRight: 6 }} />}
+              icon={
+                <RotateCcw
+                  size={16}
+                  color={colors.primary}
+                  style={{ marginRight: space.sm }}
+                />
+              }
             />
           </View>
         ) : null}
 
-        <GlassCard style={styles.mainCard}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>{pageCopy.description}</Text>
-          <Text style={[styles.descriptionText, { color: colors.text }]}>{alert.description}</Text>
-        </GlassCard>
+        <Card appearance="civic" style={styles.mainCard}>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>
+            {pageCopy.description}
+          </Text>
+          <Text style={[styles.descriptionText, { color: colors.text }]}>
+            {alert.description}
+          </Text>
+        </Card>
 
         <Card
           style={[
             styles.aiCard,
             {
-              backgroundColor: isDark ? "rgba(99,102,241,0.12)" : "#F8FAFF",
-              borderColor: isDark ? "rgba(129,140,248,0.35)" : "#C7D2FE",
+              backgroundColor: colors.card,
+              borderColor: colors.border,
             },
           ]}
         >
           <View style={styles.aiCardHeader}>
-            <View style={[styles.aiIconBox, { backgroundColor: isDark ? "rgba(129,140,248,0.18)" : "#E0E7FF" }]}>
-              <Sparkles size={18} color={isDark ? "#A5B4FC" : "#4F46E5"} />
+            <View
+              style={[styles.aiIconBox, { backgroundColor: colors.greenSoft }]}
+            >
+              <Sparkles size={18} color={colors.primary} />
             </View>
             <Text style={[styles.aiCardTitle, { color: colors.text }]}>
               {t("aiAnalysis.title", "AI Analysis")}
@@ -370,7 +577,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
 
           {aiState === "PENDING" ? (
             <View style={styles.aiStateRow}>
-              <ActivityIndicator size="small" color={isDark ? "#A5B4FC" : "#4F46E5"} />
+              <ActivityIndicator size="small" color={colors.primary} />
               <View style={styles.aiStateCopy}>
                 <Text style={[styles.aiStateTitle, { color: colors.text }]}>
                   {t("aiAnalysis.pendingTitle", "Analyzing incident...")}
@@ -388,7 +595,9 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
           {aiState === "COMPLETED" ? (
             <View style={styles.aiResultContent}>
               <View style={styles.aiMetricRow}>
-                <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
+                <Text
+                  style={[styles.aiMetricLabel, { color: colors.textMuted }]}
+                >
                   {t("aiAnalysis.category", "Category")}
                 </Text>
                 <Text style={[styles.aiMetricValue, { color: colors.text }]}>
@@ -396,61 +605,118 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
                 </Text>
               </View>
               <View style={styles.aiMetricRow}>
-                <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
+                <Text
+                  style={[styles.aiMetricLabel, { color: colors.textMuted }]}
+                >
                   {t("aiAnalysis.severity", "Severity")}
                 </Text>
-                <View style={[styles.aiSeverityPill, { backgroundColor: sevColor.bg, borderColor: sevColor.border || sevColor.bg }]}>
-                  <Text style={[styles.aiSeverityText, { color: sevColor.text }]}>
+                <View
+                  style={[
+                    styles.aiSeverityPill,
+                    {
+                      backgroundColor: sevColor.bg,
+                      borderColor: sevColor.border || sevColor.bg,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.aiSeverityText, { color: sevColor.text }]}
+                  >
                     {getSeverityLabel(displaySeverity, language)}
                   </Text>
                 </View>
               </View>
               <View style={styles.confidenceBlock}>
                 <View style={styles.aiMetricRow}>
-                  <Text style={[styles.aiMetricLabel, { color: colors.textMuted }]}>
-                    {t("aiAnalysis.confidence", "Confidence")}{confidencePercentage === null ? "" : displayConfidence.source === "SEMANTIC" ? " · Ngữ nghĩa" : " · Danh mục"}
+                  <Text
+                    style={[styles.aiMetricLabel, { color: colors.textMuted }]}
+                  >
+                    {t("aiAnalysis.confidence", "Confidence")}
+                    {confidencePercentage === null
+                      ? ""
+                      : displayConfidence.source === "SEMANTIC"
+                        ? " · Ngữ nghĩa"
+                        : " · Danh mục"}
                   </Text>
-                  <Text style={[styles.confidenceValue, { color: colors.text }]}>
-                    {confidencePercentage === null ? "Không khả dụng" : `${confidencePercentage}%`}
+                  <Text
+                    style={[styles.confidenceValue, { color: colors.text }]}
+                  >
+                    {confidencePercentage === null
+                      ? "Không khả dụng"
+                      : `${confidencePercentage}%`}
                   </Text>
                 </View>
                 {confidencePercentage !== null ? (
                   <View
-                    style={[styles.confidenceTrack, { backgroundColor: colors.border }]}
+                    style={[
+                      styles.confidenceTrack,
+                      { backgroundColor: colors.border },
+                    ]}
                     accessibilityRole="progressbar"
-                    accessibilityValue={{ min: 0, max: 100, now: confidencePercentage }}
+                    accessibilityValue={{
+                      min: 0,
+                      max: 100,
+                      now: confidencePercentage,
+                    }}
                   >
                     <View
                       style={[
                         styles.confidenceFill,
-                        { width: `${confidencePercentage}%`, backgroundColor: isDark ? "#818CF8" : "#4F46E5" },
+                        {
+                          width: `${confidencePercentage}%`,
+                          backgroundColor: colors.primary,
+                        },
                       ]}
                     />
                   </View>
                 ) : null}
               </View>
               {alert.aiSummary ? (
-                <View style={[styles.aiSummaryBox, { backgroundColor: isDark ? "rgba(15,23,42,0.45)" : "#FFFFFF" }]}>
-                  <Text style={[styles.aiSummaryLabel, { color: colors.textMuted }]}>
+                <View
+                  style={[
+                    styles.aiSummaryBox,
+                    {
+                      backgroundColor: isDark
+                        ? "rgba(15,23,42,0.45)"
+                        : "#FFFFFF",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.aiSummaryLabel, { color: colors.textMuted }]}
+                  >
                     {t("aiAnalysis.summary", "AI Summary")}
                   </Text>
-                  <Text style={[styles.aiSummaryText, { color: colors.text }]}>{alert.aiSummary}</Text>
+                  <Text style={[styles.aiSummaryText, { color: colors.text }]}>
+                    {alert.aiSummary}
+                  </Text>
                 </View>
               ) : null}
               <Text style={[styles.aiDisclaimer, { color: colors.textMuted }]}>
-                {t("aiAnalysis.completedNote", "AI supports incident triage. An officer may review the result.")}
+                {t(
+                  "aiAnalysis.completedNote",
+                  "AI supports incident triage. An officer may review the result.",
+                )}
               </Text>
             </View>
           ) : null}
 
           {aiState === "FAILED" || aiState === "UNAVAILABLE" ? (
             <View style={styles.aiStateRow}>
-              <AlertTriangle size={20} color={aiState === "FAILED" ? colors.destructive : colors.textMuted} />
+              <AlertTriangle
+                size={20}
+                color={
+                  aiState === "FAILED" ? colors.destructive : colors.textMuted
+                }
+              />
               <View style={styles.aiStateCopy}>
                 <Text style={[styles.aiStateTitle, { color: colors.text }]}>
                   {aiState === "FAILED"
                     ? t("aiAnalysis.failedTitle", "AI analysis incomplete")
-                    : t("aiAnalysis.unavailableTitle", "AI analysis unavailable")}
+                    : t(
+                        "aiAnalysis.unavailableTitle",
+                        "AI analysis unavailable",
+                      )}
                 </Text>
                 <Text style={[styles.aiStateBody, { color: colors.textMuted }]}>
                   {aiState === "FAILED"
@@ -468,42 +734,102 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
           ) : null}
         </Card>
 
-        <OverallAiAnalysisCard alert={alert} />
+        <OverallAiAnalysisCard alert={alert} appearance="civic" />
 
         {alert.assignedOfficerId ? (
-          <Card style={[styles.assignedOfficerCard, { backgroundColor: isDark ? "rgba(79,70,229,0.2)" : "#EEF2FF", borderColor: isDark ? "rgba(79,70,229,0.4)" : "#C7D2FE" }]}>
+          <Card
+            appearance="civic"
+            style={[
+              styles.assignedOfficerCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.assignmentHeader}>
-              <View style={[styles.assignmentIcon, { backgroundColor: isDark ? "rgba(79,70,229,0.3)" : "#EEF2FF" }]}>
-                <UserCheck size={22} color={isDark ? "#818CF8" : "#4F46E5"} />
+              <View
+                style={[
+                  styles.assignmentIcon,
+                  { backgroundColor: colors.greenSoft },
+                ]}
+              >
+                <UserCheck size={22} color={colors.primary} />
               </View>
               <View style={styles.assignmentCopy}>
-                <Text style={[styles.assignedOfficerLabel, { color: isDark ? "#818CF8" : "#4F46E5" }]}>Cán bộ chịu trách nhiệm</Text>
-                <Text style={[styles.assignedOfficerName, { color: colors.text }]}>
+                <Text
+                  style={[
+                    styles.assignedOfficerLabel,
+                    { color: colors.primary },
+                  ]}
+                >
+                  Cán bộ chịu trách nhiệm
+                </Text>
+                <Text
+                  style={[styles.assignedOfficerName, { color: colors.text }]}
+                >
                   {officerDisplayName || "Đã phân công Cán bộ"}
                 </Text>
                 {officerDisplayEmail ? (
-                  <Text style={[styles.assignedOfficerEmail, { color: colors.textMuted }]}>{officerDisplayEmail}</Text>
+                  <Text
+                    style={[
+                      styles.assignedOfficerEmail,
+                      { color: colors.textMuted },
+                    ]}
+                  >
+                    {officerDisplayEmail}
+                  </Text>
                 ) : null}
               </View>
-              {isAdmin && normalizedStatus !== "RESOLVED" && normalizedStatus !== "CLOSED" ? (
+              {isAdmin &&
+              normalizedStatus !== "RESOLVED" &&
+              normalizedStatus !== "CLOSED" ? (
                 <TouchableOpacity
-                  style={[styles.reassignBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  style={[
+                    styles.reassignBtn,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
                   onPress={() => setOfficerPickerOpen(true)}
                 >
-                  <Text style={[styles.reassignBtnText, { color: colors.textMuted }]}>Thay đổi</Text>
+                  <Text
+                    style={[
+                      styles.reassignBtnText,
+                      { color: colors.textMuted },
+                    ]}
+                  >
+                    Thay đổi
+                  </Text>
                 </TouchableOpacity>
               ) : null}
             </View>
           </Card>
         ) : canAssign ? (
-          <Card style={[styles.assignmentCard, { backgroundColor: isDark ? "rgba(124,58,237,0.2)" : "#FAF5FF", borderColor: isDark ? "rgba(124,58,237,0.4)" : "#DDD6FE" }]}>
+          <Card
+            appearance="civic"
+            style={[
+              styles.assignmentCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.assignmentHeader}>
-              <View style={[styles.assignmentIcon, { backgroundColor: isDark ? "rgba(124,58,237,0.3)" : "#F3E8FF" }]}>
-                <UserCheck size={22} color={isDark ? "#A78BFA" : "#7C3AED"} />
+              <View
+                style={[
+                  styles.assignmentIcon,
+                  { backgroundColor: colors.greenSoft },
+                ]}
+              >
+                <UserCheck size={22} color={colors.primary} />
               </View>
               <View style={styles.assignmentCopy}>
-                <Text style={[styles.assignmentTitle, { color: colors.text }]}>{pageCopy.assign}</Text>
-                <Text style={[styles.assignmentDescription, { color: colors.textMuted }]}>
+                <Text style={[styles.assignmentTitle, { color: colors.text }]}>
+                  {pageCopy.assign}
+                </Text>
+                <Text
+                  style={[
+                    styles.assignmentDescription,
+                    { color: colors.textMuted },
+                  ]}
+                >
                   {pageCopy.assignBody}
                 </Text>
               </View>
@@ -520,21 +846,35 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
         {/* Photos Gallery */}
         {evidencePhotoUrls.length > 0 ? (
           <View style={styles.sectionBox}>
-            <Text style={[styles.sectionHeading, { color: colors.text }]}>{pageCopy.photos}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoScroll}>
+            <Text style={[styles.sectionHeading, { color: colors.text }]}>
+              {pageCopy.photos}
+            </Text>
+            <View style={styles.photoScroll}>
               {evidencePhotoUrls.map((url, idx) => (
-                <Image key={idx} source={{ uri: url }} style={styles.evidenceImage} />
+                <Image
+                  key={idx}
+                  source={{ uri: url }}
+                  resizeMode="contain"
+                  style={[
+                    styles.evidenceImage,
+                    { backgroundColor: colors.soft },
+                  ]}
+                />
               ))}
-            </ScrollView>
+            </View>
           </View>
         ) : null}
 
-        {matchedVisionEvidence.map(evidence => <WasteDetectionEvidence key={evidence.imageUrl} evidence={evidence} />)}
+        {matchedVisionEvidence.map((evidence) => (
+          <WasteDetectionEvidence key={evidence.imageUrl} evidence={evidence} />
+        ))}
 
         {/* Location Map */}
         <View style={styles.sectionBox}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>{pageCopy.location}</Text>
-          <Card style={styles.mapCard}>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>
+            {pageCopy.location}
+          </Text>
+          <Card appearance="civic" style={styles.mapCard}>
             <MapView
               provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
               style={styles.map}
@@ -547,12 +887,22 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
               scrollEnabled={false}
               zoomEnabled={false}
             >
-              <Marker coordinate={{ latitude, longitude }} title={alert.title} description={alert.address} />
+              <Marker
+                coordinate={{ latitude, longitude }}
+                title={alert.title}
+                description={alert.address}
+              />
             </MapView>
-            <View style={[styles.addressBox, { backgroundColor: colors.surface }]}>
+            <View
+              style={[styles.addressBox, { backgroundColor: colors.surface }]}
+            >
               <MapPin size={16} color={colors.primary} />
-              <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={2}>
-                {alert.address || `${pageCopy.coordinates}: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`}
+              <Text
+                style={[styles.addressText, { color: colors.text }]}
+                numberOfLines={2}
+              >
+                {alert.address ||
+                  `${pageCopy.coordinates}: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`}
               </Text>
             </View>
           </Card>
@@ -560,30 +910,51 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
 
         {/* Officer Response / Verification Note */}
         {alert.officerNote ? (
-          <GlassCard style={styles.officerNoteCard}>
+          <Card appearance="civic" style={styles.officerNoteCard}>
             <View style={styles.officerHeader}>
               <ShieldCheck size={20} color={colors.primary} />
-              <Text style={[styles.officerTitle, { color: isDark ? "#4ADE80" : colors.primaryDark }]}>{pageCopy.officerResponse}</Text>
+              <Text
+                style={[
+                  styles.officerTitle,
+                  { color: isDark ? "#4ADE80" : colors.primaryDark },
+                ]}
+              >
+                {pageCopy.officerResponse}
+              </Text>
             </View>
-            <Text style={[styles.officerNoteContent, { color: colors.text }]}>{alert.officerNote}</Text>
-          </GlassCard>
+            <Text style={[styles.officerNoteContent, { color: colors.text }]}>
+              {alert.officerNote}
+            </Text>
+          </Card>
         ) : null}
 
         {/* Report Metadata */}
-        <Card style={styles.metaCard}>
+        <Card appearance="civic" style={styles.metaCard}>
           <View style={styles.metaRow}>
             <Calendar size={16} color={colors.textMuted} />
-            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{pageCopy.submitted}</Text>
+            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>
+              {pageCopy.submitted}
+            </Text>
             <Text style={[styles.metaValue, { color: colors.text }]}>
-              {alert.createdAt ? format(new Date(alert.createdAt), "PPP - HH:mm", { locale: language === "vi" ? vi : enUS }) : pageCopy.unavailable}
+              {alert.createdAt
+                ? format(new Date(alert.createdAt), "PPP - HH:mm", {
+                    locale: language === "vi" ? vi : enUS,
+                  })
+                : pageCopy.unavailable}
             </Text>
           </View>
 
           <View style={[styles.metaRow, { marginTop: 12 }]}>
             <Clock size={16} color={colors.textMuted} />
-            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>{pageCopy.updated}</Text>
+            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>
+              {pageCopy.updated}
+            </Text>
             <Text style={[styles.metaValue, { color: colors.text }]}>
-              {alert.updatedAt ? format(new Date(alert.updatedAt), "PPP - HH:mm", { locale: language === "vi" ? vi : enUS }) : pageCopy.unavailable}
+              {alert.updatedAt
+                ? format(new Date(alert.updatedAt), "PPP - HH:mm", {
+                    locale: language === "vi" ? vi : enUS,
+                  })
+                : pageCopy.unavailable}
             </Text>
           </View>
         </Card>
@@ -623,89 +994,234 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({ r
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
-  loadingText: { marginTop: 12, fontSize: 14, fontWeight: "500" },
-  errorContainer: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  errorTitle: { fontSize: 20, fontWeight: "800", marginTop: 16 },
-  errorSub: { fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 18 },
-  backBtn: { marginTop: 20, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
+  loadingText: { marginTop: space.md, fontSize: 14, fontWeight: "500" },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: space.section,
+  },
+  errorTitle: { fontSize: 20, fontWeight: "800", marginTop: space.lg },
+  errorSub: {
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: space.sm,
+    lineHeight: 18,
+  },
+  backBtn: {
+    minHeight: 48,
+    justifyContent: "center",
+    marginTop: space.xl,
+    paddingHorizontal: space.xl,
+    paddingVertical: space.md,
+    borderRadius: 12,
+  },
   backBtnText: { fontSize: 14, fontWeight: "700" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.md,
     borderBottomWidth: 1,
     zIndex: 10,
   },
-  topRightActions: { flexDirection: "row", gap: 8 },
-  circleBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  iconActionBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  topRightActions: { flexDirection: "row", gap: space.sm },
+  circleBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconActionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   topBarTitle: { fontSize: 17, fontWeight: "700" },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  badgesRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-  sevBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  scrollContent: { padding: space.lg, paddingBottom: space.page },
+  badgesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: space.sm,
+    marginBottom: space.md,
+  },
+  sevBadge: {
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
+    borderRadius: 12,
+  },
   sevBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
-  title: { fontSize: 22, fontWeight: "800", marginBottom: 16, lineHeight: 28 },
-  closeCard: { padding: 18, marginBottom: 20, borderRadius: 20, backgroundColor: "#DCFCE7" },
-  closeHeader: { flexDirection: "row", gap: 12, marginBottom: 12 },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    marginBottom: space.lg,
+    lineHeight: 28,
+  },
+  closeCard: {
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.card,
+    backgroundColor: "#DCFCE7",
+  },
+  closeHeader: { flexDirection: "row", gap: space.md, marginBottom: space.md },
   closeTitle: { fontSize: 16, fontWeight: "800", color: "#15803D" },
-  closeSub: { fontSize: 13, color: "#166534", marginTop: 2, lineHeight: 18 },
+  closeSub: {
+    fontSize: 13,
+    color: "#166534",
+    marginTop: space.xs,
+    lineHeight: 18,
+  },
   closeBtnAction: { backgroundColor: "#16A34A" },
-  restoreCard: { padding: 16, marginBottom: 20, borderRadius: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  restoreCard: {
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.card,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   restoreText: { fontSize: 13, fontWeight: "600" },
-  mainCard: { padding: 18, marginBottom: 20, borderRadius: 20 },
-  aiCard: { padding: 18, marginBottom: 20, borderWidth: 1 },
-  aiCardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  aiIconBox: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  mainCard: {
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.card,
+  },
+  aiCard: { padding: space.lg, marginBottom: space.xl, borderWidth: 1 },
+  aiCardHeader: { flexDirection: "row", alignItems: "center", gap: space.md },
+  aiIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   aiCardTitle: { fontSize: 16, fontWeight: "800" },
-  aiStateRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginTop: 16 },
+  aiStateRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space.md,
+    marginTop: space.lg,
+  },
   aiStateCopy: { flex: 1 },
   aiStateTitle: { fontSize: 14, fontWeight: "800" },
-  aiStateBody: { fontSize: 12, lineHeight: 18, marginTop: 4 },
-  aiResultContent: { marginTop: 16, gap: 14 },
-  aiMetricRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 },
+  aiStateBody: { fontSize: 12, lineHeight: 18, marginTop: space.xs },
+  aiResultContent: { marginTop: space.lg, gap: space.lg },
+  aiMetricRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: space.lg,
+  },
   aiMetricLabel: { fontSize: 12, fontWeight: "600" },
-  aiMetricValue: { flex: 1, fontSize: 14, fontWeight: "800", textAlign: "right" },
-  aiSeverityPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, borderWidth: 1 },
+  aiMetricValue: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "800",
+    textAlign: "right",
+  },
+  aiSeverityPill: {
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.chip,
+    borderWidth: 1,
+  },
   aiSeverityText: { fontSize: 11, fontWeight: "900", letterSpacing: 0.5 },
-  confidenceBlock: { gap: 8 },
-  confidenceValue: { fontSize: 13, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  confidenceBlock: { gap: space.sm },
+  confidenceValue: {
+    fontSize: 13,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
+  },
   confidenceTrack: { height: 8, borderRadius: 4, overflow: "hidden" },
   confidenceFill: { height: "100%", borderRadius: 4 },
-  aiSummaryBox: { padding: 12, borderRadius: 12 },
-  aiSummaryLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.4 },
-  aiSummaryText: { fontSize: 13, lineHeight: 19, marginTop: 5 },
+  aiSummaryBox: { paddingTop: space.md, borderRadius: 0 },
+  aiSummaryLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  aiSummaryText: { fontSize: 13, lineHeight: 20, marginTop: space.sm },
   aiDisclaimer: { fontSize: 11, lineHeight: 16 },
-  sectionHeading: { fontSize: 15, fontWeight: "700", marginBottom: 8 },
+  sectionHeading: { fontSize: 15, fontWeight: "700", marginBottom: space.sm },
   descriptionText: { fontSize: 14, lineHeight: 22 },
-  assignmentCard: { padding: 16, marginBottom: 20 },
-  assignedOfficerCard: { padding: 16, marginBottom: 20 },
-  assignedOfficerLabel: { fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-  assignedOfficerName: { fontSize: 16, fontWeight: "800", marginTop: 2 },
-  assignedOfficerEmail: { fontSize: 12, marginTop: 1 },
-  reassignBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
+  assignmentCard: { padding: space.lg, marginBottom: space.xl },
+  assignedOfficerCard: { padding: space.lg, marginBottom: space.xl },
+  assignedOfficerLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  assignedOfficerName: { fontSize: 16, fontWeight: "800", marginTop: space.xs },
+  assignedOfficerEmail: { fontSize: 12, marginTop: space.xs },
+  reassignBtn: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.button,
+    borderWidth: 1,
+  },
   reassignBtnText: { fontSize: 12, fontWeight: "700" },
-  assignmentHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
-  assignmentIcon: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 14 },
+  assignmentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+  },
+  assignmentIcon: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.button,
+  },
   assignmentCopy: { flex: 1 },
   assignmentTitle: { fontSize: 16, fontWeight: "800" },
-  assignmentDescription: { marginTop: 3, fontSize: 12, lineHeight: 17 },
-  assignmentButton: { marginTop: 14, backgroundColor: "#7C3AED" },
-  sectionBox: { marginBottom: 20 },
-  photoScroll: { marginTop: 4 },
-  evidenceImage: { width: 140, height: 100, borderRadius: 14, marginRight: 10 },
-  mapCard: { padding: 0, overflow: "hidden", marginTop: 4 },
+  assignmentDescription: { marginTop: space.xs, fontSize: 12, lineHeight: 17 },
+  assignmentButton: { marginTop: space.lg },
+  sectionBox: { marginBottom: space.xl },
+  photoScroll: { marginTop: space.xs },
+  evidenceImage: { width: "100%", height: 240, borderRadius: radius.image },
+  mapCard: { padding: 0, overflow: "hidden", marginTop: space.xs },
   map: { width: "100%", height: 180 },
-  addressBox: { flexDirection: "row", alignItems: "center", padding: 12, gap: 8 },
+  addressBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: space.md,
+    gap: space.sm,
+  },
   addressText: { fontSize: 13, flex: 1, fontWeight: "500" },
-  officerNoteCard: { padding: 16, marginBottom: 20, borderRadius: 20 },
-  officerHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  officerNoteCard: {
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.card,
+  },
+  officerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
+    marginBottom: space.sm,
+  },
   officerTitle: { fontSize: 14, fontWeight: "700" },
   officerNoteContent: { fontSize: 13, lineHeight: 20 },
-  metaCard: { padding: 16 },
-  metaRow: { flexDirection: "row", alignItems: "center" },
+  metaCard: { padding: space.lg },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: space.xs,
+  },
   metaLabel: { fontSize: 13, marginLeft: 8, width: 100 },
-  metaValue: { fontSize: 13, fontWeight: "600" },
+  metaValue: {
+    flexBasis: "100%",
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
 });
-
