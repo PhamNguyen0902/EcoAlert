@@ -27,7 +27,7 @@ export function WasteDetectionEvidence({
       <WasteDetectionImage
         imageUri={evidence.imageUrl}
         detections={detections}
-        height={260}
+        aspectRatio={3 / 4}
         emptyMessage={
           evidence.status === "no_detection" ||
           (evidence.status === "ok" && !detections.length)

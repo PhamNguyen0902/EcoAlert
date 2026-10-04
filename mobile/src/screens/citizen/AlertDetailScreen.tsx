@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,6 +36,7 @@ import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
 import { CloseIncidentModal } from "../../components/modals/CloseIncidentModal";
 import { EditAlertModal } from "../../components/modals/EditAlertModal";
 import { CitizenHeader } from "../../components/citizen/CitizenHeader";
+import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
 import {
   civicSpace as space,
   civicRadius as radius,
@@ -851,14 +851,10 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             </Text>
             <View style={styles.photoScroll}>
               {evidencePhotoUrls.map((url, idx) => (
-                <Image
+                <EvidenceImageFrame
                   key={idx}
-                  source={{ uri: url }}
-                  resizeMode="contain"
-                  style={[
-                    styles.evidenceImage,
-                    { backgroundColor: colors.soft },
-                  ]}
+                  imageUri={url}
+                  accessibilityLabel={`${pageCopy.photos} ${idx + 1}`}
                 />
               ))}
             </View>
@@ -1187,7 +1183,6 @@ const styles = StyleSheet.create({
   assignmentButton: { marginTop: space.lg },
   sectionBox: { marginBottom: space.xl },
   photoScroll: { marginTop: space.xs },
-  evidenceImage: { width: "100%", height: 240, borderRadius: radius.image },
   mapCard: { padding: 0, overflow: "hidden", marginTop: space.xs },
   map: { width: "100%", height: 180 },
   addressBox: {

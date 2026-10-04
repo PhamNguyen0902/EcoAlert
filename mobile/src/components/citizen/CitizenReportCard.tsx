@@ -1,9 +1,10 @@
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { FileText, MapPin } from "lucide-react-native";
 import { Card } from "../ui/Card";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicRadius, civicSpace, civicType } from "../../theme/civicDesign";
+import { EvidenceImageFrame } from "../media/EvidenceImageFrame";
 
 interface Props {
   title: string;
@@ -26,9 +27,9 @@ export const CitizenReportCard: React.FC<Props> = ({
 }) => {
   const { colors } = useCivicTheme();
   const image = imageUri ? (
-    <Image
-      source={{ uri: imageUri }}
-      resizeMode="contain"
+    <EvidenceImageFrame
+      imageUri={imageUri}
+      showExpandIcon={!compact}
       style={[
         compact ? styles.smallImage : styles.image,
         { backgroundColor: colors.soft },
@@ -97,9 +98,20 @@ const styles = StyleSheet.create({
     gap: civicSpace.sm,
   },
   time: { flexShrink: 1 },
-  smallImage: { width: 64, height: 80, borderRadius: civicRadius.chip },
+  smallImage: {
+    width: 64,
+    height: 80,
+    aspectRatio: undefined,
+    borderRadius: civicRadius.chip,
+  },
   placeholder: { justifyContent: "center", alignItems: "center" },
-  image: { width: "100%", height: 180, borderRadius: civicRadius.image },
+  image: {
+    width: "100%",
+    maxWidth: undefined,
+    height: 180,
+    aspectRatio: undefined,
+    borderRadius: civicRadius.image,
+  },
   addressRow: {
     flexDirection: "row",
     alignItems: "flex-start",

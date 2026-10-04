@@ -46,7 +46,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test:vision": "node --test tests/visionBoundingBox.test.cjs tests/fieldCaptureImage.test.cjs tests/imageViewer.test.cjs",
-    "test:civic": "node --test tests/civic-design.test.cjs"
+    "test:civic": "node --test tests/civic-design.test.cjs",
+    "test:images": "node --test tests/evidenceImageFrame.test.cjs tests/imageViewer.test.cjs"
   },
   "private": true
 }

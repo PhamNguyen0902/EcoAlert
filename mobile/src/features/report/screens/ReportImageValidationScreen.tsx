@@ -284,6 +284,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
           <WasteDetectionImage
             imageUri={capture.originalLocalUri}
             detections={imageDetections}
+            aspectRatio={3 / 4}
           />
           <Text
             style={[
@@ -577,9 +578,8 @@ const styles = StyleSheet.create({
   centerTitle: { marginTop: space.lg, fontSize: 22, fontWeight: "800" },
   previewFrame: { borderRadius: radius.card, overflow: "hidden" },
   previewBadge: {
-    position: "absolute",
-    top: 12,
-    right: 12,
+    alignSelf: "center",
+    marginTop: space.sm,
     paddingHorizontal: space.sm,
     paddingVertical: space.sm,
     borderRadius: 8,

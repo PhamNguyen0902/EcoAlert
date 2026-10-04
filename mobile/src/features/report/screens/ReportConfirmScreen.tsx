@@ -277,17 +277,17 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             title="Xác nhận báo cáo"
             description="Kiểm tra thông tin và bổ sung mô tả trước khi gửi."
           />
-          <View style={styles.heroImage}>
-            <ReportEvidenceImage
-              imageUri={capture.displayLocalUri || capture.originalLocalUri}
-              fallbackUri={capture.originalLocalUri}
-              onPress={setViewerUri}
-            />
-            <View style={styles.imageBadge}>
-              <CheckCircle2 size={12} color="#22C55E" />
-              <Text style={styles.imageBadgeText}>ẢNH PHÙ HỢP</Text>
-            </View>
-          </View>
+          <ReportEvidenceImage
+            imageUri={capture.displayLocalUri || capture.originalLocalUri}
+            fallbackUri={capture.originalLocalUri}
+            onPress={setViewerUri}
+            overlay={
+              <View style={styles.imageBadge}>
+                <CheckCircle2 size={12} color="#22C55E" />
+                <Text style={styles.imageBadgeText}>ẢNH PHÙ HỢP</Text>
+              </View>
+            }
+          />
           <Text style={[styles.viewerHint, { color: colors.textMuted }]}>
             Chạm để phóng to ảnh
           </Text>
@@ -611,7 +611,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
   },
-  heroImage: { borderRadius: radius.card, overflow: "hidden" },
   viewerHint: {
     marginTop: -space.md,
     fontSize: 11,
@@ -620,8 +619,9 @@ const styles = StyleSheet.create({
   },
   imageBadge: {
     position: "absolute",
-    top: 12,
-    right: 12,
+    bottom: 12,
+    left: 12,
+    alignSelf: "flex-start",
     borderRadius: 8,
     paddingHorizontal: space.sm,
     paddingVertical: space.sm,

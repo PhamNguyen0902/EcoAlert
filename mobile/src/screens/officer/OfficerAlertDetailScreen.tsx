@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
   Alert as RNAlert,
   Platform,
 } from "react-native";
@@ -31,6 +30,7 @@ import {
   useConfirmArrival,
 } from "../../hooks/useAlerts";
 import { ResolutionModal } from "../../components/modals/ResolutionModal";
+import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
 import { GlassCard } from "../../components/ui/GlassCard";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
@@ -284,11 +284,11 @@ export const OfficerAlertDetailScreen: React.FC<{ route: any; navigation: any }>
         {evidencePhotoUrls.length > 0 ? (
           <View style={styles.sectionBox}>
             <Text style={[styles.sectionHeading, { color: colors.text }]}>Hình ảnh & Minh chứng</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }}>
+            <View style={{ marginTop: 4, gap: 12 }}>
               {evidencePhotoUrls.map((url, idx) => (
-                <Image key={idx} source={{ uri: url }} style={styles.evidenceImage} />
+                <EvidenceImageFrame key={idx} imageUri={url} accessibilityLabel={`Ảnh minh chứng ${idx + 1}`} />
               ))}
-            </ScrollView>
+            </View>
           </View>
         ) : null}
 
@@ -420,7 +420,6 @@ const styles = StyleSheet.create({
   mainCard: { padding: 18, marginBottom: 20, borderRadius: 20 },
   descriptionText: { fontSize: 14, lineHeight: 22 },
   sectionBox: { marginBottom: 20 },
-  evidenceImage: { width: 140, height: 100, borderRadius: 14, marginRight: 10 },
   mapCard: { padding: 0, overflow: "hidden", marginTop: 4 },
   map: { width: "100%", height: 180 },
   mapUnavailable: {

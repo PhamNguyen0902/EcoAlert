@@ -35,6 +35,7 @@ import {
 import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
+import { EvidenceImageFrame } from "../../../components/media/EvidenceImageFrame";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportPhotoReview">;
 
@@ -155,8 +156,47 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
+      {/* Keep the existing watermark rendition dimensions independent of UI framing. */}
+      <View
+        style={[
+          styles.captureSource,
+          { width: windowWidth - 32, top: insets.top },
+        ]}
+        pointerEvents="none"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <ViewShot
+          ref={viewShotRef}
+          options={{ format: "jpg", quality: 0.95, result: "tmpfile" }}
+          style={styles.viewShot}
+        >
+          <Image
+            source={{ uri: capture.originalLocalUri }}
+            style={[styles.image, { height: evidenceHeight }]}
+            resizeMode="contain"
+            onLoadEnd={() => void renderDisplayImage()}
+          />
+          <View style={styles.watermark}>
+            <View style={styles.watermarkBrand}>
+              <ShieldCheck size={13} color="#22C55E" />
+              <Text style={styles.watermarkBrandText}>
+                {watermark.brandStr}
+              </Text>
+            </View>
+            <Text style={styles.watermarkAddress} numberOfLines={2}>
+              {watermark.addressStr}
+            </Text>
+            <Text style={styles.watermarkLine}>{watermark.locationStr}</Text>
+            <Text style={styles.watermarkLine}>
+              {watermark.dateTimeStr.replace("Captured:", "")}
+            </Text>
+          </View>
+        </ViewShot>
+      </View>
       <ReportHeader onBack={navigation.goBack} />
       <ScrollView
+        style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -166,46 +206,43 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           title="Xem lại ảnh hiện trường"
           description="Đảm bảo ảnh rõ và phản ánh đúng tình trạng tại vị trí báo cáo."
         />
-        <View
-          style={[
-            styles.imageCard,
-            { borderColor: colors.border, backgroundColor: colors.surface },
-          ]}
-        >
-          <ViewShot
-            ref={viewShotRef}
-            options={{ format: "jpg", quality: 0.95, result: "tmpfile" }}
-            style={styles.viewShot}
-          >
-            <Image
-              source={{ uri: capture.originalLocalUri }}
-              style={[styles.image, { height: evidenceHeight }]}
-              resizeMode="contain"
-              onLoadEnd={() => void renderDisplayImage()}
-            />
-            <View style={styles.watermark}>
-              <View style={styles.watermarkBrand}>
-                <ShieldCheck size={13} color="#22C55E" />
-                <Text style={styles.watermarkBrandText}>
-                  {watermark.brandStr}
-                </Text>
-              </View>
-              <Text style={styles.watermarkAddress} numberOfLines={2}>
-                {watermark.addressStr}
-              </Text>
-              <Text style={styles.watermarkLine}>{watermark.locationStr}</Text>
-              <Text style={styles.watermarkLine}>
-                {watermark.dateTimeStr.replace("Captured:", "")}
-              </Text>
-            </View>
-          </ViewShot>
-          {rendering ? (
-            <View style={styles.renderingBadge}>
-              <ActivityIndicator size="small" color="#22C55E" />
-              <Text style={styles.renderingText}>Đang tạo watermark...</Text>
-            </View>
-          ) : null}
-        </View>
+        <EvidenceImageFrame
+          imageUri={capture.displayLocalUri || capture.originalLocalUri}
+          fallbackUri={capture.originalLocalUri}
+          disabled={rendering || (!capture.displayLocalUri && !watermarkError)}
+          accessibilityLabel="Ảnh hiện trường có watermark"
+          overlay={
+            <>
+              {!capture.displayLocalUri ? (
+                <View style={[styles.watermark, styles.previewWatermark]}>
+                  <Text style={styles.watermarkBrandText}>
+                    {watermark.brandStr}
+                  </Text>
+                  <Text style={styles.watermarkAddress} numberOfLines={2}>
+                    {watermark.addressStr}
+                  </Text>
+                  <Text style={styles.watermarkLine} numberOfLines={1}>
+                    {watermark.locationStr}
+                  </Text>
+                  <Text style={styles.watermarkLine} numberOfLines={1}>
+                    {watermark.dateTimeStr.replace("Captured:", "")}
+                  </Text>
+                </View>
+              ) : null}
+              {rendering ? (
+                <View style={styles.renderingBadge}>
+                  <ActivityIndicator size="small" color="#22C55E" />
+                  <Text style={styles.renderingText}>
+                    Đang tạo watermark...
+                  </Text>
+                </View>
+              ) : null}
+            </>
+          }
+        />
+        <Text style={[styles.viewerHint, { color: colors.textMuted }]}>
+          Chạm để xem ảnh
+        </Text>
         {watermarkError ? (
           <View
             style={[styles.errorCard, { borderColor: "rgba(245,158,11,0.3)" }]}
@@ -330,9 +367,18 @@ const styles = StyleSheet.create({
   content: {
     padding: space.lg,
     paddingBottom: space.section,
-    gap: space.section,
+    gap: space.lg,
   },
-  imageCard: { borderRadius: radius.card, overflow: "hidden" },
+  // Keep capture attached/in bounds behind the opaque header and ScrollView.
+  // Outside ScrollView, Android clipping cannot remove this capture source.
+  captureSource: { position: "absolute", left: 16 },
+  previewWatermark: { maxHeight: "30%", overflow: "hidden", padding: space.sm },
+  viewerHint: {
+    marginTop: -space.md,
+    fontSize: 11,
+    lineHeight: 17,
+    textAlign: "center",
+  },
   viewShot: { backgroundColor: "#081522" },
   image: { width: "100%" },
   watermark: {

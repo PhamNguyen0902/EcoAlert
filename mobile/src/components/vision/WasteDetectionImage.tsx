@@ -15,6 +15,12 @@ import {
   View,
 } from "react-native";
 import type { ImageLoadEvent } from "react-native";
+import { Expand } from "lucide-react-native";
+import { ZoomableImageViewer } from "../media/ZoomableImageViewer";
+import {
+  EVIDENCE_FRAME_MAX_WIDTH,
+  EVIDENCE_FRAME_WIDTH,
+} from "../../utils/evidenceImageFrame";
 import type { VisionEvidence } from "../../types";
 import {
   calculateContainedImageRect,
@@ -37,6 +43,8 @@ export interface WasteDetectionImageProps {
   imageUri: string;
   detections: VisionEvidence["detections"];
   height?: number;
+  /** Viewport ratio only; image and bbox coordinates remain in original pixel space. */
+  aspectRatio?: number;
   showLabels?: boolean;
   resizeMode?: "contain";
   emptyMessage?: string;
@@ -51,6 +59,7 @@ function DetectionImageSession({
   imageUri,
   detections,
   height,
+  aspectRatio,
   showLabels = true,
   resizeMode = "contain",
   emptyMessage,
@@ -63,6 +72,7 @@ function DetectionImageSession({
   const [loaded, setLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const opacity = useRef(new Animated.Value(0)).current;
   const active = useRef(true);
   const handleImageLoad = useCallback(({ nativeEvent }: ImageLoadEvent) => {
@@ -144,7 +154,17 @@ function DetectionImageSession({
   return (
     <View>
       <View
-        style={[styles.frame, { height: frameHeight }]}
+        style={[
+          styles.frame,
+          aspectRatio && Number.isFinite(aspectRatio) && aspectRatio > 0
+            ? {
+                width: EVIDENCE_FRAME_WIDTH,
+                maxWidth: EVIDENCE_FRAME_MAX_WIDTH,
+                alignSelf: "center",
+                aspectRatio,
+              }
+            : { height: frameHeight },
+        ]}
         onLayout={({ nativeEvent: { layout } }) => {
           setContainer((current) =>
             current.width === layout.width && current.height === layout.height
@@ -153,14 +173,26 @@ function DetectionImageSession({
           );
         }}
       >
-        <Image
-          source={{ uri: imageUri }}
-          resizeMode={resizeMode}
-          style={StyleSheet.absoluteFill}
-          accessibilityLabel="Ảnh gốc dùng để nhận diện rác thải"
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-        />
+        <Pressable
+          onPress={() => setViewerOpen(true)}
+          disabled={!loaded || imageError}
+          style={({ pressed }) => [
+            StyleSheet.absoluteFill,
+            pressed && { opacity: 0.94 },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Xem ảnh gốc toàn màn hình"
+          accessibilityHint="Mở ảnh gốc không có khung nhận diện để phóng to"
+        >
+          <Image
+            source={{ uri: imageUri }}
+            resizeMode={resizeMode}
+            style={StyleSheet.absoluteFill}
+            accessibilityLabel="Ảnh gốc dùng để nhận diện rác thải"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        </Pressable>
         {!loaded && !imageError ? (
           <ActivityIndicator
             style={styles.loading}
@@ -242,7 +274,22 @@ function DetectionImageSession({
             />
           ) : null}
         </Animated.View>
+        {loaded && !imageError ? (
+          <Pressable
+            style={styles.expandTarget}
+            onPress={() => setViewerOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Phóng to ảnh gốc"
+          >
+            <View style={styles.expandIcon}>
+              <Expand size={17} color="#F8FAFC" />
+            </View>
+          </Pressable>
+        ) : null}
       </View>
+      <Text style={styles.message}>
+        Chạm ảnh hoặc nút mở rộng để xem ảnh gốc.
+      </Text>
       {showLabels && boxes.length ? (
         <Text style={styles.message}>
           {boxes.length} vùng được đánh dấu · Chạm một vùng để xem chi tiết.
@@ -256,6 +303,12 @@ function DetectionImageSession({
       {!detections.length && emptyMessage ? (
         <Text style={styles.message}>{emptyMessage}</Text>
       ) : null}
+      <ZoomableImageViewer
+        visible={viewerOpen}
+        imageUri={imageUri}
+        onClose={() => setViewerOpen(false)}
+        altLabel="Ảnh gốc dùng để nhận diện rác thải"
+      />
     </View>
   );
 }
@@ -316,6 +369,23 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderRadius: 16,
     backgroundColor: "#050D17",
+  },
+  expandTarget: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  expandIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(7,16,31,0.70)",
   },
   box: {
     position: "absolute",

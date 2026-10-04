@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
@@ -38,6 +39,13 @@ const MAX_LOCATION_AGE_MS = 5 * 60_000;
 
 export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth, height: viewportHeight } =
+    useWindowDimensions();
+  // Composition only: never crop preview/capture or alter the sensor ratio.
+  const guideWidth = Math.max(
+    0,
+    Math.min(viewportWidth - 64, (viewportHeight * 0.4 * 3) / 4),
+  );
   const { colors } = useReportTheme();
   const { draft, setDraft } = useFieldReport();
   const [permission, requestPermission] = useCameraPermissions();
@@ -256,13 +264,20 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           )}
         </TouchableOpacity>
       </View>
-      <View pointerEvents="none" style={styles.guide}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.guide,
+          { width: guideWidth, left: (viewportWidth - guideWidth) / 2 },
+        ]}
+      >
         <View style={[styles.corner, styles.topLeft]} />
         <View style={[styles.corner, styles.topRight]} />
         <View style={[styles.corner, styles.bottomLeft]} />
         <View style={[styles.corner, styles.bottomRight]} />
         <View style={styles.guideTextBox}>
-          <Text style={styles.guideTitle}>Đưa điểm rác vào khung</Text>
+          <Text style={styles.guideTitle}>Đưa điểm rác vào trong khung</Text>
+          <Text style={styles.guideRatio}>3:4 · Khung hướng dẫn</Text>
         </View>
       </View>
       <View
@@ -423,10 +438,8 @@ const styles = StyleSheet.create({
   },
   guide: {
     position: "absolute",
-    left: 32,
-    right: 32,
+    aspectRatio: 3 / 4,
     top: "20%",
-    bottom: "40%",
   },
   corner: {
     position: "absolute",
@@ -459,6 +472,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+  guideRatio: { color: "#CBD5E1", fontSize: 10, marginTop: 4 },
   bottomOverlay: {
     position: "absolute",
     left: 0,
