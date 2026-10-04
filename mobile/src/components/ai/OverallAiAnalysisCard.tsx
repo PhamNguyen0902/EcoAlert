@@ -1,18 +1,257 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { BrainCircuit } from 'lucide-react-native';
-import type { Alert } from '../../types';
-import { useTheme } from '../../context/ThemeContext';
-import { useLanguage } from '../../context/LanguageContext';
-import { Card } from '../ui/Card';
-import { getCategoryLabel, getConfidenceTierLabel, getPresentationCopy, getSeverityLabel } from '../../utils/incidentPresentation';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { BrainCircuit } from "lucide-react-native";
+import type { Alert } from "../../types";
+import {
+  getCivicColors,
+  civicStyles,
+  civicType,
+  civicSpace as space,
+} from "../../theme/civicDesign";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
+import { Card } from "../ui/Card";
+import {
+  getCategoryLabel,
+  getConfidenceTierLabel,
+  getPresentationCopy,
+  getSeverityLabel,
+} from "../../utils/incidentPresentation";
 
-const percentage = (value: number | null | undefined, unavailable: string) => value === null || value === undefined ? unavailable : `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
-export const OverallAiAnalysisCard: React.FC<{ alert: Alert }> = ({ alert }) => {
-  const { colors, isDark } = useTheme(); const { language } = useLanguage(); const presentation = getPresentationCopy(language); const analysis = alert.aiOverallAnalysis;
-  const text = language === 'vi' ? { title: 'AI phân tích tổng quan', subtitle: 'Gợi ý cần con người xác nhận', unavailable: alert.aiFailureReason || 'Dịch vụ phân tích AI tạm thời không khả dụng.', reason: 'Lý do ngắn', category: 'Danh mục AI', confidence: 'Độ tin cậy', severity: 'Mức độ', incident: 'Sự cố môi trường', likely: 'Có khả năng', insufficient: 'Chưa đủ bằng chứng' } : { title: 'Overall AI analysis', subtitle: 'A suggestion that requires human confirmation', unavailable: alert.aiFailureReason || 'AI analysis is temporarily unavailable.', reason: 'Short reason', category: 'AI category', confidence: 'Confidence', severity: 'Severity', incident: 'Environmental incident', likely: 'Likely', insufficient: 'Insufficient evidence' };
-  if (!analysis) { if (alert.aiAnalysisMode !== 'FAILED') return null; return <Card style={[styles.card, { borderColor: '#D97706', backgroundColor: isDark ? 'rgba(245,158,11,0.15)' : '#FFFBEB' }]}><View style={styles.header}><BrainCircuit size={18} color="#D97706" /><Text style={[styles.title, { color: colors.text }]}>{text.title}</Text></View><Text style={[styles.summary, { color: colors.textMuted }]}>{text.unavailable}</Text></Card>; }
-  return <Card style={[styles.card, { borderColor: colors.primary, backgroundColor: isDark ? 'rgba(22,101,52,0.16)' : '#F0FDF4' }]}><View style={styles.header}><BrainCircuit size={18} color={colors.primary} /><View style={styles.headerText}><Text style={[styles.title, { color: colors.text }]}>{text.title}</Text><Text style={[styles.subtitle, { color: colors.textMuted }]}>{text.subtitle}</Text></View><Text style={[styles.tier, { color: colors.textMuted, borderColor: colors.border }]}>{getConfidenceTierLabel(analysis.confidenceTier, language)}</Text></View><Text style={[styles.summary, { color: colors.text }]}>{analysis.overallSummary}</Text><Text style={[styles.reason, { color: colors.textMuted }]}>{text.reason}: {analysis.shortReason}</Text><View style={[styles.metrics, { borderColor: colors.border, backgroundColor: colors.surface }]}><Metric label={text.category} value={getCategoryLabel(analysis.categorySuggestion, language)} colors={colors} /><Metric label={text.confidence} value={percentage(analysis.categoryConfidence, presentation.unavailable)} colors={colors} /><Metric label={text.severity} value={getSeverityLabel(analysis.severity, language)} colors={colors} /><Metric label={text.incident} value={analysis.isIncident ? text.likely : text.insufficient} colors={colors} /></View></Card>;
+const percentage = (value: number | null | undefined, unavailable: string) =>
+  value === null || value === undefined
+    ? unavailable
+    : `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
+
+export const OverallAiAnalysisCard: React.FC<{
+  alert: Alert;
+  appearance?: "default" | "civic";
+}> = ({ alert, appearance = "default" }) => {
+  const theme = useTheme();
+  const { isDark } = theme;
+  const colors =
+    appearance === "civic"
+      ? getCivicColors(theme.colors, isDark)
+      : theme.colors;
+  const { language } = useLanguage();
+  const presentation = getPresentationCopy(language);
+  const analysis = alert.aiOverallAnalysis;
+  const visionDetections =
+    alert.visionEvidence?.flatMap((item) => item.detections ?? []) ?? [];
+  const detectedMaterials = [
+    ...new Set(visionDetections.map((item) => item.materialClass)),
+  ].slice(0, 3);
+  const text =
+    language === "vi"
+      ? {
+          title: "AI phân tích tổng quan",
+          subtitle: "Gợi ý cần con người xác nhận",
+          unavailable:
+            alert.aiFailureReason ||
+            "Dịch vụ phân tích AI tạm thời không khả dụng.",
+          reason: "Lý do ngắn",
+          category: "Danh mục AI",
+          confidence: "Độ tin cậy",
+          severity: "Mức độ",
+          incident: "Sự cố môi trường",
+          likely: "Có khả năng",
+          insufficient: "Chưa đủ bằng chứng",
+          vision: "YOLO phát hiện",
+        }
+      : {
+          title: "Overall AI analysis",
+          subtitle: "A suggestion that requires human confirmation",
+          unavailable:
+            alert.aiFailureReason || "AI analysis is temporarily unavailable.",
+          reason: "Short reason",
+          category: "AI category",
+          confidence: "Confidence",
+          severity: "Severity",
+          incident: "Environmental incident",
+          likely: "Likely",
+          insufficient: "Insufficient evidence",
+          vision: "YOLO detected",
+        };
+
+  if (!analysis) {
+    if (alert.aiAnalysisMode !== "FAILED") return null;
+    return (
+      <Card
+        appearance={appearance}
+        style={[
+          styles.card,
+          appearance === "civic" && civicStyles.card,
+          {
+            borderColor: "#D97706",
+            backgroundColor: isDark ? "rgba(245,158,11,0.15)" : "#FFFBEB",
+          },
+        ]}
+      >
+        <View style={styles.header}>
+          <BrainCircuit size={18} color="#D97706" />
+          <Text style={[styles.title, { color: colors.text }]}>
+            {text.title}
+          </Text>
+        </View>
+        <Text style={[styles.summary, { color: colors.textMuted }]}>
+          {text.unavailable}
+        </Text>
+      </Card>
+    );
+  }
+
+  return (
+    <Card
+      style={[
+        styles.card,
+        {
+          borderColor: appearance === "civic" ? colors.border : colors.primary,
+          backgroundColor: isDark ? "rgba(22,101,52,0.16)" : "#F0FDF4",
+        },
+      ]}
+    >
+      <View style={styles.header}>
+        <BrainCircuit size={18} color={colors.primary} />
+        <View style={styles.headerText}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {text.title}
+          </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              appearance === "civic" && civicType.meta,
+              { color: colors.textMuted },
+            ]}
+          >
+            {text.subtitle}
+          </Text>
+        </View>
+        <Text
+          style={[
+            styles.tier,
+            appearance === "civic" && {
+              ...civicType.technical,
+              paddingHorizontal: space.sm,
+              paddingVertical: space.xs,
+            },
+            { color: colors.textMuted, borderColor: colors.border },
+          ]}
+        >
+          {getConfidenceTierLabel(analysis.confidenceTier, language)}
+        </Text>
+      </View>
+      {visionDetections.length > 0 && (
+        <View
+          style={[
+            styles.visionResult,
+            appearance === "civic" && { borderWidth: 0, padding: 0 },
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Text style={[styles.visionLabel, { color: colors.primary }]}>
+            {text.vision}: {visionDetections.length}{" "}
+            {language === "vi" ? "vùng đối tượng" : "object regions"}
+          </Text>
+          <Text style={[styles.visionMaterials, { color: colors.textMuted }]}>
+            {detectedMaterials.join(", ")}
+          </Text>
+        </View>
+      )}
+      <Text style={[styles.summary, { color: colors.text }]}>
+        {analysis.overallSummary}
+      </Text>
+      <Text style={[styles.reason, { color: colors.textMuted }]}>
+        {text.reason}: {analysis.shortReason}
+      </Text>
+      <View
+        style={[
+          styles.metrics,
+          appearance === "civic" && {
+            borderWidth: 0,
+            padding: 0,
+            rowGap: space.md,
+          },
+          { borderColor: colors.border, backgroundColor: colors.surface },
+        ]}
+      >
+        <Metric
+          label={text.category}
+          value={getCategoryLabel(analysis.categorySuggestion, language)}
+          colors={colors}
+        />
+        <Metric
+          label={text.confidence}
+          value={percentage(
+            analysis.categoryConfidence,
+            presentation.unavailable,
+          )}
+          colors={colors}
+        />
+        <Metric
+          label={text.severity}
+          value={getSeverityLabel(analysis.severity, language)}
+          colors={colors}
+        />
+        <Metric
+          label={text.incident}
+          value={analysis.isIncident ? text.likely : text.insufficient}
+          colors={colors}
+        />
+      </View>
+    </Card>
+  );
 };
-const Metric = ({ label, value, colors }: { label: string; value: string; colors: any }) => <View style={styles.metric}><Text style={[styles.metricLabel, { color: colors.textMuted }]}>{label}</Text><Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text></View>;
-const styles = StyleSheet.create({ card: { padding: 16, marginBottom: 14, borderWidth: 1, borderRadius: 18 }, header: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 }, headerText: { flex: 1 }, title: { fontSize: 15, fontWeight: '800' }, subtitle: { fontSize: 10, marginTop: 2 }, tier: { fontSize: 9, fontWeight: '700', borderWidth: 1, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3 }, summary: { fontSize: 13, lineHeight: 20, marginTop: 14 }, reason: { fontSize: 11, lineHeight: 17, marginTop: 8 }, metrics: { flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 12, rowGap: 10 }, metric: { width: '50%', paddingRight: 8 }, metricLabel: { fontSize: 10, fontWeight: '600' }, metricValue: { fontSize: 11, fontWeight: '800', marginTop: 3 } });
+
+const Metric = ({
+  label,
+  value,
+  colors,
+}: {
+  label: string;
+  value: string;
+  colors: { text: string; textMuted: string };
+}) => (
+  <View style={styles.metric}>
+    <Text style={[styles.metricLabel, { color: colors.textMuted }]}>
+      {label}
+    </Text>
+    <Text style={[styles.metricValue, { color: colors.text }]}>{value}</Text>
+  </View>
+);
+const styles = StyleSheet.create({
+  card: { padding: 16, marginBottom: 14, borderWidth: 1, borderRadius: 18 },
+  header: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  headerText: { flex: 1 },
+  title: { fontSize: 15, fontWeight: "800" },
+  subtitle: { fontSize: 10, marginTop: 2 },
+  tier: {
+    fontSize: 9,
+    fontWeight: "700",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  visionResult: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+  },
+  visionLabel: { fontSize: 11, fontWeight: "800" },
+  visionMaterials: { fontSize: 10, marginTop: 3 },
+  summary: { fontSize: 13, lineHeight: 20, marginTop: 14 },
+  reason: { fontSize: 11, lineHeight: 17, marginTop: 8 },
+  metrics: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 12,
+    rowGap: 10,
+  },
+  metric: { width: "50%", paddingRight: 8 },
+  metricLabel: { fontSize: 10, fontWeight: "600" },
+  metricValue: { fontSize: 11, fontWeight: "800", marginTop: 3 },
+});

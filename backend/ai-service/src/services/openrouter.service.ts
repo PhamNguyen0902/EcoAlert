@@ -542,20 +542,24 @@ const incidentCompletionRequest = (
         'Ảnh chụp camera/điện thoại thông thường là ảnh 2D hợp lệ và phải được phân tích khi nội dung liên quan đến sự cố môi trường.',
         'Không phân tích ảnh hoạt hình, ảnh render, ảnh không liên quan hoặc ảnh không đủ bằng chứng thực địa.',
         'Phân tích toàn cảnh ảnh gốc; không suy luận quy mô chỉ từ một vật thể bị phóng to hoặc một bounding box riêng lẻ.',
+
         'Kết quả YOLO nếu được cung cấp chỉ là tín hiệu hỗ trợ về loại và số vùng phát hiện. Không được tính khối lượng bằng công thức số object nhân với một trọng lượng cố định.',
         'YOLO của EcoAlert chỉ là model chuyên nhận diện rác/chất thải. Nếu sự cố không thuộc nhóm rác/chất thải, không được suy diễn YOLO, không được đưa ra khối lượng chất thải và massEstimate.available phải là false.',
         'Các ảnh của một báo cáo là nhiều góc nhìn của cùng một sự cố. Dùng chúng để tăng bằng chứng về quy mô và độ tin cậy, tuyệt đối không cộng số vật thể hoặc khối lượng giữa các ảnh.',
         'Khi ước tính khối lượng, hãy xem xét toàn cảnh: kích thước tương đối của đống rác, số bao/túi nhìn thấy, mức độ đầy, vật thể tham chiếu, độ chồng lấp, phần bị che khuất, mật độ chất thải, loại vật liệu và phối cảnh.',
         'Luôn ưu tiên trả về một khoảng minKg-maxKg thay vì một con số tuyệt đối. mostLikelyKg phải nằm trong khoảng này.',
+
         'massEstimate.confidence là độ tin cậy riêng của ước tính khối lượng, không được sao chép categoryConfidence, incidentConfidence, severityConfidence hoặc confidence YOLO.',
         'Không được đặt massEstimate.available=false chỉ vì ảnh là 2D, không có cảm biến chiều sâu, không có cân thực tế hoặc không biết kích thước tuyệt đối. Đây là chức năng ước tính trực quan; hãy đưa range với confidence phù hợp khi ảnh có đủ vật thể tham chiếu và dấu hiệu hiện trường.',
         'Nếu ảnh không đủ thông tin thị giác để ước tính hợp lý, massEstimate.available phải là false và minKg, maxKg, mostLikelyKg phải là null.',
         'Nếu không có ảnh và chỉ có văn bản, massEstimate.available phải là false.',
         'massEstimate.reasoningSummary phải là mô tả ngắn bằng tiếng Việt về căn cứ quan sát được; không tiết lộ chuỗi suy luận nội bộ.',
         'massEstimate.limitations phải nêu tối đa 5 hạn chế quan trọng như che khuất, thiếu vật tham chiếu, góc chụp hoặc không biết độ sâu tuyệt đối.',
+
         'Đánh giá mức độ nghiêm trọng dựa trên phạm vi ảnh hưởng, quy mô/tích tụ chất thải, dấu hiệu nguy hại, vật tư y tế hoặc nguy cơ môi trường nhìn thấy được.',
         'Phân tích trực tiếp dựa trên ảnh báo cáo, tiêu đề, mô tả và tín hiệu YOLO nếu có.',
         'Không được bịa ra vật thể, tình trạng hay bằng chứng không xuất hiện trong ảnh hoặc mô tả. Không tiết lộ quá trình suy luận nội bộ.',
+
         `Chỉ sử dụng chính xác một category chuẩn từ danh sách sau: ${Object.values(AlertCategory).join(', ')}, hoặc ${UNCLASSIFIED_CATEGORY} khi bằng chứng không đủ hoặc không phù hợp.`,
         `Chỉ sử dụng chính xác một severity từ danh sách sau: ${Object.values(Severity).join(', ')}.`,
         'Giữ nguyên chính xác các tên trường kỹ thuật trong JSON theo schema được cung cấp; không dịch tên trường, category hoặc severity. Các giá trị confidence phải nằm trong khoảng từ 0 đến 1.',

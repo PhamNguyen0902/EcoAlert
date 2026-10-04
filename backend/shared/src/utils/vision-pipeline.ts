@@ -7,6 +7,7 @@ const WASTE_CATEGORIES = new Set<AlertCategory>([
   AlertCategory.ILLEGAL_CONSTRUCTION_WASTE,
 ]);
 
+
 // kiểm tra sự cố có thuộc danh mục rác thải hay không
 export const isWasteRelatedCategory = (
   category: AlertCategory | 'UNCLASSIFIED' | null | undefined,

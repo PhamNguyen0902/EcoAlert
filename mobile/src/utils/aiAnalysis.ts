@@ -6,7 +6,9 @@ import {
 } from "./incidentPresentation";
 
 export const AI_POLL_INTERVAL_MS = 3_000;
-export const AI_PENDING_WINDOW_MS = 60_000;
+// Legacy alerts might not include aiAnalysisStatus. Keep polling them for a
+// reasonable period instead of declaring the analysis unavailable after 60s.
+export const AI_PENDING_WINDOW_MS = 10 * 60_000;
 
 export type AiAnalysisState = "PENDING" | "COMPLETED" | "FAILED" | "UNAVAILABLE";
 
@@ -22,8 +24,13 @@ export const getAiAnalysisState = (
 ): AiAnalysisState => {
   if (!alert) return "UNAVAILABLE";
 
+  const status = alert.aiAnalysisStatus?.toUpperCase();
+  if (status === "FAILED" || alert.aiAnalysisMode === "FAILED") return "FAILED";
+  if (status === "PENDING" || status === "PROCESSING") return "PENDING";
+  if (status === "COMPLETED") return "COMPLETED";
+
   const hasAnalysisMarker = Boolean(alert.aiAnalysisId || alert.aiAnalyzedAt);
-  if (hasAnalysisMarker) return alert.aiAnalysisMode === "FAILED" ? "FAILED" : "COMPLETED";
+  if (hasAnalysisMarker) return "COMPLETED";
 
   const createdAt = Date.parse(alert.createdAt);
   if (Number.isFinite(createdAt) && now - createdAt <= AI_PENDING_WINDOW_MS) {

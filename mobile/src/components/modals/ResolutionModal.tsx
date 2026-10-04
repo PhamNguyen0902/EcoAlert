@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
   Alert as RNAlert,
   ActivityIndicator,
 } from "react-native";
@@ -16,6 +15,7 @@ import { X, CheckCircle2, Camera, UploadCloud } from "lucide-react-native";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { useTheme } from "../../context/ThemeContext";
+import { EvidenceImageFrame } from "../media/EvidenceImageFrame";
 import {
   useResolveIncident,
   useUploadMedia,
@@ -324,8 +324,12 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
             <Text style={[styles.label, { color: colors.text }]}>Ảnh bằng chứng giải quyết *</Text>
             {evidenceUri ? (
               <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: evidenceUri }} style={styles.imagePreview} />
-                <TouchableOpacity style={styles.removeImageBtn} onPress={() => setEvidenceUri(null)}>
+                <EvidenceImageFrame
+                  imageUri={evidenceUri}
+                  style={{ width: "100%" }}
+                  accessibilityLabel="Ảnh bằng chứng sau xử lý"
+                />
+                <TouchableOpacity style={styles.removeImageBtn} onPress={() => setEvidenceUri(null)} accessibilityRole="button" accessibilityLabel="Gỡ ảnh bằng chứng">
                   <X size={16} color="#FFF" />
                 </TouchableOpacity>
               </View>
@@ -437,19 +441,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderRadius: 16,
     overflow: "hidden",
-  },
-  imagePreview: {
-    width: "100%",
-    height: 150,
-    borderRadius: 16,
+    width: "84%",
+    maxWidth: 320,
+    alignSelf: "center",
   },
   removeImageBtn: {
     position: "absolute",
-    top: 10,
-    right: 10,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    bottom: 8,
+    right: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: "rgba(0,0,0,0.6)",
     alignItems: "center",
     justifyContent: "center",
