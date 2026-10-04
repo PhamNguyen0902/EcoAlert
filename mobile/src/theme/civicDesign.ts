@@ -1,8 +1,23 @@
 import { StyleSheet } from "react-native";
 import type { ThemeColors } from "../utils/constants";
 
-export const civicSpace = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, section: 24, page: 32 } as const;
-export const civicRadius = { chip: 8, button: 12, card: 16, major: 18, image: 16, round: 999 } as const;
+export const civicSpace = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  section: 24,
+  page: 32,
+} as const;
+export const civicRadius = {
+  chip: 8,
+  button: 12,
+  card: 16,
+  major: 18,
+  image: 16,
+  round: 999,
+} as const;
 
 /** Citizen-scoped palette: never overrides the application's theme preference. */
 export const getCivicColors = (base: ThemeColors, isDark: boolean) => ({
@@ -32,20 +47,68 @@ export const getCivicColors = (base: ThemeColors, isDark: boolean) => ({
 });
 
 export const civicType = StyleSheet.create({
-  eyebrow: { fontSize: 10, fontWeight: "700", letterSpacing: 1.1, textTransform: "uppercase" },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
   title: { fontSize: 24, fontWeight: "800", lineHeight: 30 },
   section: { fontSize: 16, fontWeight: "700", lineHeight: 22 },
   cardTitle: { fontSize: 14, fontWeight: "700", lineHeight: 20 },
   body: { fontSize: 13, fontWeight: "500", lineHeight: 20 },
   meta: { fontSize: 11, fontWeight: "500", lineHeight: 16 },
-  technical: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6, lineHeight: 15 },
-  button: { fontSize: 14, fontWeight: "800", lineHeight: 20, textAlign: "center" },
+  technical: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    lineHeight: 15,
+  },
+  button: {
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 20,
+    textAlign: "center",
+  },
 });
 
 export const civicStyles = StyleSheet.create({
-  content: { padding: civicSpace.lg, paddingBottom: civicSpace.section, gap: civicSpace.section },
-  card: { padding: civicSpace.lg, borderRadius: civicRadius.card, borderWidth: 1, elevation: 0, shadowOpacity: 0 },
-  primaryButton: { minHeight: 52, borderRadius: civicRadius.button, paddingHorizontal: civicSpace.lg, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: civicSpace.sm },
-  secondaryButton: { minHeight: 48, borderRadius: civicRadius.button, paddingHorizontal: civicSpace.lg, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: civicSpace.sm, borderWidth: 1 },
-  iconButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: civicRadius.button },
+  content: {
+    padding: civicSpace.lg,
+    paddingBottom: civicSpace.section,
+    gap: civicSpace.section,
+  },
+  card: {
+    padding: civicSpace.lg,
+    borderRadius: civicRadius.card,
+    borderWidth: 1,
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  primaryButton: {
+    minHeight: 52,
+    borderRadius: civicRadius.button,
+    paddingHorizontal: civicSpace.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: civicSpace.sm,
+  },
+  secondaryButton: {
+    minHeight: 48,
+    borderRadius: civicRadius.button,
+    paddingHorizontal: civicSpace.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: civicSpace.sm,
+    borderWidth: 1,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: civicRadius.button,
+  },
 });

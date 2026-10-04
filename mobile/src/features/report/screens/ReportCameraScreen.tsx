@@ -1,3 +1,7 @@
+import {
+  civicSpace as space,
+  civicRadius as radius,
+} from "../../../theme/civicDesign";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -222,7 +226,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         colors={["rgba(7,16,31,0.75)", "transparent"]}
         style={styles.topGradient}
       />
-      <View style={[styles.topOverlay, { paddingTop: insets.top + 6 }]}>
+      <View style={[styles.topOverlay, { paddingTop: insets.top + space.sm }]}>
         <TouchableOpacity
           onPress={navigation.goBack}
           style={styles.roundControl}
@@ -327,47 +331,48 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#07101F" },
   permissionScreen: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: space.section,
     alignItems: "center",
     justifyContent: "center",
   },
   permissionTitle: {
-    marginTop: 16,
-    fontSize: 22,
+    marginTop: space.lg,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: "800",
     textAlign: "center",
   },
   permissionBody: {
-    marginTop: 8,
+    marginTop: space.sm,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
     textAlign: "center",
   },
   permissionLoading: {
-    marginTop: 16,
+    marginTop: space.lg,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: space.sm,
   },
   permissionButton: {
     minHeight: 52,
     minWidth: 210,
-    marginTop: 24,
+    marginTop: space.section,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: space.xl,
   },
   permissionButtonText: {
     color: "#07101F",
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "800",
     letterSpacing: 0.2,
   },
   settingsButton: {
     minHeight: 48,
     minWidth: 210,
-    marginTop: 12,
+    marginTop: space.md,
     borderWidth: 1,
     borderRadius: 12,
     alignItems: "center",
@@ -376,9 +381,9 @@ const styles = StyleSheet.create({
   settingsText: { fontSize: 13, fontWeight: "700" },
   cancelButton: {
     minHeight: 44,
-    paddingHorizontal: 16,
+    paddingHorizontal: space.lg,
     justifyContent: "center",
-    marginTop: 8,
+    marginTop: space.sm,
   },
   cancelText: { fontSize: 13, fontWeight: "600" },
   topGradient: { position: "absolute", top: 0, left: 0, right: 0, height: 160 },
@@ -387,7 +392,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
+    paddingHorizontal: space.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -395,7 +400,7 @@ const styles = StyleSheet.create({
   roundControl: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.round,
     backgroundColor: "rgba(7,16,31,0.60)",
     alignItems: "center",
     justifyContent: "center",
@@ -403,10 +408,10 @@ const styles = StyleSheet.create({
   liveChip: {
     minHeight: 32,
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: space.md,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: space.sm,
     backgroundColor: "rgba(7,16,31,0.60)",
   },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#22C55E" },
@@ -459,16 +464,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingTop: 32,
-    paddingHorizontal: 16,
+    paddingTop: space.page,
+    paddingHorizontal: space.lg,
     alignItems: "center",
-    gap: 12,
+    gap: space.md,
   },
   instruction: {
-    borderRadius: 10,
+    borderRadius: radius.button,
     backgroundColor: "rgba(7,16,31,0.60)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
   },
   instructionText: {
     color: "#CBD5E1",
@@ -478,35 +483,35 @@ const styles = StyleSheet.create({
   },
   locationOverlay: {
     alignSelf: "stretch",
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: radius.button,
+    padding: space.lg,
     flexDirection: "row",
-    gap: 12,
+    gap: space.md,
     backgroundColor: "rgba(13,26,43,0.76)",
   },
   locationCopy: { flex: 1 },
   address: {
     color: "#F8FAFC",
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
     fontWeight: "700",
   },
   locationMeta: {
     color: "#CBD5E1",
     fontSize: 11,
     fontWeight: "600",
-    marginTop: 8,
+    marginTop: space.sm,
   },
   captureError: {
     color: "#F87171",
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
     textAlign: "center",
   },
   shutterOuter: {
     width: 84,
     height: 84,
-    borderRadius: 42,
+    borderRadius: radius.round,
     backgroundColor: "rgba(34,197,94,0.18)",
     alignItems: "center",
     justifyContent: "center",
@@ -514,7 +519,7 @@ const styles = StyleSheet.create({
   shutterMiddle: {
     width: 70,
     height: 70,
-    borderRadius: 35,
+    borderRadius: radius.round,
     borderWidth: 2,
     borderColor: "#22C55E",
     backgroundColor: "#07101F",
@@ -524,7 +529,7 @@ const styles = StyleSheet.create({
   shutterInner: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.round,
     backgroundColor: "#22C55E",
     alignItems: "center",
     justifyContent: "center",
@@ -533,12 +538,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: space.xs,
   },
   requirementText: {
     flexShrink: 1,
     color: "#94A3B8",
-    fontSize: 9,
+    fontSize: 10,
     lineHeight: 14,
     fontWeight: "700",
     textAlign: "center",

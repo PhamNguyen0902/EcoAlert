@@ -1,6 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
+import { useCivicTheme } from "../../theme/useCivicTheme";
+import {
+  civicType,
+  civicSpace as space,
+  civicRadius as radius,
+} from "../../theme/civicDesign";
 import {
   formatDetectionConfidence,
   getDetectionConfidenceColor,
@@ -16,7 +21,7 @@ export function WasteDetectionResults({
   detections: readonly DetectionSummaryInput[];
   showCount?: boolean;
 }) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useCivicTheme();
   const [width, setWidth] = useState(0);
   const groups = useMemo(
     () => groupDetectionsByClass(detections),
@@ -38,8 +43,8 @@ export function WasteDetectionResults({
             style={[
               styles.chip,
               {
-                width: width >= 358 ? (width - 8) / 2 : "100%",
-                backgroundColor: isDark ? "#0D1A2B" : "#F1F5F9",
+                width: width >= 280 ? (width - space.md) / 2 : "100%",
+                backgroundColor: colors.soft,
                 borderColor: colors.border,
               },
             ]}
@@ -71,22 +76,21 @@ export function WasteDetectionResults({
   );
 }
 const styles = StyleSheet.create({
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: space.md },
   chip: {
     maxWidth: "100%",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    padding: space.md,
+    borderRadius: radius.card,
     borderWidth: 1,
-    gap: 4,
+    gap: space.sm,
   },
-  text: { fontSize: 12, lineHeight: 17, fontWeight: "600" },
+  text: civicType.cardTitle,
   metadata: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 8,
+    gap: space.sm,
   },
-  count: { fontSize: 11, lineHeight: 16 },
-  confidence: { fontSize: 11, lineHeight: 16, fontWeight: "700" },
+  count: civicType.meta,
+  confidence: { ...civicType.meta, fontWeight: "700" },
 });

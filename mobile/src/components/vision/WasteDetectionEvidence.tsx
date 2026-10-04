@@ -1,7 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { VisionEvidence } from "../../types";
-import { useTheme } from "../../context/ThemeContext";
+import { useCivicTheme } from "../../theme/useCivicTheme";
+import { civicType, civicStyles, civicSpace } from "../../theme/civicDesign";
 import { WasteDetectionImage } from "./WasteDetectionImage";
 import { WasteDetectionResults } from "./WasteDetectionResults";
 
@@ -11,7 +12,7 @@ export function WasteDetectionEvidence({
 }: {
   evidence: VisionEvidence;
 }) {
-  const { colors } = useTheme();
+  const { colors } = useCivicTheme();
   const detections = evidence.status === "ok" ? evidence.detections : [];
   return (
     <View
@@ -62,9 +63,9 @@ export function WasteDetectionEvidence({
   );
 }
 const styles = StyleSheet.create({
-  card: { padding: 16, borderWidth: 1, borderRadius: 16, gap: 12 },
-  heading: { fontSize: 17, fontWeight: "700" },
-  body: { fontSize: 13, lineHeight: 19 },
+  card: { ...civicStyles.card, gap: civicSpace.md },
+  heading: civicType.section,
+  body: civicType.body,
   warning: {
     color: "#F59E0B",
     fontSize: 12,

@@ -1,3 +1,9 @@
+import {
+  civicSpace as space,
+  civicRadius as radius,
+  civicType,
+  civicStyles,
+} from "../../../theme/civicDesign";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   ActivityIndicator,
@@ -224,7 +230,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
                 : "Bật GPS và cho phép EcoAlert truy cập vị trí."}
             </Text>
           </View>
-          <View style={[styles.metrics, { backgroundColor: colors.elevated }]}>
+          <View style={[styles.metrics, { borderTopColor: colors.divider }]}>
             <View style={styles.metric}>
               <Text style={[styles.label, { color: colors.textMuted }]}>
                 TỌA ĐỘ GPS
@@ -341,70 +347,69 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
 };
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 24, gap: 24 },
-  locationCard: { borderWidth: 1, borderRadius: 18, padding: 20, gap: 24 },
+  content: civicStyles.content,
+  locationCard: {
+    ...civicStyles.card,
+    borderRadius: radius.major,
+    padding: space.xl,
+    gap: space.section,
+  },
   statusRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: 8,
+    gap: space.sm,
   },
   statusPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    gap: space.xs,
+    borderRadius: radius.chip,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
   },
-  statusText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.3 },
-  deviceLabel: { fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
-  addressBlock: { gap: 8 },
-  label: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
-  address: {
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: "800",
-    letterSpacing: -0.4,
+  statusText: civicType.technical,
+  deviceLabel: civicType.technical,
+  addressBlock: { gap: space.sm },
+  label: civicType.eyebrow,
+  address: { ...civicType.title, fontSize: 22, lineHeight: 28 },
+  addressDetail: civicType.body,
+  metrics: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    paddingTop: space.lg,
+    gap: space.section,
   },
-  addressDetail: { fontSize: 13, lineHeight: 19 },
-  metrics: { flexDirection: "row", padding: 16, borderRadius: 12 },
-  metric: { flex: 1, gap: 8 },
-  metricRight: { borderLeftWidth: 1, paddingLeft: 16 },
+  metric: { flex: 1, minWidth: 0, gap: space.sm },
+  metricRight: {},
   coordinate: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
   accuracy: { fontSize: 22, fontWeight: "800", fontVariant: ["tabular-nums"] },
-  rating: { fontSize: 11, fontWeight: "600" },
-  trustNote: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
-  trustText: { flex: 1, fontSize: 11, lineHeight: 16 },
-  errorCard: { borderRadius: 16, padding: 16, flexDirection: "row", gap: 12 },
-  errorCopy: { flex: 1 },
-  errorTitle: { fontSize: 15, fontWeight: "700" },
-  errorBody: { fontSize: 13, lineHeight: 19, marginTop: 4 },
-  warningText: { fontSize: 13, lineHeight: 19 },
-  primaryButton: {
-    minHeight: 52,
-    borderRadius: 12,
+  rating: civicType.meta,
+  trustNote: { flexDirection: "row", gap: space.sm, alignItems: "flex-start" },
+  trustText: { flex: 1, ...civicType.meta },
+  errorCard: {
+    borderRadius: radius.card,
+    padding: space.lg,
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    gap: space.md,
   },
-  primaryText: {
-    color: "#07101F",
-    fontSize: 13,
-    fontWeight: "800",
-    letterSpacing: 0.2,
-  },
+  errorCopy: { flex: 1 },
+  errorTitle: civicType.cardTitle,
+  errorBody: { ...civicType.body, marginTop: space.xs },
+  warningText: civicType.body,
+  primaryButton: civicStyles.primaryButton,
+  primaryText: { ...civicType.button, color: "#07101F" },
   textButton: {
     minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: space.sm,
   },
-  textButtonText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6 },
+  textButtonText: civicType.meta,
 });

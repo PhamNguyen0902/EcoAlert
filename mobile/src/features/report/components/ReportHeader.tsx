@@ -6,5 +6,9 @@ interface Props {
   avatarLabel?: string;
 }
 export const ReportHeader = ({ onBack, avatarLabel = "EA" }: Props) => (
-  <CitizenHeader title="Báo Cáo" onBack={onBack} avatarLabel={avatarLabel.slice(0, 2).toUpperCase()} />
+  <CitizenHeader
+    title="Báo Cáo"
+    onBack={onBack}
+    avatarLabel={avatarLabel.slice(0, 2).toUpperCase()}
+  />
 );

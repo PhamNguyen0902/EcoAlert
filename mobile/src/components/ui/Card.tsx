@@ -9,9 +9,16 @@ interface CardProps {
   appearance?: "default" | "civic";
 }
 
-export const Card: React.FC<CardProps> = ({ children, style, appearance = "default" }) => {
+export const Card: React.FC<CardProps> = ({
+  children,
+  style,
+  appearance = "default",
+}) => {
   const theme = useTheme();
-  const colors = appearance === "civic" ? getCivicColors(theme.colors, theme.isDark) : theme.colors;
+  const colors =
+    appearance === "civic"
+      ? getCivicColors(theme.colors, theme.isDark)
+      : theme.colors;
 
   return (
     <View

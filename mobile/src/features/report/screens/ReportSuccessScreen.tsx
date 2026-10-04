@@ -1,3 +1,8 @@
+import {
+  civicSpace as space,
+  civicRadius as radius,
+  civicType,
+} from "../../../theme/civicDesign";
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
@@ -148,12 +153,6 @@ export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
             { backgroundColor: colors.card, borderColor: colors.border },
           ]}
         >
-          <View style={styles.summaryHeader}>
-            <FileText size={17} color={colors.primary} />
-            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
-              CHI TIẾT BÁO CÁO
-            </Text>
-          </View>
           <SummaryRow
             label="Loại sự cố"
             value={
@@ -251,69 +250,75 @@ const SummaryRow = ({
 );
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 48, gap: 24 },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: space.lg,
+    paddingTop: space.page,
+    gap: space.section,
+  },
   hero: { alignItems: "center" },
   glow: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 80,
+    height: 80,
+    borderRadius: radius.round,
     alignItems: "center",
     justifyContent: "center",
   },
   successIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: radius.round,
     alignItems: "center",
     justifyContent: "center",
   },
   statusChip: {
     overflow: "hidden",
-    marginTop: 24,
-    borderWidth: 1,
+    marginTop: space.section,
+    borderWidth: 0,
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
   },
   title: {
-    marginTop: 16,
-    fontSize: 22,
-    lineHeight: 28,
+    marginTop: space.lg,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: "800",
     textAlign: "center",
     letterSpacing: -0.5,
   },
   reference: {
-    marginTop: 12,
+    marginTop: space.md,
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 1,
   },
   description: {
-    marginTop: 12,
+    marginTop: space.md,
     maxWidth: 330,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
     textAlign: "center",
   },
-  summaryCard: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 16 },
-  summaryHeader: {
-    minHeight: 52,
+  summaryCard: {
+    borderWidth: 1,
+    borderRadius: radius.card,
+    paddingHorizontal: space.lg,
+  },
+  summaryRow: { paddingVertical: space.lg },
+  summaryLabelRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: space.sm,
   },
-  technicalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
-  summaryRow: { paddingVertical: 16 },
-  summaryLabelRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   summaryLabel: { fontSize: 11, fontWeight: "600" },
   summaryValue: {
-    marginTop: 8,
+    marginTop: space.sm,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
     fontWeight: "700",
   },
   primaryButton: {
@@ -322,13 +327,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: space.sm,
   },
   primaryText: {
     color: "#07101F",
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "800",
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
   secondaryButton: {
     minHeight: 48,
@@ -338,7 +343,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: space.sm,
   },
-  secondaryText: { fontSize: 13, fontWeight: "700" },
+  secondaryText: civicType.button,
 });
