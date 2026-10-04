@@ -134,32 +134,6 @@ export default function CreateAlert() {
     [],
   );
 
-  // tìm kiếm gợi ý địa chỉ thông qua dịch vụ gợi ý bản đồ
-  const searchAddress = async (query: string) => {
-    setIsSearching(true);
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=vn`,
-      );
-      if (!response.ok) throw new Error("Unable to search address");
-      const results: unknown = await response.json();
-      setSuggestions(
-        Array.isArray(results)
-          ? results.filter(
-              (item): item is AddressSuggestion =>
-                typeof item?.display_name === "string" &&
-                typeof item?.lat === "string" &&
-                typeof item?.lon === "string",
-            )
-          : [],
-      );
-    } catch {
-      setSuggestions([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
   const getAddressForCoordinates = async (
     latitude: number,
     longitude: number,
@@ -447,7 +421,7 @@ export default function CreateAlert() {
                     </div>
 
 
-                    {/* Gợi ý AI để điền thông tin chọn ảnh */}
+                    {/* gợi ý AI để điền thông tin chọn ảnh */}
                     <div className="space-y-6">
                       <div className="rounded-xl border bg-primary/5 p-4">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
