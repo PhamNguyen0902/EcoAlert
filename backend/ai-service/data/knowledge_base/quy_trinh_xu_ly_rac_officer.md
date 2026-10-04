@@ -14,6 +14,7 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 **Mục tiêu của Officer:** Khảo sát thực địa, đánh giá hiện trường, điều phối lực lượng thu gom dọn sạch rác, chụp ảnh nghiệm thu và đóng sự cố trên hệ thống EcoAlert. Officer không thực hiện xử phạt tiền hoặc xử lý tài sản.
 **Mã danh mục sự cố:** `category = illegal_dumping`
 **Luồng trạng thái hệ thống:** `pending → assigned → in_progress → resolved`
+**Phạm vi áp dụng duy nhất:** Hệ thống RAG này CHỈ hỗ trợ xử lý sự cố RÁC THẢI (xả rác bừa bãi, bãi rác tự phát, thu gom chất thải). Hoàn toàn KHÔNG tiếp nhận và KHÔNG hướng dẫn các loại sự cố khác như: Ngập lụt (Flooding), Ô nhiễm không khí (Air pollution), Ô nhiễm nguồn nước (Water pollution), Cây xanh gãy đổ (Fallen tree).
 
 ---
 
@@ -114,3 +115,6 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 
 **Hỏi: Khu vực dọn xong có cần cắm biển cảnh báo không?**
 Đáp: Có. Cần cắm biển nhắc nhở cấm đổ rác và bàn giao cho tổ dân phố tự quản ở Bước 4 để tránh tái phát.
+
+**Hỏi: Nếu gặp hoặc được hỏi về sự cố ngập lụt, ô nhiễm nguồn nước hoặc không khí thì xử lý thế nào?**
+Đáp: Hệ thống EcoAlert hiện tại chỉ hỗ trợ quy trình cho sự cố rác thải (illegal_dumping). Với sự cố ngập lụt, ô nhiễm nguồn nước, không khí hoặc cây đổ, Officer thông báo sự cố nằm ngoài phạm vi hỗ trợ của hệ thống và hướng dẫn liên hệ cơ quan chuyên trách địa phương (Công ty Thoát nước, Phòng TN&MT).

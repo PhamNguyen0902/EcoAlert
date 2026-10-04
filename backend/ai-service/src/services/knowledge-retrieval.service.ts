@@ -1,5 +1,8 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { KnowledgeChunkModel, IKnowledgeChunk } from '../models/knowledge-chunk.model';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  KnowledgeChunkModel,
+  IKnowledgeChunk,
+} from "../models/knowledge-chunk.model";
 
 export interface RetrievalFilter {
   category?: string;
@@ -25,10 +28,12 @@ export class KnowledgeRetrievalService {
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('GEMINI_API_KEY chưa được cấu hình trong .env');
+      throw new Error("GEMINI_API_KEY chưa được cấu hình trong .env");
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.embeddingModel = this.genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
+    this.embeddingModel = this.genAI.getGenerativeModel({
+      model: "gemini-embedding-001",
+    });
   }
 
   // Tính Cosine Similarity giữa 2 vector
@@ -47,7 +52,10 @@ export class KnowledgeRetrievalService {
   /**
    * Truy xuất Top-K chunks liên quan nhất từ MongoDB
    */
-  async retrieve(query: string, filter: RetrievalFilter = {}): Promise<RetrievedChunk[]> {
+  async retrieve(
+    query: string,
+    filter: RetrievalFilter = {},
+  ): Promise<RetrievedChunk[]> {
     const topK = filter.topK || 3;
     const minScore = filter.minScore || 0.5;
 
@@ -55,12 +63,14 @@ export class KnowledgeRetrievalService {
     const queryRes = await this.embeddingModel.embedContent(query);
     const queryEmbedding: number[] = queryRes.embedding.values;
 
-    // 2. Metadata Filtering trên MongoDB
-    const mongoQuery: Record<string, any> = {};
-    if (filter.category) mongoQuery.category = filter.category;
+    // 2. Metadata Filtering trên MongoDB(Khóa chặt chỉ lấy dữ liệu rác thải)
+    const mongoQuery: Record<string, any> = {
+      category: "illegal_dumping",
+    };
     if (filter.targetRole) mongoQuery.target_role = filter.targetRole;
 
-    const candidateChunks = await KnowledgeChunkModel.find(mongoQuery).lean<IKnowledgeChunk[]>();
+    const candidateChunks =
+      await KnowledgeChunkModel.find(mongoQuery).lean<IKnowledgeChunk[]>();
 
     if (!candidateChunks || candidateChunks.length === 0) {
       return [];

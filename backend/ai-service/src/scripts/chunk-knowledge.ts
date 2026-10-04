@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
+import matter from "gray-matter"
 
 // Định nghĩa cấu trúc của một Chunk
 export interface DocumentChunk {
