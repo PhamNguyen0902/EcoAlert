@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
+import { civicType, civicSpace, civicRadius } from "../../../theme/civicDesign";
 import { useReportTheme } from "../useReportTheme";
 const STEPS = ["VỊ TRÍ", "CHỤP ẢNH", "KIỂM TRA", "XÁC NHẬN"];
 export const ReportProgress = ({ step }: { step: 1 | 2 | 3 | 4 }) => {
@@ -70,7 +71,7 @@ export const ReportProgress = ({ step }: { step: 1 | 2 | 3 | 4 }) => {
   );
 };
 const styles = StyleSheet.create({
-  container: { gap: 12 },
+  container: { gap: civicSpace.md },
   heading: {
     flexDirection: "row",
     alignItems: "center",
@@ -78,8 +79,8 @@ const styles = StyleSheet.create({
   },
   technicalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
   stepText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.6 },
-  track: { height: 3, borderRadius: 2, overflow: "hidden" },
+  track: { height: 3, borderRadius: civicRadius.round, overflow: "hidden" },
   progress: { height: "100%", borderRadius: 2 },
-  labels: { flexDirection: "row", gap: 8 },
-  label: { flex: 1, fontSize: 9, fontWeight: "700", letterSpacing: 0.4 },
+  labels: { flexDirection: "row", gap: civicSpace.sm },
+  label: { ...civicType.technical, flex: 1, letterSpacing: 0 },
 });

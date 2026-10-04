@@ -7,7 +7,8 @@ import { MyReportsScreen } from '../screens/citizen/MyReportsScreen';
 import { CitizenProfileScreen } from '../screens/citizen/CitizenProfileScreen';
 import { AlertDetailScreen } from '../screens/citizen/AlertDetailScreen';
 import { LocationPickerScreen } from '../screens/LocationPickerScreen';
-import { useTheme } from '../context/ThemeContext';
+import { useCivicTheme } from '../theme/useCivicTheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../context/LanguageContext';
 import type { CitizenStackParamList, CitizenTabParamList } from './types';
 import { ReportFlowNavigator } from '../features/report/ReportFlowNavigator';
@@ -17,7 +18,8 @@ const Tab = createBottomTabNavigator<CitizenTabParamList>();
 const Stack = createNativeStackNavigator<CitizenStackParamList>();
 
 const CitizenTabs = () => {
-  const { colors } = useTheme();
+  const { colors } = useCivicTheme();
+  const insets = useSafeAreaInsets();
   const { t } = useLanguage();
 
   return (
@@ -28,18 +30,18 @@ const CitizenTabs = () => {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          borderTopColor: colors.divider,
           borderTopWidth: 1,
-          height: 72,
-          paddingBottom: 9,
+          height: 68 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          elevation: 8,
+          elevation: 0,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: 0.12,
+          shadowOpacity: 0,
           shadowRadius: 10,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 4 },
         tabBarIcon: ({ color, size }) =>
           route.name === 'DashboardTab' ? (
             <LayoutDashboard color={color} size={size} />
@@ -65,8 +67,8 @@ const CitizenTabs = () => {
           tabBarIconStyle: {
             width: 44,
             height: 44,
-            marginTop: -14,
-            borderRadius: 22,
+            marginTop: -8,
+            borderRadius: 999,
             backgroundColor: colors.primary,
             alignItems: 'center',
             justifyContent: 'center',

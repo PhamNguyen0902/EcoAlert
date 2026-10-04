@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { civicType, civicSpace } from "../../../theme/civicDesign";
 import { useReportTheme } from "../useReportTheme";
 
 export const ReportScreenIntro = ({
@@ -23,13 +24,8 @@ export const ReportScreenIntro = ({
   );
 };
 const styles = StyleSheet.create({
-  intro: { gap: 8 },
-  eyebrow: { fontSize: 10, fontWeight: "700", letterSpacing: 1.2 },
-  title: {
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-  description: { fontSize: 13, lineHeight: 19, fontWeight: "400" },
+  intro: { gap: civicSpace.sm },
+  eyebrow: civicType.eyebrow,
+  title: civicType.title,
+  description: civicType.body,
 });
