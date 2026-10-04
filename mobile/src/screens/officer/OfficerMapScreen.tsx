@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapView, { Marker, Callout } from "react-native-maps";
+import MapView, { Marker, Callout, PROVIDER_GOOGLE } from "react-native-maps";
 import { MapPin, RefreshCw, AlertTriangle } from "lucide-react-native";
 import { useAlerts } from "../../hooks/useAlerts";
 import { Badge } from "../../components/ui/Badge";
@@ -55,7 +55,7 @@ export const OfficerMapScreen: React.FC<MapScreenProps> = ({ navigation, mode = 
         </TouchableOpacity>
       </View>
 
-      <MapView style={styles.map} initialRegion={initialRegion}>
+      <MapView provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined} style={styles.map} initialRegion={initialRegion}>
         {alerts.map((alert) => {
           const coords = alert.location?.coordinates;
           if (!coords || coords.length < 2) return null;

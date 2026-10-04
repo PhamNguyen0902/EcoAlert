@@ -1,5 +1,5 @@
 import { api } from "./client";
-import { Alert, PaginatedResult, CreateAlertData, Category, ResolutionInput } from "../types";
+import { Alert, PaginatedResult, CreateAlertData, Category, ResolutionInput, PreSubmitSemanticResult, PreSubmitVisionResult } from "../types";
 
 export const alertService = {
   getAlerts: async (
@@ -109,6 +109,24 @@ export const alertService = {
       },
     });
     return res.data?.data?.url || res.data?.url;
+  },
+
+  analyzeUploadedImage: async (imageUrl: string): Promise<PreSubmitVisionResult> => {
+    const res = await api.post("/v1/media/analyze-url", { imageUrl });
+    const payload = res.data?.data || res.data;
+    return { imageUrl: payload.imageUrl || imageUrl, ...payload.aiAnalysis };
+  },
+
+  validateImageSemantics: async (
+    imageUrl: string,
+    input: { title?: string; description?: string } = {},
+  ): Promise<PreSubmitSemanticResult> => {
+    const res = await api.post("/v1/ai/validate-image", {
+      imageUrl,
+      title: input.title || "Báo cáo rác hiện trường",
+      description: input.description || "Ảnh được chụp trực tiếp trong luồng báo cáo rác EcoAlert.",
+    });
+    return res.data?.data || res.data;
   },
 
   getCategories: async (includeInactive = false): Promise<Category[]> => {

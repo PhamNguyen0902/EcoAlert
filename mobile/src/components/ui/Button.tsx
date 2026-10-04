@@ -9,11 +9,17 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
+import {
+  civicStyles,
+  civicType,
+  getCivicColors,
+} from "../../theme/civicDesign";
 import { COLORS } from "../../utils/constants";
 import { useTheme } from "../../context/ThemeContext";
 
 export interface ButtonProps extends TouchableOpacityProps {
   title: string;
+  appearance?: "default" | "civic";
   variant?: "primary" | "secondary" | "outline" | "ghost" | "destructive";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
@@ -24,6 +30,7 @@ export interface ButtonProps extends TouchableOpacityProps {
 
 export const Button: React.FC<ButtonProps> = ({
   title,
+  appearance = "default",
   variant = "primary",
   size = "md",
   loading = false,
@@ -33,14 +40,34 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   ...props
 }) => {
-  const { colors } = useTheme();
+  const theme = useTheme();
+  const colors =
+    appearance === "civic"
+      ? getCivicColors(theme.colors, theme.isDark)
+      : theme.colors;
+  const civicButtonColor =
+    variant === "primary"
+      ? colors.primary
+      : variant === "destructive"
+        ? "#B91C1C"
+        : colors.surface;
+  const civicTextColor =
+    variant === "primary"
+      ? "#07101F"
+      : variant === "destructive"
+        ? "#FFFFFF"
+        : colors.text;
 
   const getVariantStyle = () => {
     switch (variant) {
       case "secondary":
         return { backgroundColor: colors.surface };
       case "outline":
-        return { backgroundColor: "transparent", borderWidth: 1.5, borderColor: colors.border };
+        return {
+          backgroundColor: "transparent",
+          borderWidth: 1.5,
+          borderColor: colors.border,
+        };
       case "ghost":
         return styles.ghostBg;
       case "destructive":
@@ -80,6 +107,16 @@ export const Button: React.FC<ButtonProps> = ({
         styles.button,
         getVariantStyle(),
         getSizeStyle(),
+        appearance === "civic" && {
+          ...civicStyles.primaryButton,
+          height: variant === "primary" ? 52 : 48,
+          minHeight: variant === "primary" ? 52 : 48,
+          backgroundColor:
+            variant === "outline" || variant === "ghost"
+              ? "transparent"
+              : civicButtonColor,
+          borderWidth: variant === "outline" ? 1 : 0,
+        },
         disabled && styles.disabled,
         style,
       ]}
@@ -89,12 +126,30 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === "outline" || variant === "ghost" ? colors.primary : "#FFFFFF"}
+          color={
+            appearance === "civic"
+              ? civicTextColor
+              : variant === "outline" || variant === "ghost"
+                ? colors.primary
+                : "#FFFFFF"
+          }
         />
       ) : (
         <>
           {icon ? icon : null}
-          <Text style={[styles.text, getVariantTextStyle(), textStyle]}>{title}</Text>
+          <Text
+            style={[
+              styles.text,
+              getVariantTextStyle(),
+              appearance === "civic" && [
+                civicType.button,
+                { color: civicTextColor },
+              ],
+              textStyle,
+            ]}
+          >
+            {title}
+          </Text>
         </>
       )}
     </TouchableOpacity>
@@ -118,4 +173,3 @@ const styles = StyleSheet.create({
   text: { fontSize: 15, fontWeight: "700", textAlign: "center" },
   defaultText: { color: "#FFFFFF" },
 });
-

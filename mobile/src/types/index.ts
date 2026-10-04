@@ -138,10 +138,15 @@ export interface Alert {
   aiAnalysisProvider?: "openrouter" | null;
   aiAnalysisModel?: string | null;
   aiFailureReason?: string | null;
+  /** Server-side AI job state. This remains PROCESSING while Vision/Semantic analysis runs. */
+  aiAnalysisStatus?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   aiAnalysisId?: string | null;
   aiAnalyzedAt?: string | null;
   aiPipelineVersion?: "openrouter-multimodal-v1" | null;
   aiOverallAnalysis?: AiOverallAnalysis | null;
+  visionEvidence?: VisionEvidence[];
+  /** Existing backend pipeline discriminator; used only to choose the detection viewer. */
+  analysisPipeline?: "WASTE_DETECTION" | "SEMANTIC_ONLY";
   aiSemanticProcessingTimeMs?: number | null;
   officerNote?: string;
   arrivedAt?: string;
@@ -171,6 +176,45 @@ export interface FieldEvidence {
   displayUrl?: string;
   capturedAt: string;
   gpsAccuracyMeters: number;
+}
+
+/** Per-image result returned by the asynchronous YOLO Vision pipeline. */
+export interface VisionEvidence {
+  imageUrl: string;
+  status: "ok" | "no_detection" | "error" | "skipped_not_applicable";
+  detections: Array<{
+    materialClass: string;
+    suggestedCategory?: AlertCategory | null;
+    confidence: number;
+    bbox?: [number, number, number, number];
+  }>;
+  requiresManualReview?: boolean;
+}
+
+export interface PreSubmitVisionResult {
+  imageUrl: string;
+  status: "ok" | "no_detection" | "error";
+  detections: Array<{
+    materialClass: string;
+    suggestedCategory?: string;
+    confidence: number;
+    bbox?: [number, number, number, number];
+  }>;
+  requiresManualReview: boolean;
+}
+
+export interface PreSubmitSemanticResult {
+  category: AlertCategory | null;
+  severity: Severity;
+  confidence: number;
+  summary: string;
+  reasoningSummary: string;
+  isIncident: boolean;
+  incidentConfidence: number;
+  categoryConfidence: number;
+  overallSummary: string;
+  shortReason: string;
+  model: string;
 }
 
 export interface PaginatedResult<T> {

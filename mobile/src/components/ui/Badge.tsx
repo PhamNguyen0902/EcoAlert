@@ -1,10 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
 import { STATUS_COLORS, DARK_STATUS_COLORS } from "../../utils/constants";
+import { civicRadius, civicSpace } from "../../theme/civicDesign";
 import { useTheme } from "../../context/ThemeContext";
 
 interface BadgeProps {
   label: string;
+  appearance?: "default" | "civic";
   statusValue?: string | null;
   type?: "status" | "custom";
   bgColor?: string;
@@ -14,6 +16,7 @@ interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({
   label,
+  appearance = "default",
   statusValue,
   type = "status",
   bgColor,
@@ -21,15 +24,35 @@ export const Badge: React.FC<BadgeProps> = ({
   style,
 }) => {
   const { isDark } = useTheme();
-  const normStatus = statusValue?.toUpperCase() || label?.toUpperCase() || "PENDING";
+  const normStatus =
+    statusValue?.toUpperCase() || label?.toUpperCase() || "PENDING";
   const palette = isDark ? DARK_STATUS_COLORS : STATUS_COLORS;
-  const statusColor = palette[normStatus] || { bg: isDark ? "rgba(148,163,184,0.2)" : "#F1F5F9", text: isDark ? "#CBD5E1" : "#475569" };
+  const statusColor = palette[normStatus] || {
+    bg: isDark ? "rgba(148,163,184,0.2)" : "#F1F5F9",
+    text: isDark ? "#CBD5E1" : "#475569",
+  };
 
-  const finalBg = type === "custom" ? bgColor || (isDark ? "rgba(148,163,184,0.2)" : "#F1F5F9") : statusColor.bg;
-  const finalText = type === "custom" ? textColor || (isDark ? "#CBD5E1" : "#475569") : statusColor.text;
+  const finalBg =
+    type === "custom"
+      ? bgColor || (isDark ? "rgba(148,163,184,0.2)" : "#F1F5F9")
+      : statusColor.bg;
+  const finalText =
+    type === "custom"
+      ? textColor || (isDark ? "#CBD5E1" : "#475569")
+      : statusColor.text;
 
   return (
-    <View style={[styles.badge, { backgroundColor: finalBg }, style]}>
+    <View
+      style={[
+        styles.badge,
+        appearance === "civic" && {
+          borderRadius: civicRadius.chip,
+          paddingHorizontal: civicSpace.sm,
+        },
+        { backgroundColor: finalBg },
+        style,
+      ]}
+    >
       <Text style={[styles.badgeText, { color: finalText }]}>{label}</Text>
     </View>
   );
@@ -48,4 +71,3 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 });
-
