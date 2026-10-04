@@ -10,7 +10,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
@@ -27,7 +26,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
 import { useReportTheme } from "../useReportTheme";
-import { LinearGradient } from "expo-linear-gradient";
 import { formatCaptureTimestamp } from "../../../utils/watermark";
 import { persistOriginalFieldImage } from "../../../utils/watermark";
 import { normalizeFieldCaptureImage } from "../../../utils/fieldCaptureImage";
@@ -39,13 +37,7 @@ const MAX_LOCATION_AGE_MS = 5 * 60_000;
 
 export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { width: viewportWidth, height: viewportHeight } =
-    useWindowDimensions();
-  // Composition only: never crop preview/capture or alter the sensor ratio.
-  const guideWidth = Math.max(
-    0,
-    Math.min(viewportWidth - 64, (viewportHeight * 0.4 * 3) / 4),
-  );
+  const [previewWidth, setPreviewWidth] = useState(0);
   const { colors } = useReportTheme();
   const { draft, setDraft } = useFieldReport();
   const [permission, requestPermission] = useCameraPermissions();
@@ -214,26 +206,6 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {isFocused ? (
-        <CameraView
-          ref={cameraRef}
-          style={StyleSheet.absoluteFill}
-          facing="back"
-          flash={flash}
-          mode="picture"
-          responsiveOrientationWhenOrientationLocked
-          onCameraReady={() => setCameraReady(true)}
-          onMountError={() => {
-            setCameraReady(false);
-            setCaptureError("Camera không khả dụng trên thiết bị này.");
-          }}
-        />
-      ) : null}
-      <LinearGradient
-        pointerEvents="none"
-        colors={["rgba(7,16,31,0.75)", "transparent"]}
-        style={styles.topGradient}
-      />
       <View style={[styles.topOverlay, { paddingTop: insets.top + space.sm }]}>
         <TouchableOpacity
           onPress={navigation.goBack}
@@ -265,19 +237,43 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       <View
-        pointerEvents="none"
-        style={[
-          styles.guide,
-          { width: guideWidth, left: (viewportWidth - guideWidth) / 2 },
-        ]}
+        style={styles.previewArea}
+        onLayout={({ nativeEvent: { layout } }) => {
+          // Fit the live preview between controls; this does not crop the saved photo.
+          setPreviewWidth(
+            Math.max(
+              0,
+              Math.min(320, layout.width - 32, ((layout.height - 16) * 3) / 4),
+            ),
+          );
+        }}
       >
-        <View style={[styles.corner, styles.topLeft]} />
-        <View style={[styles.corner, styles.topRight]} />
-        <View style={[styles.corner, styles.bottomLeft]} />
-        <View style={[styles.corner, styles.bottomRight]} />
-        <View style={styles.guideTextBox}>
-          <Text style={styles.guideTitle}>Đưa điểm rác vào trong khung</Text>
-          <Text style={styles.guideRatio}>3:4 · Khung hướng dẫn</Text>
+        <View style={[styles.previewFrame, { width: previewWidth }]}>
+          {isFocused && previewWidth > 0 ? (
+            <CameraView
+              ref={cameraRef}
+              style={StyleSheet.absoluteFill}
+              facing="back"
+              flash={flash}
+              mode="picture"
+              responsiveOrientationWhenOrientationLocked
+              onCameraReady={() => setCameraReady(true)}
+              onMountError={() => {
+                setCameraReady(false);
+                setCaptureError("Camera không khả dụng trên thiết bị này.");
+              }}
+            />
+          ) : null}
+          <View pointerEvents="none" style={styles.guide}>
+            <View style={[styles.corner, styles.topLeft]} />
+            <View style={[styles.corner, styles.topRight]} />
+            <View style={[styles.corner, styles.bottomLeft]} />
+            <View style={[styles.corner, styles.bottomRight]} />
+            <View style={styles.guideTextBox}>
+              <Text style={styles.guideTitle}>Đưa điểm rác vào trong khung</Text>
+              <Text style={styles.guideRatio}>3:4</Text>
+            </View>
+          </View>
         </View>
       </View>
       <View
@@ -286,11 +282,6 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           { paddingBottom: Math.max(insets.bottom, 12) + 8 },
         ]}
       >
-        <LinearGradient
-          pointerEvents="none"
-          colors={["transparent", "rgba(7,16,31,0.94)"]}
-          style={StyleSheet.absoluteFill}
-        />
         <View style={styles.instruction}>
           <Text style={styles.instructionText}>
             Chụp rõ điểm rác và bối cảnh xung quanh
@@ -401,12 +392,8 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
   },
   cancelText: { fontSize: 13, fontWeight: "600" },
-  topGradient: { position: "absolute", top: 0, left: 0, right: 0, height: 160 },
   topOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
+    paddingBottom: space.sm,
     paddingHorizontal: space.lg,
     flexDirection: "row",
     alignItems: "center",
@@ -436,10 +423,24 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1.2,
   },
+  previewArea: {
+    flex: 1,
+    minHeight: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  previewFrame: {
+    aspectRatio: 3 / 4,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#050D17",
+  },
   guide: {
     position: "absolute",
-    aspectRatio: 3 / 4,
-    top: "20%",
+    top: 12,
+    bottom: 12,
+    left: 12,
+    right: 12,
   },
   corner: {
     position: "absolute",
@@ -474,11 +475,7 @@ const styles = StyleSheet.create({
   },
   guideRatio: { color: "#CBD5E1", fontSize: 10, marginTop: 4 },
   bottomOverlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingTop: space.page,
+    paddingTop: space.sm,
     paddingHorizontal: space.lg,
     alignItems: "center",
     gap: space.md,
