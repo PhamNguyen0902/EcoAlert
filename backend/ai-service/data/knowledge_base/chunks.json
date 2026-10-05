@@ -7,8 +7,8 @@
     "doc_type": "sop_workflow",
     "section_type": "overview",
     "title": "Tổng quan quy trình và mục tiêu Officer",
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > Tổng quan]\n**Đối tượng áp dụng:** Cán bộ tiếp nhận và xử lý sự cố (Officer) được hệ thống phân công (`assignedOfficerId === actor.id`).\r\n**Mục tiêu của Officer:** Khảo sát thực địa, đánh giá hiện trường, điều phối lực lượng thu gom dọn sạch rác, chụp ảnh nghiệm thu và đóng sự cố trên hệ thống EcoAlert. Officer không thực hiện xử phạt tiền hoặc xử lý tài sản.\r\n**Mã danh mục sự cố:** `category = illegal_dumping`\r\n**Luồng trạng thái hệ thống:** `pending → assigned → in_progress → resolved`\r\n**Phạm vi áp dụng duy nhất:** Hệ thống RAG này CHỈ hỗ trợ xử lý sự cố RÁC THẢI (xả rác bừa bãi, bãi rác tự phát, thu gom chất thải). Hoàn toàn KHÔNG tiếp nhận và KHÔNG hướng dẫn các loại sự cố khác như: Ngập lụt (Flooding), Ô nhiễm không khí (Air pollution), Ô nhiễm nguồn nước (Water pollution), Cây xanh gãy đổ (Fallen tree).",
-    "char_count": 809
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > Tổng quan]\n**Đối tượng áp dụng:** Cán bộ tiếp nhận và xử lý sự cố (Officer) được hệ thống phân công (`assignedOfficerId === actor.id`).\r\n**Mục tiêu của Officer:** Khảo sát thực địa, đánh giá hiện trường, điều phối lực lượng thu gom dọn sạch rác, chụp ảnh nghiệm thu và đóng sự cố trên hệ thống EcoAlert. Cán bộ hiện trường không thực hiện xử phạt tiền hoặc xử lý tài sản.\r\n**Mã danh mục sự cố:** `category = illegal_dumping`\r\n**Luồng trạng thái hệ thống:** `pending → assigned → in_progress → resolved`\r\n**Phạm vi áp dụng duy nhất:** Hệ thống RAG này CHỈ hỗ trợ xử lý sự cố RÁC THẢI (xả rác bừa bãi, bãi rác tự phát, thu gom chất thải). Hoàn toàn KHÔNG tiếp nhận và KHÔNG hướng dẫn các loại sự cố khác như: Ngập lụt (Flooding), Ô nhiễm không khí (Air pollution), Ô nhiễm nguồn nước (Water pollution), Cây xanh gãy đổ (Fallen tree).",
+    "char_count": 820
   },
   {
     "chunk_id": "sop_officer_illegal_dumping_v1_chunk_01_step_1",
@@ -23,8 +23,8 @@
       "startHandling",
       "confirmArrival"
     ],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 1: Khảo sát hiện trường]\n- **Trạng thái hệ thống:** `in_progress` (sau khi gọi `startHandling`)\r\n- **Action tương ứng:** `startHandling()` → chuyển từ `assigned` sang `in_progress`\r\n\r\n**Nhiệm vụ của Officer:**\r\n1. Có mặt tại hiện trường đúng hạn quy định:\r\n   - Trong vòng **30–60 phút** nếu mức độ `severity` là `HIGH` hoặc `CRITICAL`.\r\n   - Trong vòng **2–4 giờ** nếu mức độ `severity` là `MEDIUM` hoặc `LOW`.\r\n2. Gọi action `confirmArrival()` trên app để check-in tọa độ GPS (ghi nhận `arrivedAt`, `checkIn.location`, `checkIn.accuracyMeters`).\r\n3. Chụp ảnh hiện trạng ban đầu: ảnh góc rộng toàn cảnh bãi rác và ảnh cận cảnh loại rác.\r\n4. Ước lượng khối lượng và tính chất rác:\r\n   - Khối lượng: Dưới 1m³ / Từ 1–3m³ / Trên 3m³.\r\n   - Tính chất: Rác sinh hoạt thông thường, cành cây/xà bần, xác động vật, hoặc có dấu hiệu chất thải độc hại/bốc mùi nguy hiểm.\r\n\r\n**Bước tiếp theo:** Chuyển sang Bước 2.",
-    "char_count": 878
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 1: Khảo sát hiện trường]\n- **Trạng thái hệ thống:** `in_progress` (sau khi gọi `startHandling`)\r\n- **Action tương ứng:** `startHandling()` → chuyển từ `assigned` sang `in_progress`\r\n\r\n**Nhiệm vụ của Officer:**\r\n\r\n1. Có mặt tại hiện trường đúng hạn quy định:\r\n   - Trong vòng **30–60 phút** nếu mức độ `severity` là `HIGH` hoặc `CRITICAL`.\r\n   - Trong vòng **2–4 giờ** nếu mức độ `severity` là `MEDIUM` hoặc `LOW`.\r\n2. Gọi action `confirmArrival()` trên app để check-in tọa độ GPS (ghi nhận `arrivedAt`, `checkIn.location`, `checkIn.accuracyMeters`).\r\n3. Chụp ảnh hiện trạng ban đầu: ảnh góc rộng toàn cảnh bãi rác và ảnh cận cảnh loại rác.\r\n4. Ước lượng khối lượng và tính chất rác:\r\n   - Khối lượng: Dưới 1m³ / Từ 1–3m³ / Trên 3m³.\r\n   - Tính chất: Rác sinh hoạt thông thường, cành cây/xà bần, xác động vật, hoặc có dấu hiệu chất thải độc hại/bốc mùi nguy hiểm.\r\n\r\n**Bước tiếp theo:** Chuyển sang Bước 2.",
+    "char_count": 880
   },
   {
     "chunk_id": "sop_officer_illegal_dumping_v1_chunk_02_step_2",
@@ -36,8 +36,8 @@
     "step_number": 2,
     "title": "BƯỚC 2: Đánh giá tình huống tại hiện trường",
     "related_actions": [],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 2: Đánh giá tình huống tại hiện trường]\n**Tình huống A — Phát hiện người/phương tiện đang có hành vi xả rác:**\r\n1. Yêu cầu đối tượng dừng ngay hành vi xả rác.\r\n2. Yêu cầu đối tượng tự giác thu gom lại số rác vừa vứt vào nơi quy định.\r\n3. Chụp ảnh/ghi nhận lại hiện trường và thông tin sự việc vào ghi chú sự cố.\r\n4. Nếu đối tượng không hợp tác hoặc có hành vi chống đối: Officer liên hệ ngay Công an khu vực hoặc UBND phường/xã để can thiệp hỗ trợ, không tự ý tranh chấp hoặc xử phạt.\r\n\r\n**Tình huống B — Bãi rác tự phát tồn đọng (không có mặt người xả rác):**\r\n1. Ghi nhận chi tiết hiện trạng bãi rác vào ứng dụng.\r\n2. Kiểm tra vị trí khu đất: đất công cộng (vỉa hè, lòng đường, công viên) hay đất dự án/đất tư nhân chưa xây dựng để có phương án điều phối dọn dẹp phù hợp.\r\n\r\n**Bước tiếp theo:** Chuyển sang Bước 3.",
-    "char_count": 776
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 2: Đánh giá tình huống tại hiện trường]\n**Tình huống A — Phát hiện người/phương tiện đang có hành vi xả rác:**\r\n\r\n1. Yêu cầu đối tượng dừng ngay hành vi xả rác.\r\n2. Yêu cầu đối tượng tự giác thu gom lại số rác vừa vứt vào nơi quy định.\r\n3. Chụp ảnh/ghi nhận lại hiện trường và thông tin sự việc vào ghi chú sự cố.\r\n4. Nếu đối tượng không hợp tác hoặc có hành vi chống đối: Cán bộ hiện trường liên hệ ngay Công an khu vực hoặc UBND phường/xã để can thiệp hỗ trợ, không tự ý tranh chấp hoặc xử phạt.\r\n\r\n**Tình huống B — Bãi rác tự phát tồn đọng (không có mặt người xả rác):**\r\n\r\n1. Ghi nhận chi tiết hiện trạng bãi rác vào ứng dụng.\r\n2. Kiểm tra vị trí khu đất: đất công cộng (vỉa hè, lòng đường, công viên) hay đất dự án/đất tư nhân chưa xây dựng để có phương án điều phối dọn dẹp phù hợp.\r\n\r\n**Bước tiếp theo:** Chuyển sang Bước 3.",
+    "char_count": 791
   },
   {
     "chunk_id": "sop_officer_illegal_dumping_v1_chunk_03_step_3",
@@ -49,8 +49,8 @@
     "step_number": 3,
     "title": "BƯỚC 3: Điều phối thu gom và làm sạch",
     "related_actions": [],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 3: Điều phối thu gom và làm sạch]\n**Officer căn cứ theo khối lượng rác đã ước lượng ở Bước 1 để chọn giải pháp:**\r\n- **Dưới 1m³ (quy mô nhỏ):** Huy động lực lượng tại chỗ như tổ dân phố, dân quân tự vệ hoặc đoàn thanh niên phối hợp dọn dẹp.\r\n- **Trên 1m³ hoặc bốc mùi nguy hại (quy mô lớn):** Liên hệ đơn vị vệ sinh môi trường đô thị (URENCO hoặc hợp tác xã môi trường địa phương) điều xe chuyên dụng và công nhân đến thu gom.\r\n\r\n**Giám sát thực địa:**\r\n- Đảm bảo rác được thu gom sạch sẽ hoàn toàn.\r\n- Yêu cầu rắc vôi bột hoặc phun khử trùng/khử mùi nếu bãi rác có nước rỉ rác hôi thối hoặc xác động vật.\r\n*(Lưu ý: Đơn vị/phương pháp dọn dẹp sẽ điền vào `treatmentMethod`, vật tư khử khuẩn/vôi bột sẽ điền vào `materialsUsed` khi đóng sự cố ở Bước 5).*\r\n\r\n**Bước tiếp theo:** Chuyển sang Bước 4.",
-    "char_count": 762
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 3: Điều phối thu gom và làm sạch]\n**Cán bộ hiện trường căn cứ theo khối lượng rác đã ước lượng ở Bước 1 để chọn giải pháp:**\r\n\r\n- **Dưới 1m³ (quy mô nhỏ):** Huy động lực lượng tại chỗ như tổ dân phố, dân quân tự vệ hoặc đoàn thanh niên phối hợp dọn dẹp.\r\n- **Trên 1m³ hoặc bốc mùi nguy hại (quy mô lớn):** Liên hệ đơn vị vệ sinh môi trường đô thị (URENCO hoặc hợp tác xã môi trường địa phương) điều xe chuyên dụng và công nhân đến thu gom.\r\n\r\n**Giám sát thực địa:**\r\n\r\n- Đảm bảo rác được thu gom sạch sẽ hoàn toàn.\r\n- Yêu cầu rắc vôi bột hoặc phun khử trùng/khử mùi nếu bãi rác có nước rỉ rác hôi thối hoặc xác động vật.\r\n  _(Lưu ý: Đơn vị/phương pháp dọn dẹp sẽ điền vào `treatmentMethod`, vật tư khử khuẩn/vôi bột sẽ điền vào `materialsUsed` khi đóng sự cố ở Bước 5)._\r\n\r\n**Bước tiếp theo:** Chuyển sang Bước 4.",
+    "char_count": 779
   },
   {
     "chunk_id": "sop_officer_illegal_dumping_v1_chunk_04_step_4",
@@ -62,8 +62,8 @@
     "step_number": 4,
     "title": "BƯỚC 4: Phòng ngừa tái phát sinh bãi rác",
     "related_actions": [],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 4: Phòng ngừa tái phát sinh bãi rác]\n1. Cắm biển nhắc nhở/cảnh báo cấm đổ rác tại khu vực vừa dọn sạch.\r\n2. Bàn giao mặt bằng sạch cho Tổ trưởng tổ dân phố hoặc đại diện khu dân cư giám sát tự quản.\r\n3. Trường hợp đây là điểm nóng đổ trộm tái diễn nhiều lần: Officer ghi chú kiến nghị UBND phường/xã xem xét bố trí thùng rác công cộng hoặc lắp camera giám sát.\r\n\r\n**Bước tiếp theo:** Chuyển sang Bước 5.",
-    "char_count": 366
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 4: Phòng ngừa tái phát sinh bãi rác]\n1. Cắm biển nhắc nhở/cảnh báo cấm đổ rác tại khu vực vừa dọn sạch.\r\n2. Bàn giao mặt bằng sạch cho Tổ trưởng tổ dân phố hoặc đại diện khu dân cư giám sát tự quản.\r\n3. Trường hợp đây là điểm nóng đổ trộm tái diễn nhiều lần: Cán bộ hiện trường ghi chú kiến nghị UBND phường/xã xem xét bố trí thùng rác công cộng hoặc lắp camera giám sát.\r\n\r\n**Bước tiếp theo:** Chuyển sang Bước 5.",
+    "char_count": 377
   },
   {
     "chunk_id": "sop_officer_illegal_dumping_v1_chunk_05_step_5",
@@ -77,8 +77,8 @@
     "related_actions": [
       "resolveIncident"
     ],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 5: Nghiệm thu & Đóng sự cố trên hệ thống]\n- **Trạng thái hệ thống:** Chuyển sang `resolved`\r\n- **Action tương ứng:** `resolveIncident()`\r\n\r\n**Officer cần hoàn thiện trên ứng dụng EcoAlert:**\r\n1. Chụp tối thiểu **2 ảnh hiện trường sau khi dọn sạch** (\"After photo\") từ cùng góc chụp với ảnh ban đầu để làm bằng chứng đối chứng (nộp qua mảng `resolutionEvidence`, type `AFTER_TREATMENT`).\r\n2. Nhập `resolutionSummary`: Tóm tắt kết quả (ví dụ: *\"Đã thu gom sạch khoảng 1.5m³ rác sinh hoạt, khu vực đã được rắc vôi khử khuẩn và cắm biển cảnh báo\"*).\r\n3. Nhập `treatmentMethod`: Phương pháp/lực lượng xử lý (tự xử lý tại chỗ, huy động dân cư, hay điều phối xe URENCO).\r\n4. Nhập `materialsUsed`: Các vật tư hỗ trợ nếu có (ví dụ: *\"2 bao vôi bột, thuốc xịt khử mùi\"*).\r\n5. Nhấn hoàn tất để hệ thống chuyển trạng thái sự cố sang `resolved`.\r\n\r\n**Đây là bước cuối cùng kết thúc quy trình.**",
-    "char_count": 839
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > BƯỚC 5: Nghiệm thu & Đóng sự cố trên hệ thống]\n- **Trạng thái hệ thống:** Chuyển sang `resolved`\r\n- **Action tương ứng:** `resolveIncident()`\r\n\r\n**Cán bộ hiện trường cần hoàn thiện trên ứng dụng EcoAlert:**\r\n\r\n1. Chụp tối thiểu **2 ảnh hiện trường sau khi dọn sạch** (\"After photo\") từ cùng góc chụp với ảnh ban đầu để làm bằng chứng đối chứng (nộp qua mảng `resolutionEvidence`, type `AFTER_TREATMENT`).\r\n2. Nhập `resolutionSummary`: Tóm tắt kết quả (ví dụ: _\"Đã thu gom sạch khoảng 1.5m³ rác sinh hoạt, khu vực đã được rắc vôi khử khuẩn và cắm biển cảnh báo\"_).\r\n3. Nhập `treatmentMethod`: Phương pháp/lực lượng xử lý (tự xử lý tại chỗ, huy động dân cư, hay điều phối xe URENCO).\r\n4. Nhập `materialsUsed`: Các vật tư hỗ trợ nếu có (ví dụ: _\"2 bao vôi bột, thuốc xịt khử mùi\"_).\r\n5. Nhấn hoàn tất để hệ thống chuyển trạng thái sự cố sang `resolved`.\r\n\r\n**Đây là bước cuối cùng kết thúc quy trình.**",
+    "char_count": 852
   },
   {
     "chunk_id": "sop_officer_illegal_dumping_v1_chunk_06_faq_1",
@@ -117,8 +117,8 @@
     "section_type": "faq",
     "title": "FAQ 3: Nếu bắt gặp người đang vứt rác, tôi có được phạt tiền họ không?",
     "related_actions": [],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Nếu bắt gặp người đang vứt rác, tôi có được phạt tiền họ không?\nĐáp: Không. Officer không có thẩm quyền phạt tiền hay thu giữ tài sản. Bạn yêu cầu họ dừng hành vi và tự dọn dẹp rác. Nếu họ bất hợp tác hoặc chống đối, bạn liên hệ Công an hoặc UBND xã/phường hỗ trợ xử lý.",
-    "char_count": 275
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Nếu bắt gặp người đang vứt rác, tôi có được phạt tiền họ không?\nĐáp: Không. Cán bộ hiện trường không có thẩm quyền phạt tiền hay thu giữ tài sản. Bạn yêu cầu họ dừng hành vi và tự dọn dẹp rác. Nếu họ bất hợp tác hoặc chống đối, bạn liên hệ Công an hoặc UBND xã/phường hỗ trợ xử lý.",
+    "char_count": 286
   },
   {
     "chunk_id": "sop_officer_illegal_dumping_v1_chunk_09_faq_4",
@@ -179,7 +179,55 @@
     "section_type": "faq",
     "title": "FAQ 8: Nếu gặp hoặc được hỏi về sự cố ngập lụt, ô nhiễm nguồn nước hoặc không khí thì xử lý thế nào?",
     "related_actions": [],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Nếu gặp hoặc được hỏi về sự cố ngập lụt, ô nhiễm nguồn nước hoặc không khí thì xử lý thế nào?\nĐáp: Hệ thống EcoAlert hiện tại chỉ hỗ trợ quy trình cho sự cố rác thải (illegal_dumping). Với sự cố ngập lụt, ô nhiễm nguồn nước, không khí hoặc cây đổ, Officer thông báo sự cố nằm ngoài phạm vi hỗ trợ của hệ thống và hướng dẫn liên hệ cơ quan chuyên trách địa phương (Công ty Thoát nước, Phòng TN&MT).",
-    "char_count": 402
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Nếu gặp hoặc được hỏi về sự cố ngập lụt, ô nhiễm nguồn nước hoặc không khí thì xử lý thế nào?\nĐáp: Hệ thống EcoAlert hiện tại chỉ hỗ trợ quy trình cho sự cố rác thải. Với sự cố ngập lụt, ô nhiễm nguồn nước, không khí hoặc cây đổ, Officer thông báo sự cố nằm ngoài phạm vi hỗ trợ của hệ thống và hướng dẫn liên hệ cơ quan chuyên trách địa phương (Công ty Thoát nước, Phòng TN&MT).",
+    "char_count": 384
+  },
+  {
+    "chunk_id": "sop_officer_illegal_dumping_v1_chunk_14_faq_9",
+    "document_id": "sop_officer_illegal_dumping_v1",
+    "category": "illegal_dumping",
+    "target_role": "OFFICER",
+    "doc_type": "sop_workflow",
+    "section_type": "faq",
+    "title": "FAQ 9: Hành vi vứt rác sinh hoạt bị phạt bao nhiêu tiền?",
+    "related_actions": [],
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Hành vi vứt rác sinh hoạt bị phạt bao nhiêu tiền?\nĐáp: Theo khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP: vứt, thải, bỏ rác không đúng nơi quy định tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng bị phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước thải đô thị, thoát nước mặt bị phạt 1.000.000 - 2.000.000 đồng; thải bỏ chất thải nhựa sinh hoạt xuống ao hồ, kênh rạch, sông, suối, biển cũng bị phạt 1.000.000 - 2.000.000 đồng; vứt tàn thuốc lá không đúng nơi quy định bị phạt 100.000 - 150.000 đồng.",
+    "char_count": 551
+  },
+  {
+    "chunk_id": "sop_officer_illegal_dumping_v1_chunk_15_faq_10",
+    "document_id": "sop_officer_illegal_dumping_v1",
+    "category": "illegal_dumping",
+    "target_role": "OFFICER",
+    "doc_type": "sop_workflow",
+    "section_type": "faq",
+    "title": "FAQ 10: Không phân loại rác sinh hoạt bị phạt bao nhiêu tiền?",
+    "related_actions": [],
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Không phân loại rác sinh hoạt bị phạt bao nhiêu tiền?\nĐáp: Theo khoản 1 Điều 26 Nghị định 45/2022/NĐ-CP, hộ gia đình, cá nhân không phân loại chất thải rắn sinh hoạt theo quy định hoặc không sử dụng bao bì chứa chất thải rắn sinh hoạt theo quy định bị phạt 500.000 - 1.000.000 đồng, áp dụng từ ngày 01/01/2025.",
+    "char_count": 315
+  },
+  {
+    "chunk_id": "sop_officer_illegal_dumping_v1_chunk_16_faq_11",
+    "document_id": "sop_officer_illegal_dumping_v1",
+    "category": "illegal_dumping",
+    "target_role": "OFFICER",
+    "doc_type": "sop_workflow",
+    "section_type": "faq",
+    "title": "FAQ 11: Ai có thẩm quyền phạt tiền người vứt rác, Cán bộ hiện trường có được lập biên bản phạt không?",
+    "related_actions": [],
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Ai có thẩm quyền phạt tiền người vứt rác, Cán bộ hiện trường có được lập biên bản phạt không?\nĐáp: Cán bộ hiện trường không có thẩm quyền phạt tiền, lập biên bản xử phạt hay thu giữ tài sản của người dân. Cán bộ chỉ yêu cầu dừng hành vi, ghi nhận hiện trường và liên hệ Công an khu vực hoặc UBND phường/xã để người có thẩm quyền xử phạt theo Điều 25, Điều 26 Nghị định 45/2022/NĐ-CP.",
+    "char_count": 388
+  },
+  {
+    "chunk_id": "sop_officer_illegal_dumping_v1_chunk_17_faq_12",
+    "document_id": "sop_officer_illegal_dumping_v1",
+    "category": "illegal_dumping",
+    "target_role": "OFFICER",
+    "doc_type": "sop_workflow",
+    "section_type": "faq",
+    "title": "FAQ 12: Điều 25 Nghị định 45/2022/NĐ-CP quy định gì về hành vi vứt rác?",
+    "related_actions": [],
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Điều 25 Nghị định 45/2022/NĐ-CP quy định gì về hành vi vứt rác?\nĐáp: Khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP quy định mức phạt đối với các hành vi vứt, thải rác không đúng nơi quy định: vứt tàn thuốc lá nơi công cộng phạt 100.000 - 150.000 đồng; vứt rác tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước phạt 1.000.000 - 2.000.000 đồng.",
+    "char_count": 440
   }
 ]

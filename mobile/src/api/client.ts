@@ -8,7 +8,7 @@ export const api = axios.create({
     "Content-Type": "application/json",
   },
   // Avoid holding the Expo Go UI on an unreachable development LAN address.
-  timeout: 8000,
+  timeout: 30000,
 });
 
 // Request Interceptor: Attach JWT Token

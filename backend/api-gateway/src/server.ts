@@ -133,6 +133,17 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 // Middleware xác thực JWT cho tất cả các yêu cầu đến /api, ngoại trừ các route công khai như login/register.
 app.use("/api", verifyToken);
 
+// Giới hạn riêng cho endpoint RAG (mỗi câu hỏi tốn lượt gọi Gemini)
+const ragLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20, // 20 câu hỏi / phút / người dùng
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => String(req.headers["x-user-id"] || "anonymous"),
+  message: errorResponse("Bạn hỏi quá nhanh, vui lòng thử lại sau ít phút."),
+});
+
+app.use("/api/v1/ai/rag", ragLimiter);
 // WebSocket Proxy cho /socket.io
 const socketProxy = createProxyMiddleware({
   target: process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006",
@@ -183,7 +194,7 @@ setupProxy(
 setupProxy(
   "/api/v1/users",
   process.env.USER_SERVICE_URL || "http://localhost:3001",
-);  
+);
 setupProxy(
   "/api/v1/alerts",
   process.env.ALERT_SERVICE_URL || "http://localhost:3002",

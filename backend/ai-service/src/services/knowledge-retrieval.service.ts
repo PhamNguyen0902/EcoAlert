@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, TaskType } from "@google/generative-ai";
 import {
   KnowledgeChunkModel,
   IKnowledgeChunk,
@@ -49,6 +49,40 @@ export class KnowledgeRetrievalService {
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 
+  // Hàm loại bỏ dấu tiếng Việt nội bộ cho service truy xuất
+  private normalizeText(s: string): string {
+    return s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .trim();
+  }
+  // Boost điểm khi từ khóa xuất hiện trong tiêu đề (hỗ trợ cả có dấu và không dấu)
+  private lexicalBoost(query: string, title: string): number {
+    const qNorm = this.normalizeText(query);
+    const tNorm = this.normalizeText(title);
+    const normalizedKeys = [
+      "phat",
+      "bao nhieu tien",
+      "tham quyen",
+      "duoi 1m",
+      "tren 1m",
+      "boc mui",
+      "phan loai",
+      "nghi dinh 45",
+      "dieu 25",
+      "dieu 26",
+    ];
+    let boost = 0;
+    for (const k of normalizedKeys) {
+      if (qNorm.includes(k) && tNorm.includes(k)) {
+        boost += 0.04;
+      }
+    }
+    return Math.min(boost, 0.1);
+  }
+
   /**
    * Truy xuất Top-K chunks liên quan nhất từ MongoDB
    */
@@ -56,16 +90,19 @@ export class KnowledgeRetrievalService {
     query: string,
     filter: RetrievalFilter = {},
   ): Promise<RetrievedChunk[]> {
-    const topK = filter.topK || 3;
-    const minScore = filter.minScore || 0.5;
+    const topK = filter.topK ?? 3;
+    const minScore = filter.minScore ?? 0.65;
 
     // 1. Vector hóa câu hỏi của người dùng
-    const queryRes = await this.embeddingModel.embedContent(query);
+    const queryRes = await this.embeddingModel.embedContent({
+      content: { role: "user", parts: [{ text: query }] },
+      taskType: TaskType.RETRIEVAL_QUERY,
+    });
     const queryEmbedding: number[] = queryRes.embedding.values;
 
-    // 2. Metadata Filtering trên MongoDB(Khóa chặt chỉ lấy dữ liệu rác thải)
+    // 2. Metadata Filtering trên MongoDB
     const mongoQuery: Record<string, any> = {
-      category: "illegal_dumping",
+      category: filter.category ?? "illegal_dumping",
     };
     if (filter.targetRole) mongoQuery.target_role = filter.targetRole;
 
@@ -76,12 +113,12 @@ export class KnowledgeRetrievalService {
       return [];
     }
 
-    // 3. Tính điểm tương đồng ngữ nghĩa (Cosine Similarity)
+    // 3. Tính điểm tương đồng ngữ nghĩa
     const lowerQuery = query.toLowerCase();
     const scoredList = candidateChunks.map((chunk) => {
       let score = this.cosineSimilarity(queryEmbedding, chunk.embedding);
 
-      // Keyword Boost (Hybrid nhẹ): nếu query nhắc trực tiếp tên action thì ưu tiên thêm 5%
+      // Boost 5% nếu query nhắc trực tiếp tên action
       if (chunk.related_actions && chunk.related_actions.length > 0) {
         for (const action of chunk.related_actions) {
           if (lowerQuery.includes(action.toLowerCase())) {
@@ -90,6 +127,9 @@ export class KnowledgeRetrievalService {
           }
         }
       }
+
+      // Boost theo từ khóa trong tiêu đề (độc lập với action)
+      score += this.lexicalBoost(query, chunk.title);
 
       return {
         chunk_id: chunk.chunk_id,
@@ -102,11 +142,22 @@ export class KnowledgeRetrievalService {
       };
     });
 
-    // 4. Sắp xếp điểm giảm dần và lấy Top-K thỏa minScore
-    return scoredList
-      .filter((item) => item.score >= minScore)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, topK);
+    // 4. Sắp xếp giảm dần
+    const ranked = scoredList.sort((a, b) => b.score - a.score);
+
+    console.log(
+      "[RAG] top scores:",
+      ranked
+        .slice(0, 3)
+        .map((r) => `${(r.score * 100).toFixed(1)} ${r.chunk_id}`),
+    );
+
+    const passed = ranked.filter((item) => item.score >= minScore);
+    if (passed.length === 0) return [];
+
+    // Chỉ giữ chunk sát điểm cao nhất (chênh tối đa 0.06)
+    const top = passed[0].score;
+    return passed.filter((i) => top - i.score <= 0.06).slice(0, topK);
   }
 }
 
