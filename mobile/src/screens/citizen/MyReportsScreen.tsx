@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
+  ScrollView,
   Alert as RNAlert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FileText, PlusCircle, Edit2, Trash2 } from "lucide-react-native";
-import { useAlerts, useDeleteAlert } from "../../hooks/useAlerts";
+import { useCitizenReports, useDeleteAlert } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
 import { EditAlertModal } from "../../components/modals/EditAlertModal";
 import { CitizenHeader } from "../../components/citizen/CitizenHeader";
@@ -41,6 +43,8 @@ import {
 
 import { useOfflineSync } from "../../hooks/useOfflineSync";
 import { CloudUpload, RefreshCw, WifiOff } from "lucide-react-native";
+import { matchesMyReportFilter } from "../../utils/citizenIncidents";
+import type { MyReportFilter } from "../../utils/citizenIncidents";
 
 export const MyReportsScreen: React.FC<
   BottomTabScreenProps<CitizenTabParamList, "MyReportsTab">
@@ -50,6 +54,7 @@ export const MyReportsScreen: React.FC<
   const { language, t } = useLanguage();
   const { data: profile } = useProfile();
   const [editingAlert, setEditingAlert] = useState<AlertItem | null>(null);
+  const [filter, setFilter] = useState<MyReportFilter>("ALL");
 
   const {
     offlineDrafts,
@@ -68,22 +73,40 @@ export const MyReportsScreen: React.FC<
     );
   };
 
-  const filterParams = React.useMemo<Record<string, string>>(() => {
-    const filters: Record<string, string> = {};
-    if (typeof profile?._id === "string") {
-      filters.reporterId = profile._id;
-    }
-    return filters;
-  }, [profile?._id]);
-
   const {
-    data: alertsData,
+    data,
     isLoading,
+    isError,
     refetch,
     isRefetching,
-  } = useAlerts(1, 50, filterParams);
-
-  const alerts = alertsData?.items ?? [];
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useCitizenReports(profile?._id);
+  const alerts = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  );
+  const filteredAlerts = useMemo(
+    () => alerts.filter((alert) => matchesMyReportFilter(alert, filter)),
+    [alerts, filter],
+  );
+  const counts = useMemo(
+    () => ({
+      ALL: alerts.length,
+      PROCESSING: alerts.filter((alert) =>
+        matchesMyReportFilter(alert, "PROCESSING"),
+      ).length,
+      RESOLVED: alerts.filter((alert) =>
+        matchesMyReportFilter(alert, "RESOLVED"),
+      ).length,
+    }),
+    [alerts],
+  );
+  const filterLabels: Record<MyReportFilter, string> =
+    language === "vi"
+      ? { ALL: "Tất cả", PROCESSING: "Đang xử lý", RESOLVED: "Đã xử lý" }
+      : { ALL: "All", PROCESSING: "In progress", RESOLVED: "Resolved" };
 
   const handleDelete = (item: AlertItem) => {
     RNAlert.alert(
@@ -223,7 +246,7 @@ export const MyReportsScreen: React.FC<
         }
       />
       <FlatList
-        data={alerts}
+        data={filteredAlerts}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
@@ -245,14 +268,50 @@ export const MyReportsScreen: React.FC<
                 "Theo dõi tiến trình xử lý báo cáo của bạn.",
               )}
             </Text>
-            <View
-              style={[styles.countChip, { backgroundColor: colors.greenSoft }]}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filters}
             >
-              <Text style={[civicType.meta, { color: colors.primary }]}>
-                {language === "vi" ? "Tất cả" : "All"} ·{" "}
-                {alertsData?.total ?? alerts.length}
+              {(["ALL", "PROCESSING", "RESOLVED"] as MyReportFilter[]).map(
+                (item) => (
+                  <TouchableOpacity
+                    key={item}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: filter === item }}
+                    onPress={() => setFilter(item)}
+                    style={[
+                      styles.filterChip,
+                      {
+                        backgroundColor:
+                          filter === item ? colors.greenSoft : colors.elevated,
+                        borderColor:
+                          filter === item ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.filterLabel,
+                        {
+                          color:
+                            filter === item ? colors.primary : colors.textMuted,
+                        },
+                      ]}
+                    >
+                      {filterLabels[item]} · {counts[item]}
+                    </Text>
+                  </TouchableOpacity>
+                ),
+              )}
+            </ScrollView>
+            {hasNextPage && (
+              <Text style={[civicType.meta, { color: colors.textMuted }]}>
+                {language === "vi"
+                  ? `Đã tải ${alerts.length}/${data?.pages[0]?.total ?? 0} báo cáo. Số đếm dựa trên báo cáo đã tải.`
+                  : `Loaded ${alerts.length}/${data?.pages[0]?.total ?? 0} reports. Counts reflect loaded reports.`}
               </Text>
-            </View>
+            )}
             {offlineCount > 0 ? (
               <Card
                 appearance="civic"
@@ -314,6 +373,33 @@ export const MyReportsScreen: React.FC<
             ) : null}
           </View>
         }
+        ListFooterComponent={
+          hasNextPage || isError ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              disabled={isFetchingNextPage}
+              onPress={() => (isError ? void refetch() : void fetchNextPage())}
+              style={[
+                civicStyles.secondaryButton,
+                { borderColor: colors.border },
+              ]}
+            >
+              {isFetchingNextPage ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Text style={[civicType.button, { color: colors.primary }]}>
+                  {isError
+                    ? language === "vi"
+                      ? "Không tải được báo cáo · Thử lại"
+                      : "Could not load reports · Retry"
+                    : language === "vi"
+                      ? "Tải thêm báo cáo"
+                      : "Load more reports"}
+                </Text>
+              )}
+            </TouchableOpacity>
+          ) : null
+        }
         ListEmptyComponent={
           !isLoading ? (
             <Card appearance="civic" style={styles.emptyCard}>
@@ -323,13 +409,29 @@ export const MyReportsScreen: React.FC<
                 style={{ marginBottom: 12 }}
               />
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                {t("myReports.emptyTitle", "No Reports Submitted")}
+                {isError
+                  ? language === "vi"
+                    ? "Chưa tải được báo cáo"
+                    : "Reports unavailable"
+                  : filter === "PROCESSING"
+                    ? language === "vi"
+                      ? "Không có báo cáo đang xử lý."
+                      : "No reports in progress."
+                    : filter === "RESOLVED"
+                      ? language === "vi"
+                        ? "Bạn chưa có báo cáo đã xử lý."
+                        : "You have no resolved reports."
+                      : t("myReports.emptyTitle", "No Reports Submitted")}
               </Text>
               <Text style={[styles.emptySub, { color: colors.textMuted }]}>
-                {t(
-                  "myReports.emptySub",
-                  "You haven't reported any environmental issues yet. Help your community by creating an alert.",
-                )}
+                {filter !== "ALL"
+                  ? language === "vi"
+                    ? "Chọn bộ lọc khác để xem các báo cáo còn lại."
+                    : "Choose another filter to view other reports."
+                  : t(
+                      "myReports.emptySub",
+                      "You haven't reported any environmental issues yet. Help your community by creating an alert.",
+                    )}
               </Text>
               <TouchableOpacity
                 style={[styles.createBtn, { backgroundColor: colors.primary }]}
@@ -363,12 +465,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   listContent: { padding: space.lg, paddingBottom: space.page },
   listHeader: { gap: space.md, marginBottom: space.section },
-  countChip: {
-    alignSelf: "flex-start",
-    borderRadius: radius.chip,
+  filters: { gap: space.sm },
+  filterChip: {
+    minHeight: 38,
+    justifyContent: "center",
+    borderRadius: radius.round,
+    borderWidth: 1,
     paddingHorizontal: space.md,
-    paddingVertical: space.sm,
   },
+  filterLabel: { fontSize: 12, fontWeight: "700" },
   card: { marginBottom: space.lg },
   actionsRow: {
     flexDirection: "row",

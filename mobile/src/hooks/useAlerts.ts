@@ -1,14 +1,40 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import { alertService } from "../api/alertService";
-import { CreateAlertData, OfficerShift, ResolutionInput, ShiftLocationInput } from "../types";
+import {
+  CreateAlertData,
+  OfficerShift,
+  ResolutionInput,
+  ShiftLocationInput,
+} from "../types";
 import { AI_POLL_INTERVAL_MS, shouldPollAiAnalysis } from "../utils/aiAnalysis";
 
 const EMPTY_FILTERS: Record<string, string> = {};
 
+/** Same alerts endpoint, paginated and scoped to the signed-in citizen. */
+export const useCitizenReports = (citizenId?: string) =>
+  useInfiniteQuery({
+    queryKey: ["alerts", "citizen", citizenId],
+    enabled: Boolean(citizenId),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      alertService.getAlerts(pageParam, 50, { reporterId: citizenId ?? "" }),
+    getNextPageParam: (last, pages) =>
+      pages.reduce((count, page) => count + page.items.length, 0) <
+        last.total && last.items.length > 0
+        ? pages.length + 1
+        : undefined,
+    staleTime: 2 * 60 * 1000,
+  });
+
 export const useAlerts = (
   page = 1,
   limit = 20,
-  filters: Record<string, string> = EMPTY_FILTERS
+  filters: Record<string, string> = EMPTY_FILTERS,
 ) => {
   return useQuery({
     queryKey: ["alerts", page, limit, filters],
@@ -36,28 +62,32 @@ export const useOfficerTasks = (page = 1, limit = 20, status?: string) => {
   });
 };
 
-export const useCurrentShift = () => useQuery<OfficerShift | null>({
-  queryKey: ['officer-shift', 'current'],
-  queryFn: () => alertService.getCurrentShift(),
-  staleTime: 30_000,
-});
+export const useCurrentShift = () =>
+  useQuery<OfficerShift | null>({
+    queryKey: ["officer-shift", "current"],
+    queryFn: () => alertService.getCurrentShift(),
+    staleTime: 30_000,
+  });
 
 export const useStartShift = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (location: ShiftLocationInput) => alertService.startShift(location),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['officer-shift'] }),
+    mutationFn: (location: ShiftLocationInput) =>
+      alertService.startShift(location),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["officer-shift"] }),
   });
 };
 
 export const useEndShift = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (location: ShiftLocationInput) => alertService.endShift(location),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['officer-shift'] }),
+    mutationFn: (location: ShiftLocationInput) =>
+      alertService.endShift(location),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["officer-shift"] }),
   });
 };
-
 
 export const useCreateAlert = () => {
   const queryClient = useQueryClient();
@@ -75,8 +105,13 @@ export const useUpdateAlert = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CreateAlertData> }) =>
-      alertService.updateAlert(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<CreateAlertData>;
+    }) => alertService.updateAlert(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
@@ -193,8 +228,15 @@ export const useUpdateAlertStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, status, officerNote }: { id: string; status: string; officerNote?: string }) =>
-      alertService.updateAlertStatus(id, status, officerNote),
+    mutationFn: ({
+      id,
+      status,
+      officerNote,
+    }: {
+      id: string;
+      status: string;
+      officerNote?: string;
+    }) => alertService.updateAlertStatus(id, status, officerNote),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
@@ -206,7 +248,8 @@ export const useAddOfficerNote = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, note }: { id: string; note: string }) => alertService.addOfficerNote(id, note),
+    mutationFn: ({ id, note }: { id: string; note: string }) =>
+      alertService.addOfficerNote(id, note),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
     },
@@ -227,11 +270,18 @@ export const useAssignOfficer = () => {
   });
 };
 
-export const useCheckNearbyAlerts = (lat?: number, lng?: number, radius = 200) => {
+export const useCheckNearbyAlerts = (
+  lat?: number,
+  lng?: number,
+  radius = 200,
+) => {
   const hasCoordinates = lat !== undefined && lng !== undefined;
   return useQuery({
     queryKey: ["nearby-alerts", lat, lng, radius],
-    queryFn: () => (hasCoordinates ? alertService.checkNearbyAlerts(lat, lng, radius) : Promise.resolve([])),
+    queryFn: () =>
+      hasCoordinates
+        ? alertService.checkNearbyAlerts(lat, lng, radius)
+        : Promise.resolve([]),
     enabled: hasCoordinates,
   });
 };
@@ -248,4 +298,3 @@ export const useConfirmAlert = () => {
     },
   });
 };
-
