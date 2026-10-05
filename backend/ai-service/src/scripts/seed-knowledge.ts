@@ -3,7 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { KnowledgeChunkModel } from '../models/knowledge-chunk.model';
-import { EmbeddedDocumentChunk } from './embed-chunks';
+import type { EmbeddedDocumentChunk } from './embed-chunks';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 

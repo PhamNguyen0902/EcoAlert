@@ -101,24 +101,43 @@ app.post("/validate-image", async (req, res) => {
   }
 });
 // tiếp nhận câu hỏi nghiệp vụ và truy xuất RAG cho Officer
+const officerAskSchema = z.object({
+  question: z.string().trim().min(1).max(500),
+  category: z.literal("illegal_dumping").optional(),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        text: z.string().max(2000),
+      }),
+    )
+    .max(6)
+    .optional(),
+});
+
+// tiếp nhận câu hỏi nghiệp vụ và truy xuất RAG cho Officer
 app.post("/rag/officer-ask", async (req, res) => {
+  const parsed = officerAskSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Vui lòng cung cấp câu hỏi hợp lệ (tối đa 500 ký tự).",
+    });
+  }
+
   try {
-    const { question, category } = req.body;
-    if (!question || typeof question !== "string") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Vui lòng cung cấp câu hỏi hợp lệ." });
-    }
+    console.log("[RAG] history length:", parsed.data.history?.length ?? 0);
     const result = await officerRagService.ask(
-      question,
-      category || "illegal_dumping",
+      parsed.data.question,
+      parsed.data.category ?? "illegal_dumping",
+      parsed.data.history ?? [],
     );
     return res.status(200).json({ success: true, data: result });
   } catch (error: any) {
     logger.error("Officer RAG request failed", error);
     return res.status(500).json({
       success: false,
-      message: error?.message || "Lỗi xử lý yêu cầu RAG.",
+      message: "Trợ lý AI tạm thời không khả dụng. Vui lòng thử lại sau.",
     });
   }
 });

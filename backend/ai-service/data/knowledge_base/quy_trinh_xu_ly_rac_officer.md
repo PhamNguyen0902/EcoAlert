@@ -11,7 +11,7 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 # QUY TRÌNH XỬ LÝ SỰ CỐ XẢ RÁC BỪA BÃI — DÀNH CHO OFFICER
 
 **Đối tượng áp dụng:** Cán bộ tiếp nhận và xử lý sự cố (Officer) được hệ thống phân công (`assignedOfficerId === actor.id`).
-**Mục tiêu của Officer:** Khảo sát thực địa, đánh giá hiện trường, điều phối lực lượng thu gom dọn sạch rác, chụp ảnh nghiệm thu và đóng sự cố trên hệ thống EcoAlert. Officer không thực hiện xử phạt tiền hoặc xử lý tài sản.
+**Mục tiêu của Officer:** Khảo sát thực địa, đánh giá hiện trường, điều phối lực lượng thu gom dọn sạch rác, chụp ảnh nghiệm thu và đóng sự cố trên hệ thống EcoAlert. Cán bộ hiện trường không thực hiện xử phạt tiền hoặc xử lý tài sản.
 **Mã danh mục sự cố:** `category = illegal_dumping`
 **Luồng trạng thái hệ thống:** `pending → assigned → in_progress → resolved`
 **Phạm vi áp dụng duy nhất:** Hệ thống RAG này CHỈ hỗ trợ xử lý sự cố RÁC THẢI (xả rác bừa bãi, bãi rác tự phát, thu gom chất thải). Hoàn toàn KHÔNG tiếp nhận và KHÔNG hướng dẫn các loại sự cố khác như: Ngập lụt (Flooding), Ô nhiễm không khí (Air pollution), Ô nhiễm nguồn nước (Water pollution), Cây xanh gãy đổ (Fallen tree).
@@ -19,10 +19,12 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 ---
 
 ## BƯỚC 1: Khảo sát hiện trường
+
 - **Trạng thái hệ thống:** `in_progress` (sau khi gọi `startHandling`)
 - **Action tương ứng:** `startHandling()` → chuyển từ `assigned` sang `in_progress`
 
 **Nhiệm vụ của Officer:**
+
 1. Có mặt tại hiện trường đúng hạn quy định:
    - Trong vòng **30–60 phút** nếu mức độ `severity` là `HIGH` hoặc `CRITICAL`.
    - Trong vòng **2–4 giờ** nếu mức độ `severity` là `MEDIUM` hoặc `LOW`.
@@ -39,12 +41,14 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 ## BƯỚC 2: Đánh giá tình huống tại hiện trường
 
 **Tình huống A — Phát hiện người/phương tiện đang có hành vi xả rác:**
+
 1. Yêu cầu đối tượng dừng ngay hành vi xả rác.
 2. Yêu cầu đối tượng tự giác thu gom lại số rác vừa vứt vào nơi quy định.
 3. Chụp ảnh/ghi nhận lại hiện trường và thông tin sự việc vào ghi chú sự cố.
-4. Nếu đối tượng không hợp tác hoặc có hành vi chống đối: Officer liên hệ ngay Công an khu vực hoặc UBND phường/xã để can thiệp hỗ trợ, không tự ý tranh chấp hoặc xử phạt.
+4. Nếu đối tượng không hợp tác hoặc có hành vi chống đối: Cán bộ hiện trường liên hệ ngay Công an khu vực hoặc UBND phường/xã để can thiệp hỗ trợ, không tự ý tranh chấp hoặc xử phạt.
 
 **Tình huống B — Bãi rác tự phát tồn đọng (không có mặt người xả rác):**
+
 1. Ghi nhận chi tiết hiện trạng bãi rác vào ứng dụng.
 2. Kiểm tra vị trí khu đất: đất công cộng (vỉa hè, lòng đường, công viên) hay đất dự án/đất tư nhân chưa xây dựng để có phương án điều phối dọn dẹp phù hợp.
 
@@ -54,14 +58,16 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 
 ## BƯỚC 3: Điều phối thu gom và làm sạch
 
-**Officer căn cứ theo khối lượng rác đã ước lượng ở Bước 1 để chọn giải pháp:**
+**Cán bộ hiện trường căn cứ theo khối lượng rác đã ước lượng ở Bước 1 để chọn giải pháp:**
+
 - **Dưới 1m³ (quy mô nhỏ):** Huy động lực lượng tại chỗ như tổ dân phố, dân quân tự vệ hoặc đoàn thanh niên phối hợp dọn dẹp.
 - **Trên 1m³ hoặc bốc mùi nguy hại (quy mô lớn):** Liên hệ đơn vị vệ sinh môi trường đô thị (URENCO hoặc hợp tác xã môi trường địa phương) điều xe chuyên dụng và công nhân đến thu gom.
 
 **Giám sát thực địa:**
+
 - Đảm bảo rác được thu gom sạch sẽ hoàn toàn.
 - Yêu cầu rắc vôi bột hoặc phun khử trùng/khử mùi nếu bãi rác có nước rỉ rác hôi thối hoặc xác động vật.
-*(Lưu ý: Đơn vị/phương pháp dọn dẹp sẽ điền vào `treatmentMethod`, vật tư khử khuẩn/vôi bột sẽ điền vào `materialsUsed` khi đóng sự cố ở Bước 5).*
+  _(Lưu ý: Đơn vị/phương pháp dọn dẹp sẽ điền vào `treatmentMethod`, vật tư khử khuẩn/vôi bột sẽ điền vào `materialsUsed` khi đóng sự cố ở Bước 5)._
 
 **Bước tiếp theo:** Chuyển sang Bước 4.
 
@@ -71,7 +77,7 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 
 1. Cắm biển nhắc nhở/cảnh báo cấm đổ rác tại khu vực vừa dọn sạch.
 2. Bàn giao mặt bằng sạch cho Tổ trưởng tổ dân phố hoặc đại diện khu dân cư giám sát tự quản.
-3. Trường hợp đây là điểm nóng đổ trộm tái diễn nhiều lần: Officer ghi chú kiến nghị UBND phường/xã xem xét bố trí thùng rác công cộng hoặc lắp camera giám sát.
+3. Trường hợp đây là điểm nóng đổ trộm tái diễn nhiều lần: Cán bộ hiện trường ghi chú kiến nghị UBND phường/xã xem xét bố trí thùng rác công cộng hoặc lắp camera giám sát.
 
 **Bước tiếp theo:** Chuyển sang Bước 5.
 
@@ -82,11 +88,12 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 - **Trạng thái hệ thống:** Chuyển sang `resolved`
 - **Action tương ứng:** `resolveIncident()`
 
-**Officer cần hoàn thiện trên ứng dụng EcoAlert:**
+**Cán bộ hiện trường cần hoàn thiện trên ứng dụng EcoAlert:**
+
 1. Chụp tối thiểu **2 ảnh hiện trường sau khi dọn sạch** ("After photo") từ cùng góc chụp với ảnh ban đầu để làm bằng chứng đối chứng (nộp qua mảng `resolutionEvidence`, type `AFTER_TREATMENT`).
-2. Nhập `resolutionSummary`: Tóm tắt kết quả (ví dụ: *"Đã thu gom sạch khoảng 1.5m³ rác sinh hoạt, khu vực đã được rắc vôi khử khuẩn và cắm biển cảnh báo"*).
+2. Nhập `resolutionSummary`: Tóm tắt kết quả (ví dụ: _"Đã thu gom sạch khoảng 1.5m³ rác sinh hoạt, khu vực đã được rắc vôi khử khuẩn và cắm biển cảnh báo"_).
 3. Nhập `treatmentMethod`: Phương pháp/lực lượng xử lý (tự xử lý tại chỗ, huy động dân cư, hay điều phối xe URENCO).
-4. Nhập `materialsUsed`: Các vật tư hỗ trợ nếu có (ví dụ: *"2 bao vôi bột, thuốc xịt khử mùi"*).
+4. Nhập `materialsUsed`: Các vật tư hỗ trợ nếu có (ví dụ: _"2 bao vôi bột, thuốc xịt khử mùi"_).
 5. Nhấn hoàn tất để hệ thống chuyển trạng thái sự cố sang `resolved`.
 
 **Đây là bước cuối cùng kết thúc quy trình.**
@@ -102,7 +109,7 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 Đáp: Bạn gọi `confirmArrival()` trên app để check-in vị trí GPS, sau đó chụp ảnh hiện trạng và ước lượng khối lượng rác (Bước 1).
 
 **Hỏi: Nếu bắt gặp người đang vứt rác, tôi có được phạt tiền họ không?**
-Đáp: Không. Officer không có thẩm quyền phạt tiền hay thu giữ tài sản. Bạn yêu cầu họ dừng hành vi và tự dọn dẹp rác. Nếu họ bất hợp tác hoặc chống đối, bạn liên hệ Công an hoặc UBND xã/phường hỗ trợ xử lý.
+Đáp: Không. Cán bộ hiện trường không có thẩm quyền phạt tiền hay thu giữ tài sản. Bạn yêu cầu họ dừng hành vi và tự dọn dẹp rác. Nếu họ bất hợp tác hoặc chống đối, bạn liên hệ Công an hoặc UBND xã/phường hỗ trợ xử lý.
 
 **Hỏi: Rác ít dưới 1m³ thì liên hệ ai dọn?**
 Đáp: Khối lượng dưới 1m³ không cần gọi xe URENCO, bạn có thể huy động tổ dân phố, dân quân hoặc đoàn thanh niên tại chỗ phối hợp dọn dẹp (Bước 3).
@@ -117,4 +124,16 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 Đáp: Có. Cần cắm biển nhắc nhở cấm đổ rác và bàn giao cho tổ dân phố tự quản ở Bước 4 để tránh tái phát.
 
 **Hỏi: Nếu gặp hoặc được hỏi về sự cố ngập lụt, ô nhiễm nguồn nước hoặc không khí thì xử lý thế nào?**
-Đáp: Hệ thống EcoAlert hiện tại chỉ hỗ trợ quy trình cho sự cố rác thải (illegal_dumping). Với sự cố ngập lụt, ô nhiễm nguồn nước, không khí hoặc cây đổ, Officer thông báo sự cố nằm ngoài phạm vi hỗ trợ của hệ thống và hướng dẫn liên hệ cơ quan chuyên trách địa phương (Công ty Thoát nước, Phòng TN&MT).
+Đáp: Hệ thống EcoAlert hiện tại chỉ hỗ trợ quy trình cho sự cố rác thải. Với sự cố ngập lụt, ô nhiễm nguồn nước, không khí hoặc cây đổ, Officer thông báo sự cố nằm ngoài phạm vi hỗ trợ của hệ thống và hướng dẫn liên hệ cơ quan chuyên trách địa phương (Công ty Thoát nước, Phòng TN&MT).
+
+**Hỏi: Hành vi vứt rác sinh hoạt bị phạt bao nhiêu tiền?**
+Đáp: Theo khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP: vứt, thải, bỏ rác không đúng nơi quy định tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng bị phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước thải đô thị, thoát nước mặt bị phạt 1.000.000 - 2.000.000 đồng; thải bỏ chất thải nhựa sinh hoạt xuống ao hồ, kênh rạch, sông, suối, biển cũng bị phạt 1.000.000 - 2.000.000 đồng; vứt tàn thuốc lá không đúng nơi quy định bị phạt 100.000 - 150.000 đồng.
+
+**Hỏi: Không phân loại rác sinh hoạt bị phạt bao nhiêu tiền?**
+Đáp: Theo khoản 1 Điều 26 Nghị định 45/2022/NĐ-CP, hộ gia đình, cá nhân không phân loại chất thải rắn sinh hoạt theo quy định hoặc không sử dụng bao bì chứa chất thải rắn sinh hoạt theo quy định bị phạt 500.000 - 1.000.000 đồng, áp dụng từ ngày 01/01/2025.
+
+**Hỏi: Ai có thẩm quyền phạt tiền người vứt rác, Cán bộ hiện trường có được lập biên bản phạt không?**
+Đáp: Cán bộ hiện trường không có thẩm quyền phạt tiền, lập biên bản xử phạt hay thu giữ tài sản của người dân. Cán bộ chỉ yêu cầu dừng hành vi, ghi nhận hiện trường và liên hệ Công an khu vực hoặc UBND phường/xã để người có thẩm quyền xử phạt theo Điều 25, Điều 26 Nghị định 45/2022/NĐ-CP.
+
+**Hỏi: Điều 25 Nghị định 45/2022/NĐ-CP quy định gì về hành vi vứt rác?**
+Đáp: Khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP quy định mức phạt đối với các hành vi vứt, thải rác không đúng nơi quy định: vứt tàn thuốc lá nơi công cộng phạt 100.000 - 150.000 đồng; vứt rác tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước phạt 1.000.000 - 2.000.000 đồng.
