@@ -7,7 +7,7 @@ interface Props {
 }
 export const ReportHeader = ({ onBack, avatarLabel = "EA" }: Props) => (
   <CitizenHeader
-    title="Báo Cáo"
+    title="Báo cáo"
     onBack={onBack}
     avatarLabel={avatarLabel.slice(0, 2).toUpperCase()}
   />

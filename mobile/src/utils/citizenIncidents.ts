@@ -36,6 +36,7 @@ export const getIncidentGroup = (status?: string): IncidentGroup | null => {
 export const toMapCoordinate = (
   location?: GeoLocation | null,
 ): MapCoordinate | null => {
+  if (!Array.isArray(location?.coordinates)) return null;
   const [longitude, latitude] = location?.coordinates ?? [];
   if (typeof latitude !== "number" || typeof longitude !== "number")
     return null;

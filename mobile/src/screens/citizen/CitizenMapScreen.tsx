@@ -240,7 +240,7 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
                   styles.chip,
                   {
                     backgroundColor:
-                      filter === item ? colors.greenSoft : colors.surface,
+                      filter === item ? colors.primary : colors.surface,
                     borderColor:
                       filter === item ? colors.primary : colors.border,
                   },
@@ -249,7 +249,7 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
                 <Text
                   style={[
                     styles.chipText,
-                    { color: filter === item ? colors.primary : colors.text },
+                    { color: filter === item ? "#07101F" : colors.text },
                   ]}
                 >
                   {labels[item]}

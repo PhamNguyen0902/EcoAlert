@@ -38,6 +38,7 @@ import {
 } from "../../../utils/aiAnalysis";
 import { useFieldReport } from "../FieldReportContext";
 import { formatAlertReference } from "../utils";
+import { ReportHeader } from "../components/ReportHeader";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportSuccess">;
 
@@ -85,6 +86,7 @@ export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
+      <ReportHeader onBack={goHome} />
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: space.lg,
-    paddingTop: space.page,
+    paddingTop: space.section,
     gap: space.section,
   },
   hero: { alignItems: "center" },

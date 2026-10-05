@@ -41,6 +41,8 @@ test("invalid, missing and out-of-range coordinates are ignored; zero is valid",
   ])
     assert.equal(toMapCoordinate({ coordinates }), null);
   assert.equal(toMapCoordinate(undefined), null);
+  assert.equal(toMapCoordinate({ coordinates: {} }), null);
+  assert.equal(toMapCoordinate({ coordinates: "106,10" }), null);
   assert.equal(toMapCoordinate({ coordinates: [0, 0] }).latitude, 0);
 });
 test("all workflow groups are consistent and rejected/unknown are not public markers", () => {

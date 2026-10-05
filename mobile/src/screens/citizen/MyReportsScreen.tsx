@@ -429,17 +429,26 @@ export const MyReportsScreen: React.FC<
                       ? language === "vi"
                         ? "Bạn chưa có báo cáo đã xử lý."
                         : "You have no resolved reports."
-                      : t("myReports.emptyTitle", "No Reports Submitted")}
+                      : !profile
+                        ? language === "vi"
+                          ? "Đăng nhập để xem báo cáo"
+                          : "Sign in to view reports"
+                        : language === "vi"
+                          ? "Bạn chưa gửi báo cáo nào"
+                          : "No reports submitted yet"}
               </Text>
               <Text style={[styles.emptySub, { color: colors.textMuted }]}>
-                {filter !== "ALL"
+                {isError
                   ? language === "vi"
-                    ? "Chọn bộ lọc khác để xem các báo cáo còn lại."
-                    : "Choose another filter to view other reports."
-                  : t(
-                      "myReports.emptySub",
-                      "You haven't reported any environmental issues yet. Help your community by creating an alert.",
-                    )}
+                    ? "Kiểm tra kết nối và bấm Thử lại bên dưới."
+                    : "Check your connection and retry below."
+                  : filter !== "ALL"
+                    ? language === "vi"
+                      ? "Chọn bộ lọc khác để xem các báo cáo còn lại."
+                      : "Choose another filter to view other reports."
+                    : language === "vi"
+                      ? "Các báo cáo điểm rác bạn gửi sẽ xuất hiện tại đây."
+                      : "Your waste incident reports will appear here."}
               </Text>
               <TouchableOpacity
                 style={[styles.createBtn, { backgroundColor: colors.primary }]}
@@ -448,7 +457,7 @@ export const MyReportsScreen: React.FC<
               >
                 <PlusCircle
                   size={18}
-                  color="#FFF"
+                  color="#07101F"
                   style={{ marginRight: space.sm }}
                 />
                 <Text style={styles.createBtnText}>

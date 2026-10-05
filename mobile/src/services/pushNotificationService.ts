@@ -40,9 +40,8 @@ export const pushNotificationService = {
       }
 
       if (finalStatus !== "granted") {
-        console.log(
-          "[PushNotifications] Permission not granted for notifications.",
-        );
+        if (__DEV__)
+          console.log("[PushNotifications] Permission not granted.");
         return null;
       }
 
@@ -56,7 +55,8 @@ export const pushNotificationService = {
           projectId ? { projectId } : undefined,
         );
         token = tokenData.data;
-        console.log("[PushNotifications] Device Expo Push Token:", token);
+        if (__DEV__)
+          console.log("[PushNotifications] Device push token obtained.");
       } catch {
         console.warn(
           "[PushNotifications] Expo Push Token not active in standard Expo Go without EAS projectId. Remote push notifications require a Development Build (eas build).",
@@ -68,9 +68,8 @@ export const pushNotificationService = {
       if (token) {
         try {
           await api.patch("/v1/users/profile", { pushToken: token });
-          console.log(
-            "[PushNotifications] Push token registered with backend successfully.",
-          );
+          if (__DEV__)
+            console.log("[PushNotifications] Push token registered.");
         } catch (apiErr) {
           console.warn(
             "[PushNotifications] Failed to save push token to backend:",
@@ -97,7 +96,6 @@ export const pushNotificationService = {
   ) => {
     return Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
-      console.log("[PushNotifications] User tapped notification:", data);
       if (
         response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
       ) {
@@ -128,10 +126,6 @@ export const pushNotificationService = {
     onNotificationReceived: (notification: Notifications.Notification) => void,
   ) => {
     return Notifications.addNotificationReceivedListener((notification) => {
-      console.log(
-        "[PushNotifications] Notification received in foreground:",
-        notification,
-      );
       onNotificationReceived(notification);
     });
   },
