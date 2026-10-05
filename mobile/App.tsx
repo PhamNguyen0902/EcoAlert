@@ -1,9 +1,13 @@
 import "react-native-gesture-handler";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { Alert } from "react-native";
+import { Alert, AppState } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
@@ -24,9 +28,16 @@ const queryClient = new QueryClient({
 import { pushNotificationService } from "./src/services/pushNotificationService";
 import { useOfflineSync } from "./src/hooks/useOfflineSync";
 import { getPhysicalDeviceApiUrlWarning } from "./src/utils/constants";
+import { useProfile } from "./src/hooks/useAuth";
+import {
+  navigationRef,
+  flushPendingNotification,
+  openNotificationPayload,
+} from "./src/navigation/navigationRef";
 
 const AppContent: React.FC = () => {
   const { isDark, colors } = useTheme();
+  const { data: profile } = useProfile();
   useOfflineSync();
   const hasShownApiUrlWarning = React.useRef(false);
 
@@ -40,18 +51,57 @@ const AppContent: React.FC = () => {
   }, []);
 
   React.useEffect(() => {
-    // Register push notifications
-    void pushNotificationService.registerForPushNotifications();
+    if (profile?._id)
+      void pushNotificationService.registerForPushNotifications();
+  }, [profile?._id]);
+
+  const clearHandledTap = () => {
+    void pushNotificationService
+      .clearLastNotificationResponse()
+      .catch(() => undefined);
+  };
+  const flushTap = () => {
+    if (flushPendingNotification()) clearHandledTap();
+  };
+
+  React.useEffect(() => {
+    let active = true;
+    const refreshNotifications = () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["notifications-unread-count"],
+      });
+    };
+    const handleTap = (data: Record<string, unknown>, requestId: string) => {
+      refreshNotifications();
+      if (openNotificationPayload(data, requestId)) clearHandledTap();
+    };
 
     // Listen for notification responses (user tapping on push notification)
-    const responseSubscription = pushNotificationService.addNotificationResponseListener(
-      (data) => {
-        console.log("[App] User clicked notification with payload:", data);
+    const responseSubscription =
+      pushNotificationService.addNotificationResponseListener(handleTap);
+    const receivedSubscription =
+      pushNotificationService.addNotificationReceivedListener(
+        refreshNotifications,
+      );
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      (state) => {
+        if (state === "active") refreshNotifications();
       },
     );
+    void pushNotificationService
+      .getLastNotificationResponse()
+      .then((response) => {
+        if (active && response) handleTap(response.data, response.requestId);
+      })
+      .catch(() => undefined);
 
     return () => {
+      active = false;
       responseSubscription.remove();
+      receivedSubscription.remove();
+      appStateSubscription.remove();
     };
   }, []);
 
@@ -68,7 +118,12 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <NavigationContainer theme={customNavigationTheme}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={customNavigationTheme}
+      onReady={flushTap}
+      onStateChange={flushTap}
+    >
       <StatusBar style={isDark ? "light" : "dark"} />
       <RootNavigator />
     </NavigationContainer>

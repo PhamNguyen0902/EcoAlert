@@ -24,13 +24,14 @@ export type CitizenStackParamList = {
   ReportFlow: NavigatorScreenParams<ReportFlowParamList> | undefined;
   AlertDetail: { id: string };
   Profile: undefined;
+  Notifications: undefined;
   LocationPicker: { initialLocation?: LocationSelection };
 };
 export type RootStackParamList = {
   AdminApp: undefined;
   OfficerApp: undefined;
-  CitizenApp: undefined;
-  CitizenAppGuest: undefined;
+  CitizenApp: NavigatorScreenParams<CitizenStackParamList> | undefined;
+  CitizenAppGuest: NavigatorScreenParams<CitizenStackParamList> | undefined;
   Login: undefined;
   Register: undefined;
 };

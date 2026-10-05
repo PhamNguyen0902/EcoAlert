@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { FileText, House, MapPinned, Camera } from "lucide-react-native";
 import { CitizenDashboardScreen } from "../screens/citizen/CitizenDashboardScreen";
 import { CitizenMapScreen } from "../screens/citizen/CitizenMapScreen";
+import { CitizenNotificationsScreen } from "../screens/citizen/CitizenNotificationsScreen";
 import { MyReportsScreen } from "../screens/citizen/MyReportsScreen";
 import { CitizenProfileScreen } from "../screens/citizen/CitizenProfileScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
@@ -96,6 +97,7 @@ export const CitizenTabNavigator = () => (
     <Stack.Screen name="ReportFlow" component={ReportFlowNavigator} />
     <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
     <Stack.Screen name="Profile" component={CitizenProfileScreen} />
+    <Stack.Screen name="Notifications" component={CitizenNotificationsScreen} />
     {/* Kept for legacy/admin-compatible navigation. Field reporting no longer exposes manual relocation. */}
     <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
   </Stack.Navigator>

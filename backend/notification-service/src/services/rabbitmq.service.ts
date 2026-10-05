@@ -66,6 +66,8 @@ class RabbitMQService {
     // nhận workflow event từ rabbitmq, lưu notification và đẩy realtime qua socket io cho web, mobile
     const data = event.data;
     const incidentId = data.alertId || data._id || 'incident';
+    // Keep UUID eventId as the dedup key; store the entity ID separately.
+    const alertId = /^[a-f\d]{24}$/i.test(incidentId) ? incidentId : undefined;
     const incidentLabel = data.title ? `“${data.title}”` : incidentId;
 
     // Broadcast generic realtime event to all connected clients
@@ -89,6 +91,7 @@ class RabbitMQService {
           'Alert Analyzed',
           `Alert ${incidentId} has been analyzed. Category: ${data.category}, Priority: ${data.suggestedPriority}`,
           event.eventId,
+          alertId,
         );
         await notificationService.notifyOfficers(
           data.category || 'unclassified',
@@ -116,6 +119,7 @@ class RabbitMQService {
             'Officer started handling your report',
             `An Officer has started handling incident ${incidentLabel}.`,
             event.eventId,
+            alertId,
           );
         }
         break;
@@ -127,6 +131,7 @@ class RabbitMQService {
             'Officer arrived at the scene',
             `The assigned Officer has arrived for incident ${incidentLabel}.`,
             event.eventId,
+            alertId,
           );
         }
         break;
@@ -138,6 +143,7 @@ class RabbitMQService {
             'Incident resolved',
             `Incident ${incidentLabel} has been marked as resolved and is awaiting Admin review.`,
             event.eventId,
+            alertId,
           );
         }
         await notificationService.notifyAdmins(
@@ -154,6 +160,7 @@ class RabbitMQService {
             'Incident closed',
             `Incident ${incidentLabel} was reviewed and closed by an Admin.`,
             event.eventId,
+            alertId,
           );
         }
         if (data.assignedOfficerId) {
@@ -174,6 +181,7 @@ class RabbitMQService {
               'Alert Status Update',
               `Your alert ${incidentId} is now ${data.status}`,
               event.eventId,
+              alertId,
             );
           }
         }

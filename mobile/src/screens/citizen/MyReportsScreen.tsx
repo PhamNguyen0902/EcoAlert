@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FileText, PlusCircle, Edit2, Trash2 } from "lucide-react-native";
 import { useCitizenReports, useDeleteAlert } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
+import { useUnreadNotificationCount } from "../../hooks/useNotifications";
 import { EditAlertModal } from "../../components/modals/EditAlertModal";
 import { CitizenHeader } from "../../components/citizen/CitizenHeader";
 import { CitizenReportCard } from "../../components/citizen/CitizenReportCard";
@@ -53,6 +54,7 @@ export const MyReportsScreen: React.FC<
   const { colors, isDark } = useCivicTheme();
   const { language, t } = useLanguage();
   const { data: profile } = useProfile();
+  const unread = useUnreadNotificationCount();
   const [editingAlert, setEditingAlert] = useState<AlertItem | null>(null);
   const [filter, setFilter] = useState<MyReportFilter>("ALL");
 
@@ -238,6 +240,12 @@ export const MyReportsScreen: React.FC<
       ]}
     >
       <CitizenHeader
+        unreadCount={unread.data ?? 0}
+        onNotifications={() =>
+          navigation
+            .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+            ?.navigate("Notifications")
+        }
         avatarLabel={profile?.fullName?.charAt(0).toUpperCase() || "EA"}
         onProfile={() =>
           navigation

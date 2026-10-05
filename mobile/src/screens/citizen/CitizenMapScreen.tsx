@@ -21,6 +21,7 @@ import type {
 } from "../../navigation/types";
 import { useAlerts } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
+import { useUnreadNotificationCount } from "../../hooks/useNotifications";
 import { useDashboardLocation } from "../../hooks/useDashboardLocation";
 import { useLocation } from "../../hooks/useLocation";
 import { useLanguage } from "../../context/LanguageContext";
@@ -57,6 +58,7 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
   const isVietnamese = language === "vi";
   const alertsQuery = useAlerts(1, 100);
   const profile = useProfile();
+  const unread = useUnreadNotificationCount();
   const device = useLocation();
   const mapRef = useRef<MapView>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -159,6 +161,12 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
       ]}
     >
       <CitizenHeader
+        unreadCount={unread.data ?? 0}
+        onNotifications={() =>
+          navigation
+            .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+            ?.navigate("Notifications")
+        }
         avatarLabel={profile.data?.fullName?.charAt(0).toUpperCase() || "E"}
         onProfile={() =>
           navigation

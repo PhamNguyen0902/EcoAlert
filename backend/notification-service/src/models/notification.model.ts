@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface INotification extends Document {
   recipientId: string; // 'system', 'officers', or userId
   eventId?: string;
+  alertId?: string;
   title: string;
   message: string;
   isRead: boolean;
@@ -13,6 +14,7 @@ export interface INotification extends Document {
 const notificationSchema = new Schema<INotification>({
   recipientId: { type: String, required: true, index: true },
   eventId: { type: String },
+  alertId: { type: String },
   title: { type: String, required: true },
   message: { type: String, required: true },
   isRead: { type: Boolean, default: false },
