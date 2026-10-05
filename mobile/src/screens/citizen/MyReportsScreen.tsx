@@ -27,6 +27,12 @@ import { useCivicTheme } from "../../theme/useCivicTheme";
 import { useLanguage } from "../../context/LanguageContext";
 import { format } from "date-fns";
 import type { Alert as AlertItem } from "../../types";
+import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type {
+  CitizenStackParamList,
+  CitizenTabParamList,
+} from "../../navigation/types";
 import {
   getAiAnalysisState,
   getCategoryLabel,
@@ -36,9 +42,9 @@ import {
 import { useOfflineSync } from "../../hooks/useOfflineSync";
 import { CloudUpload, RefreshCw, WifiOff } from "lucide-react-native";
 
-export const MyReportsScreen: React.FC<{ navigation: any }> = ({
-  navigation,
-}) => {
+export const MyReportsScreen: React.FC<
+  BottomTabScreenProps<CitizenTabParamList, "MyReportsTab">
+> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useCivicTheme();
   const { language, t } = useLanguage();
@@ -130,7 +136,11 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.8}
-        onPress={() => navigation.navigate("AlertDetail", { id: item._id })}
+        onPress={() =>
+          navigation
+            .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+            ?.navigate("AlertDetail", { id: item._id })
+        }
         accessibilityRole="button"
       >
         <CitizenReportCard
@@ -206,6 +216,11 @@ export const MyReportsScreen: React.FC<{ navigation: any }> = ({
     >
       <CitizenHeader
         avatarLabel={profile?.fullName?.charAt(0).toUpperCase() || "EA"}
+        onProfile={() =>
+          navigation
+            .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+            ?.navigate("Profile")
+        }
       />
       <FlatList
         data={alerts}

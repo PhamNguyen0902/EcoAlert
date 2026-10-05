@@ -10,7 +10,6 @@ export type CitizenTabParamList = {
   MapTab: undefined;
   ReportTab: { selectedLocation?: LocationSelection } | undefined;
   MyReportsTab: undefined;
-  ProfileTab: undefined;
 };
 export type ReportFlowParamList = {
   ReportLocation: undefined;
@@ -24,6 +23,7 @@ export type CitizenStackParamList = {
   CitizenTabs: NavigatorScreenParams<CitizenTabParamList> | undefined;
   ReportFlow: NavigatorScreenParams<ReportFlowParamList> | undefined;
   AlertDetail: { id: string };
+  Profile: undefined;
   LocationPicker: { initialLocation?: LocationSelection };
 };
 export type RootStackParamList = {

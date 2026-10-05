@@ -160,7 +160,11 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
     >
       <CitizenHeader
         avatarLabel={profile.data?.fullName?.charAt(0).toUpperCase() || "E"}
-        onProfile={() => navigation.navigate("ProfileTab")}
+        onProfile={() =>
+          navigation
+            .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+            ?.navigate("Profile")
+        }
       />
       <View style={styles.mapArea}>
         <MapView

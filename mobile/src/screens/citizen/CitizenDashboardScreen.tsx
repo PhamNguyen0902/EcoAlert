@@ -242,7 +242,11 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
         avatarLabel={displayName(profile.data?.fullName)
           .charAt(0)
           .toUpperCase()}
-        onProfile={() => navigation.navigate("ProfileTab")}
+        onProfile={() =>
+          navigation
+            .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+            ?.navigate("Profile")
+        }
       />
       <ScrollView
         style={styles.scroll}
