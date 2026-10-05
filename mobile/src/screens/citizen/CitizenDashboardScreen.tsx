@@ -357,11 +357,13 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
           title={copy.nearby}
           action={copy.viewMap}
           colors={colors}
+          onPress={() => navigation.navigate("MapTab")}
         />
         <Card appearance="civic" style={styles.mapCard}>
           <MapView
             provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
             style={styles.map}
+            onPress={() => navigation.navigate("MapTab")}
             initialRegion={{
               latitude: location.latitude,
               longitude: location.longitude,

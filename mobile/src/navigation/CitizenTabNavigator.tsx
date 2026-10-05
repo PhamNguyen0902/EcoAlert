@@ -4,10 +4,12 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
   FileText,
   LayoutDashboard,
+  MapPinned,
   Plus,
   UserCircle2,
 } from "lucide-react-native";
 import { CitizenDashboardScreen } from "../screens/citizen/CitizenDashboardScreen";
+import { CitizenMapScreen } from "../screens/citizen/CitizenMapScreen";
 import { MyReportsScreen } from "../screens/citizen/MyReportsScreen";
 import { CitizenProfileScreen } from "../screens/citizen/CitizenProfileScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
@@ -50,6 +52,8 @@ const CitizenTabs = () => {
         tabBarIcon: ({ color, size }) =>
           route.name === "DashboardTab" ? (
             <LayoutDashboard color={color} size={size} />
+          ) : route.name === "MapTab" ? (
+            <MapPinned color={color} size={size} />
           ) : route.name === "ReportTab" ? (
             <Plus color="#07101F" size={size + 5} strokeWidth={3} />
           ) : route.name === "ProfileTab" ? (
@@ -63,6 +67,11 @@ const CitizenTabs = () => {
         name="DashboardTab"
         component={CitizenDashboardScreen}
         options={{ tabBarLabel: t("tabs.home") }}
+      />
+      <Tab.Screen
+        name="MapTab"
+        component={CitizenMapScreen}
+        options={{ tabBarLabel: t("tabs.map", "Bản đồ") }}
       />
       <Tab.Screen
         name="ReportTab"
