@@ -15,7 +15,7 @@ export const api = axios.create({
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     const token = await storage.getToken();
-    if (token && config.headers) {
+    if (token && config.headers && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -54,10 +54,21 @@ api.interceptors.response.use(
     const isAuthRoute =
       originalRequest?.url?.includes("/v1/auth/login") ||
       originalRequest?.url?.includes("/v1/auth/register") ||
-      originalRequest?.url?.includes("/v1/auth/refresh-token");
+      originalRequest?.url?.includes("/v1/auth/refresh-token") ||
+      originalRequest?.url?.includes("/v1/auth/logout");
 
-    // Do NOT attempt refresh token logic if 401 comes from login/register requests
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+    // Authentication endpoints handle their own errors, never global logout.
+    if (
+      error.response?.status === 401 && originalRequest &&
+      !originalRequest._retry && !isAuthRoute
+    ) {
+      const sessionToken = await storage.getToken();
+      // Ignore anonymous requests and responses belonging to a previous login.
+      if (
+        !sessionToken ||
+        originalRequest.headers?.Authorization !== `Bearer ${sessionToken}`
+      )
+        return Promise.reject(error);
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           refreshQueue.push({
@@ -82,13 +93,16 @@ api.interceptors.response.use(
         // Call refresh endpoint directly with clean axios instance to avoid interceptor loop
         const res = await axios.post(`${API_BASE_URL}/v1/auth/refresh-token`, {
           refreshToken,
-        });
+        }, { timeout: 30_000 });
 
         const { accessToken: newToken, refreshToken: newRefreshToken } = res.data?.data || {};
 
         if (!newToken) {
           throw new Error("Failed to receive new access token");
         }
+
+        if (sessionToken !== (await storage.getToken()))
+          throw new Error("Session changed while refreshing token");
 
         await storage.setToken(newToken);
         if (newRefreshToken) {
@@ -101,9 +115,9 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        await storage.clearAll();
-        if (onUnauthorizedCallback) {
-          onUnauthorizedCallback();
+        if (sessionToken === (await storage.getToken())) {
+          await storage.clearAll();
+          if (onUnauthorizedCallback) onUnauthorizedCallback();
         }
         return Promise.reject(err);
       } finally {

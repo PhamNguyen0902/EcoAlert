@@ -6,10 +6,9 @@ import { LoginScreen, RegisterScreen } from "../screens";
 import { CitizenTabNavigator } from "./CitizenTabNavigator";
 import { OfficerTabNavigator } from "./OfficerTabNavigator";
 import { AdminTabNavigator } from "./AdminTabNavigator";
-import { storage } from "../utils/storage";
 import { setUnauthorizedCallback } from "../api/client";
 import { COLORS } from "../utils/constants";
-import { useProfile } from "../hooks/useAuth";
+import { clearAuthQueryCache, useProfile } from "../hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RootStackParamList } from "./types";
 
@@ -25,9 +24,8 @@ export const RootNavigator = () => {
 
     // Register callback when 401 occurs in Axios client
     setUnauthorizedCallback(() => {
-      queryClient.setQueryData(["profile"], null);
-      queryClient.clear();
-      storage.clearAll();
+      // The API interceptor has already cleared secure session storage.
+      clearAuthQueryCache(queryClient);
     });
   }, [queryClient]);
 
