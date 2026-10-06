@@ -10,10 +10,10 @@ import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { OfficerAssistantScreen } from "../screens/officer/OfficerAssistantScreen";
 import { OfficerProfileScreen } from "../screens/officer/OfficerProfileScreen";
-import type { OfficerTabParamList } from "./types";
+import type { OfficerTabParamList, OfficerStackParamList } from "./types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const Tab = createBottomTabNavigator<OfficerTabParamList>();
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<OfficerStackParamList>();
 const OfficerTabs = () => {
   const { colors } = useTheme();
   const { language } = useLanguage();

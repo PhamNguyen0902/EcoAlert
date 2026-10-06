@@ -33,6 +33,12 @@ export type OfficerTabParamList = {
   OfficerAssistantTab: undefined;
   OfficerProfileTab: undefined;
 };
+export type OfficerStackParamList = {
+  OfficerTabs: NavigatorScreenParams<OfficerTabParamList> | undefined;
+  OfficerAlertDetail: { id: string };
+  OfficerResolution: { id: string };
+  AlertDetail: { id: string };
+};
 export type RootStackParamList = {
   AdminApp: undefined;
   OfficerApp: undefined;
