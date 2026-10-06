@@ -29,6 +29,9 @@ import {
 } from "@ecoalert/shared";
 import { rabbitMQService } from "./rabbitmq.service";
 import { userDirectoryService } from "./user-directory.service";
+import { envConfig } from "../config/env.config";
+import { haversineDistanceMeters, isValidLatitude, isValidLongitude } from "../utils/geo-evidence.util";
+import { BadRequestError } from "@ecoalert/shared";
 
 export interface WorkflowActor {
   id: string;
@@ -40,6 +43,20 @@ const normRole = (r?: string) => (r || "").toUpperCase() as WorkflowActorRole;
 const normStatus = (s?: string) => (s || "").toLowerCase() as AlertStatus;
 
 export class AlertService {
+  private validateFieldLocation(alert: IAlert, data: ConfirmArrivalDto, radiusMeters: number) {
+    if (!isValidLatitude(data.latitude) || !isValidLongitude(data.longitude) ||
+        !Number.isFinite(data.accuracyMeters) || data.accuracyMeters < 0)
+      throw new BadRequestError("Vị trí GPS không hợp lệ. Vui lòng lấy lại vị trí.");
+    if (data.accuracyMeters > envConfig.officerCheckinMaxAccuracyMeters)
+      throw new BadRequestError("Độ chính xác GPS hiện chưa đủ tốt để xác nhận bạn đã đến hiện trường.");
+    const coords = alert.location?.coordinates;
+    if (!coords || !isValidLongitude(coords[0]) || !isValidLatitude(coords[1]))
+      throw new BadRequestError("Báo cáo không có vị trí hiện trường hợp lệ.");
+    const distance = haversineDistanceMeters(coords[1], coords[0], data.latitude, data.longitude);
+    if (distance > radiusMeters)
+      throw new BadRequestError(`Bạn hiện cách vị trí sự cố khoảng ${Math.round(distance)} mét. Vui lòng đến gần hiện trường hơn để xác nhận.`);
+    return distance;
+  }
   // helper nội bộ
   private async requireAlert(id: string): Promise<IAlert> {
     if (!mongoose.isValidObjectId(id))
@@ -494,6 +511,8 @@ export class AlertService {
     if (normStatus(alert.status) !== AlertStatus.IN_PROGRESS)
       throw new ConflictError("Sự cố phải đang xử lý để check-in");
 
+    const distance = this.validateFieldLocation(alert, data, envConfig.officerCheckinRadiusMeters);
+    const now = new Date();
     const checkIn = {
       officerId: actor.id,
       location: {
@@ -501,8 +520,8 @@ export class AlertService {
         coordinates: [data.longitude, data.latitude] as [number, number],
       },
       accuracyMeters: data.accuracyMeters,
-      distanceFromIncidentMeters: 0,
-      checkedInAt: new Date(),
+      distanceFromIncidentMeters: distance,
+      checkedInAt: now,
       verified: true,
     };
 
@@ -513,7 +532,7 @@ export class AlertService {
         status: new RegExp(`^${AlertStatus.IN_PROGRESS}$`, "i"),
       },
       {
-        $set: { arrivedAt: new Date(), checkIn, updatedBy: actor.id },
+        $set: { arrivedAt: now, checkIn, updatedBy: actor.id },
         $push: {
           timeline: this.makeTimeline(
             "ARRIVED_ON_SCENE",
