@@ -151,7 +151,8 @@ export const useStartHandling = () => {
 
   return useMutation({
     mutationFn: (id: string) => alertService.startHandling(id),
-    onSuccess: (_, id) => {
+    onSuccess: (updatedAlert, id) => {
+      queryClient.setQueryData(["alert", id], updatedAlert);
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert", id] });
       queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
@@ -170,7 +171,8 @@ export const useConfirmArrival = () => {
       id: string;
       location: { latitude: number; longitude: number; accuracyMeters: number };
     }) => alertService.confirmArrival(id, location),
-    onSuccess: (_, variables) => {
+    onSuccess: (updatedAlert, variables) => {
+      queryClient.setQueryData(["alert", variables.id], updatedAlert);
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
@@ -184,7 +186,8 @@ export const useResolveIncident = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ResolutionInput }) =>
       alertService.resolveIncident(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (updatedAlert, variables) => {
+      queryClient.setQueryData(["alert", variables.id], updatedAlert);
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
