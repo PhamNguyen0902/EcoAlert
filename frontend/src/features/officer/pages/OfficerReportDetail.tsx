@@ -37,6 +37,10 @@ import { alertService, gisService } from "@/services/services";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getApiErrorMessage } from "@/lib/api-error";
+import {
+  getFreshOfficerFieldLocation,
+  attachOfficerEvidenceLocation,
+} from "@/lib/officer-field-evidence";
 import { hasValidCoordinates } from "@/lib/maps";
 import { getAlertDisplaySeverity } from "@/lib/ai-confidence";
 import {
@@ -175,6 +179,8 @@ export default function OfficerReportDetail() {
   const [reviewNote, setReviewNote] = useState("");
   const [evidenceDrafts, setEvidenceDrafts] = useState<EvidenceDraft[]>([]);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+  const [isGettingResolutionGps, setIsGettingResolutionGps] = useState(false);
+  const resolutionSubmitLock = useRef(false);
   const [classificationCategory, setClassificationCategory] = useState<
     AlertCategory | ""
   >("");
@@ -518,35 +524,39 @@ export default function OfficerReportDetail() {
   };
 
   // officer gửi kết quả xử lý sự cố
-  const handleResolve = () => {
-    const evidence = evidenceDrafts.flatMap((draft) =>
-      draft.uploadedUrl ? [{ url: draft.uploadedUrl }] : [],
+  const handleResolve = async () => {
+    if (resolutionSubmitLock.current) return;
+    if (!alert.checkIn?.verified) {
+      toast.error("Cần xác nhận đã đến hiện trường bằng ứng dụng EcoAlert trước khi hoàn thành.");
+      return;
+    }
+    const urls = evidenceDrafts.flatMap((draft) =>
+      draft.uploadedUrl ? [draft.uploadedUrl] : [],
     );
-    const data: ResolutionInput = {
-      resolutionSummary: resolutionSummary.trim(),
-      treatmentMethod: treatmentMethod.trim(),
-      materialsUsed: materialsUsed.trim() || undefined,
-      additionalNotes: additionalNotes.trim() || undefined,
-      evidence,
-    };
-    resolveIncident.mutate(
-      { id, data },
-      {
-        onSuccess: () => {
-          toast.success(t("toast.incident_resolved_success"), {
-            id: `alert-updated-${id}`,
-          });
-          setConfirmAction(null);
-        },
-        onError: (mutationError) =>
-          onWorkflowError(
-            mutationError,
-            language === "vi"
-              ? "Không thể hoàn tất xử lý sự cố này."
-              : "Unable to resolve this incident.",
-          ),
-      },
-    );
+    if (!urls.length || !resolutionSummary.trim() || !treatmentMethod.trim()) {
+      toast.error("Cần ảnh sau xử lý, tóm tắt và phương pháp xử lý.");
+      return;
+    }
+    resolutionSubmitLock.current = true;
+    setIsGettingResolutionGps(true);
+    try {
+      const location = await getFreshOfficerFieldLocation();
+      const data: ResolutionInput = {
+        resolutionSummary: resolutionSummary.trim(),
+        treatmentMethod: treatmentMethod.trim(),
+        materialsUsed: materialsUsed.trim() || undefined,
+        additionalNotes: additionalNotes.trim() || undefined,
+        evidence: attachOfficerEvidenceLocation(urls, location),
+      };
+      await resolveIncident.mutateAsync({ id, data });
+      toast.success(t("toast.incident_resolved_success"), { id: `alert-updated-${id}` });
+      setConfirmAction(null);
+    } catch (failure: unknown) {
+      onWorkflowError(failure, "Không thể lấy GPS hoặc hoàn tất xử lý. Vui lòng thử lại.");
+    } finally {
+      resolutionSubmitLock.current = false;
+      setIsGettingResolutionGps(false);
+    }
   };
 
   // admin đóng sự cố đã được officer giải quyết
@@ -1417,8 +1427,12 @@ export default function OfficerReportDetail() {
         title="Đánh dấu đã hoàn thành xử lý?"
         description="Hồ sơ kết quả và minh chứng sau xử lý sẽ được gửi để Admin xem xét."
         confirmLabel="Đánh dấu Hoàn thành"
-        pendingLabel="Đang gửi..."
-        isPending={resolveIncident.isPending}
+        isPending={resolveIncident.isPending || isGettingResolutionGps}
+        pendingLabel={
+          isGettingResolutionGps && !resolveIncident.isPending
+            ? "Đang lấy vị trí GPS..."
+            : "Đang gửi kết quả..."
+        }
         onConfirm={handleResolve}
       />
       <ConfirmActionDialog
