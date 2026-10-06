@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 
-// Định nghĩa cấu trúc của một Chunk
+// định nghĩa cấu trúc dữ liệu của một đoạn tri thức
 export interface DocumentChunk {
   chunk_id: string;
   document_id: string;
@@ -33,14 +33,14 @@ function runChunking() {
   console.log(`Đang đọc file: ${SOURCE_FILE}`);
   const rawFile = fs.readFileSync(SOURCE_FILE, "utf-8");
 
-  // 1. Phân tách Frontmatter và phần nội dung Markdown
+  // phân tách phần thông tin cấu hình và nội dung văn bản
   const parsed = matter(rawFile);
   const metadata = parsed.data;
   const content = parsed.content;
 
   const chunks: DocumentChunk[] = [];
 
-  // 2. Tách Chunk Tổng quan (Trước khi vào BƯỚC 1)
+  // trích xuất đoạn tổng quan quy trình trước các bước cụ thể
   const overviewMatch = content.match(
     /# QUY TRÌNH XỬ LÝ SỰ CỐ XẢ RÁC BỪA BÃI[^\n]*\n([\s\S]*?)---/,
   );
@@ -59,7 +59,7 @@ function runChunking() {
     });
   }
 
-  // 3. Tách 5 Bước nghiệp vụ (BƯỚC 1 đến BƯỚC 5)
+  // tách các bước nghiệp vụ xử lý hiện trường theo cấu trúc tiêu đề
   const stepRegex = /## (BƯỚC (\d):[^\n]+)\n([\s\S]*?)(?=---|\n## CÂU HỎI)/g;
   let stepMatch;
   while ((stepMatch = stepRegex.exec(content)) !== null) {
@@ -82,7 +82,7 @@ function runChunking() {
     });
   }
 
-  // 4. Tách các câu FAQ (Hỏi & Đáp)
+  // tách từng cặp câu hỏi và câu trả lời thường gặp thành các đoạn riêng biệt
   const faqSection = content.split(/##\s+CÂU HỎI THƯỜNG GẶP[^\n]+/)[1];
   if (faqSection) {
     const faqRegex = /\*\*Hỏi:\s*([^\n]+)\*\*\s*\nĐáp:\s*([^\n]+)/g;
@@ -109,7 +109,7 @@ function runChunking() {
     }
   }
 
-  // 5. Lưu ra file JSON
+  // xuất toàn bộ danh sách đoạn tri thức ra tập tin dữ liệu
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(chunks, null, 2), "utf-8");
   console.log(`\nĐã chia thành công: ${chunks.length} chunks!`);
   console.log(`Đã xuất kết quả ra: ${OUTPUT_FILE}`);

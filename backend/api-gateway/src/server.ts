@@ -133,10 +133,10 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 // Middleware xác thực JWT cho tất cả các yêu cầu đến /api, ngoại trừ các route công khai như login/register.
 app.use("/api", verifyToken);
 
-// Giới hạn riêng cho endpoint RAG (mỗi câu hỏi tốn lượt gọi Gemini)
+// giới hạn số lượng yêu cầu hỏi đáp của mỗi người dùng để tránh quá tải
 const ragLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20, // 20 câu hỏi / phút / người dùng
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => String(req.headers["x-user-id"] || "anonymous"),

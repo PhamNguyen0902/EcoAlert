@@ -191,8 +191,8 @@
     "section_type": "faq",
     "title": "FAQ 9: Hành vi vứt rác sinh hoạt bị phạt bao nhiêu tiền?",
     "related_actions": [],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Hành vi vứt rác sinh hoạt bị phạt bao nhiêu tiền?\nĐáp: Theo khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP: vứt, thải, bỏ rác không đúng nơi quy định tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng bị phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước thải đô thị, thoát nước mặt bị phạt 1.000.000 - 2.000.000 đồng; thải bỏ chất thải nhựa sinh hoạt xuống ao hồ, kênh rạch, sông, suối, biển cũng bị phạt 1.000.000 - 2.000.000 đồng; vứt tàn thuốc lá không đúng nơi quy định bị phạt 100.000 - 150.000 đồng.",
-    "char_count": 551
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Hành vi vứt rác sinh hoạt bị phạt bao nhiêu tiền?\nĐáp: Theo khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP, mức phạt tiền áp dụng đối với cá nhân có hành vi vứt, thải rác sinh hoạt như sau: vứt tàn thuốc lá không đúng nơi quy định phạt 100.000 - 150.000 đồng; vứt rác sinh hoạt tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước đô thị, ao hồ, kênh rạch, sông suối phạt 1.000.000 - 2.000.000 đồng; vận chuyển rác, nguyên vật liệu làm rơi vãi ra môi trường phạt 2.000.000 - 4.000.000 đồng. Người vi phạm buộc phải thu dọn rác và khôi phục lại tình trạng ban đầu.",
+    "char_count": 657
   },
   {
     "chunk_id": "sop_officer_illegal_dumping_v1_chunk_15_faq_10",
@@ -227,7 +227,31 @@
     "section_type": "faq",
     "title": "FAQ 12: Điều 25 Nghị định 45/2022/NĐ-CP quy định gì về hành vi vứt rác?",
     "related_actions": [],
-    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Điều 25 Nghị định 45/2022/NĐ-CP quy định gì về hành vi vứt rác?\nĐáp: Khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP quy định mức phạt đối với các hành vi vứt, thải rác không đúng nơi quy định: vứt tàn thuốc lá nơi công cộng phạt 100.000 - 150.000 đồng; vứt rác tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước phạt 1.000.000 - 2.000.000 đồng.",
-    "char_count": 440
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Điều 25 Nghị định 45/2022/NĐ-CP quy định gì về hành vi vứt rác?\nĐáp: Khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP quy định mức phạt đối với các hành vi vứt, thải rác không đúng nơi quy định: vứt tàn thuốc lá nơi công cộng phạt 100.000 - 150.000 đồng; vứt rác tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước phạt 1.000.000 - 2.000.000 đồng; vận chuyển nguyên vật liệu để rơi vãi ra môi trường phạt 2.000.000 - 4.000.000 đồng.",
+    "char_count": 525
+  },
+  {
+    "chunk_id": "sop_officer_illegal_dumping_v1_chunk_18_faq_13",
+    "document_id": "sop_officer_illegal_dumping_v1",
+    "category": "illegal_dumping",
+    "target_role": "OFFICER",
+    "doc_type": "sop_workflow",
+    "section_type": "faq",
+    "title": "FAQ 13: Mức phạt vi phạm đối với tổ chức, công ty, doanh nghiệp xả rác được tính thế nào?",
+    "related_actions": [],
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Mức phạt vi phạm đối với tổ chức, công ty, doanh nghiệp xả rác được tính thế nào?\nĐáp: Theo khoản 2 Điều 6 Nghị định 45/2022/NĐ-CP, mức phạt tiền đối với tổ chức có cùng hành vi vi phạm môi trường gấp 02 lần mức phạt tiền đối với cá nhân. Cụ thể: tổ chức vứt rác tại khu chung cư, thương mại, dịch vụ, nơi công cộng bị phạt 1.000.000 - 2.000.000 đồng; tổ chức vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước đô thị, kênh rạch bị phạt 2.000.000 - 4.000.000 đồng; tổ chức vận chuyển hàng hóa, rác thải làm rơi vãi ra môi trường bị phạt 4.000.000 - 8.000.000 đồng.",
+    "char_count": 579
+  },
+  {
+    "chunk_id": "sop_officer_illegal_dumping_v1_chunk_19_faq_14",
+    "document_id": "sop_officer_illegal_dumping_v1",
+    "category": "illegal_dumping",
+    "target_role": "OFFICER",
+    "doc_type": "sop_workflow",
+    "section_type": "faq",
+    "title": "FAQ 14: Xe chở rác hoặc vật liệu làm rơi vãi rác ra đường bị phạt bao nhiêu tiền?",
+    "related_actions": [],
+    "content": "[Quy trình xử lý sự cố xả rác bừa bãi > FAQ]\nHỏi: Xe chở rác hoặc vật liệu làm rơi vãi rác ra đường bị phạt bao nhiêu tiền?\nĐáp: Theo điểm e khoản 2 Điều 25 và khoản 2 Điều 6 Nghị định 45/2022/NĐ-CP, hành vi vận chuyển nguyên liệu, vật liệu, rác thải không che chắn hoặc để rơi vãi ra môi trường khi tham gia giao thông bị phạt tiền từ 2.000.000 - 4.000.000 đồng đối với cá nhân, và từ 4.000.000 - 8.000.000 đồng đối với tổ chức, đồng thời buộc phải khắc phục tình trạng ô nhiễm môi trường.",
+    "char_count": 445
   }
 ]

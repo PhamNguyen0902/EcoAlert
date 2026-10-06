@@ -20,10 +20,7 @@ export interface ChatHistoryItem {
 }
 
 export const aiService = {
-  /**
-   * Gửi câu hỏi nghiệp vụ của cán bộ hiện trường tới RAG AI (kèm lịch sử hội thoại)
-   * Backend Endpoint: POST /api/v1/ai/rag/officer-ask
-   */
+  // gửi câu hỏi nghiệp vụ kèm lịch sử trò chuyện lên cổng dịch vụ
   askOfficerAssistant: async (
     question: string,
     category: string = "illegal_dumping",

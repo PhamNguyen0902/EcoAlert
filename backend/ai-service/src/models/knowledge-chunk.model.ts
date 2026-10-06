@@ -17,6 +17,7 @@ export interface IKnowledgeChunk extends Document {
   updatedAt: Date;
 }
 
+// lược đồ lưu trữ các đoạn tri thức và vector đặc trưng trong cơ sở dữ liệu
 const KnowledgeChunkSchema: Schema = new Schema(
   {
     chunk_id: { type: String, required: true, unique: true, index: true },
