@@ -87,7 +87,12 @@ const AppContent: React.FC = () => {
     const appStateSubscription = AppState.addEventListener(
       "change",
       (state) => {
-        if (state === "active") refreshNotifications();
+        if (state === "active") {
+          refreshNotifications();
+          void queryClient.invalidateQueries({queryKey:['officer-tasks']});
+          void queryClient.invalidateQueries({queryKey:['officer-service-areas']});
+          void queryClient.invalidateQueries({queryKey:['officer-shift']});
+        }
       },
     );
     void pushNotificationService
