@@ -87,6 +87,8 @@ export type UpdateAlertStatusDto = z.infer<typeof updateAlertStatusSchema>;
 
 export const assignOfficerSchema = z.object({
   officerId: z.string().trim().min(1, "Officer is required"),
+  overrideConfirmed: z.boolean().optional(),
+  assignmentReason: z.string().trim().min(5).max(1000).optional(),
 });
 export type AssignOfficerDto = z.infer<typeof assignOfficerSchema>;
 

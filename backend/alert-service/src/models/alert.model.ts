@@ -137,6 +137,15 @@ export interface IAlert extends BaseDocument {
   assignedOfficerEmail?: string;
   assignedAt?: Date;
   assignedBy?: string;
+  assignmentMethod?: 'AUTO' | 'MANUAL';
+  assignedAreaId?: string;
+  assignedAreaCode?: string;
+  assignedAreaName?: string;
+  assignmentReason?: string;
+  assignmentAudit?: { activeTaskCountAtSelection?: number; triggeredBy: string; actorId: string; assignedAt: Date; outsideAreaOverride: boolean };
+  lastAssignmentAttempt?: { reason: string; attemptedAt: Date; triggeredBy: string };
+  autoAssignmentJob?: { pending: boolean; actorId: string; correlationId?: string; attempts: number; nextAttemptAt: Date; leaseUntil?: Date; owner?: string };
+  assignmentEvent?: { eventId: string; payload: Record<string, unknown>; correlationId?: string; attempts: number; nextAttemptAt: Date; deliveredAt?: Date; leaseUntil?: Date; owner?: string; lastError?: string };
   startedAt?: Date;
   startedBy?: string;
   arrivedAt?: Date;
@@ -348,6 +357,15 @@ const alertSchema = new Schema<IAlert>({
   assignedOfficerEmail: { type: String },
   assignedAt: { type: Date },
   assignedBy: { type: String },
+  assignmentMethod: { type: String, enum: ['AUTO', 'MANUAL'] },
+  assignedAreaId: { type: String },
+  assignedAreaCode: { type: String },
+  assignedAreaName: { type: String },
+  assignmentReason: { type: String },
+  assignmentAudit: { type: Schema.Types.Mixed },
+  lastAssignmentAttempt: { type: Schema.Types.Mixed },
+  autoAssignmentJob: { type: Schema.Types.Mixed },
+  assignmentEvent: { type: Schema.Types.Mixed },
   startedAt: { type: Date },
   startedBy: { type: String },
   arrivedAt: { type: Date },
@@ -414,5 +432,7 @@ alertSchema.plugin(baseSchemaPlugin);
 alertSchema.index({ location: '2dsphere' });
 alertSchema.index({ status: 1 });
 alertSchema.index({ assignedOfficerId: 1, status: 1, createdAt: -1 });
+alertSchema.index({ 'autoAssignmentJob.pending': 1, 'autoAssignmentJob.nextAttemptAt': 1 });
+alertSchema.index({ 'assignmentEvent.deliveredAt': 1, 'assignmentEvent.nextAttemptAt': 1 });
 
 export const Alert = mongoose.model<IAlert>('Alert', alertSchema);

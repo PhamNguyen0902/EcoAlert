@@ -51,6 +51,7 @@ export class AlertController {
       role === "CITIZEN" ? (req.headers["x-user-id"] as string) : undefined;
     const filters = {
       //chưa lấy req.query.title
+      unassigned: role === 'ADMIN' && req.query.unassigned === 'true',
       status: req.query.status as string | undefined,
       category: req.query.category as string | undefined,
       severity: req.query.severity as string | undefined,

@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response, Router } from "express";
+import { Router } from "express";
 import { alertController } from "../controllers/alert.controller";
 import { categoryController } from "../controllers/category.controller";
 import { validate } from "../middlewares/validate.middleware";
@@ -14,18 +14,16 @@ import {
   updateAlertSchema,
   updateAlertStatusSchema,
 } from "../dtos/alert.dto";
-import { asyncHandler } from "@ecoalert/shared";
+import {
+  asyncHandler,
+  requireVerifiedRoles,
+  successResponse,
+} from "@ecoalert/shared";
+import { officerAssignmentService } from "../services/officer-assignment.service";
 
 const router = Router();
 
-// Middleware to check authentication (x-user-id)
-const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.headers["x-user-id"])
-    return res.status(401).json({ success: false, message: "Unauthorized" });
-  next();
-};
-
-router.use(requireAuth);
+router.use(requireVerifiedRoles(["CITIZEN", "OFFICER", "ADMIN"]));
 
 // Category Routes
 router.get("/categories", asyncHandler(categoryController.getCategories));
@@ -62,6 +60,7 @@ router.get(
 );
 router.get(
   "/officers/availability",
+  requireVerifiedRoles(["ADMIN"]),
   asyncHandler(alertController.getOfficerAvailability),
 );
 router.post(
@@ -73,6 +72,35 @@ router.post(
 router.get("/", asyncHandler(alertController.getAlerts));
 router.get("/officer/tasks", asyncHandler(alertController.getOfficerTasks));
 router.get("/:id", asyncHandler(alertController.getAlertById));
+router.get(
+  "/:id/assignment-preview",
+  requireVerifiedRoles(["ADMIN"]),
+  asyncHandler(async (req, res) => {
+    res.json(
+      successResponse(
+        await officerAssignmentService.preview(req.params.id, {
+          id: req.headers["x-user-id"] as string,
+          role: "ADMIN",
+        }),
+      ),
+    );
+  }),
+);
+router.post(
+  "/:id/auto-assign",
+  requireVerifiedRoles(["ADMIN"]),
+  asyncHandler(async (req, res) => {
+    res.json(
+      successResponse(
+        await officerAssignmentService.autoAssignOfficer(req.params.id, {
+          id: req.headers["x-user-id"] as string,
+          role: "ADMIN",
+          correlationId: req.headers["x-request-id"] as string | undefined,
+        }),
+      ),
+    );
+  }),
+);
 router.post("/:id/confirm", asyncHandler(alertController.confirmAlert));
 router.patch(
   "/:id",
@@ -81,6 +109,7 @@ router.patch(
 );
 router.patch(
   "/:id/status",
+  requireVerifiedRoles(["ADMIN"]),
   validate(updateAlertStatusSchema),
   asyncHandler(alertController.updateStatus),
 );
@@ -91,6 +120,7 @@ router.post(
 );
 router.post(
   "/:id/assign",
+  requireVerifiedRoles(["ADMIN"]),
   validate(assignOfficerSchema),
   asyncHandler(alertController.assignOfficer),
 );
