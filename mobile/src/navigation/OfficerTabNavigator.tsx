@@ -10,6 +10,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { OfficerAssistantScreen } from "../screens/officer/OfficerAssistantScreen";
 import { OfficerProfileScreen } from "../screens/officer/OfficerProfileScreen";
+import { OfficerResolutionScreen } from "../screens/officer/OfficerResolutionScreen";
 import type { OfficerTabParamList, OfficerStackParamList } from "./types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const Tab = createBottomTabNavigator<OfficerTabParamList>();
@@ -76,5 +77,6 @@ export const OfficerTabNavigator = () => (
       component={OfficerAlertDetailScreen}
     />
     <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
+    <Stack.Screen name="OfficerResolution" component={OfficerResolutionScreen} />
   </Stack.Navigator>
 );

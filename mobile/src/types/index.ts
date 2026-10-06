@@ -150,9 +150,16 @@ export interface Alert {
   aiSemanticProcessingTimeMs?: number | null;
   officerNote?: string;
   arrivedAt?: string;
-  checkIn?: { accuracyMeters: number; distanceFromIncidentMeters: number; checkedInAt: string; verified: boolean };
-  resolutionEvidence?: Array<{ _id?: string; url: string; capturedAt?: string; accuracyMeters?: number; distanceFromIncidentMeters?: number }>;
+  checkIn?: { officerId?: string; location?: GeoLocation; accuracyMeters: number; distanceFromIncidentMeters: number; checkedInAt: string; verified: boolean };
+  resolutionEvidence?: Array<{ _id?: string; url: string; capturedAt?: string; uploadedAt?: string; uploadedBy?: string; type?: "AFTER_TREATMENT"; location?: GeoLocation; accuracyMeters?: number; distanceFromIncidentMeters?: number }>;
   assignedAt?: string;
+  startedAt?: string;
+  closedAt?: string;
+  resolutionSummary?: string;
+  treatmentMethod?: string;
+  materialsUsed?: string;
+  resolutionNotes?: string;
+  timeline?: Array<{ eventType: string; label: string; timestamp: string; actorRole: string; note?: string }>;
   resolvedAt?: string;
   isAnonymous?: boolean;
   confirmationsCount?: number;
@@ -264,6 +271,7 @@ export interface CreateAlertData {
 export interface ResolutionEvidenceInput {
   mediaId?: string;
   url: string;
+  capturedAt?: string;
   location?: { latitude: number; longitude: number; accuracyMeters: number };
 }
 
