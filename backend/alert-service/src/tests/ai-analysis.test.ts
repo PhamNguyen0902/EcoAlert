@@ -44,7 +44,8 @@ test('persists FAILED analysis as unavailable while keeping the report pending',
     });
     assert.equal(update.$set.aiConfidence, null);
     assert.equal(update.$set.aiFailureReason, 'Dịch vụ OpenRouter tạm thời không khả dụng.');
-    assert.equal(update.$set.status, 'pending');
+    // AI must not write a stale status over a concurrently verified/assigned report.
+    assert.equal(Object.hasOwn(update.$set, 'status'), false);
   } finally {
     repository.findById = originalFindById;
     repository.findOneAndUpdate = originalFindOneAndUpdate;
