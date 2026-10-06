@@ -107,6 +107,7 @@ export type ConfirmArrivalDto = z.infer<typeof confirmArrivalSchema>;
 export const resolutionEvidenceSchema = z.object({
   mediaId: z.string().trim().min(1).optional(),
   url: z.string().url(),
+  capturedAt: z.string().datetime().optional(),
   location: z
     .object({
       latitude: z.number().finite().min(-90).max(90),

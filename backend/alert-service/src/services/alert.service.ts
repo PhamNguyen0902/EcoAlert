@@ -559,15 +559,43 @@ export class AlertService {
     if (normStatus(alert.status) !== AlertStatus.IN_PROGRESS)
       throw new ConflictError("Sự cố phải đang xử lý");
 
+    if (!alert.checkIn?.verified || alert.checkIn.officerId !== actor.id)
+      throw new ConflictError(
+        "Cần xác nhận đã đến hiện trường trước khi hoàn thành xử lý.",
+      );
+    if (!data.evidence?.length)
+      throw new BadRequestError("Cần ít nhất một ảnh sau xử lý.");
+    if (!data.resolutionSummary?.trim() || !data.treatmentMethod?.trim())
+      throw new BadRequestError("Tóm tắt và phương pháp xử lý là bắt buộc.");
     const now = new Date();
-    const evidence = data.evidence.map((e) => ({
-      mediaId: e.mediaId,
-      url: e.url,
-      uploadedBy: actor.id,
-      uploadedAt: now,
-      capturedAt: now,
-      type: "AFTER_TREATMENT" as const,
-    }));
+    const evidence = data.evidence.map((e) => {
+      if (!e.location)
+        throw new BadRequestError(
+          "Ảnh sau xử lý cần GPS hiện trường. Vui lòng chụp lại.",
+        );
+      const distance = this.validateFieldLocation(
+        alert,
+        e.location,
+        envConfig.officerEvidenceRadiusMeters,
+      );
+      const capturedAt = e.capturedAt ? new Date(e.capturedAt) : undefined;
+      if (capturedAt && !Number.isFinite(capturedAt.getTime()))
+        throw new BadRequestError("Thời điểm chụp ảnh không hợp lệ.");
+      return {
+        mediaId: e.mediaId,
+        url: e.url,
+        uploadedBy: actor.id,
+        uploadedAt: now,
+        capturedAt,
+        type: "AFTER_TREATMENT" as const,
+        location: {
+          type: "Point" as const,
+          coordinates: [e.location.longitude, e.location.latitude] as [number, number],
+        },
+        accuracyMeters: e.location.accuracyMeters,
+        distanceFromIncidentMeters: distance,
+      };
+    });
     const evidenceUrls = evidence.map((e) => e.url);
 
     const updated = await alertRepository.findOneAndUpdate(
@@ -575,6 +603,8 @@ export class AlertService {
         _id: id,
         assignedOfficerId: actor.id,
         status: new RegExp(`^${AlertStatus.IN_PROGRESS}$`, "i"),
+        "checkIn.verified": true,
+        "checkIn.officerId": actor.id,
       },
       {
         $set: {
@@ -583,6 +613,8 @@ export class AlertService {
           resolvedBy: actor.id,
           resolutionSummary: data.resolutionSummary.trim(),
           treatmentMethod: data.treatmentMethod.trim(),
+          materialsUsed: data.materialsUsed?.trim(),
+          resolutionNotes: data.additionalNotes?.trim(),
           resolutionEvidence: evidence,
           updatedBy: actor.id,
         },
