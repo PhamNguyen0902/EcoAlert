@@ -91,6 +91,7 @@ services:
       # Compose is a self-contained local stack. Do not use the Atlas URI from
       # the root .env; it makes local containers fail whenever Atlas is offline.
       - MONGO_URI=mongodb://mongodb:27017/ecoalert-user-db
+      - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET:-${JWT_SECRET}}
       - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
     volumes:
@@ -117,6 +118,12 @@ services:
     environment:
       - PORT=3002
       - MONGO_URI=mongodb://mongodb:27017/ecoalert-alert-db
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET:-${JWT_SECRET}}
+      - GIS_SERVICE_URL=http://gis-service:3004
+      - AUTO_ASSIGN_ENABLED=${AUTO_ASSIGN_ENABLED:-true}
+      - AUTO_ASSIGN_REQUIRE_ACTIVE_SHIFT=${AUTO_ASSIGN_REQUIRE_ACTIVE_SHIFT:-true}
+      - AUTO_ASSIGN_MAX_ACTIVE_TASKS=${AUTO_ASSIGN_MAX_ACTIVE_TASKS:-5}
       - RABBITMQ_URL=${RABBITMQ_URL}
       - USER_SERVICE_URL=http://user-service:3001
       - OFFICER_CHECKIN_RADIUS_METERS=${OFFICER_CHECKIN_RADIUS_METERS:-100}
@@ -204,6 +211,9 @@ services:
     environment:
       - PORT=3004
       - MONGO_URI=mongodb://mongodb:27017/ecoalert-gis-db
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET:-${JWT_SECRET}}
+      - USER_SERVICE_URL=http://user-service:3001
       - RABBITMQ_URL=${RABBITMQ_URL}
     depends_on:
       mongodb:

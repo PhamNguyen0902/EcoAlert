@@ -3,6 +3,7 @@ import { connectDB } from './config/database.config';
 import { envConfig } from './config/env.config';
 import { rabbitMQService } from './services/rabbitmq.service';
 import { createLogger } from '@ecoalert/shared';
+import { startAssignmentWorker } from './services/assignment-worker.service';
 
 const logger = createLogger('alert-service');
 
@@ -10,6 +11,7 @@ const startServer = async () => {
   try {
     await connectDB();
     await rabbitMQService.connect();
+    startAssignmentWorker();
     
     app.listen(envConfig.port, () => {
       logger.info(`Alert Service is running on port ${envConfig.port}`);
