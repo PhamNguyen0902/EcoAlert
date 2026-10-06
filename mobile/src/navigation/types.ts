@@ -27,6 +27,12 @@ export type CitizenStackParamList = {
   Notifications: undefined;
   LocationPicker: { initialLocation?: LocationSelection };
 };
+export type OfficerTabParamList = {
+  OfficerTasksTab: undefined;
+  OfficerMapTab: undefined;
+  OfficerAssistantTab: undefined;
+  OfficerProfileTab: undefined;
+};
 export type RootStackParamList = {
   AdminApp: undefined;
   OfficerApp: undefined;

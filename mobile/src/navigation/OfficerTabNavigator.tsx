@@ -1,7 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { CheckSquare, MapPin, Bot } from "lucide-react-native";
+import { CheckSquare, MapPin, Bot, UserCircle2 } from "lucide-react-native";
 import { OfficerTasksScreen } from "../screens/officer/OfficerTasksScreen";
 import { OfficerMapScreen } from "../screens/officer/OfficerMapScreen";
 import { OfficerAlertDetailScreen } from "../screens/officer/OfficerAlertDetailScreen";
@@ -9,11 +9,15 @@ import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import { OfficerAssistantScreen } from "../screens/officer/OfficerAssistantScreen";
-const Tab = createBottomTabNavigator();
+import { OfficerProfileScreen } from "../screens/officer/OfficerProfileScreen";
+import type { OfficerTabParamList } from "./types";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+const Tab = createBottomTabNavigator<OfficerTabParamList>();
 const Stack = createNativeStackNavigator();
 const OfficerTabs = () => {
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -23,8 +27,8 @@ const OfficerTabs = () => {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 8,
+          height: 64 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
         },
         tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
@@ -35,6 +39,8 @@ const OfficerTabs = () => {
             return <MapPin color={color} size={size} />;
           if (route.name === "OfficerAssistantTab")
             return <Bot color={color} size={size} />;
+          if (route.name === "OfficerProfileTab")
+            return <UserCircle2 color={color} size={size} />;
           return null;
         },
       })}
@@ -42,17 +48,22 @@ const OfficerTabs = () => {
       <Tab.Screen
         name="OfficerTasksTab"
         component={OfficerTasksScreen}
-        options={{ tabBarLabel: t("tabs.assignedReports") }}
+        options={{ tabBarLabel: language === "vi" ? "Nhiệm vụ" : "Tasks" }}
       />
       <Tab.Screen
         name="OfficerMapTab"
         component={OfficerMapScreen}
-        options={{ tabBarLabel: t("tabs.monitoringMap") }}
+        options={{ tabBarLabel: language === "vi" ? "Bản đồ" : "Map" }}
       />
       <Tab.Screen
         name="OfficerAssistantTab"
         component={OfficerAssistantScreen}
         options={{ tabBarLabel: "Trợ lý AI" }}
+      />
+      <Tab.Screen
+        name="OfficerProfileTab"
+        component={OfficerProfileScreen}
+        options={{ tabBarLabel: language === "vi" ? "Cá nhân" : "Profile" }}
       />
     </Tab.Navigator>
   );
