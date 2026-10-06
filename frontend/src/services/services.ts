@@ -219,8 +219,8 @@ export const alertService = {
     return res.data.data;
   },
   // quản trị viên phân công sự cố cho cán bộ phụ trách
-  assignOfficer: async (id: string, officerId: string): Promise<Alert> => {
-    const res = await api.post(`/v1/alerts/${id}/assign`, { officerId });
+  assignOfficer: async (id: string, officerId: string, override?:{overrideConfirmed?:boolean;assignmentReason?:string}): Promise<Alert> => {
+    const res = await api.post(`/v1/alerts/${id}/assign`, { officerId,...override });
     return res.data.data;
   },
   // cán bộ cập nhật bắt đầu tiến hành xử lý sự cố

@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/card";
 import { IncidentLocationDetails } from "@/components/location/IncidentLocationDetails";
 import { ConfirmActionDialog } from "@/components/incidents/ConfirmActionDialog";
+import { AssignmentPreview } from '@/features/admin/components/AssignmentPreview';
 import { IncidentTimeline } from "@/components/incidents/IncidentTimeline";
 import { OverallAiAnalysisCard } from "@/components/incidents/OverallAiAnalysisCard";
 import type {
@@ -170,6 +171,8 @@ export default function OfficerReportDetail() {
 
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [selectedOfficerId, setSelectedOfficerId] = useState("");
+  const [assignmentOverride,setAssignmentOverride]=useState(false);
+  const [assignmentReason,setAssignmentReason]=useState('');
   const [noteText, setNoteText] = useState("");
   const [editingNote, setEditingNote] = useState(false);
   const [resolutionSummary, setResolutionSummary] = useState("");
@@ -379,7 +382,7 @@ export default function OfficerReportDetail() {
   const handleAssign = () => {
     if (!selectedOfficerId) return;
     assignOfficer.mutate(
-      { id, officerId: selectedOfficerId },
+      { id, officerId: selectedOfficerId,overrideConfirmed:assignmentOverride,assignmentReason:assignmentReason.trim()||undefined },
       {
         onSuccess: () => {
           toast.success(t("toast.officer_assigned_success"), {
@@ -838,6 +841,8 @@ export default function OfficerReportDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
+              {alert.assignmentMethod&&<div className="flex justify-between gap-4"><span className="text-muted-foreground">Hình thức phân công</span><span>{alert.assignmentMethod==='AUTO'?'Tự động theo khu vực':'Admin phân công thủ công'}</span></div>}
+              {alert.assignedAreaName&&<div className="flex justify-between gap-4"><span className="text-muted-foreground">Khu vực phụ trách</span><span className="text-right">{alert.assignedAreaName}</span></div>}
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Cán bộ phụ trách</span>
                 <span className="text-right font-medium">
@@ -980,6 +985,7 @@ export default function OfficerReportDetail() {
               {/* admin giao việc cho officer */}
               {canAdminAssign ? (
                 <div className="space-y-3">
+                  <AssignmentPreview id={id}/>
                   <label
                     htmlFor="assigned-officer"
                     className="text-sm font-medium"
@@ -1010,9 +1016,11 @@ export default function OfficerReportDetail() {
                       {assignmentWarning}
                     </p>
                   ) : null}
+                  <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={assignmentOverride} onChange={e=>setAssignmentOverride(e.target.checked)}/>Tôi xác nhận phân công ngoài khu vực hoặc khi dịch vụ GIS không khả dụng (cần lý do).</label>
+                  <label className="block text-xs">Lý do phân công{assignmentOverride?' (bắt buộc)':' (tùy chọn)'}<textarea className="mt-1 w-full rounded-md border bg-background p-2" maxLength={1000} value={assignmentReason} onChange={e=>setAssignmentReason(e.target.value)}/></label>
                   <Button
                     className="w-full"
-                    disabled={!selectedOfficerId}
+                    disabled={!selectedOfficerId || (assignmentOverride && assignmentReason.trim().length<5)}
                     onClick={() => setConfirmAction("assign")}
                   >
                     <UserCheck className="mr-2 h-4 w-4" />

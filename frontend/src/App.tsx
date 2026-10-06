@@ -34,6 +34,7 @@ const ReportManagement = lazy(
   () => import("./features/admin/pages/ReportManagement"),
 );
 const AdminGisMap = lazy(() => import("./features/admin/pages/AdminGisMap"));
+const ServiceAreas = lazy(() => import('./features/admin/pages/ServiceAreas'));
 
 const ProtectedRoute = lazy(() =>
   import("./components/auth/ProtectedRoute").then((m) => ({
@@ -108,6 +109,7 @@ function App() {
               <Route path="/admin/reports" element={<ReportManagement />} />
               {/* bản đồ để xem mật độ ô nhiễm các điểm nóng(citizen hay báo cáo) */}
               <Route path="/admin/gis" element={<AdminGisMap />} />
+              <Route path="/admin/service-areas" element={<ServiceAreas />} />
               {/* chi tiết báo cáo */}
               <Route
                 path="/admin/reports/:id"

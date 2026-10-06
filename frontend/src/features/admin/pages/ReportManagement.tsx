@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Alert } from "@/types";
 import toast from "react-hot-toast";
+import { AssignmentPreview } from '../components/AssignmentPreview';
+import { assignmentReasonLabel } from '@/services/serviceAreas';
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   getIncidentCategoryLabel,
@@ -21,8 +23,10 @@ export default function ReportManagement() {
   const { t, language } = useLanguage();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [unassigned,setUnassigned]=useState(false);
+  const [previewId,setPreviewId]=useState<string>();
 
-  const { data, isLoading } = useAlerts(page, 10);
+  const { data, isLoading } = useAlerts(page, 10,unassigned?{unassigned:'true'}:{});
   const deleteAlert = useDeleteAlert();
 
   if (isLoading) return <LoadingSpinner />;
@@ -38,6 +42,9 @@ export default function ReportManagement() {
           {t("reports.management_title")}
         </h2>
       </div>
+      <div className="flex flex-wrap gap-2"><Button variant={unassigned?'outline':'default'} onClick={()=>{setUnassigned(false);setPage(1);}}>Tất cả báo cáo</Button><Button variant={unassigned?'default':'outline'} onClick={()=>{setUnassigned(true);setPage(1);}}>Chờ phân công</Button></div>
+      {unassigned&&<p className="text-sm text-muted-foreground">Chỉ gồm báo cáo đã xác minh và chưa có cán bộ. Có thể thử lại tự động hoặc mở chi tiết để phân công thủ công.</p>}
+      {previewId&&<AssignmentPreview id={previewId}/>}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -54,7 +61,7 @@ export default function ReportManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="overflow-x-auto rounded-md border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left">
@@ -78,7 +85,7 @@ export default function ReportManagement() {
                     key={alert._id}
                     className="border-b last:border-0 hover:bg-muted/50"
                   >
-                    <td className="p-4 font-medium">{alert.title}</td>
+                    <td className="p-4 font-medium">{alert.title}{unassigned&&<p className="mt-1 text-xs font-normal text-amber-500">{assignmentReasonLabel(alert.lastAssignmentAttempt?.reason)}</p>}</td>
                     <td className="p-4">
                       {getIncidentCategoryLabel(alert.category, language)}
                     </td>
@@ -104,6 +111,7 @@ export default function ReportManagement() {
                     </td>
                     <td className="p-4">
                       <div className="flex gap-2">
+                        {unassigned&&<Button variant="outline" size="sm" onClick={()=>setPreviewId(alert._id)}>Gợi ý / Thử lại</Button>}
                         {/* nút xem chỉ chuyển đến trang chi tiết; admin phân công cán bộ tại đó */}
                         <Link to={`/admin/reports/${alert._id}`}>
                           <Button variant="ghost" size="icon">
