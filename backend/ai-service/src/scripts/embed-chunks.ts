@@ -49,7 +49,7 @@ async function runEmbedding() {
     `Bắt đầu vector hóa ${chunks.length} chunks bằng Google Gemini "gemini-embedding-001"...`,
   );
 
-  // Batch embed toàn bộ chunks
+  // gửi từng nhóm đoạn tri thức lên mô hình để tạo vector đặc trưng
   const BATCH_SIZE = 100;
   const allEmbeddings: number[][] = [];
 
@@ -71,7 +71,7 @@ async function runEmbedding() {
       embedding: allEmbeddings[index],
     }),
   );
-  // Lưu ra file kết quả
+  // lưu danh sách đoạn tri thức kèm vector đặc trưng ra tập tin
   fs.writeFileSync(
     OUTPUT_FILE,
     JSON.stringify(embeddedChunks, null, 2),
@@ -83,7 +83,7 @@ async function runEmbedding() {
   );
   console.log(`Đã xuất kết quả ra: ${OUTPUT_FILE}`);
 
-  // --- KIỂM TRA ĐỘ CHÍNH XÁC NGỮ NGHĨA TIẾNG VIỆT (SANITY TEST) ---
+  // kiểm tra thử nghiệm độ chính xác truy xuất với câu hỏi mẫu
   console.log("\n--- BẮT ĐẦU TEST THỬ NGHIỆM TRUY XUẤT ---");
   const testQuery = "Hành vi vứt rác sinh hoạt phạt bao nhiêu tiền?";
   console.log(`Câu hỏi test: "${testQuery}"`);

@@ -127,7 +127,7 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 Đáp: Hệ thống EcoAlert hiện tại chỉ hỗ trợ quy trình cho sự cố rác thải. Với sự cố ngập lụt, ô nhiễm nguồn nước, không khí hoặc cây đổ, Officer thông báo sự cố nằm ngoài phạm vi hỗ trợ của hệ thống và hướng dẫn liên hệ cơ quan chuyên trách địa phương (Công ty Thoát nước, Phòng TN&MT).
 
 **Hỏi: Hành vi vứt rác sinh hoạt bị phạt bao nhiêu tiền?**
-Đáp: Theo khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP: vứt, thải, bỏ rác không đúng nơi quy định tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng bị phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước thải đô thị, thoát nước mặt bị phạt 1.000.000 - 2.000.000 đồng; thải bỏ chất thải nhựa sinh hoạt xuống ao hồ, kênh rạch, sông, suối, biển cũng bị phạt 1.000.000 - 2.000.000 đồng; vứt tàn thuốc lá không đúng nơi quy định bị phạt 100.000 - 150.000 đồng.
+Đáp: Theo khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP, mức phạt tiền áp dụng đối với cá nhân có hành vi vứt, thải rác sinh hoạt như sau: vứt tàn thuốc lá không đúng nơi quy định phạt 100.000 - 150.000 đồng; vứt rác sinh hoạt tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước đô thị, ao hồ, kênh rạch, sông suối phạt 1.000.000 - 2.000.000 đồng; vận chuyển rác, nguyên vật liệu làm rơi vãi ra môi trường phạt 2.000.000 - 4.000.000 đồng. Người vi phạm buộc phải thu dọn rác và khôi phục lại tình trạng ban đầu.
 
 **Hỏi: Không phân loại rác sinh hoạt bị phạt bao nhiêu tiền?**
 Đáp: Theo khoản 1 Điều 26 Nghị định 45/2022/NĐ-CP, hộ gia đình, cá nhân không phân loại chất thải rắn sinh hoạt theo quy định hoặc không sử dụng bao bì chứa chất thải rắn sinh hoạt theo quy định bị phạt 500.000 - 1.000.000 đồng, áp dụng từ ngày 01/01/2025.
@@ -136,4 +136,10 @@ scope: "Xử lý hiện trường và cập nhật trạng thái sự cố xả 
 Đáp: Cán bộ hiện trường không có thẩm quyền phạt tiền, lập biên bản xử phạt hay thu giữ tài sản của người dân. Cán bộ chỉ yêu cầu dừng hành vi, ghi nhận hiện trường và liên hệ Công an khu vực hoặc UBND phường/xã để người có thẩm quyền xử phạt theo Điều 25, Điều 26 Nghị định 45/2022/NĐ-CP.
 
 **Hỏi: Điều 25 Nghị định 45/2022/NĐ-CP quy định gì về hành vi vứt rác?**
-Đáp: Khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP quy định mức phạt đối với các hành vi vứt, thải rác không đúng nơi quy định: vứt tàn thuốc lá nơi công cộng phạt 100.000 - 150.000 đồng; vứt rác tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước phạt 1.000.000 - 2.000.000 đồng.
+Đáp: Khoản 2 Điều 25 Nghị định 45/2022/NĐ-CP quy định mức phạt đối với các hành vi vứt, thải rác không đúng nơi quy định: vứt tàn thuốc lá nơi công cộng phạt 100.000 - 150.000 đồng; vứt rác tại khu chung cư, thương mại, dịch vụ hoặc nơi công cộng phạt 500.000 - 1.000.000 đồng; vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước phạt 1.000.000 - 2.000.000 đồng; vận chuyển nguyên vật liệu để rơi vãi ra môi trường phạt 2.000.000 - 4.000.000 đồng.
+
+**Hỏi: Mức phạt vi phạm đối với tổ chức, công ty, doanh nghiệp xả rác được tính thế nào?**
+Đáp: Theo khoản 2 Điều 6 Nghị định 45/2022/NĐ-CP, mức phạt tiền đối với tổ chức có cùng hành vi vi phạm môi trường gấp 02 lần mức phạt tiền đối với cá nhân. Cụ thể: tổ chức vứt rác tại khu chung cư, thương mại, dịch vụ, nơi công cộng bị phạt 1.000.000 - 2.000.000 đồng; tổ chức vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước đô thị, kênh rạch bị phạt 2.000.000 - 4.000.000 đồng; tổ chức vận chuyển hàng hóa, rác thải làm rơi vãi ra môi trường bị phạt 4.000.000 - 8.000.000 đồng.
+
+**Hỏi: Xe chở rác hoặc vật liệu làm rơi vãi rác ra đường bị phạt bao nhiêu tiền?**
+Đáp: Theo điểm e khoản 2 Điều 25 và khoản 2 Điều 6 Nghị định 45/2022/NĐ-CP, hành vi vận chuyển nguyên liệu, vật liệu, rác thải không che chắn hoặc để rơi vãi ra môi trường khi tham gia giao thông bị phạt tiền từ 2.000.000 - 4.000.000 đồng đối với cá nhân, và từ 4.000.000 - 8.000.000 đồng đối với tổ chức, đồng thời buộc phải khắc phục tình trạng ô nhiễm môi trường.

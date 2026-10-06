@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-06T06:04:56.116Z",
+  "results": [
+    {
+      "id": "nokb-3",
+      "tag": "legal_not_in_kb",
+      "q": "Phạt doanh nghiệp xả rác công nghiệp mấy trăm triệu?",
+      "status": "pass",
+      "got": "answer",
+      "problems": [],
+      "answer": "Theo Nghị định 45/2022/NĐ-CP, mức phạt đối với tổ chức (doanh nghiệp) khi xả rác được quy định như sau: 1. Vứt rác tại khu chung cư, thương mại, dịch vụ, nơi công cộng: 1.000.000 - 2.000.000 đồng. 2. Vứt rác trên vỉa hè, lòng đường hoặc vào hệ thống thoát nước đô thị, kênh rạch: 2.000.000 - 4.000.000 đồng. 3. Vận chuyển rác thải làm rơi vãi ra môi trường: 4.000.000 - 8.000.000 đồng. Tài liệu hiện tại chưa có thông tin về mức phạt lên đến hàng trăm triệu đồng cho doanh nghiệp.",
+      "actions": [],
+      "citations": [
+        "sop_officer_illegal_dumping_v1_chunk_18_faq_13",
+        "sop_officer_illegal_dumping_v1_chunk_19_faq_14"
+      ],
+      "ms": 4698
+    }
+  ]
+}

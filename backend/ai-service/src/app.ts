@@ -100,7 +100,7 @@ app.post("/validate-image", async (req, res) => {
     });
   }
 });
-// tiếp nhận câu hỏi nghiệp vụ và truy xuất RAG cho Officer
+// lược đồ kiểm tra dữ liệu đầu vào cho yêu cầu hỏi đáp của cán bộ
 const officerAskSchema = z.object({
   question: z.string().trim().min(1).max(500),
   category: z.literal("illegal_dumping").optional(),
@@ -115,7 +115,7 @@ const officerAskSchema = z.object({
     .optional(),
 });
 
-// tiếp nhận câu hỏi nghiệp vụ và truy xuất RAG cho Officer
+// tiếp nhận yêu cầu hỏi đáp nghiệp vụ và trả về kết quả truy xuất tri thức
 app.post("/rag/officer-ask", async (req, res) => {
   const parsed = officerAskSchema.safeParse(req.body);
   if (!parsed.success) {

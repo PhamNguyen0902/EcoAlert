@@ -27,6 +27,7 @@ async function seedKnowledge() {
   let insertedCount = 0;
   let updatedCount = 0;
 
+  // cập nhật hoặc thêm mới từng đoạn tri thức vào cơ sở dữ liệu
   for (const chunk of chunks) {
     const res = await KnowledgeChunkModel.updateOne(
       { chunk_id: chunk.chunk_id },

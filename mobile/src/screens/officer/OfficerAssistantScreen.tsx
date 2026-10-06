@@ -77,7 +77,7 @@ export const OfficerAssistantScreen: React.FC = () => {
     }, 100);
 
     try {
-      // Lọc bỏ tin nhắn chào ban đầu và tin báo lỗi mạng, chỉ lấy tối đa 6 tin gần nhất
+      // lọc bỏ tin nhắn chào và tin báo lỗi mạng đồng thời giới hạn số lượt trò chuyện gần nhất
       const history = messages
         .filter(
           (m) =>
@@ -181,14 +181,14 @@ export const OfficerAssistantScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* DANH SÁCH TIN NHẮN */}
+      {/* danh sách tin nhắn */}
       <ScrollView
         ref={scrollViewRef}
         style={styles.chatList}
         contentContainerStyle={[styles.chatContent, { paddingBottom: 20 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* CÂU HỎI NHANH (QUICK PROMPTS) */}
+        {/* danh sách câu hỏi gợi ý nhanh */}
         <View style={styles.quickPromptsSection}>
           <Text style={[styles.quickPromptsLabel, { color: colors.textMuted }]}>
             <Sparkles size={13} color={colors.primary} /> Gợi ý câu hỏi nghiệp
@@ -220,7 +220,7 @@ export const OfficerAssistantScreen: React.FC = () => {
           </ScrollView>
         </View>
 
-        {/* NỘI DUNG CHAT */}
+        {/* nội dung các lượt trò chuyện */}
         {messages.map((msg) => {
           const isUser = msg.sender === "user";
           return (
@@ -266,7 +266,7 @@ export const OfficerAssistantScreen: React.FC = () => {
                   {msg.text}
                 </Text>
 
-                {/* THAO TÁC CẦN THỰC HIỆN TRÊN APP */}
+                {/* thao tác nghiệp vụ cần thực hiện trên ứng dụng */}
                 {!isUser &&
                   msg.suggestedActions &&
                   msg.suggestedActions.length > 0 && (
@@ -310,7 +310,7 @@ export const OfficerAssistantScreen: React.FC = () => {
                     </View>
                   )}
 
-                {/* CĂN CỨ PHÁP LÝ & LINK XEM VĂN BẢN GỐC */}
+                {/* căn cứ pháp lý và liên kết xem văn bản gốc */}
                 {!isUser && msg.citations && msg.citations.length > 0 && (
                   <View
                     style={[
@@ -387,7 +387,7 @@ export const OfficerAssistantScreen: React.FC = () => {
           );
         })}
 
-        {/* LOADING INDICATOR */}
+        {/* hiệu ứng chờ phản hồi */}
         {loading && (
           <View style={[styles.messageRow, styles.messageRowBot]}>
             <View
