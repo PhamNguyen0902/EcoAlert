@@ -20,10 +20,18 @@ import {
 } from "../../theme/civicDesign";
 import { CitizenHeader } from "../../components/citizen/CitizenHeader";
 import { useLanguage } from "../../context/LanguageContext";
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
+import type {
+  CitizenStackParamList,
+  RootStackParamList,
+} from "../../navigation/types";
 
-export const CitizenProfileScreen: React.FC<{ navigation: any }> = ({
-  navigation,
-}) => {
+export const CitizenProfileScreen: React.FC<
+  NativeStackScreenProps<CitizenStackParamList, "Profile">
+> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useCivicTheme();
   const { language } = useLanguage();
@@ -61,7 +69,9 @@ export const CitizenProfileScreen: React.FC<{ navigation: any }> = ({
         };
 
   const openLogin = () => {
-    navigation.getParent?.()?.getParent?.()?.navigate("Login");
+    navigation
+      .getParent<NativeStackNavigationProp<RootStackParamList>>()
+      ?.navigate("Login");
   };
 
   const confirmLogout = () => {
@@ -85,7 +95,7 @@ export const CitizenProfileScreen: React.FC<{ navigation: any }> = ({
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <CitizenHeader avatarLabel={initial} />
+      <CitizenHeader avatarLabel={initial} onBack={() => navigation.goBack()} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

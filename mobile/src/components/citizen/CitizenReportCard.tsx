@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
   },
   time: { flexShrink: 1 },
   smallImage: {
-    width: 64,
-    height: 80,
+    width: 72,
+    height: 96,
     aspectRatio: undefined,
     borderRadius: civicRadius.chip,
   },

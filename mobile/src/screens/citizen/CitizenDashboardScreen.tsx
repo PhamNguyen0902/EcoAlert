@@ -30,6 +30,7 @@ import type {
 } from "../../navigation/types";
 import { useAlerts } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
+import { useUnreadNotificationCount } from "../../hooks/useNotifications";
 import { useDashboardLocation } from "../../hooks/useDashboardLocation";
 import { Card } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
@@ -72,6 +73,7 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { colors, isDark } = useCivicTheme();
   const { language } = useLanguage();
   const profile = useProfile();
+  const unread = useUnreadNotificationCount();
   const alertsQuery = useAlerts(1, 30);
   const [refreshing, setRefreshing] = useState(false);
   const alerts = alertsQuery.data?.items ?? [];
@@ -239,10 +241,20 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
       ]}
     >
       <CitizenHeader
+        unreadCount={unread.data ?? 0}
+        onNotifications={() =>
+          navigation
+            .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+            ?.navigate("Notifications")
+        }
         avatarLabel={displayName(profile.data?.fullName)
           .charAt(0)
           .toUpperCase()}
-        onProfile={() => navigation.navigate("ProfileTab")}
+        onProfile={() =>
+          navigation
+            .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
+            ?.navigate("Profile")
+        }
       />
       <ScrollView
         style={styles.scroll}
@@ -357,11 +369,13 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
           title={copy.nearby}
           action={copy.viewMap}
           colors={colors}
+          onPress={() => navigation.navigate("MapTab")}
         />
         <Card appearance="civic" style={styles.mapCard}>
           <MapView
             provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
             style={styles.map}
+            onPress={() => navigation.navigate("MapTab")}
             initialRegion={{
               latitude: location.latitude,
               longitude: location.longitude,

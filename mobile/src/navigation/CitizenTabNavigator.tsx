@@ -1,14 +1,10 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import {
-  FileText,
-  LayoutDashboard,
-  Plus,
-  UserCircle2,
-  
-} from "lucide-react-native";
+import { FileText, House, MapPinned, Camera } from "lucide-react-native";
 import { CitizenDashboardScreen } from "../screens/citizen/CitizenDashboardScreen";
+import { CitizenMapScreen } from "../screens/citizen/CitizenMapScreen";
+import { CitizenNotificationsScreen } from "../screens/citizen/CitizenNotificationsScreen";
 import { MyReportsScreen } from "../screens/citizen/MyReportsScreen";
 import { CitizenProfileScreen } from "../screens/citizen/CitizenProfileScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
@@ -26,7 +22,7 @@ const Stack = createNativeStackNavigator<CitizenStackParamList>();
 const CitizenTabs = () => {
   const { colors } = useCivicTheme();
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
+  const { language } = useLanguage();
 
   return (
     <Tab.Navigator
@@ -50,11 +46,11 @@ const CitizenTabs = () => {
         tabBarLabelStyle: { fontSize: 10, fontWeight: "700", marginTop: 4 },
         tabBarIcon: ({ color, size }) =>
           route.name === "DashboardTab" ? (
-            <LayoutDashboard color={color} size={size} />
+            <House color={color} size={size} />
+          ) : route.name === "MapTab" ? (
+            <MapPinned color={color} size={size} />
           ) : route.name === "ReportTab" ? (
-            <Plus color="#07101F" size={size + 5} strokeWidth={3} />
-          ) : route.name === "ProfileTab" ? (
-            <UserCircle2 color={color} size={size} />
+            <Camera color="#07101F" size={24} strokeWidth={2.5} />
           ) : (
             <FileText color={color} size={size} />
           ),
@@ -63,16 +59,21 @@ const CitizenTabs = () => {
       <Tab.Screen
         name="DashboardTab"
         component={CitizenDashboardScreen}
-        options={{ tabBarLabel: t("tabs.home") }}
+        options={{ tabBarLabel: language === "vi" ? "Trang chủ" : "Home" }}
+      />
+      <Tab.Screen
+        name="MapTab"
+        component={CitizenMapScreen}
+        options={{ tabBarLabel: language === "vi" ? "Bản đồ" : "Map" }}
       />
       <Tab.Screen
         name="ReportTab"
         component={ReportTabLauncherScreen}
         options={{
-          tabBarLabel: t("tabs.reportIncident"),
+          tabBarLabel: language === "vi" ? "Báo cáo" : "Report",
           tabBarIconStyle: {
-            width: 44,
-            height: 44,
+            width: 50,
+            height: 50,
             marginTop: -8,
             borderRadius: 999,
             backgroundColor: colors.primary,
@@ -84,12 +85,7 @@ const CitizenTabs = () => {
       <Tab.Screen
         name="MyReportsTab"
         component={MyReportsScreen}
-        options={{ tabBarLabel: t("tabs.myReports", "My Reports") }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={CitizenProfileScreen}
-        options={{ tabBarLabel: t("tabs.profile", "Cá nhân") }}
+        options={{ tabBarLabel: language === "vi" ? "Của tôi" : "My reports" }}
       />
     </Tab.Navigator>
   );
@@ -100,6 +96,8 @@ export const CitizenTabNavigator = () => (
     <Stack.Screen name="CitizenTabs" component={CitizenTabs} />
     <Stack.Screen name="ReportFlow" component={ReportFlowNavigator} />
     <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
+    <Stack.Screen name="Profile" component={CitizenProfileScreen} />
+    <Stack.Screen name="Notifications" component={CitizenNotificationsScreen} />
     {/* Kept for legacy/admin-compatible navigation. Field reporting no longer exposes manual relocation. */}
     <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
   </Stack.Navigator>

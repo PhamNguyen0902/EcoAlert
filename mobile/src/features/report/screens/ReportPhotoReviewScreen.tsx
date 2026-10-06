@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   content: {
     padding: space.lg,
     paddingBottom: space.section,
-    gap: space.lg,
+    gap: space.section,
   },
   // Keep capture attached/in bounds behind the opaque header and ScrollView.
   // Outside ScrollView, Android clipping cannot remove this capture source.

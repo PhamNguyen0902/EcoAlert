@@ -92,6 +92,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       refreshActiveData();
     });
 
+    // This event is emitted after persistence, unlike the workflow broadcast.
+    socketInstance.on('notification:created', () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+    });
+
     setSocket(socketInstance);
 
     return () => {
