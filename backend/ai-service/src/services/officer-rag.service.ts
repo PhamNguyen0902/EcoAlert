@@ -48,8 +48,7 @@ const ACTION_LABEL_MAP: Record<string, string> = {
 // nguồn dự phòng khi đoạn tài liệu chưa có source_url / legal_basis riêng
 const OFFICIAL_LEGAL_SOURCE = {
   url: "https://thuvienphapluat.vn/chinh-sach-phap-luat-moi/vn/ho-tro-phap-luat/tu-van-phap-luat/59020/vut-rac-bua-bai-bi-phat-bao-nhieu-tien",
-  basis:
-    "Vứt rác bừa bãi bị phạt bao nhiêu tiền?",
+  basis: "Vứt rác bừa bãi bị phạt bao nhiêu tiền?",
 };
 
 // câu trả lời cố định (không gọi mô hình)
@@ -118,7 +117,12 @@ const isOutOfScope = (norm: string) =>
   OUT_OF_SCOPE_REGEX.test(norm) && !HAS_WASTE_KEYWORD_REGEX.test(norm);
 
 const cleanText = (s: string) =>
-  s.replace(/\*\*/g, "").replace(/\*/g, "-").trim();
+  s
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "-")
+    .replace(/([^\n])\s*(\d+\.\s+)/g, "$1\n$2")
+    .replace(/([^\n])\s*(-\s+)/g, "$1\n$2")
+    .trim();
 
 // tiện ích gọi API
 class LlmFormatError extends Error {}
@@ -216,7 +220,8 @@ QUY TRÌNH (điền các trường JSON theo đúng thứ tự trước khi vi�
 
 PHONG CÁCH
 - Câu đầu trả lời thẳng vào câu hỏi. Tối đa 120 từ.
-- Văn bản thuần, không dùng ký tự * hoặc markdown. Các ý chính đánh số 1. 2. 3.; ý phụ dùng "- ".
+- Văn bản thuần, không dùng ký tự * hoặc markdown.
+- BẮT BUỘC XUỐNG DÒNG: Mỗi ý chính đánh số (1., 2., 3.) và ý phụ ("- ") phải nằm trên một dòng riêng biệt, không viết liền một đoạn.
 - Xưng "bạn" hoặc "Cán bộ hiện trường". Luôn viết tiếng Việt có dấu, kể cả khi người dùng gõ không dấu.
 
 VÍ DỤ NGẮN

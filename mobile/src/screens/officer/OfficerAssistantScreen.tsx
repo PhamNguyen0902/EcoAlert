@@ -23,6 +23,7 @@ import {
 } from "lucide-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { aiService, RagCitation } from "../../api/aiSerivce";
+import { ms } from "date-fns/locale";
 
 interface ChatMessage {
   id: string;
@@ -42,6 +43,18 @@ const QUICK_PROMPTS = [
 const CONNECTION_ERROR_TEXT =
   "Không thể kết nối đến máy chủ AI. Vui lòng kiểm tra kết nối mạng và thử lại.";
 export const OfficerAssistantScreen: React.FC = () => {
+  // Tự động ngắt dòng trước các số thứ tự 1., 2., 3. hoặc gạch đầu dòng
+  const formatAssistantText = (text: string) => {
+    if (!text) return "";
+    return (
+      text
+        // Thêm \n trước số thứ tự (vd: " 1. ", " 2. ") nếu phía trước chưa có xuống dòng
+        .replace(/([^\n])\s*(\d+\.\s+)/g, "$1\n$2")
+        // Thêm \n trước gạch đầu dòng (vd: " - ") nếu phía trước chưa có xuống dòng
+        .replace(/([^\n])\s*(-\s+)/g, "$1\n$2")
+    );
+  };
+
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -263,7 +276,7 @@ export const OfficerAssistantScreen: React.FC = () => {
                     { color: isUser ? "#FFFFFF" : colors.text },
                   ]}
                 >
-                  {msg.text}
+                  {isUser ? msg.text : formatAssistantText(msg.text)}
                 </Text>
 
                 {/* thao tác nghiệp vụ cần thực hiện trên ứng dụng */}
@@ -413,7 +426,7 @@ export const OfficerAssistantScreen: React.FC = () => {
             >
               <ActivityIndicator size="small" color={colors.primary} />
               <Text style={{ fontSize: 13, color: colors.textMuted }}>
-                Đang tra cứu quy trình & quy phạm pháp luật...
+                Đang phản hồi ...
               </Text>
             </View>
           </View>
