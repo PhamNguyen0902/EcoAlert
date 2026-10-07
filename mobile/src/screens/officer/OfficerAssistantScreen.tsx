@@ -129,7 +129,7 @@ export const OfficerAssistantScreen: React.FC = () => {
       }, 100);
     }
   };
-
+// mở văn bản gốc
   const handleOpenSource = async (url?: string) => {
     if (!url) return;
     try {
@@ -141,7 +141,7 @@ export const OfficerAssistantScreen: React.FC = () => {
       console.warn("Không thể mở liên kết:", e);
     }
   };
-
+// làm sạch đoạn chat
   const clearChat = () => {
     setMessages([
       {
@@ -269,7 +269,7 @@ export const OfficerAssistantScreen: React.FC = () => {
                       ],
                 ]}
               >
-                {/* Văn bản trả lời */}
+                {/* văn bản trả lời */}
                 <Text
                   style={[
                     styles.messageText,
@@ -433,7 +433,7 @@ export const OfficerAssistantScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      {/* INPUT BAR */}
+      {/* thanh nhập tin nhắn */}
       <View
         style={[
           styles.inputContainer,
