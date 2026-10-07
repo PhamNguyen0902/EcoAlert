@@ -65,7 +65,7 @@ export const OfficerAssistantScreen: React.FC = () => {
     {
       id: "welcome",
       sender: "assistant",
-      text: "Xin chào đồng chí! Tôi là Trợ lý AI hỗ trợ xử lý sự cố rác thải EcoAlert. Tôi có thể hướng dẫn quy trình hiện trường và viện dẫn căn cứ pháp lý theo Nghị định 45/2022/NĐ-CP. Đồng chí cần hỗ trợ gì?",
+      text: "Xin chào, tôi là Trợ lý AI hỗ trợ xử lý sự cố rác thải EcoAlert. Tôi có thể hướng dẫn quy trình hiện trường và viện dẫn căn cứ pháp lý theo Nghị định 45/2022/NĐ-CP. Cán bộ cần hỗ trợ gì?",
       timestamp: new Date(),
     },
   ]);
