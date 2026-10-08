@@ -1,4 +1,10 @@
 import mongoose from "mongoose";
+import { randomUUID } from 'crypto';
+import { withAssignmentLock } from './assignment-lock.service';
+import { serviceAreaDirectory } from './service-area-directory.service';
+import { officerShiftService } from './officer-shift.service';
+import { assignmentDelivery } from './assignment-delivery.service';
+import type { OfficerDirectoryData } from '@ecoalert/shared';
 import {
   AddOfficerNoteDto,
   AssignOfficerDto,
@@ -29,6 +35,9 @@ import {
 } from "@ecoalert/shared";
 import { rabbitMQService } from "./rabbitmq.service";
 import { userDirectoryService } from "./user-directory.service";
+import { envConfig } from "../config/env.config";
+import { haversineDistanceMeters, isValidLatitude, isValidLongitude } from "../utils/geo-evidence.util";
+import { BadRequestError } from "@ecoalert/shared";
 
 export interface WorkflowActor {
   id: string;
@@ -40,6 +49,20 @@ const normRole = (r?: string) => (r || "").toUpperCase() as WorkflowActorRole;
 const normStatus = (s?: string) => (s || "").toLowerCase() as AlertStatus;
 
 export class AlertService {
+  private validateFieldLocation(alert: IAlert, data: ConfirmArrivalDto, radiusMeters: number) {
+    if (!isValidLatitude(data.latitude) || !isValidLongitude(data.longitude) ||
+        !Number.isFinite(data.accuracyMeters) || data.accuracyMeters < 0)
+      throw new BadRequestError("Vị trí GPS không hợp lệ. Vui lòng lấy lại vị trí.");
+    if (data.accuracyMeters > envConfig.officerCheckinMaxAccuracyMeters)
+      throw new BadRequestError("Độ chính xác GPS hiện chưa đủ tốt để xác nhận bạn đã đến hiện trường.");
+    const coords = alert.location?.coordinates;
+    if (!coords || !isValidLongitude(coords[0]) || !isValidLatitude(coords[1]))
+      throw new BadRequestError("Báo cáo không có vị trí hiện trường hợp lệ.");
+    const distance = haversineDistanceMeters(coords[1], coords[0], data.latitude, data.longitude);
+    if (distance > radiusMeters)
+      throw new BadRequestError(`Bạn hiện cách vị trí sự cố khoảng ${Math.round(distance)} mét. Vui lòng đến gần hiện trường hơn để xác nhận.`);
+    return distance;
+  }
   // helper nội bộ
   private async requireAlert(id: string): Promise<IAlert> {
     if (!mongoose.isValidObjectId(id))
@@ -258,11 +281,12 @@ export class AlertService {
     page: number,
     limit: number,
     citizenId?: string,
-    filters: { status?: string; category?: string; severity?: string } = {},
+    filters: { status?: string; category?: string; severity?: string; unassigned?: boolean } = {},
   ) {
     const filter: Record<string, unknown> = {};
+    if (filters.unassigned) { filter.status = /^verified$/i; filter.assignedOfficerId = null; }
     if (citizenId) filter.citizenId = citizenId;
-    if (filters.status) filter.status = new RegExp(`^${filters.status}$`, "i");
+    if (filters.status && !filters.unassigned) filter.status = new RegExp(`^${filters.status}$`, "i");
     if (filters.category)
       filter.category = new RegExp(`^${filters.category}$`, "i");
     if (filters.severity)
@@ -293,11 +317,16 @@ export class AlertService {
     this.checkRole(actor, ["ADMIN"]);
     const alert = await this.requireAlert(id);
     const newStatus = normStatus(data.status);
+    if (![AlertStatus.VERIFIED, AlertStatus.REJECTED].includes(newStatus) ||
+        ![AlertStatus.PENDING, AlertStatus.AI_ANALYZING].includes(normStatus(alert.status)) || alert.assignedOfficerId)
+      throw new ConflictError('Chỉ duyệt hoặc từ chối báo cáo chưa được phân công');
 
     const updated = await alertRepository.findOneAndUpdate(
       { _id: id, status: new RegExp(`^${alert.status}$`, "i") },
       {
-        $set: { status: newStatus, updatedBy: actor.id },
+        $set: { status: newStatus, updatedBy: actor.id,
+          ...(newStatus === AlertStatus.VERIFIED && envConfig.autoAssignEnabled ? {autoAssignmentJob:{pending:true,actorId:actor.id,correlationId:actor.correlationId,attempts:0,nextAttemptAt:new Date()}} : {}),
+        },
         $push: {
           statusHistory: this.makeHistory(alert.status, newStatus, actor),
           timeline: this.makeTimeline(
@@ -312,7 +341,8 @@ export class AlertService {
       },
     );
     if (!updated) throw new ConflictError("Trạng thái đã thay đổi");
-    await this.emitEvent(EVENTS.ALERT_UPDATED, updated, actor);
+    // Verification is already durable; a broker outage must not undo it or the dispatch job.
+    await this.emitEvent(EVENTS.ALERT_UPDATED, updated, actor).catch(() => undefined);
     return updated;
   }
 
@@ -354,23 +384,112 @@ export class AlertService {
   ) {
     // chỉ admin phân công alert đã verified; thành công chuyển status sang assigned và phát rabbitmq event
     this.checkRole(actor, ["ADMIN"]);
-    const alert = await this.requireAlert(id);
-    if (normStatus(alert.status) !== AlertStatus.VERIFIED)
-      throw new ConflictError("Chỉ phân công sự cố đã duyệt");
+    return withAssignmentLock(async (assertOwned) => {
+      const alert = await this.requireAlert(id);
+      if (normStatus(alert.status) !== AlertStatus.VERIFIED || alert.assignedOfficerId)
+        throw new ConflictError('Chỉ phân công sự cố đã duyệt và chưa có cán bộ');
+      const officer = await userDirectoryService.requireOfficer(data.officerId, actor);
+      let match;
+      let dependencyUnavailable = false;
+      try {
+        match = await serviceAreaDirectory.match(...alert.location.coordinates);
+      } catch {
+        dependencyUnavailable = true;
+      }
+      const outsideArea = dependencyUnavailable ||
+        !!(match?.area && !match.area.assignedOfficerIds.includes(officer._id));
+      if (outsideArea && (!data.overrideConfirmed || !data.assignmentReason?.trim())) {
+        throw new BadRequestError(
+          'Phân công ngoài khu vực hoặc khi GIS không khả dụng cần xác nhận và lý do của Admin',
+        );
+      }
+      const availability = await officerShiftService.getAvailability(actor, [officer._id]);
+      await assertOwned();
+      return this.commitOfficerAssignment(id, actor, officer, {
+        method: 'MANUAL',
+        areaId: match?.area?._id,
+        areaCode: match?.area?.code,
+        areaName: match?.area?.name,
+        reason: data.assignmentReason || 'Admin phân công thủ công',
+        outsideAreaOverride: outsideArea,
+        activeTaskCountAtSelection: availability[0]?.activeTaskCount,
+        triggeredBy: 'ADMIN_MANUAL',
+        expectedCoordinates: alert.location.coordinates,
+      });
+    });
+  }
 
-    const officer = await userDirectoryService.requireOfficer(
-      data.officerId,
-      actor,
-    );
+  async commitOfficerAssignment(
+    id: string,
+    actor: WorkflowActor,
+    officer: OfficerDirectoryData,
+    metadata: {
+      method: 'AUTO' | 'MANUAL';
+      areaId?: string;
+      areaCode?: string;
+      areaName?: string;
+      reason: string;
+      activeTaskCountAtSelection?: number;
+      triggeredBy: string;
+      outsideAreaOverride?: boolean;
+      expectedCoordinates?: [number, number];
+    },
+  ) {
+    this.checkRole(actor, ['ADMIN']);
+    if (officer.role !== 'OFFICER' || !officer.isActive || officer.isDeleted) {
+      throw new BadRequestError('Cán bộ không đủ điều kiện');
+    }
+    const alert = await this.requireAlert(id);
+    const assignedAt = new Date();
+    const eventId = randomUUID();
     const updated = await alertRepository.findOneAndUpdate(
-      { _id: id, status: new RegExp(`^${AlertStatus.VERIFIED}$`, "i") },
+      {
+        _id: id,
+        status: new RegExp(`^${AlertStatus.VERIFIED}$`, "i"),
+        assignedOfficerId: null,
+        ...(metadata.expectedCoordinates ? { 'location.coordinates': metadata.expectedCoordinates } : {}),
+      },
       {
         $set: {
           status: AlertStatus.ASSIGNED,
-          assignedOfficerId: data.officerId,
+          assignedOfficerId: officer._id,
           assignedOfficerName: officer.fullName,
           assignedOfficerEmail: officer.email,
-          assignedAt: new Date(),
+          assignedAt,
+          assignedBy: actor.id,
+          assignmentMethod: metadata.method,
+          assignedAreaId: metadata.areaId,
+          assignedAreaCode: metadata.areaCode,
+          assignedAreaName: metadata.areaName,
+          assignmentReason: metadata.reason,
+          assignmentAudit: {
+            activeTaskCountAtSelection: metadata.activeTaskCountAtSelection,
+            triggeredBy: metadata.triggeredBy,
+            actorId: actor.id,
+            assignedAt,
+            outsideAreaOverride: !!metadata.outsideAreaOverride,
+          },
+          'autoAssignmentJob.pending': false,
+          assignmentEvent: {
+            eventId,
+            correlationId: actor.correlationId,
+            attempts: 0,
+            nextAttemptAt: assignedAt,
+            payload: {
+              alertId: id,
+              title: alert.title,
+              citizenId: alert.citizenId,
+              assignedOfficerId: officer._id,
+              officerId: officer._id,
+              status: AlertStatus.ASSIGNED,
+              actorId: actor.id,
+              actorRole: 'ADMIN',
+              assignmentMethod: metadata.method,
+              assignedAreaId: metadata.areaId,
+              areaId: metadata.areaId,
+              timestamp: assignedAt.toISOString(),
+            },
+          },
           updatedBy: actor.id,
         },
         $push: {
@@ -383,13 +502,14 @@ export class AlertService {
             "OFFICER_ASSIGNED",
             "Đã phân công cho cán bộ",
             actor,
-            { status: AlertStatus.ASSIGNED },
+            { status: AlertStatus.ASSIGNED, metadata },
           ),
         },
       },
     );
     if (!updated) throw new ConflictError("Phân công thất bại");
-    await this.emitEvent(EVENTS.OFFICER_ASSIGNED, updated, actor);
+    // The event is persisted in the same atomic update as assignment; worker retries on failure.
+    await assignmentDelivery.deliver(id).catch(() => undefined);
     return updated;
   }
 
@@ -494,6 +614,8 @@ export class AlertService {
     if (normStatus(alert.status) !== AlertStatus.IN_PROGRESS)
       throw new ConflictError("Sự cố phải đang xử lý để check-in");
 
+    const distance = this.validateFieldLocation(alert, data, envConfig.officerCheckinRadiusMeters);
+    const now = new Date();
     const checkIn = {
       officerId: actor.id,
       location: {
@@ -501,8 +623,8 @@ export class AlertService {
         coordinates: [data.longitude, data.latitude] as [number, number],
       },
       accuracyMeters: data.accuracyMeters,
-      distanceFromIncidentMeters: 0,
-      checkedInAt: new Date(),
+      distanceFromIncidentMeters: distance,
+      checkedInAt: now,
       verified: true,
     };
 
@@ -513,7 +635,7 @@ export class AlertService {
         status: new RegExp(`^${AlertStatus.IN_PROGRESS}$`, "i"),
       },
       {
-        $set: { arrivedAt: new Date(), checkIn, updatedBy: actor.id },
+        $set: { arrivedAt: now, checkIn, updatedBy: actor.id },
         $push: {
           timeline: this.makeTimeline(
             "ARRIVED_ON_SCENE",
@@ -540,15 +662,43 @@ export class AlertService {
     if (normStatus(alert.status) !== AlertStatus.IN_PROGRESS)
       throw new ConflictError("Sự cố phải đang xử lý");
 
+    if (!alert.checkIn?.verified || alert.checkIn.officerId !== actor.id)
+      throw new ConflictError(
+        "Cần xác nhận đã đến hiện trường trước khi hoàn thành xử lý.",
+      );
+    if (!data.evidence?.length)
+      throw new BadRequestError("Cần ít nhất một ảnh sau xử lý.");
+    if (!data.resolutionSummary?.trim() || !data.treatmentMethod?.trim())
+      throw new BadRequestError("Tóm tắt và phương pháp xử lý là bắt buộc.");
     const now = new Date();
-    const evidence = data.evidence.map((e) => ({
-      mediaId: e.mediaId,
-      url: e.url,
-      uploadedBy: actor.id,
-      uploadedAt: now,
-      capturedAt: now,
-      type: "AFTER_TREATMENT" as const,
-    }));
+    const evidence = data.evidence.map((e) => {
+      if (!e.location)
+        throw new BadRequestError(
+          "Ảnh sau xử lý cần GPS hiện trường. Vui lòng chụp lại.",
+        );
+      const distance = this.validateFieldLocation(
+        alert,
+        e.location,
+        envConfig.officerEvidenceRadiusMeters,
+      );
+      const capturedAt = e.capturedAt ? new Date(e.capturedAt) : undefined;
+      if (capturedAt && !Number.isFinite(capturedAt.getTime()))
+        throw new BadRequestError("Thời điểm chụp ảnh không hợp lệ.");
+      return {
+        mediaId: e.mediaId,
+        url: e.url,
+        uploadedBy: actor.id,
+        uploadedAt: now,
+        capturedAt,
+        type: "AFTER_TREATMENT" as const,
+        location: {
+          type: "Point" as const,
+          coordinates: [e.location.longitude, e.location.latitude] as [number, number],
+        },
+        accuracyMeters: e.location.accuracyMeters,
+        distanceFromIncidentMeters: distance,
+      };
+    });
     const evidenceUrls = evidence.map((e) => e.url);
 
     const updated = await alertRepository.findOneAndUpdate(
@@ -556,6 +706,8 @@ export class AlertService {
         _id: id,
         assignedOfficerId: actor.id,
         status: new RegExp(`^${AlertStatus.IN_PROGRESS}$`, "i"),
+        "checkIn.verified": true,
+        "checkIn.officerId": actor.id,
       },
       {
         $set: {
@@ -564,6 +716,8 @@ export class AlertService {
           resolvedBy: actor.id,
           resolutionSummary: data.resolutionSummary.trim(),
           treatmentMethod: data.treatmentMethod.trim(),
+          materialsUsed: data.materialsUsed?.trim(),
+          resolutionNotes: data.additionalNotes?.trim(),
           resolutionEvidence: evidence,
           updatedBy: actor.id,
         },
@@ -606,7 +760,6 @@ export class AlertService {
       { _id: id },
       {
         $set: {
-          status: alert.status,
           category: analysis.category || alert.category,
           severity: analysis.severity || alert.severity,
           aiConfidence: displayConfidence.value,

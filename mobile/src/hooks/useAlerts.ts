@@ -35,9 +35,11 @@ export const useAlerts = (
   page = 1,
   limit = 20,
   filters: Record<string, string> = EMPTY_FILTERS,
+  enabled = true,
 ) => {
   return useQuery({
     queryKey: ["alerts", page, limit, filters],
+    enabled,
     queryFn: () => alertService.getAlerts(page, limit, filters),
     staleTime: 1000 * 60 * 2, // 2 mins cache to avoid constant re-fetching
   });
@@ -54,10 +56,11 @@ export const useAlert = (id: string) => {
   });
 };
 
-export const useOfficerTasks = (page = 1, limit = 20, status?: string) => {
+export const useOfficerTasks = (page = 1, limit = 20, status?: string, options: { enabled?: boolean; allPages?: boolean } = {}) => {
   return useQuery({
-    queryKey: ["officer-tasks", page, limit, status],
-    queryFn: () => alertService.getOfficerTasks(page, limit, status),
+    queryKey: ["officer-tasks", page, limit, status, Boolean(options.allPages)],
+    enabled: options.enabled ?? true,
+    queryFn: () => options.allPages ? alertService.getAllOfficerTasks() : alertService.getOfficerTasks(page, limit, status),
     staleTime: 1000 * 60 * 2,
   });
 };
@@ -148,7 +151,8 @@ export const useStartHandling = () => {
 
   return useMutation({
     mutationFn: (id: string) => alertService.startHandling(id),
-    onSuccess: (_, id) => {
+    onSuccess: (updatedAlert, id) => {
+      queryClient.setQueryData(["alert", id], updatedAlert);
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert", id] });
       queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
@@ -167,7 +171,8 @@ export const useConfirmArrival = () => {
       id: string;
       location: { latitude: number; longitude: number; accuracyMeters: number };
     }) => alertService.confirmArrival(id, location),
-    onSuccess: (_, variables) => {
+    onSuccess: (updatedAlert, variables) => {
+      queryClient.setQueryData(["alert", variables.id], updatedAlert);
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });
@@ -181,7 +186,8 @@ export const useResolveIncident = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ResolutionInput }) =>
       alertService.resolveIncident(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (updatedAlert, variables) => {
+      queryClient.setQueryData(["alert", variables.id], updatedAlert);
       queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["alert", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["officer-tasks"] });

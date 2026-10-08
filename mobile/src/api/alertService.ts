@@ -2,6 +2,17 @@ import { api } from "./client";
 import { Alert, PaginatedResult, CreateAlertData, Category, ResolutionInput, PreSubmitSemanticResult, PreSubmitVisionResult } from "../types";
 
 export const alertService = {
+  // Paginate only when necessary: counts/map cover all authorized tasks.
+  getAllOfficerTasks: async (): Promise<PaginatedResult<Alert>> => {
+    const first = await alertService.getOfficerTasks(1, 100);
+    const items = [...first.items];
+    for (let page = 2; items.length < first.total; page++) {
+      const next = await alertService.getOfficerTasks(page, 100);
+      if (!next.items.length) break;
+      items.push(...next.items);
+    }
+    return { ...first, items: Array.from(new Map(items.map(item => [item._id, item])).values()) };
+  },
   getAlerts: async (
     page = 1,
     limit = 20,

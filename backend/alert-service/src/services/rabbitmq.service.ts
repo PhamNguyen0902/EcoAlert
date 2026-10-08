@@ -67,12 +67,14 @@ export const aiAnalysisCompletedSchema = z.object({
 
 class RabbitMQService {
   private connection: amqp.ChannelModel | undefined;
-  private channel: amqp.Channel | undefined;
+  private channel: amqp.ConfirmChannel | undefined;
 
   async connect() {
     try {
       this.connection = await amqp.connect(envConfig.rabbitMqUrl);
-      this.channel = await this.connection.createChannel();
+      this.connection.on('error',()=>logger.warn('RabbitMQ connection error; pending assignment events are retained'));
+      this.connection.on('close',()=>{this.channel=undefined;setTimeout(()=>void this.connect(),5000).unref();});
+      this.channel = await this.connection.createConfirmChannel();
       await this.channel.assertExchange('ecoalert_exchange', 'topic', { durable: true });
 
       const queue = await this.channel.assertQueue('alert_service_queue', { durable: true });
@@ -106,13 +108,18 @@ class RabbitMQService {
     }
   }
 
-  async publishEvent<T>(routingKey: string, data: T, correlationId?: string) {
+  async publishEvent<T>(routingKey: string, data: T, correlationId?: string, eventId: string = randomUUID()) {
     if (!this.channel) throw new Error('RabbitMQ channel is unavailable');
     const event: IEventMessage<T> = {
-      eventId: randomUUID(), eventType: routingKey, timestamp: new Date().toISOString(),
+      eventId, eventType: routingKey, timestamp: new Date().toISOString(),
       source: 'alert-service', correlationId: correlationId || randomUUID(), data,
     };
-    this.channel.publish('ecoalert_exchange', routingKey, Buffer.from(JSON.stringify(event)), { persistent: true });
+    const channel=this.channel;
+    await new Promise<void>((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error('RabbitMQ confirmation timed out')),5000);
+      try {channel.publish('ecoalert_exchange', routingKey, Buffer.from(JSON.stringify(event)), { persistent: true }, error=>{clearTimeout(timer);error?reject(error):resolve();});}
+      catch(error){clearTimeout(timer);reject(error);}
+    });
     logger.info(`Published event: ${routingKey}`);
   }
 }

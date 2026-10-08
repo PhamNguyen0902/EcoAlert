@@ -77,8 +77,8 @@ const invalidateAlertWorkflow = (
 export const useAssignOfficer = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, officerId }: { id: string; officerId: string }) =>
-      alertService.assignOfficer(id, officerId),
+    mutationFn: ({ id, officerId, overrideConfirmed,assignmentReason }: { id: string; officerId: string;overrideConfirmed?:boolean;assignmentReason?:string }) =>
+      alertService.assignOfficer(id, officerId,{overrideConfirmed,assignmentReason}),
     onSuccess: (_, variables) =>
       invalidateAlertWorkflow(queryClient, variables.id),
   });

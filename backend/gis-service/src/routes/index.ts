@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { gisController } from '../controllers/gis.controller';
 import { asyncHandler } from '@ecoalert/shared';
+import serviceAreaRoutes from './service-area.routes';
 
 const router = Router();
+router.use('/service-areas',serviceAreaRoutes);
 
 // /api/v1/gis is proxied here as /
 router.get('/nearby', asyncHandler(gisController.getNearby));

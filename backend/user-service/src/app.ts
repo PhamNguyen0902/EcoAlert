@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { errorHandler } from './middlewares/error-handler.middleware';
 import routes from './routes';
+import officerDirectoryRoutes from './routes/officer-directory.routes';
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/v1', routes);
+app.use('/api/v1/internal',officerDirectoryRoutes);
 app.use(errorHandler);
 
 export { app };

@@ -19,7 +19,8 @@ interface OfficerShiftSummary {
 }
 
 export interface OfficerAvailability {
-  officer: Pick<UserDirectoryItem, '_id' | 'fullName' | 'email' | 'role'>;
+  officer: UserDirectoryItem;
+  lastAssignedAt?: Date;
   shiftStatus: 'ON_SHIFT' | 'OFF_SHIFT';
   activeTaskCount: number;
   assignedCount: number;
@@ -93,17 +94,19 @@ export class OfficerShiftService {
     return OfficerShift.find({ officerId: actor.id, isDeleted: false }).sort({ startedAt: -1 }).limit(limit);
   }
 
-  async getAvailability(actor: WorkflowActor): Promise<OfficerAvailability[]> {
+  async getAvailability(actor: WorkflowActor, officerIds?: string[]): Promise<OfficerAvailability[]> {
     if (actor.role?.toUpperCase() !== 'ADMIN') {
       throw new ForbiddenError('Only Admins can view Officer availability');
     }
     const [officers, shifts, workloadRows] = await Promise.all([
-      userDirectoryService.listOfficers(actor),
-      OfficerShift.find({ status: 'ACTIVE', isDeleted: false }).lean(),
-      Alert.aggregate<{ _id: string; assignedCount: number; inProgressCount: number }>([
-        { $match: { isDeleted: false, status: { $in: [/^assigned$/i, /^in_progress$/i] }, assignedOfficerId: { $exists: true, $ne: null } } },
+      userDirectoryService.listOfficers(actor,officerIds),
+      OfficerShift.find({ status: 'ACTIVE', isDeleted: false, ...(officerIds ? {officerId:{$in:officerIds}} : {}) }).lean(),
+      Alert.aggregate<{ _id: string; assignedCount: number; inProgressCount: number; lastAssignedAt?: Date }>([
+        // Historical timestamps include resolved/closed tasks; counts still include active tasks only.
+        { $match: { isDeleted: false, assignedOfficerId: officerIds ? {$in:officerIds} : { $exists: true, $ne: null } } },
         { $group: {
           _id: '$assignedOfficerId',
+          lastAssignedAt: { $max: '$assignedAt' },
           assignedCount: { $sum: { $cond: [{ $regexMatch: { input: '$status', regex: /^assigned$/i } }, 1, 0] } },
           inProgressCount: { $sum: { $cond: [{ $regexMatch: { input: '$status', regex: /^in_progress$/i } }, 1, 0] } },
         } },
@@ -124,6 +127,7 @@ export class OfficerShiftService {
         inProgressCount,
         activeTaskCount,
         workloadLevel: workloadLevelFor(activeTaskCount),
+        lastAssignedAt: workload?.lastAssignedAt,
         currentShift: currentShift as unknown as OfficerShiftSummary | null,
       };
     }).sort((left, right) => {

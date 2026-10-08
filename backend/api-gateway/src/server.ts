@@ -81,6 +81,8 @@ app.get("/health", (req, res) => {
 
 // xác thực jwt token và gán user id user role vào header cho các downstream services
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
+  // Never forward client-supplied identity/internal-service credentials.
+  for(const name of ['x-user-id','x-user-role','x-user-email','x-service-name','x-service-time','x-service-signature']) delete req.headers[name];
   // Allow unauthenticated access to certain routes
   const publicRoutes = [
     "/api/v1/auth/login",

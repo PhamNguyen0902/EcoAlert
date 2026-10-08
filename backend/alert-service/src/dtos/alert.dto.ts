@@ -87,6 +87,8 @@ export type UpdateAlertStatusDto = z.infer<typeof updateAlertStatusSchema>;
 
 export const assignOfficerSchema = z.object({
   officerId: z.string().trim().min(1, "Officer is required"),
+  overrideConfirmed: z.boolean().optional(),
+  assignmentReason: z.string().trim().min(5).max(1000).optional(),
 });
 export type AssignOfficerDto = z.infer<typeof assignOfficerSchema>;
 
@@ -107,6 +109,7 @@ export type ConfirmArrivalDto = z.infer<typeof confirmArrivalSchema>;
 export const resolutionEvidenceSchema = z.object({
   mediaId: z.string().trim().min(1).optional(),
   url: z.string().url(),
+  capturedAt: z.string().datetime().optional(),
   location: z
     .object({
       latitude: z.number().finite().min(-90).max(90),

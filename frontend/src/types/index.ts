@@ -144,6 +144,12 @@ export interface Alert {
   assignedOfficerId?: string;
   assignedAt?: string;
   assignedBy?: string;
+  assignmentMethod?: 'AUTO'|'MANUAL';
+  assignedAreaId?:string;
+  assignedAreaCode?:string;
+  assignedAreaName?:string;
+  assignmentReason?:string;
+  lastAssignmentAttempt?:{reason:string;attemptedAt:string;triggeredBy:string};
   startedAt?: string;
   startedBy?: string;
   arrivedAt?: string;

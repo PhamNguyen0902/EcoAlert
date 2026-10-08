@@ -37,6 +37,10 @@ import { alertService, gisService } from "@/services/services";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getApiErrorMessage } from "@/lib/api-error";
+import {
+  getFreshOfficerFieldLocation,
+  attachOfficerEvidenceLocation,
+} from "@/lib/officer-field-evidence";
 import { hasValidCoordinates } from "@/lib/maps";
 import { getAlertDisplaySeverity } from "@/lib/ai-confidence";
 import {
@@ -55,6 +59,7 @@ import {
 } from "@/components/ui/card";
 import { IncidentLocationDetails } from "@/components/location/IncidentLocationDetails";
 import { ConfirmActionDialog } from "@/components/incidents/ConfirmActionDialog";
+import { AssignmentPreview } from '@/features/admin/components/AssignmentPreview';
 import { IncidentTimeline } from "@/components/incidents/IncidentTimeline";
 import { OverallAiAnalysisCard } from "@/components/incidents/OverallAiAnalysisCard";
 import type {
@@ -166,6 +171,8 @@ export default function OfficerReportDetail() {
 
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [selectedOfficerId, setSelectedOfficerId] = useState("");
+  const [assignmentOverride,setAssignmentOverride]=useState(false);
+  const [assignmentReason,setAssignmentReason]=useState('');
   const [noteText, setNoteText] = useState("");
   const [editingNote, setEditingNote] = useState(false);
   const [resolutionSummary, setResolutionSummary] = useState("");
@@ -175,6 +182,8 @@ export default function OfficerReportDetail() {
   const [reviewNote, setReviewNote] = useState("");
   const [evidenceDrafts, setEvidenceDrafts] = useState<EvidenceDraft[]>([]);
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+  const [isGettingResolutionGps, setIsGettingResolutionGps] = useState(false);
+  const resolutionSubmitLock = useRef(false);
   const [classificationCategory, setClassificationCategory] = useState<
     AlertCategory | ""
   >("");
@@ -373,7 +382,7 @@ export default function OfficerReportDetail() {
   const handleAssign = () => {
     if (!selectedOfficerId) return;
     assignOfficer.mutate(
-      { id, officerId: selectedOfficerId },
+      { id, officerId: selectedOfficerId,overrideConfirmed:assignmentOverride,assignmentReason:assignmentReason.trim()||undefined },
       {
         onSuccess: () => {
           toast.success(t("toast.officer_assigned_success"), {
@@ -518,35 +527,39 @@ export default function OfficerReportDetail() {
   };
 
   // officer gửi kết quả xử lý sự cố
-  const handleResolve = () => {
-    const evidence = evidenceDrafts.flatMap((draft) =>
-      draft.uploadedUrl ? [{ url: draft.uploadedUrl }] : [],
+  const handleResolve = async () => {
+    if (resolutionSubmitLock.current) return;
+    if (!alert.checkIn?.verified) {
+      toast.error("Cần xác nhận đã đến hiện trường bằng ứng dụng EcoAlert trước khi hoàn thành.");
+      return;
+    }
+    const urls = evidenceDrafts.flatMap((draft) =>
+      draft.uploadedUrl ? [draft.uploadedUrl] : [],
     );
-    const data: ResolutionInput = {
-      resolutionSummary: resolutionSummary.trim(),
-      treatmentMethod: treatmentMethod.trim(),
-      materialsUsed: materialsUsed.trim() || undefined,
-      additionalNotes: additionalNotes.trim() || undefined,
-      evidence,
-    };
-    resolveIncident.mutate(
-      { id, data },
-      {
-        onSuccess: () => {
-          toast.success(t("toast.incident_resolved_success"), {
-            id: `alert-updated-${id}`,
-          });
-          setConfirmAction(null);
-        },
-        onError: (mutationError) =>
-          onWorkflowError(
-            mutationError,
-            language === "vi"
-              ? "Không thể hoàn tất xử lý sự cố này."
-              : "Unable to resolve this incident.",
-          ),
-      },
-    );
+    if (!urls.length || !resolutionSummary.trim() || !treatmentMethod.trim()) {
+      toast.error("Cần ảnh sau xử lý, tóm tắt và phương pháp xử lý.");
+      return;
+    }
+    resolutionSubmitLock.current = true;
+    setIsGettingResolutionGps(true);
+    try {
+      const location = await getFreshOfficerFieldLocation();
+      const data: ResolutionInput = {
+        resolutionSummary: resolutionSummary.trim(),
+        treatmentMethod: treatmentMethod.trim(),
+        materialsUsed: materialsUsed.trim() || undefined,
+        additionalNotes: additionalNotes.trim() || undefined,
+        evidence: attachOfficerEvidenceLocation(urls, location),
+      };
+      await resolveIncident.mutateAsync({ id, data });
+      toast.success(t("toast.incident_resolved_success"), { id: `alert-updated-${id}` });
+      setConfirmAction(null);
+    } catch (failure: unknown) {
+      onWorkflowError(failure, "Không thể lấy GPS hoặc hoàn tất xử lý. Vui lòng thử lại.");
+    } finally {
+      resolutionSubmitLock.current = false;
+      setIsGettingResolutionGps(false);
+    }
   };
 
   // admin đóng sự cố đã được officer giải quyết
@@ -828,6 +841,8 @@ export default function OfficerReportDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
+              {alert.assignmentMethod&&<div className="flex justify-between gap-4"><span className="text-muted-foreground">Hình thức phân công</span><span>{alert.assignmentMethod==='AUTO'?'Tự động theo khu vực':'Admin phân công thủ công'}</span></div>}
+              {alert.assignedAreaName&&<div className="flex justify-between gap-4"><span className="text-muted-foreground">Khu vực phụ trách</span><span className="text-right">{alert.assignedAreaName}</span></div>}
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Cán bộ phụ trách</span>
                 <span className="text-right font-medium">
@@ -970,6 +985,7 @@ export default function OfficerReportDetail() {
               {/* admin giao việc cho officer */}
               {canAdminAssign ? (
                 <div className="space-y-3">
+                  <AssignmentPreview id={id}/>
                   <label
                     htmlFor="assigned-officer"
                     className="text-sm font-medium"
@@ -1000,9 +1016,11 @@ export default function OfficerReportDetail() {
                       {assignmentWarning}
                     </p>
                   ) : null}
+                  <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={assignmentOverride} onChange={e=>setAssignmentOverride(e.target.checked)}/>Tôi xác nhận phân công ngoài khu vực hoặc khi dịch vụ GIS không khả dụng (cần lý do).</label>
+                  <label className="block text-xs">Lý do phân công{assignmentOverride?' (bắt buộc)':' (tùy chọn)'}<textarea className="mt-1 w-full rounded-md border bg-background p-2" maxLength={1000} value={assignmentReason} onChange={e=>setAssignmentReason(e.target.value)}/></label>
                   <Button
                     className="w-full"
-                    disabled={!selectedOfficerId}
+                    disabled={!selectedOfficerId || (assignmentOverride && assignmentReason.trim().length<5)}
                     onClick={() => setConfirmAction("assign")}
                   >
                     <UserCheck className="mr-2 h-4 w-4" />
@@ -1417,8 +1435,12 @@ export default function OfficerReportDetail() {
         title="Đánh dấu đã hoàn thành xử lý?"
         description="Hồ sơ kết quả và minh chứng sau xử lý sẽ được gửi để Admin xem xét."
         confirmLabel="Đánh dấu Hoàn thành"
-        pendingLabel="Đang gửi..."
-        isPending={resolveIncident.isPending}
+        isPending={resolveIncident.isPending || isGettingResolutionGps}
+        pendingLabel={
+          isGettingResolutionGps && !resolveIncident.isPending
+            ? "Đang lấy vị trí GPS..."
+            : "Đang gửi kết quả..."
+        }
         onConfirm={handleResolve}
       />
       <ConfirmActionDialog

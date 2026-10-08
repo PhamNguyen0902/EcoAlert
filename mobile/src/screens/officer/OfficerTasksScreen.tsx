@@ -4,165 +4,220 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   RefreshControl,
+  ScrollView,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CheckSquare, AlertCircle, MapPin } from "lucide-react-native";
+import { MapPin } from "lucide-react-native";
 import { useOfficerTasks } from "../../hooks/useAlerts";
-import { GlassCard } from "../../components/ui/GlassCard";
-import { Badge } from "../../components/ui/Badge";
-import { useTheme } from "../../context/ThemeContext";
-import { useLanguage } from "../../context/LanguageContext";
-import { SEVERITY_COLORS } from "../../utils/constants";
-import { Alert } from "../../types";
-import { getCategoryLabel, getSeverityLabel, getStatusLabel } from "../../utils/incidentPresentation";
+import { Card } from "../../components/ui/Card";
+import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
+import { useCivicTheme } from "../../theme/useCivicTheme";
+import { civicStyles, civicType } from "../../theme/civicDesign";
+import {
+  getCategoryLabel,
+  getSeverityLabel,
+} from "../../utils/incidentPresentation";
+import { getAlertDisplaySeverity } from "../../utils/aiAnalysis";
+import {
+  filterOfficerTasks,
+  getOfficerTaskState,
+  type OfficerTaskFilter,
+} from "../../utils/officerWorkflow";
+import type { OfficerStackParamList } from "../../navigation/types";
 
-const STATUS_TABS = [
-  { value: undefined }, { value: "PENDING" }, { value: "IN_PROGRESS" }, { value: "RESOLVED" },
+const filters: { value: OfficerTaskFilter; label: string; empty: string }[] = [
+  {
+    value: "ALL",
+    label: "Tất cả",
+    empty: "Bạn chưa có nhiệm vụ được phân công.",
+  },
+  { value: "NEW", label: "Mới", empty: "Không có nhiệm vụ mới." },
+  {
+    value: "ACTIVE",
+    label: "Đang xử lý",
+    empty: "Bạn chưa có nhiệm vụ đang xử lý.",
+  },
+  {
+    value: "COMPLETED",
+    label: "Hoàn thành",
+    empty: "Chưa có nhiệm vụ hoàn thành.",
+  },
 ];
-
-export const OfficerTasksScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+export const OfficerTasksScreen = () => {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<OfficerStackParamList>>();
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
-  const { language } = useLanguage();
-  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
-
-  const { data: tasksData, isLoading, refetch, isRefetching } = useOfficerTasks(
-    1,
-    50,
-    selectedStatus
-  );
-
-  const tasks = tasksData?.items ?? [];
-
-  const renderTaskItem = ({ item }: { item: Alert }) => {
-    const sevColor = SEVERITY_COLORS[item.severity ?? "low"] || { bg: "#F1F5F9", text: "#475569" };
-
-    return (
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => navigation.navigate("OfficerAlertDetail", { id: item._id })}
-      >
-        <GlassCard style={styles.taskCard}>
-          <View style={styles.cardHeader}>
-            <Badge
-              label={getCategoryLabel(item.category, language)}
-              type="custom"
-              bgColor={isDark ? "rgba(59, 130, 246, 0.25)" : "#DBEAFE"}
-              textColor={isDark ? "#60A5FA" : colors.secondary}
-            />
-            <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
-              <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
-                {getSeverityLabel(item.severity, language)}
-              </Text>
-            </View>
-            <Badge label={getStatusLabel(item.status, language)} statusValue={item.status} type="status" />
-          </View>
-
-          <Text style={[styles.taskTitle, { color: colors.text }]} numberOfLines={1}>
-            {item.title}
-          </Text>
-
-          <Text style={[styles.taskDesc, { color: colors.textMuted }]} numberOfLines={2}>
-            {item.description}
-          </Text>
-
-          <View style={styles.locationRow}>
-            <MapPin size={14} color={isDark ? "#60A5FA" : colors.secondary} />
-            <Text style={[styles.locationText, { color: isDark ? "#60A5FA" : colors.secondary }]} numberOfLines={1}>
-              {item.address || (language === "vi" ? "Vị trí GPS chưa có địa chỉ" : "GPS geotag location")}
-            </Text>
-          </View>
-        </GlassCard>
-      </TouchableOpacity>
-    );
-  };
-
+  const { colors } = useCivicTheme();
+  const [filter, setFilter] = useState<OfficerTaskFilter>("ALL");
+  const query = useOfficerTasks(1, 100, undefined, { allPages: true });
+  const tasks = query.data?.items ?? [];
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View style={styles.headerTitleRow}>
-          <CheckSquare size={24} color={isDark ? "#60A5FA" : colors.secondary} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Các tác vụ sự cố được giao</Text>
-        </View>
+    <View
+      style={[
+        styles.root,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
+      <View style={styles.header}>
+        <Text style={[civicType.title, { color: colors.text }]}>
+          Nhiệm vụ của tôi
+        </Text>
+        <Text style={[civicType.body, { color: colors.textMuted }]}>
+          Các điểm rác được phân công cho bạn
+        </Text>
       </View>
-
-      {/* Filter Tabs */}
-      <View style={styles.tabsRow}>
-        {STATUS_TABS.map((tab) => {
-          const isActive = selectedStatus === tab.value;
-          return (
-            <TouchableOpacity
-              key={tab.value || "ALL"}
-              style={[
-                styles.tabChip,
-                { borderColor: isActive ? colors.secondary : colors.border, backgroundColor: isActive ? (isDark ? "rgba(59, 130, 246, 0.3)" : "#DBEAFE") : colors.surface },
-              ]}
-              onPress={() => setSelectedStatus(tab.value)}
-            >
-              <Text style={[styles.tabChipText, { color: isActive ? (isDark ? "#93C5FD" : colors.secondary) : colors.textMuted }]}>
-                {tab.value ? getStatusLabel(tab.value, language) : language === "vi" ? "Tất cả" : "All"}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filters}
+        contentContainerStyle={styles.filterContent}
+      >
+        {filters.map((tab) => (
+          <Pressable
+            key={tab.value}
+            accessibilityRole="button"
+            accessibilityState={{ selected: filter === tab.value }}
+            onPress={() => setFilter(tab.value)}
+            style={[
+              styles.chip,
+              {
+                backgroundColor:
+                  filter === tab.value ? colors.cyanSoft : colors.surface,
+                borderColor: filter === tab.value ? colors.cyan : colors.border,
+              },
+            ]}
+          >
+            <Text style={[civicType.meta, { color: colors.text }]}>
+              {tab.label} {filterOfficerTasks(tasks, tab.value).length}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
       <FlatList
-        data={tasks}
+        data={filterOfficerTasks(tasks, filter)}
         keyExtractor={(item) => item._id}
-        renderItem={renderTaskItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={civicStyles.content}
         refreshControl={
-          <RefreshControl refreshing={isLoading || isRefetching} onRefresh={refetch} tintColor={colors.secondary} />
+          <RefreshControl
+            refreshing={query.isLoading || query.isRefetching}
+            onRefresh={() => void query.refetch()}
+            tintColor={colors.cyan}
+          />
         }
-        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => {
+          const state = getOfficerTaskState(item);
+          const image = item.fieldEvidence?.[0];
+          const uri =
+            image?.displayUrl || image?.originalUrl || item.mediaUrls?.[0];
+          const severity = getAlertDisplaySeverity(item);
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Xem nhiệm vụ ${item.title}`}
+              onPress={() =>
+                navigation.navigate("OfficerAlertDetail", { id: item._id })
+              }
+            >
+              <Card appearance="civic" style={styles.task}>
+                {uri ? (
+                  <EvidenceImageFrame
+                    imageUri={uri}
+                    fallbackUri={image?.originalUrl}
+                    style={styles.thumbnail}
+                    accessibilityLabel="Ảnh điểm rác"
+                  />
+                ) : null}
+                <View style={styles.row}>
+                  <Text style={[civicType.eyebrow, { color: state.color }]}>
+                    {state.label}
+                  </Text>
+                  {severity ? (
+                    <Text
+                      style={[
+                        civicType.meta,
+                        {
+                          color:
+                            severity.toLowerCase() === "high" ||
+                            severity.toLowerCase() === "critical"
+                              ? colors.danger
+                              : colors.warning,
+                        },
+                      ]}
+                    >
+                      {getSeverityLabel(severity)}
+                    </Text>
+                  ) : null}
+                </View>
+                <Text style={[civicType.cardTitle, { color: colors.text }]}>
+                  {item.title}
+                </Text>
+                <Text style={[civicType.meta, { color: colors.cyan }]}>
+                  {getCategoryLabel(item.category)}
+                </Text>
+                <View style={styles.row}>
+                  <MapPin size={14} color={colors.cyan} />
+                  <Text
+                    style={[
+                      civicType.body,
+                      styles.address,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {item.address || "Đã ghi nhận vị trí GPS"}
+                  </Text>
+                </View>
+                <Text style={[civicType.meta, { color: colors.textMuted }]}>
+                  {new Date(item.assignedAt || item.createdAt).toLocaleString(
+                    "vi-VN",
+                  )}
+                </Text>
+              </Card>
+            </Pressable>
+          );
+        }}
         ListEmptyComponent={
-          !isLoading ? (
-            <View style={styles.emptyContainer}>
-              <AlertCircle size={48} color={colors.textMuted} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>Không có tác vụ được giao</Text>
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                Hiện không có báo cáo sự cố nào được giao cho tài khoản Cán bộ của bạn. Khi Quản trị viên giao báo cáo cho bạn, nó sẽ xuất hiện ở đây.
-              </Text>
-            </View>
+          !query.isLoading ? (
+            <Text
+              accessibilityRole={query.isError ? "alert" : undefined}
+              style={[
+                civicType.body,
+                styles.empty,
+                { color: colors.textMuted },
+              ]}
+            >
+              {query.isError
+                ? "Không thể tải nhiệm vụ. Kéo xuống để thử lại."
+                : filters.find((tab) => tab.value === filter)?.empty}
+            </Text>
           ) : null
         }
       />
     </View>
   );
 };
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+  root: { flex: 1 },
+  header: { padding: 16, gap: 6 },
+  filters: { flexGrow: 0 },
+  filterContent: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
+  chip: { padding: 10, borderRadius: 8, borderWidth: 1 },
+  task: { gap: 10 },
+  thumbnail: {
+    width: "100%",
+    maxWidth: "100%",
+    height: 150,
+    aspectRatio: undefined,
   },
-  headerTitleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  headerTitle: { fontSize: 20, fontWeight: "800" },
-  tabsRow: { flexDirection: "row", gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
-  tabChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    justifyContent: "space-between",
   },
-  tabChipText: { fontSize: 11, fontWeight: "700" },
-  listContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  taskCard: { marginBottom: 14, padding: 16, borderRadius: 20 },
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" },
-  sevBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
-  sevBadgeText: { fontSize: 9, fontWeight: "800" },
-  taskTitle: { fontSize: 16, fontWeight: "800", marginBottom: 4 },
-  taskDesc: { fontSize: 13, lineHeight: 18, marginBottom: 10 },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  locationText: { fontSize: 12, flex: 1, fontWeight: "600" },
-  emptyContainer: { alignItems: "center", justifyContent: "center", paddingVertical: 60, paddingHorizontal: 20 },
-  emptyTitle: { fontSize: 16, fontWeight: "700", marginTop: 12 },
-  emptyText: { marginTop: 6, fontSize: 13, textAlign: "center", lineHeight: 18 },
+  address: { flex: 1 },
+  empty: { paddingVertical: 32, textAlign: "center" },
 });
-

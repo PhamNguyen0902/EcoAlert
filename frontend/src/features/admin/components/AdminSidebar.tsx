@@ -14,6 +14,7 @@ import { useAlerts } from '@/hooks/hooks';
 const NAV_ITEMS = [
   { to: '/admin/reports', key: 'nav.reports', icon: FileText, showBadge: true },
   { to: '/admin/gis', key: 'nav.gis', icon: Map },
+  { to: '/admin/service-areas', key: 'nav.service_areas', icon: Map },
 ];
 // thanh điều hướng (quản lý báo cáo, bản đồ gis)
 export default function AdminSidebar() {
