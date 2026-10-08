@@ -135,17 +135,7 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
 // Middleware xác thực JWT cho tất cả các yêu cầu đến /api, ngoại trừ các route công khai như login/register.
 app.use("/api", verifyToken);
 
-// giới hạn số lượng yêu cầu hỏi đáp của mỗi người dùng để tránh quá tải
-const ragLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => String(req.headers["x-user-id"] || "anonymous"),
-  message: errorResponse("Bạn hỏi quá nhanh, vui lòng thử lại sau ít phút."),
-});
 
-app.use("/api/v1/ai/rag", ragLimiter);
 // WebSocket Proxy cho /socket.io
 const socketProxy = createProxyMiddleware({
   target: process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006",

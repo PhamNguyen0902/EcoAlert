@@ -8,7 +8,7 @@ import { OfficerAlertDetailScreen } from "../screens/officer/OfficerAlertDetailS
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
-import { OfficerAssistantScreen } from "../screens/officer/OfficerAssistantScreen";
+
 import { OfficerProfileScreen } from "../screens/officer/OfficerProfileScreen";
 import { OfficerResolutionScreen } from "../screens/officer/OfficerResolutionScreen";
 import type { OfficerTabParamList, OfficerStackParamList } from "./types";
@@ -38,8 +38,6 @@ const OfficerTabs = () => {
             return <CheckSquare color={color} size={size} />;
           if (route.name === "OfficerMapTab")
             return <MapPin color={color} size={size} />;
-          if (route.name === "OfficerAssistantTab")
-            return <Bot color={color} size={size} />;
           if (route.name === "OfficerProfileTab")
             return <UserCircle2 color={color} size={size} />;
           return null;
@@ -56,11 +54,7 @@ const OfficerTabs = () => {
         component={OfficerMapScreen}
         options={{ tabBarLabel: language === "vi" ? "Bản đồ" : "Map" }}
       />
-      <Tab.Screen
-        name="OfficerAssistantTab"
-        component={OfficerAssistantScreen}
-        options={{ tabBarLabel: "Trợ lý AI" }}
-      />
+      
       <Tab.Screen
         name="OfficerProfileTab"
         component={OfficerProfileScreen}
