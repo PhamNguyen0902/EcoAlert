@@ -13,10 +13,6 @@ const startServer = async () => {
   try {
     initializeOpenRouter();
 
-    // Kết nối MongoDB cho RAG
-    await mongoose.connect(MONGO_URI);
-    logger.info("Connected to MongoDB for RAG Knowledge Base");
-
     await rabbitMQService.connect();
 
     app.listen(envConfig.port, () => {
