@@ -27,6 +27,10 @@ const OfficerReportDetail = lazy(
   () => import("./features/officer/pages/OfficerReportDetail"),
 );
 
+const AdminDashboard = lazy(
+  () => import("./features/admin/pages/AdminDashboard"),
+);
+
 const AdminLayout = lazy(
   () => import("./features/admin/components/AdminLayout"),
 );
@@ -34,7 +38,7 @@ const ReportManagement = lazy(
   () => import("./features/admin/pages/ReportManagement"),
 );
 const AdminGisMap = lazy(() => import("./features/admin/pages/AdminGisMap"));
-const ServiceAreas = lazy(() => import('./features/admin/pages/ServiceAreas'));
+const ServiceAreas = lazy(() => import("./features/admin/pages/ServiceAreas"));
 
 const ProtectedRoute = lazy(() =>
   import("./components/auth/ProtectedRoute").then((m) => ({
@@ -105,6 +109,8 @@ function App() {
           {/* Admin Routes */}
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route element={<AdminLayout />}>
+              {/* trang Dashboard thống kê & phân quyền */}
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
               {/* admin quản lý report */}
               <Route path="/admin/reports" element={<ReportManagement />} />
               {/* bản đồ để xem mật độ ô nhiễm các điểm nóng(citizen hay báo cáo) */}
