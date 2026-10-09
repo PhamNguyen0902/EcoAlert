@@ -54,25 +54,29 @@ const METRIC_CONFIGS: Record<MetricType, MetricConfig> = {
   valid: {
     key: "valid",
     title: "SỰ CỐ HỢP LỆ",
-    description: "Các sự cố đã qua kiểm tra, xác minh hợp lệ và đang/đã được xử lý",
+    description:
+      "Các sự cố đã qua kiểm tra, xác minh hợp lệ và đang/đã được xử lý",
     badgeColor: "border-emerald-500 text-emerald-500 bg-emerald-500/10",
   },
   in_progress: {
     key: "in_progress",
     title: "SỰ CỐ ĐANG XỬ LÝ",
-    description: "Các sự cố đã được giao cho cán bộ hoặc cán bộ đang xử lý tại hiện trường",
+    description:
+      "Các sự cố đã được giao cho cán bộ hoặc cán bộ đang xử lý tại hiện trường",
     badgeColor: "border-amber-500 text-amber-500 bg-amber-500/10",
   },
   pending: {
     key: "pending",
     title: "SỰ CỐ CHỜ TIẾP NHẬN",
-    description: "Các sự cố mới gửi đang chờ hệ thống AI phân tích hoặc chờ điều phối cán bộ",
+    description:
+      "Các sự cố mới gửi đang chờ hệ thống AI phân tích hoặc chờ điều phối cán bộ",
     badgeColor: "border-blue-500 text-blue-500 bg-blue-500/10",
   },
   resolved: {
     key: "resolved",
     title: "SỰ CỐ ĐÃ GIẢI QUYẾT",
-    description: "Các sự cố đã được cán bộ hoàn thành khắc phục và admin phê duyệt đóng hồ sơ",
+    description:
+      "Các sự cố đã được cán bộ hoàn thành khắc phục và admin phê duyệt đóng hồ sơ",
     badgeColor: "border-purple-500 text-purple-500 bg-purple-500/10",
   },
 };
@@ -147,20 +151,24 @@ export default function AdminDashboard() {
     switch (selectedMetric) {
       case "valid":
         return items.filter((a) =>
-          ["verified", "assigned", "in_progress", "resolved", "closed"].includes(a.status)
+          [
+            "verified",
+            "assigned",
+            "in_progress",
+            "resolved",
+            "closed",
+          ].includes(a.status),
         );
       case "in_progress":
         return items.filter((a) =>
-          ["assigned", "in_progress"].includes(a.status)
+          ["assigned", "in_progress"].includes(a.status),
         );
       case "pending":
         return items.filter((a) =>
-          ["pending", "ai_analyzing"].includes(a.status)
+          ["pending", "ai_analyzing"].includes(a.status),
         );
       case "resolved":
-        return items.filter((a) =>
-          ["resolved", "closed"].includes(a.status)
-        );
+        return items.filter((a) => ["resolved", "closed"].includes(a.status));
       default:
         return [];
     }
@@ -175,7 +183,8 @@ export default function AdminDashboard() {
             Bảng Điều Khiển Quản Trị
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Theo dõi tổng quan số liệu sự cố môi trường và quản lý phân quyền thành viên hệ thống EcoAlert.
+            Theo dõi tổng quan số liệu sự cố môi trường và quản lý phân quyền
+            thành viên hệ thống EcoAlert.
           </p>
         </div>
         <Button
@@ -185,7 +194,9 @@ export default function AdminDashboard() {
           disabled={isStatsRefetching}
           className="self-start sm:self-auto gap-2"
         >
-          <RefreshCw className={`h-4 w-4 ${isStatsRefetching ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`h-4 w-4 ${isStatsRefetching ? "animate-spin" : ""}`}
+          />
           Làm mới số liệu
         </Button>
       </div>
@@ -213,7 +224,7 @@ export default function AdminDashboard() {
               onClick={() => handleCardClick("valid")}
               className={`cursor-pointer transition-all duration-200 rounded-xl ${
                 selectedMetric === "valid"
-                  ? "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/10 scale-[1.02]"
+                  ? "ring-3 ring-emerald-500 shadow-lg shadow-emerald-500/10 scale-[1.02]"
                   : "hover:scale-[1.01]"
               }`}
             >
@@ -221,7 +232,7 @@ export default function AdminDashboard() {
                 title="SỰ CỐ HỢP LỆ"
                 value={stats?.validIncidents ?? 0}
                 icon={FileCheck2}
-                description={`Chiếm ${stats?.total ? Math.round(((stats.validIncidents / stats.total) * 100)) : 0}% tổng số tin báo`}
+                description={`Chiếm ${stats?.total ? Math.round((stats.validIncidents / stats.total) * 100) : 0}% tổng số tin báo`}
                 gradient="bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400"
               />
             </div>
@@ -231,7 +242,7 @@ export default function AdminDashboard() {
               onClick={() => handleCardClick("in_progress")}
               className={`cursor-pointer transition-all duration-200 rounded-xl ${
                 selectedMetric === "in_progress"
-                  ? "ring-2 ring-amber-500 shadow-lg shadow-amber-500/10 scale-[1.02]"
+                  ? "ring-3 ring-amber-500 shadow-lg shadow-amber-500/10 scale-[1.02]"
                   : "hover:scale-[1.01]"
               }`}
             >
@@ -249,7 +260,7 @@ export default function AdminDashboard() {
               onClick={() => handleCardClick("pending")}
               className={`cursor-pointer transition-all duration-200 rounded-xl ${
                 selectedMetric === "pending"
-                  ? "ring-2 ring-blue-500 shadow-lg shadow-blue-500/10 scale-[1.02]"
+                  ? "ring-3 ring-blue-500 shadow-lg shadow-blue-500/10 scale-[1.02]"
                   : "hover:scale-[1.01]"
               }`}
             >
@@ -267,7 +278,7 @@ export default function AdminDashboard() {
               onClick={() => handleCardClick("resolved")}
               className={`cursor-pointer transition-all duration-200 rounded-xl ${
                 selectedMetric === "resolved"
-                  ? "ring-2 ring-purple-500 shadow-lg shadow-purple-500/10 scale-[1.02]"
+                  ? "ring-3 ring-purple-500 shadow-lg shadow-purple-500/10 scale-[1.02]"
                   : "hover:scale-[1.01]"
               }`}
             >
@@ -295,7 +306,10 @@ export default function AdminDashboard() {
                 <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-2">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={`font-semibold ${METRIC_CONFIGS[selectedMetric].badgeColor}`}>
+                      <Badge
+                        variant="outline"
+                        className={`font-semibold ${METRIC_CONFIGS[selectedMetric].badgeColor}`}
+                      >
                         {METRIC_CONFIGS[selectedMetric].title}
                       </Badge>
                       <span className="text-sm font-semibold text-foreground">
@@ -341,13 +355,18 @@ export default function AdminDashboard() {
                           <th className="p-3 font-medium">Mức độ</th>
                           <th className="p-3 font-medium">Trạng thái</th>
                           <th className="p-3 font-medium">Thời gian</th>
-                          <th className="p-3 font-medium text-right">Chi tiết</th>
+                          <th className="p-3 font-medium text-right">
+                            Chi tiết
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredAlerts.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                            <td
+                              colSpan={6}
+                              className="p-6 text-center text-muted-foreground"
+                            >
                               Không có sự cố nào thuộc mục này.
                             </td>
                           </tr>
@@ -358,7 +377,10 @@ export default function AdminDashboard() {
                               className="border-b last:border-0 hover:bg-muted/40 transition-colors"
                             >
                               <td className="p-3 font-medium">
-                                <div className="max-w-[280px] truncate" title={alert.title}>
+                                <div
+                                  className="max-w-[280px] truncate"
+                                  title={alert.title}
+                                >
                                   {alert.title}
                                 </div>
                                 <div className="text-xs text-muted-foreground max-w-[280px] truncate">
@@ -367,7 +389,10 @@ export default function AdminDashboard() {
                               </td>
 
                               <td className="p-3 text-xs">
-                                {getIncidentCategoryLabel(alert.category, language)}
+                                {getIncidentCategoryLabel(
+                                  alert.category,
+                                  language,
+                                )}
                               </td>
 
                               <td className="p-3">
@@ -377,25 +402,37 @@ export default function AdminDashboard() {
                                     alert.severity === "critical"
                                       ? "border-red-600 text-red-600 bg-red-500/10"
                                       : alert.severity === "high"
-                                      ? "border-red-500 text-red-500"
-                                      : alert.severity === "medium"
-                                      ? "border-orange-500 text-orange-500"
-                                      : "border-blue-500 text-blue-500"
+                                        ? "border-red-500 text-red-500"
+                                        : alert.severity === "medium"
+                                          ? "border-orange-500 text-orange-500"
+                                          : "border-blue-500 text-blue-500"
                                   }
                                 >
-                                  {getIncidentSeverityLabel(alert.severity, language)}
+                                  {getIncidentSeverityLabel(
+                                    alert.severity,
+                                    language,
+                                  )}
                                 </Badge>
                               </td>
 
                               <td className="p-3 text-xs">
-                                <Badge variant="secondary" className="font-normal">
-                                  {getIncidentStatusLabel(alert.status, language)}
+                                <Badge
+                                  variant="secondary"
+                                  className="font-normal"
+                                >
+                                  {getIncidentStatusLabel(
+                                    alert.status,
+                                    language,
+                                  )}
                                 </Badge>
                               </td>
 
                               <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
                                 {alert.createdAt
-                                  ? format(new Date(alert.createdAt), "dd/MM/yyyy HH:mm")
+                                  ? format(
+                                      new Date(alert.createdAt),
+                                      "dd/MM/yyyy HH:mm",
+                                    )
                                   : "---"}
                               </td>
 
@@ -423,41 +460,6 @@ export default function AdminDashboard() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* thanh trực quan phân bổ mức độ nghiêm trọng */}
-        {stats && (
-          <Card className="p-4 bg-muted/40 border">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
-              Mức độ nghiêm trọng các sự cố đang quản lý
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-red-500/10 border border-red-500/20">
-                <span className="text-xs font-semibold text-red-600 dark:text-red-400">
-                  Khẩn cấp (Critical)
-                </span>
-                <Badge variant="destructive">{stats.severityCounts.critical}</Badge>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                  Cao (High)
-                </span>
-                <Badge className="bg-orange-500">{stats.severityCounts.high}</Badge>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                <span className="text-xs font-semibold text-yellow-700 dark:text-yellow-400">
-                  Trung bình (Medium)
-                </span>
-                <Badge className="bg-yellow-500 text-black">{stats.severityCounts.medium}</Badge>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                  Thấp (Low)
-                </span>
-                <Badge variant="outline">{stats.severityCounts.low}</Badge>
-              </div>
-            </div>
-          </Card>
-        )}
       </section>
 
       {/* khối quản lý và phân quyền người dùng */}
@@ -519,7 +521,10 @@ export default function AdminDashboard() {
           <CardContent className="p-0">
             {isUsersLoading ? (
               <div className="py-12 flex justify-center">
-                <LoadingSpinner size="md" label="Đang tải danh sách người dùng..." />
+                <LoadingSpinner
+                  size="md"
+                  label="Đang tải danh sách người dùng..."
+                />
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -528,15 +533,22 @@ export default function AdminDashboard() {
                     <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground uppercase">
                       <th className="py-3 px-4 font-semibold">Thành viên</th>
                       <th className="py-3 px-4 font-semibold">Email</th>
-                      <th className="py-3 px-4 font-semibold">Vai trò hiện tại</th>
+                      <th className="py-3 px-4 font-semibold">
+                        Vai trò hiện tại
+                      </th>
                       <th className="py-3 px-4 font-semibold">Trạng thái</th>
-                      <th className="py-3 px-4 font-semibold text-right">Thao tác phân quyền</th>
+                      <th className="py-3 px-4 font-semibold text-right">
+                        Thao tác phân quyền
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {!userData?.items || userData.items.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                        <td
+                          colSpan={5}
+                          className="py-8 text-center text-muted-foreground"
+                        >
                           Không tìm thấy người dùng phù hợp.
                         </td>
                       </tr>
@@ -547,11 +559,17 @@ export default function AdminDashboard() {
                           className="border-b last:border-0 hover:bg-muted/30 transition-colors"
                         >
                           <td className="py-3 px-4">
-                            <div className="font-medium text-foreground">{user.fullName || "Chưa đặt tên"}</div>
-                            <div className="text-xs text-muted-foreground">{user.phone || "Không có SĐT"}</div>
+                            <div className="font-medium text-foreground">
+                              {user.fullName || "Chưa đặt tên"}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {user.phone || "Không có SĐT"}
+                            </div>
                           </td>
 
-                          <td className="py-3 px-4 font-mono text-xs">{user.email}</td>
+                          <td className="py-3 px-4 font-mono text-xs">
+                            {user.email}
+                          </td>
 
                           <td className="py-3 px-4">
                             <Badge
@@ -560,8 +578,8 @@ export default function AdminDashboard() {
                                 user.role === "ADMIN"
                                   ? "border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-500/10 font-bold"
                                   : user.role === "OFFICER"
-                                  ? "border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-500/10 font-bold"
-                                  : "border-slate-400 text-slate-600 dark:text-slate-400 bg-slate-500/10"
+                                    ? "border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-500/10 font-bold"
+                                    : "border-slate-400 text-slate-600 dark:text-slate-400 bg-slate-500/10"
                               }
                             >
                               {user.role}
@@ -578,7 +596,9 @@ export default function AdminDashboard() {
                             >
                               <span
                                 className={`h-1.5 w-1.5 rounded-full ${
-                                  user.isActive ? "bg-emerald-500" : "bg-rose-500"
+                                  user.isActive
+                                    ? "bg-emerald-500"
+                                    : "bg-rose-500"
                                 }`}
                               />
                               {user.isActive ? "Hoạt động" : "Bị khóa"}
@@ -589,12 +609,16 @@ export default function AdminDashboard() {
                             <div className="flex items-center justify-end gap-2">
                               <select
                                 value={user.role}
-                                onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                                onChange={(e) =>
+                                  handleRoleChange(user._id, e.target.value)
+                                }
                                 disabled={updateRoleMutation.isPending}
                                 className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium shadow-xs focus:ring-1 focus:ring-primary cursor-pointer"
                               >
                                 <option value="CITIZEN">Dân (CITIZEN)</option>
-                                <option value="OFFICER">Cán bộ (OFFICER)</option>
+                                <option value="OFFICER">
+                                  Cán bộ (OFFICER)
+                                </option>
                                 <option value="ADMIN">Quản trị (ADMIN)</option>
                               </select>
 
@@ -606,9 +630,15 @@ export default function AdminDashboard() {
                                     ? "text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                                     : "bg-emerald-600 hover:bg-emerald-700 text-white"
                                 }`}
-                                onClick={() => handleStatusToggle(user._id, user.isActive)}
+                                onClick={() =>
+                                  handleStatusToggle(user._id, user.isActive)
+                                }
                                 disabled={toggleStatusMutation.isPending}
-                                title={user.isActive ? "Khóa tài khoản này" : "Kích hoạt lại tài khoản"}
+                                title={
+                                  user.isActive
+                                    ? "Khóa tài khoản này"
+                                    : "Kích hoạt lại tài khoản"
+                                }
                               >
                                 {user.isActive ? (
                                   <>
@@ -635,7 +665,8 @@ export default function AdminDashboard() {
             {userData && userData.totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t text-xs text-muted-foreground">
                 <span>
-                  Trang {userData.page} / {userData.totalPages} (Tổng cộng {userData.total} tài khoản)
+                  Trang {userData.page} / {userData.totalPages} (Tổng cộng{" "}
+                  {userData.total} tài khoản)
                 </span>
                 <div className="flex gap-2">
                   <Button
