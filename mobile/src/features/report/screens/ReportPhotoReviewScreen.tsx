@@ -36,6 +36,9 @@ import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { EvidenceImageFrame } from "../../../components/media/EvidenceImageFrame";
+import { FieldNotice, FieldEntrance } from "../components/stitch/FieldUI";
+import { fieldStyles } from "../components/stitch/fieldDesign";
+import { fieldIntegrity } from "../components/stitch/fieldPresentation";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportPhotoReview">;
 
@@ -67,17 +70,13 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
       ),
     [capture, location],
   );
-  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
   const aspectRatio =
-    capture?.width && capture.height ? capture.width / capture.height : 4 / 3;
-  const evidenceHeight = Math.min(
-    windowHeight * 0.46,
-    (windowWidth - 32) / aspectRatio,
-  );
+    capture?.width && capture.height ? capture.width / capture.height : 3 / 4;
+  const evidenceHeight = (windowWidth - 32) / aspectRatio;
+  const integrity = fieldIntegrity(capture, location);
   const integrityCount =
-    Number(Boolean(capture?.originalLocalUri)) +
-    Number(Boolean(location?.source === "DEVICE_GPS")) +
-    Number(Boolean(capture?.capturedAt));
+    Number(integrity.camera) + Number(integrity.gps) + Number(integrity.time);
 
   const renderDisplayImage = useCallback(async () => {
     if (
@@ -175,7 +174,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             source={{ uri: capture.originalLocalUri }}
             style={[styles.image, { height: evidenceHeight }]}
             resizeMode="contain"
-            onLoadEnd={() => void renderDisplayImage()}
+            onLoad={() => void renderDisplayImage()}
           />
           <View style={styles.watermark}>
             <View style={styles.watermarkBrand}>
@@ -194,7 +193,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </ViewShot>
       </View>
-      <ReportHeader onBack={navigation.goBack} />
+      <ReportHeader title="Xem lại ảnh" onBack={navigation.goBack} />
       <ScrollView
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
@@ -202,17 +201,19 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
       >
         <ReportProgress step={2} />
         <ReportScreenIntro
-          eyebrow="KIỂM TRA ẢNH"
-          title="Xem lại ảnh hiện trường"
-          description="Đảm bảo ảnh rõ và phản ánh đúng tình trạng tại vị trí báo cáo."
+          eyebrow="ẢNH HIỆN TRƯỜNG"
+          title="Xem lại ảnh vừa chụp"
+          description="Xem lại chất lượng hình ảnh hiện trường trước khi chuyển sang giai đoạn phân tích AI."
         />
         <EvidenceImageFrame
           imageUri={capture.displayLocalUri || capture.originalLocalUri}
           fallbackUri={capture.originalLocalUri}
           disabled={rendering || (!capture.displayLocalUri && !watermarkError)}
           accessibilityLabel="Ảnh hiện trường có watermark"
+          style={styles.evidenceFrame}
           overlay={
             <>
+              <Text style={styles.photoBadge}>ẢNH HIỆN TRƯỜNG</Text>
               {!capture.displayLocalUri ? (
                 <View style={[styles.watermark, styles.previewWatermark]}>
                   <Text style={styles.watermarkBrandText}>
@@ -265,43 +266,27 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
         ) : null}
-        <View
-          style={[
-            styles.integrityCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.integrityHeader}>
-            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
-              TÍNH TOÀN VẸN DỮ LIỆU
-            </Text>
-            <Text
-              style={[
-                styles.passed,
-                {
-                  color: integrityCount === 3 ? colors.primary : colors.accent,
-                },
-              ]}
-            >
-              {integrityCount}/3 ĐẠT
-            </Text>
-          </View>
+        <View style={styles.integrityCard}>
           <IntegrityRow
             title="Camera trực tiếp"
-            body="Ảnh được chụp trong luồng báo cáo."
+            body={integrity.camera ? "Ảnh gốc đã lưu" : "Thiếu ảnh gốc"}
+            valid={integrity.camera}
             colors={colors}
           />
           <IntegrityRow
             title="GPS thiết bị"
-            body="Vị trí được ghi nhận trước khi chụp."
+            body={integrity.gps ? `±${Math.round(location.accuracyMeters)}m` : "Cần kiểm tra"}
+            valid={integrity.gps}
             colors={colors}
           />
           <IntegrityRow
             title="Thời gian chụp"
-            body="Metadata thời gian đã được lưu."
+            body={integrity.time ? "Đã ghi nhận" : "Chưa có"}
+            valid={integrity.time}
             colors={colors}
           />
         </View>
+        <FieldEntrance><FieldNotice title="Ảnh đã rõ nội dung cần phản ánh chưa?">Hãy đảm bảo khu vực rác được nhìn thấy rõ, không bị quá tối hoặc che khuất.</FieldNotice></FieldEntrance>
       </ScrollView>
       <ReportBottomActions>
         <View style={styles.actions}>
@@ -324,13 +309,13 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             style={[
               styles.useButton,
               {
-                backgroundColor: colors.primary,
+                backgroundColor: colors.cta,
                 opacity: integrityCount === 3 ? 1 : 0.45,
               },
             ]}
             accessibilityRole="button"
           >
-            <Text style={styles.primaryButtonText}>SỬ DỤNG ẢNH NÀY</Text>
+            <Text style={styles.primaryButtonText}>DÙNG ẢNH NÀY</Text>
             <Text style={styles.arrow}>→</Text>
           </TouchableOpacity>
         </View>
@@ -343,14 +328,16 @@ const IntegrityRow = ({
   title,
   body,
   colors,
+  valid,
 }: {
   title: string;
   body: string;
   colors: { text: string; textMuted: string; primary: string; border: string };
+  valid: boolean;
 }) => (
   <View style={[styles.integrityRow, { borderTopColor: colors.border }]}>
     <View style={styles.checkIcon}>
-      <CheckCircle2 size={17} color={colors.primary} />
+      <CheckCircle2 size={15} color={valid ? colors.primary : "#F59E0B"} />
     </View>
     <View style={styles.integrityCopy}>
       <Text style={[styles.integrityTitle, { color: colors.text }]}>
@@ -364,11 +351,9 @@ const IntegrityRow = ({
 );
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: {
-    padding: space.lg,
-    paddingBottom: space.section,
-    gap: space.section,
-  },
+  content: fieldStyles.content,
+  evidenceFrame: { width: "100%", maxWidth: 480, aspectRatio: 3 / 4, borderWidth: 1, borderColor: "rgba(56,189,248,0.22)", borderRadius: 18 },
+  photoBadge: { position: "absolute", top: 12, left: 12, backgroundColor: "rgba(7,16,31,0.82)", color: "#22C55E", fontSize: 10, lineHeight: 15, fontWeight: "800", padding: 6, borderRadius: 6 },
   // Keep capture attached/in bounds behind the opaque header and ScrollView.
   // Outside ScrollView, Android clipping cannot remove this capture source.
   captureSource: { position: "absolute", left: 16 },
@@ -440,9 +425,7 @@ const styles = StyleSheet.create({
   },
   retryText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.4 },
   integrityCard: {
-    borderWidth: 1,
-    borderRadius: radius.card,
-    padding: space.lg,
+    flexDirection: "row", gap: 6,
   },
   integrityHeader: {
     flexDirection: "row",
@@ -454,11 +437,10 @@ const styles = StyleSheet.create({
   technicalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
   passed: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6 },
   integrityRow: {
-    borderTopWidth: 0,
-    flexDirection: "row",
+    flex: 1, minWidth: 0, backgroundColor: "#101D31", borderRadius: 10,
     alignItems: "center",
-    gap: space.md,
-    paddingVertical: space.md,
+    gap: 4,
+    padding: 8,
   },
   checkIcon: {
     width: 32,
@@ -468,9 +450,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(34,197,94,0.12)",
   },
-  integrityCopy: { flex: 1 },
-  integrityTitle: civicType.cardTitle,
-  integrityBody: { marginTop: space.xs, fontSize: 11, lineHeight: 16 },
+  integrityCopy: { alignItems: "center" },
+  integrityTitle: { fontSize: 10, lineHeight: 15, fontWeight: "700", textAlign: "center" },
+  integrityBody: { marginTop: 4, fontSize: 10, lineHeight: 15, textAlign: "center" },
   actions: { flexDirection: "row", gap: space.sm },
   secondaryButton: {
     flex: 2,
