@@ -241,6 +241,7 @@ function fixture(screen, overrides = {}) {
       useLanguage: () => ({ language: "vi", t: (_, fallback) => fallback }),
     },
     "../../components/citizen/v2/CitizenUI": ui,
+    "../../components/citizen/hero/HomeHero": { HomeHero: "HomeHero" },
     "../../components/citizen/v2/CitizenReportProgress": {
       CitizenReportProgress: "CitizenReportProgress",
     },
@@ -347,7 +348,10 @@ test("progress never invents acceptance for pending, arrival for assigned or com
 });
 test("Home shows actual profile and routes all shortcuts, preview, bell and avatar", () => {
   const f = fixture("CitizenDashboardScreen");
-  assert.ok(f.text().includes(profile.fullName));
+  const hero = f.find("HomeHero");
+  assert.equal(hero.props.user.fullName, profile.fullName);
+  hero.props.onReport();
+  hero.props.onTrack();
   const header = f.find("CitizenTopBar");
   assert.equal(header.props.unreadCount, 2);
   header.props.onNotifications();
@@ -373,7 +377,7 @@ test("Home does not place a fake user marker at its default map center", () => {
     query: { data: { items: [], pages: [] } },
   });
   assert.equal(f.all("Marker").length, 0);
-  assert.ok(f.text().includes("Khách EcoAlert"));
+  assert.equal(f.find("HomeHero").props.user, null);
   assert.ok(f.text().includes("Chưa có điểm rác có tọa độ hợp lệ"));
 });
 test("Nearby excludes rejected/deleted/invalid coordinates and no GPS means no user marker", () => {

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -18,7 +18,6 @@ import {
   Plus,
   type LucideIcon,
 } from "lucide-react-native";
-import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -34,11 +33,11 @@ import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../theme/civicDesign";
 import {
   CitizenActionTile,
-  CitizenAvatar,
   CitizenSectionHeading,
   CitizenTopBar,
 } from "../../components/citizen/v2/CitizenUI";
 import { CitizenReportCard } from "../../components/citizen/CitizenReportCard";
+import { HomeHero } from "../../components/citizen/hero/HomeHero";
 import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
 import { getWorkflowStatusLabel } from "../../utils/aiAnalysis";
@@ -77,9 +76,15 @@ export const CitizenDashboardScreen: React.FC<
       .slice(0, 3) ?? [];
   const parent = () =>
     navigation.getParent<NativeStackNavigationProp<CitizenStackParamList>>();
-  const report = () => navigation.navigate("ReportTab");
+  const report = useCallback(
+    () => navigation.navigate("ReportTab"),
+    [navigation],
+  );
   const map = () => navigation.navigate("MapTab");
-  const mine = () => navigation.navigate("MyReportsTab");
+  const mine = useCallback(
+    () => navigation.navigate("MyReportsTab"),
+    [navigation],
+  );
   const notifications = () => parent()?.navigate("Notifications");
   const utilities: { title: string; icon: LucideIcon; onPress: () => void }[] =
     [
@@ -119,71 +124,7 @@ export const CitizenDashboardScreen: React.FC<
           />
         }
       >
-        <View
-          style={[
-            styles.hero,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <Svg
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-            width="100%"
-            height="100%"
-            viewBox="0 0 360 200"
-            preserveAspectRatio="xMidYMid slice"
-          >
-            {[0, 1, 2, 3, 4].map((i) => (
-              <Path
-                key={i}
-                d={`M ${180 + i * 16} -20 C ${80 + i * 32} 70, ${400 - i * 12} 50, ${260 + i * 30} 220`}
-                fill="none"
-                stroke={colors.cyan}
-                strokeOpacity={0.09}
-                strokeWidth={1}
-              />
-            ))}
-          </Svg>
-          <View style={styles.heroBrand}>
-            <Text style={[styles.brand, { color: colors.primary }]}>
-              EcoAlert
-            </Text>
-            <Text style={[civicType.meta, { color: colors.textMuted }]}>
-              Ghi nhận để thay đổi
-            </Text>
-          </View>
-          <View style={styles.person}>
-            <CitizenAvatar user={profile} size={54} />
-            <View style={styles.flex}>
-              <Text style={[civicType.meta, { color: colors.textMuted }]}>
-                {profile ? "XIN CHÀO, CÔNG DÂN" : "CHÀO MỪNG BẠN"}
-              </Text>
-              <Text style={[styles.name, { color: colors.text }]}>
-                {profile?.fullName || "Khách EcoAlert"}
-              </Text>
-              <Text style={[civicType.meta, { color: colors.cyan }]}>
-                Cùng xây dựng thành phố xanh hơn
-              </Text>
-            </View>
-          </View>
-          <View style={styles.row}>
-            <CitizenActionTile
-              compact
-              icon={Camera}
-              title="Báo cáo rác"
-              subtitle="Gửi phản ánh mới"
-              onPress={report}
-            />
-            <CitizenActionTile
-              compact
-              icon={ClipboardList}
-              title="Theo dõi"
-              subtitle="Hồ sơ của tôi"
-              tone="cyan"
-              onPress={mine}
-            />
-          </View>
-        </View>
+        <HomeHero user={profile} onReport={report} onTrack={mine} />
         <View style={styles.section}>
           <CitizenSectionHeading title="Khám phá EcoAlert" />
           <View style={styles.row}>
@@ -382,22 +323,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   flex: { flex: 1, minWidth: 0 },
-  hero: {
-    padding: 16,
-    borderRadius: 24,
-    borderWidth: 1,
-    gap: 18,
-    overflow: "hidden",
-  },
-  heroBrand: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  brand: { fontSize: 20, fontWeight: "900" },
-  person: { flexDirection: "row", alignItems: "center", gap: 12 },
-  name: { fontSize: 20, fontWeight: "800", marginVertical: 4 },
   row: { flexDirection: "row", gap: 10 },
   section: { gap: 10 },
   mapCard: {
