@@ -44,6 +44,9 @@ import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { WasteDetectionImage } from "../../../components/vision/WasteDetectionImage";
+import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
+import { FieldEvidenceMetaOverlay, FieldNotice, FieldScanLine } from "../components/stitch/FieldUI";
+import { fieldStyles } from "../components/stitch/fieldDesign";
 
 type Props = NativeStackScreenProps<
   ReportFlowParamList,
@@ -262,29 +265,22 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <ReportHeader onBack={navigation.goBack} />
+      <ReportHeader title="AI phân tích hình ảnh" onBack={navigation.goBack} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <ReportProgress step={3} />
-        <ReportScreenIntro
-          eyebrow="KIỂM TRA NỘI DUNG"
-          title="Kiểm tra ảnh hiện trường"
-          description={
-            state === "PROCESSING"
-              ? "EcoAlert đang phân tích ảnh..."
-              : state === "VALID"
-                ? "EcoAlert đã phân tích ảnh để xác định các vùng rác được phát hiện."
-                : "Kiểm tra nội dung ảnh trước khi gửi báo cáo."
-          }
-        />
+        <ReportProgress step={3} status="AI / YOLO · PHÂN TÍCH HIỆN TRƯỜNG" />
+        <FieldNotice>EcoAlert AI đang hỗ trợ nhận diện rác thải trong ảnh hiện trường để đề xuất phân loại.</FieldNotice>
         <View style={styles.previewFrame}>
           <WasteDetectionImage
             imageUri={capture.originalLocalUri}
             detections={imageDetections}
             aspectRatio={3 / 4}
+            frameStyle={{ width: "100%", maxWidth: 480, borderWidth: 1, borderColor: "rgba(56,189,248,0.22)" }}
+            showHints={false}
+            frameOverlay={<><FieldEvidenceMetaOverlay location={draft.location} capture={capture} />{state === "PROCESSING" ? <FieldScanLine /> : null}</>}
           />
           <Text
             style={[
@@ -326,72 +322,9 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
           </View>
         ) : null}
         {state === "VALID" ? (
-          <>
-            <View
-              style={[
-                styles.resultStatus,
-                {
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                },
-              ]}
-            >
-              <View style={styles.resultHeading}>
-                <View
-                  style={[
-                    styles.resultIcon,
-                    { backgroundColor: colors.greenSoft },
-                  ]}
-                >
-                  <CheckCircle2 size={20} color={colors.primary} />
-                </View>
-                <View style={styles.resultCopy}>
-                  <Text style={[styles.resultTitle, { color: colors.text }]}>
-                    {requiresManualReview
-                      ? "Cần kiểm tra thêm"
-                      : "Đã nhận diện rác thải"}
-                  </Text>
-                  <Text
-                    style={[styles.resultBody, { color: colors.textMuted }]}
-                  >
-                    {draft.imageValidation.detectedObjects.length} vùng được
-                    phát hiện
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.resultSubline, { color: colors.textMuted }]}>
-                {requiresManualReview
-                  ? "Kết quả nhận diện cần được cán bộ kiểm tra thêm."
-                  : "Ảnh có nội dung phù hợp với phạm vi báo cáo."}
-              </Text>
-            </View>
-            <View style={styles.detectionSection}>
-              <Text
-                style={[styles.technicalLabel, { color: colors.textMuted }]}
-              >
-                PHÁT HIỆN TRONG ẢNH
-              </Text>
-              <WasteDetectionChips
-                detections={draft.imageValidation.detectedObjects}
-                showCount
-              />
-            </View>
-            {draft.imageValidation.summary ? (
-              <View style={styles.contextSection}>
-                <Text
-                  style={[styles.technicalLabel, { color: colors.secondary }]}
-                >
-                  BỐI CẢNH HIỆN TRƯỜNG
-                </Text>
-                <Text
-                  style={[styles.contextText, { color: colors.textSecondary }]}
-                >
-                  {draft.imageValidation.summary}
-                </Text>
-              </View>
-            ) : null}
-          </>
+          <FieldAiResultCard analysis={draft.imageValidation} />
         ) : null}
+        <FieldNotice>AI chỉ hỗ trợ gợi ý phân loại và đánh giá. Bạn có toàn quyền kiểm tra nội dung trước khi gửi báo cáo; kết quả cuối cùng cần cán bộ xác nhận.</FieldNotice>
         {state === "INVALID" || state === "UNAVAILABLE" ? (
           <View
             style={[
@@ -474,10 +407,10 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         <ReportBottomActions>
           <TouchableOpacity
             onPress={() => navigation.navigate("ReportConfirm")}
-            style={[styles.continueButton, { backgroundColor: colors.primary }]}
+            style={[styles.continueButton, { backgroundColor: colors.cta }]}
             accessibilityRole="button"
           >
-            <Text style={styles.primaryText}>TIẾP TỤC ĐẾN BÁO CÁO</Text>
+            <Text style={styles.primaryText}>TIẾP TỤC XÁC NHẬN</Text>
             <ChevronRight size={18} color="#07101F" />
           </TouchableOpacity>
         </ReportBottomActions>
@@ -564,11 +497,7 @@ const Guide = ({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1, minHeight: 0 },
-  content: {
-    padding: space.lg,
-    paddingBottom: space.section,
-    gap: space.section,
-  },
+  content: fieldStyles.content,
   centered: {
     flex: 1,
     alignItems: "center",
@@ -578,7 +507,7 @@ const styles = StyleSheet.create({
   centerTitle: { marginTop: space.lg, fontSize: 22, fontWeight: "800" },
   previewFrame: { borderRadius: radius.card, overflow: "hidden" },
   previewBadge: {
-    alignSelf: "center",
+    position: "absolute", top: 10, left: 10,
     marginTop: space.sm,
     paddingHorizontal: space.sm,
     paddingVertical: space.sm,

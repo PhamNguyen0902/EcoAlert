@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type StyleProp, type ViewStyle,
 } from "react-native";
 import type { ImageLoadEvent } from "react-native";
 import { Expand } from "lucide-react-native";
@@ -48,6 +49,10 @@ export interface WasteDetectionImageProps {
   showLabels?: boolean;
   resizeMode?: "contain";
   emptyMessage?: string;
+  /** Optional ReportFlow decoration; original image and bbox geometry remain untouched. */
+  frameStyle?: StyleProp<ViewStyle>;
+  frameOverlay?: React.ReactNode;
+  showHints?: boolean;
 }
 
 /** A keyed image session prevents old size/load callbacks from affecting a new URI. */
@@ -63,6 +68,7 @@ function DetectionImageSession({
   showLabels = true,
   resizeMode = "contain",
   emptyMessage,
+  frameStyle, frameOverlay, showHints = true,
 }: WasteDetectionImageProps) {
   const [original, setOriginal] = useState<ImageSize | null>(null);
   const [container, setContainer] = useState<ImageSize>({
@@ -164,6 +170,7 @@ function DetectionImageSession({
                 aspectRatio,
               }
             : { height: frameHeight },
+          frameStyle,
         ]}
         onLayout={({ nativeEvent: { layout } }) => {
           setContainer((current) =>
@@ -286,7 +293,9 @@ function DetectionImageSession({
             </View>
           </Pressable>
         ) : null}
+        {frameOverlay}
       </View>
+      {showHints ? <>
       <Text style={styles.message}>
         Chạm ảnh hoặc nút mở rộng để xem ảnh gốc.
       </Text>
@@ -303,6 +312,7 @@ function DetectionImageSession({
       {!detections.length && emptyMessage ? (
         <Text style={styles.message}>{emptyMessage}</Text>
       ) : null}
+      </> : null}
       <ZoomableImageViewer
         visible={viewerOpen}
         imageUri={imageUri}
