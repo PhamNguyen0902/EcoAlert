@@ -24,8 +24,8 @@ export const ReportScreenIntro = ({
   );
 };
 const styles = StyleSheet.create({
-  intro: { gap: civicSpace.sm },
+  intro: { gap: 6 },
   eyebrow: civicType.eyebrow,
-  title: civicType.title,
+  title: { ...civicType.title, fontSize: 23, lineHeight: 29 },
   description: civicType.body,
 });

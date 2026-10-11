@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
   actions: {
     flexShrink: 0,
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
     gap: 8,
   },

@@ -2,19 +2,21 @@ import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { civicType, civicSpace, civicRadius } from "../../../theme/civicDesign";
 import { useReportTheme } from "../useReportTheme";
+import { useFieldReducedMotion } from "./stitch/FieldUI";
 const STEPS = ["VỊ TRÍ", "CHỤP ẢNH", "KIỂM TRA", "XÁC NHẬN"];
-export const ReportProgress = ({ step }: { step: 1 | 2 | 3 | 4 }) => {
+export const ReportProgress = ({ step, status }: { step: 1 | 2 | 3 | 4; status?: string }) => {
   const { colors } = useReportTheme();
+  const reduced = useFieldReducedMotion();
   const progress = useRef(new Animated.Value((step - 1) * 25)).current;
   useEffect(() => {
     const animation = Animated.timing(progress, {
       toValue: step * 25,
-      duration: 200,
+      duration: reduced ? 0 : 200,
       useNativeDriver: false,
     });
     animation.start();
     return () => animation.stop();
-  }, [progress, step]);
+  }, [progress, step, reduced]);
   return (
     <View
       style={styles.container}
@@ -25,10 +27,10 @@ export const ReportProgress = ({ step }: { step: 1 | 2 | 3 | 4 }) => {
     >
       <View style={styles.heading}>
         <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
-          TIẾN TRÌNH BÁO CÁO
+          {status || "TIẾN TRÌNH BÁO CÁO"}
         </Text>
         <Text style={[styles.stepText, { color: colors.primary }]}>
-          BƯỚC {step}/4
+          BƯỚC 0{step} / 04
         </Text>
       </View>
       <View style={[styles.track, { backgroundColor: colors.divider }]}>
@@ -45,14 +47,14 @@ export const ReportProgress = ({ step }: { step: 1 | 2 | 3 | 4 }) => {
           ]}
         />
       </View>
-      <View style={styles.labels}>
+      <View style={styles.labels} accessibilityElementsHidden>
         {STEPS.map((label, index) => (
-          <Text
+          <View
             key={label}
             style={[
               styles.label,
               {
-                color:
+                backgroundColor:
                   index + 1 === step
                     ? colors.primary
                     : index + 1 < step
@@ -61,26 +63,24 @@ export const ReportProgress = ({ step }: { step: 1 | 2 | 3 | 4 }) => {
                 opacity: index + 1 < step ? 0.6 : 1,
               },
             ]}
-            numberOfLines={1}
           >
-            {label}
-          </Text>
+          </View>
         ))}
       </View>
     </View>
   );
 };
 const styles = StyleSheet.create({
-  container: { gap: civicSpace.md },
+  container: { gap: 8 },
   heading: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "center", flexWrap: "wrap", gap: 4,
     justifyContent: "space-between",
   },
-  technicalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
+  technicalLabel: { fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
   stepText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.6 },
-  track: { height: 3, borderRadius: civicRadius.round, overflow: "hidden" },
+  track: { height: 0, overflow: "hidden" },
   progress: { height: "100%", borderRadius: 2 },
-  labels: { flexDirection: "row", gap: civicSpace.sm },
-  label: { ...civicType.technical, flex: 1, letterSpacing: 0 },
+  labels: { flexDirection: "row", gap: 4 },
+  label: { flex: 1, height: 3, borderRadius: 2 },
 });
