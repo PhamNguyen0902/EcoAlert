@@ -55,15 +55,15 @@ test("all workflow groups are consistent and rejected/unknown are not public mar
   for (const s of ["REJECTED", "invalid", undefined])
     assert.equal(getIncidentGroup(s), null);
 });
-test("My Reports processing includes pending, resolved includes closed, all includes rejected", () => {
-  for (const status of [
-    "PENDING",
-    "AI_ANALYZING",
-    "VERIFIED",
-    "ASSIGNED",
-    "IN_PROGRESS",
-  ])
+test("My Reports separates pending and processing, resolved includes closed, all includes rejected", () => {
+  for (const status of ["PENDING", "AI_ANALYZING", "VERIFIED"])
+    assert.ok(matchesMyReportFilter({ status }, "PENDING"));
+  for (const status of ["ASSIGNED", "IN_PROGRESS"])
     assert.ok(matchesMyReportFilter({ status }, "PROCESSING"));
+  assert.equal(
+    matchesMyReportFilter({ status: "PENDING" }, "PROCESSING"),
+    false,
+  );
   assert.ok(matchesMyReportFilter({ status: "CLOSED" }, "RESOLVED"));
   assert.ok(matchesMyReportFilter({ status: "REJECTED" }, "ALL"));
   assert.equal(

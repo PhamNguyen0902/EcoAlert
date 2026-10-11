@@ -1,7 +1,7 @@
 import type { Alert, GeoLocation } from "../types";
 
 export type IncidentGroup = "PENDING" | "PROCESSING" | "RESOLVED";
-export type MyReportFilter = "ALL" | "PROCESSING" | "RESOLVED";
+export type MyReportFilter = "ALL" | "PENDING" | "PROCESSING" | "RESOLVED";
 export type MapFilter = "ALL" | "NEARBY" | IncidentGroup;
 export interface MapCoordinate {
   latitude: number;
@@ -63,7 +63,6 @@ export const matchesMyReportFilter = (
 ): boolean => {
   if (filter === "ALL") return true;
   const group = getIncidentGroup(alert.status);
-  return filter === "RESOLVED"
-    ? group === "RESOLVED"
-    : group === "PENDING" || group === "PROCESSING";
+  if (filter === "PENDING") return group === "PENDING";
+  return group === filter;
 };
