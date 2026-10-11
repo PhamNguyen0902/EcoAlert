@@ -1,12 +1,19 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { FileText, House, MapPinned, Camera } from "lucide-react-native";
+import {
+  ClipboardList,
+  House,
+  MapPin,
+  Plus,
+  Settings,
+} from "lucide-react-native";
 import { CitizenDashboardScreen } from "../screens/citizen/CitizenDashboardScreen";
 import { CitizenMapScreen } from "../screens/citizen/CitizenMapScreen";
 import { CitizenNotificationsScreen } from "../screens/citizen/CitizenNotificationsScreen";
 import { MyReportsScreen } from "../screens/citizen/MyReportsScreen";
 import { CitizenProfileScreen } from "../screens/citizen/CitizenProfileScreen";
+import { CitizenSettingsScreen } from "../screens/citizen/CitizenSettingsScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { LocationPickerScreen } from "../screens/LocationPickerScreen";
 import { useCivicTheme } from "../theme/useCivicTheme";
@@ -28,6 +35,8 @@ const CitizenTabs = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarLabelPosition: "below-icon",
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
@@ -48,11 +57,13 @@ const CitizenTabs = () => {
           route.name === "DashboardTab" ? (
             <House color={color} size={size} />
           ) : route.name === "MapTab" ? (
-            <MapPinned color={color} size={size} />
+            <MapPin color={color} size={size} />
           ) : route.name === "ReportTab" ? (
-            <Camera color="#07101F" size={24} strokeWidth={2.5} />
+            <Plus color="#07101F" size={30} strokeWidth={2.5} />
+          ) : route.name === "SettingsTab" ? (
+            <Settings color={color} size={size} />
           ) : (
-            <FileText color={color} size={size} />
+            <ClipboardList color={color} size={size} />
           ),
       })}
     >
@@ -64,19 +75,22 @@ const CitizenTabs = () => {
       <Tab.Screen
         name="MapTab"
         component={CitizenMapScreen}
-        options={{ tabBarLabel: language === "vi" ? "Bản đồ" : "Map" }}
+        options={{ tabBarLabel: language === "vi" ? "Gần tôi" : "Nearby" }}
       />
       <Tab.Screen
         name="ReportTab"
         component={ReportTabLauncherScreen}
         options={{
-          tabBarLabel: language === "vi" ? "Báo cáo" : "Report",
+          tabBarLabel: "",
+          tabBarAccessibilityLabel: "Tạo báo cáo mới",
           tabBarIconStyle: {
-            width: 50,
-            height: 50,
-            marginTop: -8,
+            width: 60,
+            height: 60,
+            marginTop: -20,
             borderRadius: 999,
-            backgroundColor: colors.primary,
+            backgroundColor: "#22C55E",
+            borderWidth: 5,
+            borderColor: colors.greenSoft,
             alignItems: "center",
             justifyContent: "center",
           },
@@ -86,6 +100,11 @@ const CitizenTabs = () => {
         name="MyReportsTab"
         component={MyReportsScreen}
         options={{ tabBarLabel: language === "vi" ? "Của tôi" : "My reports" }}
+      />
+      <Tab.Screen
+        name="SettingsTab"
+        component={CitizenSettingsScreen}
+        options={{ tabBarLabel: language === "vi" ? "Cài đặt" : "Settings" }}
       />
     </Tab.Navigator>
   );
