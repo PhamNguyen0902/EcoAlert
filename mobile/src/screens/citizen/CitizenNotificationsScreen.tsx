@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,7 +9,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Bell, ChevronRight, Trash2 } from "lucide-react-native";
+import {
+  Bell,
+  ChevronRight,
+  Trash2,
+  CheckCircle2,
+  Clock3,
+  MapPin,
+  ScanLine,
+  XCircle,
+  ClipboardCheck,
+} from "lucide-react-native";
 import { formatDistanceToNow, isValid } from "date-fns";
 import { enUS, vi } from "date-fns/locale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,6 +39,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../theme/civicDesign";
 import { getNotificationAlertId } from "../../utils/notificationNavigation";
+import { notificationPresentation } from "../../utils/notificationPresentation";
 
 type Props = NativeStackScreenProps<CitizenStackParamList, "Notifications">;
 export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
@@ -42,6 +53,8 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
   const remove = useDeleteNotification();
+  const opening = useRef(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const items = useMemo(
     () => query.data?.pages.flatMap((page) => page.items) ?? [],
     [query.data],
@@ -56,12 +69,16 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
         : "Check your connection and try again.",
     );
   const openItem = async (item: NotificationItem) => {
+    if (opening.current) return;
+    opening.current = true;
     try {
       if (!item.isRead) await markRead.mutateAsync(item._id);
       const alertId = getNotificationAlertId(item);
       if (alertId) navigation.navigate("AlertDetail", { id: alertId });
     } catch {
       showError();
+    } finally {
+      opening.current = false;
     }
   };
   const markAllRead = async () => {
@@ -74,7 +91,7 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
   const deleteItem = (item: NotificationItem) =>
     Alert.alert(
       isVietnamese ? "Xóa thông báo này?" : "Delete this notification?",
-      item.title,
+      notificationPresentation(item).title,
       [
         { text: isVietnamese ? "Hủy" : "Cancel", style: "cancel" },
         {
@@ -87,6 +104,27 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
       ],
     );
   const renderItem = ({ item }: { item: NotificationItem }) => {
+    const content = notificationPresentation(item);
+    const tone =
+      content.tone === "success"
+        ? colors.primary
+        : content.tone === "danger"
+          ? colors.danger
+          : content.tone === "info"
+            ? colors.cyan
+            : colors.warning;
+    const Icon =
+      content.tone === "success"
+        ? CheckCircle2
+        : content.tone === "danger"
+          ? XCircle
+          : content.type === "AI_ANALYZED"
+            ? ScanLine
+            : content.type === "OFFICER_ARRIVED"
+              ? MapPin
+              : content.type === "OFFICER_ASSIGNED"
+                ? ClipboardCheck
+                : Clock3;
     const date = new Date(item.createdAt);
     const relativeTime = isValid(date)
       ? formatDistanceToNow(date, {
@@ -107,43 +145,88 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
       >
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel={`${item.isRead ? "" : isVietnamese ? "Chưa đọc. " : "Unread. "}${item.title}. ${item.message}`}
+          accessibilityLabel={`${item.isRead ? "Đã đọc. " : "Chưa đọc. "}${content.title}. ${content.message}`}
           onPress={() => void openItem(item)}
           disabled={markRead.isPending}
           style={styles.itemPress}
         >
-          <View
-            style={[
-              styles.dot,
-              {
-                backgroundColor: item.isRead
-                  ? colors.borderStrong
-                  : colors.primary,
-              },
-            ]}
-          />
+          <View style={[styles.icon, { backgroundColor: `${tone}18` }]}>
+            <Icon size={20} color={tone} />
+          </View>
           <View style={styles.itemCopy}>
-            <Text style={[civicType.cardTitle, { color: colors.text }]}>
-              {item.title}
+            <Text
+              numberOfLines={2}
+              style={[civicType.cardTitle, { color: colors.text }]}
+            >
+              {content.title}
             </Text>
-            <Text style={[civicType.body, { color: colors.textSecondary }]}>
-              {item.message}
+            <Text
+              numberOfLines={
+                content.message.length > 140 && !expanded[item._id]
+                  ? 4
+                  : undefined
+              }
+              style={[civicType.body, { color: colors.textSecondary }]}
+            >
+              {content.message}
             </Text>
             <Text style={[civicType.meta, { color: colors.textMuted }]}>
               {relativeTime}
             </Text>
           </View>
-          {alertId && <ChevronRight size={16} color={colors.textMuted} />}
+          {!item.isRead && (
+            <View
+              accessibilityLabel="Chưa đọc"
+              style={[styles.dot, { backgroundColor: colors.primary }]}
+            />
+          )}
         </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={`${isVietnamese ? "Xóa thông báo" : "Delete notification"}: ${item.title}`}
-          disabled={remove.isPending}
-          onPress={() => deleteItem(item)}
-          style={styles.deleteButton}
-        >
-          <Trash2 size={15} color={colors.textMuted} />
-        </TouchableOpacity>
+        {content.message.length > 140 && (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={
+              expanded[item._id] ? "Thu gọn nội dung" : "Xem đầy đủ nội dung"
+            }
+            accessibilityState={{ expanded: Boolean(expanded[item._id]) }}
+            onPress={() =>
+              setExpanded((current) => ({
+                ...current,
+                [item._id]: !current[item._id],
+              }))
+            }
+            style={styles.expandButton}
+          >
+            <Text style={[civicType.meta, { color: colors.cyan }]}>
+              {expanded[item._id] ? "Thu gọn" : "Xem đầy đủ nội dung"}
+            </Text>
+          </TouchableOpacity>
+        )}
+        <View style={styles.itemFooter}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={() => void openItem(item)}
+            disabled={markRead.isPending}
+            style={styles.detailButton}
+          >
+            <Text style={[civicType.meta, { color: colors.primary }]}>
+              {alertId
+                ? "Xem báo cáo"
+                : item.isRead
+                  ? "Đã đọc"
+                  : "Đánh dấu đã đọc"}
+            </Text>
+            {alertId && <ChevronRight size={14} color={colors.primary} />}
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`${isVietnamese ? "Xóa thông báo" : "Delete notification"}: ${content.title}`}
+            disabled={remove.isPending}
+            onPress={() => deleteItem(item)}
+            style={styles.deleteButton}
+          >
+            <Trash2 size={15} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -284,6 +367,33 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   itemCopy: { flex: 1, minWidth: 0, gap: 6 },
+  icon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingLeft: 62,
+    paddingRight: 6,
+  },
+  detailButton: {
+    minHeight: 44,
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+    flexShrink: 1,
+  },
+  expandButton: {
+    marginLeft: 62,
+    marginRight: 16,
+    minHeight: 36,
+    justifyContent: "center",
+  },
   dot: { width: 7, height: 7, borderRadius: 4, marginTop: 6 },
   deleteButton: {
     alignSelf: "flex-end",

@@ -3,6 +3,8 @@ import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '../utils/constants';
 import { useProfile } from '../hooks/useAuth';
+import { storage } from '../utils/storage';
+import { AppState } from 'react-native';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -28,6 +30,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 1. Initialize persistent Socket instance
   useEffect(() => {
+    if (!user?._id) {
+      setSocket(null);
+      setIsConnected(false);
+      return;
+    }
     let socketHost: string;
     try {
       socketHost = new URL(API_BASE_URL).origin;
@@ -41,6 +48,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       transports: ['polling', 'websocket'],
       reconnectionAttempts: 15,
       reconnectionDelay: 2000,
+      auth: (callback) => { void storage.getToken().then(token => callback({ token })); },
     });
 
     socketInstance.on('connect', () => {
@@ -60,6 +68,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     socketInstance.on('disconnect', (reason) => {
       console.log('[Mobile Socket] Disconnected, reason:', reason);
       setIsConnected(false);
+      if (reason === 'io server disconnect') socketInstance.connect();
+    });
+    socketInstance.on('connect_error', () => setIsConnected(false));
+    const resume = AppState.addEventListener('change', state => {
+      if (state === 'active' && !socketInstance.connected) socketInstance.connect();
     });
 
     const refreshActiveData = () => {
@@ -103,8 +116,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       console.log('[Mobile Socket] Unmounting SocketProvider');
       socketInstance.disconnect();
+      resume.remove();
     };
-  }, [queryClient]);
+  }, [queryClient, user?._id, user?.role]);
 
   // 2. Handle user changes (login/logout/switch account) on existing socket without reconnecting
   useEffect(() => {

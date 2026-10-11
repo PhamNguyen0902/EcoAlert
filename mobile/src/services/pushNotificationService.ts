@@ -23,7 +23,7 @@ export const pushNotificationService = {
     try {
       if (Platform.OS === "android") {
         await Notifications.setNotificationChannelAsync("default", {
-          name: "EcoAlert Alerts",
+          name: "Thông báo EcoAlert",
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#22C55E",

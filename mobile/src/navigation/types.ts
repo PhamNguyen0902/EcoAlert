@@ -40,8 +40,8 @@ export type OfficerStackParamList = {
   AlertDetail: { id: string };
 };
 export type RootStackParamList = {
-  AdminApp: undefined;
-  OfficerApp: undefined;
+  AdminApp: NavigatorScreenParams<{ AdminTabs: undefined; AlertDetail: { id: string } }> | undefined;
+  OfficerApp: NavigatorScreenParams<OfficerStackParamList> | undefined;
   CitizenApp: NavigatorScreenParams<CitizenStackParamList> | undefined;
   CitizenAppGuest: NavigatorScreenParams<CitizenStackParamList> | undefined;
   Login: undefined;

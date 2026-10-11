@@ -5,6 +5,8 @@ export interface NotificationItem {
   eventId?: string;
   /** Present on newly created report-workflow notifications. */
   alertId?: string;
+  type?: string;
+  eventType?: string;
   title: string;
   message: string;
   isRead: boolean;

@@ -16,6 +16,7 @@ export const unreadBadgeLabel = (count: number): string | null =>
 export interface NotificationTarget {
   alertId: string | null;
   requestId: string;
+  app?: "CitizenApp" | "OfficerApp" | "AdminApp";
 }
 
 /** Holds cold-start taps until both navigation and the Citizen session are ready. */
@@ -33,25 +34,18 @@ export class NotificationTapQueue {
     navigate: (target: NotificationTarget) => void,
   ): boolean {
     if (!this.pending || !ready) return false;
-    // Keep a guest tap queued through login. Do not redirect Officer/Admin flows.
-    if (!routeNames.includes("CitizenApp")) {
-      if (
-        routeNames.includes("OfficerApp") ||
-        routeNames.includes("AdminApp")
-      ) {
-        this.pending = null;
-        return true; // Consumed without changing a non-Citizen workflow.
-      }
-      return false;
-    }
-    const target = this.pending;
+    const app = (["CitizenApp", "OfficerApp", "AdminApp"] as const).find(
+      (name) => routeNames.includes(name),
+    );
+    if (!app) return false;
+    const target = { ...this.pending, app };
     this.pending = null;
     this.seen.add(target.requestId);
     if (this.seen.size > 100) {
       const oldest = this.seen.values().next().value;
       if (oldest !== undefined) this.seen.delete(oldest);
     }
-    navigate(target);
+    if (app === "CitizenApp" || target.alertId) navigate(target);
     return true;
   }
 }

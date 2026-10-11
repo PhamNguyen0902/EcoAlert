@@ -11,7 +11,23 @@ export const flushPendingNotification = () =>
     navigationRef.isReady()
       ? (navigationRef.getRootState()?.routeNames ?? [])
       : [],
-    ({ alertId }) => {
+    ({ alertId, app }) => {
+      if (app === "OfficerApp" && alertId) {
+        navigationRef.navigate("OfficerApp", {
+          screen: "OfficerAlertDetail",
+          params: { id: alertId },
+          initial: false,
+        });
+        return;
+      }
+      if (app === "AdminApp" && alertId) {
+        navigationRef.navigate("AdminApp", {
+          screen: "AlertDetail",
+          params: { id: alertId },
+          initial: false,
+        });
+        return;
+      }
       if (alertId)
         navigationRef.navigate("CitizenApp", {
           screen: "AlertDetail",

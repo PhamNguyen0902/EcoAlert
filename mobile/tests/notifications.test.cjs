@@ -88,11 +88,14 @@ test("foreground/background taps use the same target; missing entity opens only 
   assert.equal(opened.length, 3);
   assert.equal(opened[2].alertId, null);
 });
-test("Citizen push never redirects Officer/Admin", () => {
+test("push uses the authenticated Officer/Admin navigator, never the Citizen navigator", () => {
   for (const route of ["OfficerApp", "AdminApp"]) {
     const queue = new NotificationTapQueue();
     queue.enqueue({ alertId }, route);
-    queue.flush(true, [route], () => assert.fail("must not navigate"));
+    const opened = [];
+    queue.flush(true, [route], target => opened.push(target));
+    assert.equal(opened[0].app, route);
+    assert.equal(opened[0].alertId, alertId);
     assert.equal(
       queue.flush(true, ["CitizenApp"], () => assert.fail("stale tap")),
       false,
