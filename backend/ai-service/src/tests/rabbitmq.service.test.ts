@@ -6,7 +6,7 @@ import { AlertCreatedProcessorDependencies, settleAlertCreatedMessage } from '..
 const message = (): any => ({ content: Buffer.from(JSON.stringify({
   eventId: 'created-1', eventType: EVENTS.ALERT_CREATED, timestamp: new Date(0).toISOString(),
   source: 'alert-service', correlationId: 'correlation-1',
-  data: { _id: 'alert-1', title: 'Rác ven đường', description: 'Có rác ở vỉa hè.', mediaUrls: ['https://example.com/evidence.jpg'] },
+  data: { _id: 'alert-1', citizenId: 'citizen-1', title: 'Rác ven đường', description: 'Có rác ở vỉa hè.', mediaUrls: ['https://example.com/evidence.jpg'] },
 } satisfies IEventMessage<unknown>)) });
 
 test('publishes the direct OpenRouter result before acknowledging the report event', async () => {
@@ -26,6 +26,9 @@ test('publishes the direct OpenRouter result before acknowledging the report eve
   assert.equal(result.acknowledged, true);
   assert.deepEqual(order, ['publish', 'ack']);
   assert.equal(published.analysisMode, 'IMAGE_AND_TEXT');
+  assert.equal(published.citizenId, 'citizen-1');
+  assert.equal(published.title, 'Rác ven đường');
+  assert.equal(published.alertId, 'alert-1');
 });
 
 test('routes flooding to semantic-only without calling waste detection', async () => {

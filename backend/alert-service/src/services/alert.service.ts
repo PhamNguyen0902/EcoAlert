@@ -342,7 +342,7 @@ export class AlertService {
     );
     if (!updated) throw new ConflictError("Trạng thái đã thay đổi");
     // Verification is already durable; a broker outage must not undo it or the dispatch job.
-    await this.emitEvent(EVENTS.ALERT_UPDATED, updated, actor).catch(() => undefined);
+    await this.emitEvent(EVENTS.ALERT_UPDATED, updated, actor, { previousStatus: alert.status }).catch(() => undefined);
     return updated;
   }
 

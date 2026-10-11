@@ -23,6 +23,7 @@ const analysis = (): IAiAnalysisCompletedData => ({
 
 test('accepts the direct OpenRouter payload and rejects removed properties', () => {
   assert.equal(aiAnalysisCompletedSchema.parse(analysis()).analysisMode, 'IMAGE_AND_TEXT');
+  assert.equal(aiAnalysisCompletedSchema.parse({ ...analysis(), citizenId: 'citizen-1', title: 'Rác ven đường' }).citizenId, 'citizen-1');
   assert.throws(() => aiAnalysisCompletedSchema.parse({ ...analysis(), deprecatedPayload: {} }));
 });
 

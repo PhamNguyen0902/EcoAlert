@@ -44,6 +44,8 @@ const overallAnalysisSchema = z.object({
 export const aiAnalysisCompletedSchema = z.object({
   alertId: z.string().min(1),
   analysisId: z.string().min(1),
+  citizenId: z.string().min(1).optional(),
+  title: z.string().optional(),
   category: z.nativeEnum(AlertCategory).or(z.literal('UNCLASSIFIED')),
   severity: z.nativeEnum(Severity).nullable(),
   confidence: z.number().min(0).max(1).nullable(),

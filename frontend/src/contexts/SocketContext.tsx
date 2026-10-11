@@ -53,6 +53,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
+      auth: (callback) => callback({ token: localStorage.getItem('token') }),
     });
 
     socketInstance.on('connect', () => {
@@ -72,7 +73,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     socketInstance.on('disconnect', (reason) => {
       console.log('[Web Socket] Disconnected from server, reason:', reason);
       setIsConnected(false);
+      if (reason === 'io server disconnect') socketInstance.connect();
     });
+    socketInstance.on('connect_error', () => setIsConnected(false));
+    const resume = () => { if (!socketInstance.connected) socketInstance.connect(); };
+    window.addEventListener('focus', resume);
 
     // làm mới các dữ liệu đang hoạt động khi nhận được sự kiện thời gian thực
     const refreshActiveData = () => {
@@ -157,12 +162,16 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       playNotificationSound('info');
       refreshActiveData();
     });
+    socketInstance.on('notification:created', () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'], refetchType: 'active' });
+    });
 
     setSocket(socketInstance);
 
     return () => {
       console.log('[Web Socket] Unmounting SocketProvider');
       socketInstance.disconnect();
+      window.removeEventListener('focus', resume);
     };
   }, [queryClient, user?._id, user?.role]);
 

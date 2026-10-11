@@ -281,6 +281,7 @@ services:
     container_name: ecoalert_notification_service
     environment:
       - PORT=3006
+      - JWT_SECRET=${JWT_SECRET}
       - MONGO_URI=mongodb://mongodb:27017/ecoalert-notification-db
       - RABBITMQ_URL=${RABBITMQ_URL}
     depends_on:

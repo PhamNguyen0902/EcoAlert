@@ -24,6 +24,7 @@ const logger = createLogger('ai-service');
 
 interface AlertCreatedData {
   _id: string;
+  citizenId?: string;
   title?: string;
   description?: string;
   mediaUrls?: string[];
@@ -58,7 +59,7 @@ export interface AlertCreatedProcessorDependencies {
   analyze: (input: MultimodalInput) => Promise<MultimodalAnalysisResult>;
   publish: (
     routingKey: string,
-    data: IAiAnalysisCompletedData,
+    data: IAiAnalysisCompletedData & { citizenId?: string; title?: string },
     correlationId: string,
   ) => Promise<void>;
   detectWaste?: (imageUrl: string) => Promise<IVisionEvidence>;
@@ -152,6 +153,8 @@ export const processAlertCreatedEvent = async (
       alertId: alert._id,
       analysisId: event.eventId,
       ...analysis,
+      citizenId: alert.citizenId,
+      title: alert.title,
     },
     event.correlationId,
   );
