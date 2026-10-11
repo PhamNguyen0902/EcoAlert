@@ -1,86 +1,64 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
-import { civicType, civicSpace, civicRadius } from "../../../theme/civicDesign";
-import { useReportTheme } from "../useReportTheme";
-import { useFieldReducedMotion } from "./stitch/FieldUI";
-const STEPS = ["VỊ TRÍ", "CHỤP ẢNH", "KIỂM TRA", "XÁC NHẬN"];
-export const ReportProgress = ({ step, status }: { step: 1 | 2 | 3 | 4; status?: string }) => {
-  const { colors } = useReportTheme();
-  const reduced = useFieldReducedMotion();
-  const progress = useRef(new Animated.Value((step - 1) * 25)).current;
-  useEffect(() => {
-    const animation = Animated.timing(progress, {
-      toValue: step * 25,
-      duration: reduced ? 0 : 200,
-      useNativeDriver: false,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [progress, step, reduced]);
-  return (
-    <View
-      style={styles.container}
-      accessible
-      accessibilityLabel={`Tiến trình báo cáo, bước ${step} trên 4`}
-      accessibilityRole="progressbar"
-      accessibilityValue={{ min: 1, max: 4, now: step }}
-    >
-      <View style={styles.heading}>
-        <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
-          {status || "TIẾN TRÌNH BÁO CÁO"}
-        </Text>
-        <Text style={[styles.stepText, { color: colors.primary }]}>
-          BƯỚC 0{step} / 04
-        </Text>
-      </View>
-      <View style={[styles.track, { backgroundColor: colors.divider }]}>
-        <Animated.View
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { fieldColors as c } from "./stitch/fieldDesign";
+
+export const ReportProgress = ({
+  step,
+  status,
+}: {
+  step: 1 | 2 | 3 | 4;
+  status?: string;
+}) => (
+  <View
+    style={styles.container}
+    accessible
+    accessibilityRole="progressbar"
+    accessibilityLabel={`Tiến trình báo cáo, bước ${step} trên 4`}
+    accessibilityValue={{ min: 1, max: 4, now: step }}
+  >
+    <View style={styles.heading}>
+      <Text style={styles.label}>{status || "TIẾN TRÌNH BÁO CÁO"}</Text>
+      <Text style={styles.step}>BƯỚC 0{step} / 04</Text>
+    </View>
+    <View style={styles.track}>
+      {[1, 2, 3, 4].map((value) => (
+        <View
+          key={value}
           style={[
-            styles.progress,
+            styles.segment,
             {
-              width: progress.interpolate({
-                inputRange: [0, 100],
-                outputRange: ["0%", "100%"],
-              }),
-              backgroundColor: colors.primary,
+              backgroundColor: value <= step ? c.primary : "#233449",
+              opacity: value < step ? 0.65 : 1,
             },
           ]}
         />
-      </View>
-      <View style={styles.labels} accessibilityElementsHidden>
-        {STEPS.map((label, index) => (
-          <View
-            key={label}
-            style={[
-              styles.label,
-              {
-                backgroundColor:
-                  index + 1 === step
-                    ? colors.primary
-                    : index + 1 < step
-                      ? colors.primary
-                      : colors.subtle,
-                opacity: index + 1 < step ? 0.6 : 1,
-              },
-            ]}
-          >
-          </View>
-        ))}
-      </View>
+      ))}
     </View>
-  );
-};
+  </View>
+);
 const styles = StyleSheet.create({
   container: { gap: 8 },
   heading: {
     flexDirection: "row",
-    alignItems: "center", flexWrap: "wrap", gap: 4,
+    alignItems: "center",
     justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 4,
   },
-  technicalLabel: { fontSize: 9, fontWeight: "700", letterSpacing: 0.6 },
-  stepText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.6 },
-  track: { height: 0, overflow: "hidden" },
-  progress: { height: "100%", borderRadius: 2 },
-  labels: { flexDirection: "row", gap: 4 },
-  label: { flex: 1, height: 3, borderRadius: 2 },
+  label: {
+    color: c.cyan,
+    fontSize: 9,
+    lineHeight: 14,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  step: {
+    color: c.primary,
+    fontSize: 10,
+    lineHeight: 14,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  track: { flexDirection: "row", gap: 4 },
+  segment: { flex: 1, height: 3, borderRadius: 2 },
 });

@@ -37,15 +37,17 @@ import type {
 import { alertService } from "../../../api/alertService";
 import { useOfflineSync } from "../../../hooks/useOfflineSync";
 import { useReportTheme } from "../useReportTheme";
-import { ReportScreenIntro } from "../components/ReportScreenIntro";
 import { ReportBottomActions } from "../components/ReportBottomActions";
-import { WasteDetectionChips } from "../components/WasteDetectionChips";
 import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { WasteDetectionImage } from "../../../components/vision/WasteDetectionImage";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
-import { FieldEvidenceMetaOverlay, FieldNotice, FieldScanLine } from "../components/stitch/FieldUI";
+import {
+  FieldEvidenceMetaOverlay,
+  FieldNotice,
+  FieldScanLine,
+} from "../components/stitch/FieldUI";
 import { fieldStyles } from "../components/stitch/fieldDesign";
 
 type Props = NativeStackScreenProps<
@@ -69,8 +71,6 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
   const [guideVisible, setGuideVisible] = useState(false);
   const runningRef = useRef(false);
   const capture = draft.capture;
-  const requiresManualReview =
-    draft.imageValidation.backendValidation?.decision === "UNCERTAIN";
   const imageDetections = useMemo(
     () =>
       draft.imageValidation.state === "VALID"
@@ -272,15 +272,31 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         showsVerticalScrollIndicator={false}
       >
         <ReportProgress step={3} status="AI / YOLO · PHÂN TÍCH HIỆN TRƯỜNG" />
-        <FieldNotice>EcoAlert AI đang hỗ trợ nhận diện rác thải trong ảnh hiện trường để đề xuất phân loại.</FieldNotice>
+        <FieldNotice>
+          EcoAlert AI đang hỗ trợ nhận diện rác thải trong ảnh hiện trường để đề
+          xuất phân loại.
+        </FieldNotice>
         <View style={styles.previewFrame}>
           <WasteDetectionImage
             imageUri={capture.originalLocalUri}
             detections={imageDetections}
             aspectRatio={3 / 4}
-            frameStyle={{ width: "100%", maxWidth: 480, borderWidth: 1, borderColor: "rgba(56,189,248,0.22)" }}
+            frameStyle={{
+              width: "100%",
+              maxWidth: 480,
+              borderWidth: 1,
+              borderColor: "rgba(56,189,248,0.22)",
+            }}
             showHints={false}
-            frameOverlay={<><FieldEvidenceMetaOverlay location={draft.location} capture={capture} />{state === "PROCESSING" ? <FieldScanLine /> : null}</>}
+            frameOverlay={
+              <>
+                <FieldEvidenceMetaOverlay
+                  location={draft.location}
+                  capture={capture}
+                />
+                {state === "PROCESSING" ? <FieldScanLine /> : null}
+              </>
+            }
           />
           <Text
             style={[
@@ -324,7 +340,10 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         {state === "VALID" ? (
           <FieldAiResultCard analysis={draft.imageValidation} />
         ) : null}
-        <FieldNotice>AI chỉ hỗ trợ gợi ý phân loại và đánh giá. Bạn có toàn quyền kiểm tra nội dung trước khi gửi báo cáo; kết quả cuối cùng cần cán bộ xác nhận.</FieldNotice>
+        <FieldNotice>
+          AI chỉ hỗ trợ gợi ý phân loại và đánh giá. Bạn có toàn quyền kiểm tra
+          nội dung trước khi gửi báo cáo; kết quả cuối cùng cần cán bộ xác nhận.
+        </FieldNotice>
         {state === "INVALID" || state === "UNAVAILABLE" ? (
           <View
             style={[
@@ -507,7 +526,9 @@ const styles = StyleSheet.create({
   centerTitle: { marginTop: space.lg, fontSize: 22, fontWeight: "800" },
   previewFrame: { borderRadius: radius.card, overflow: "hidden" },
   previewBadge: {
-    position: "absolute", top: 10, left: 10,
+    position: "absolute",
+    top: 10,
+    left: 10,
     marginTop: space.sm,
     paddingHorizontal: space.sm,
     paddingVertical: space.sm,
@@ -517,7 +538,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.6,
   },
-  resultStatus: { gap: space.sm },
   analysisCard: {
     borderWidth: 1,
     borderRadius: radius.card,
@@ -538,21 +558,6 @@ const styles = StyleSheet.create({
   },
   processingText: { fontSize: 13, fontWeight: "500" },
   processingHint: { fontSize: 11, lineHeight: 16 },
-  resultHeading: { flexDirection: "row", alignItems: "center", gap: space.md },
-  resultIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.major,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  resultCopy: { flex: 1 },
-  resultTitle: civicType.cardTitle,
-  resultBody: { marginTop: space.xs, fontSize: 13, lineHeight: 20 },
-  resultSubline: { fontSize: 12, lineHeight: 18 },
-  detectionSection: { gap: space.md },
-  contextSection: { gap: space.sm },
-  contextText: { fontSize: 13, lineHeight: 20 },
   continueButton: {
     minHeight: 52,
     borderRadius: 12,

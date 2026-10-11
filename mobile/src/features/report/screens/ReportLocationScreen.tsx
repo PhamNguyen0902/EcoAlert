@@ -4,7 +4,13 @@ import {
   civicType,
   civicStyles,
 } from "../../../theme/civicDesign";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -21,7 +27,7 @@ import {
   RefreshCw,
   ShieldCheck,
   TriangleAlert,
-  ArrowRight, Clock3, MapPin,
+  ArrowRight,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -31,13 +37,16 @@ import { ReportScreenIntro } from "../components/ReportScreenIntro";
 import { ReportBottomActions } from "../components/ReportBottomActions";
 import { useLocation } from "../../../hooks/useLocation";
 import { useFieldReport } from "../FieldReportContext";
-import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { FieldMapPreview } from "../components/stitch/FieldMapPreview";
 import { FieldNotice } from "../components/stitch/FieldUI";
 import { fieldStyles } from "../components/stitch/fieldDesign";
 import { formatCaptureTimestamp } from "../../../utils/watermark";
+import {
+  fieldLocationReady,
+  readableFieldAddress,
+} from "../components/stitch/fieldPresentation";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportLocation">;
 
@@ -70,7 +79,10 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
   } = useLocation();
   const requestedRef = useRef(false);
   const [now, setNow] = useState(Date.now());
-  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 15000); return () => clearInterval(timer); }, []);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   const acquireLocation = useCallback(async () => {
     const result = await fetchLocation();
@@ -107,11 +119,10 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
           source: source === "device" ? ("DEVICE_GPS" as const) : undefined,
         }
       : draft.location;
-  const ready = Boolean(
+  const ready =
+    !error &&
     shownLocation?.source === "DEVICE_GPS" &&
-    shownLocation.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS &&
-    now - Date.parse(shownLocation.capturedAt) <= 5 * 60_000,
-  );
+    fieldLocationReady({ ...shownLocation, source: "DEVICE_GPS" }, now);
   const tone = accuracyTone(shownLocation?.accuracyMeters ?? null);
   const toneColor =
     tone === "weak"
@@ -137,11 +148,10 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
     [tone],
   );
 
-  const addressParts =
-    shownLocation?.address
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean) ?? [];
+  const addressParts = readableFieldAddress(shownLocation?.address)
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
   return (
     <View
       style={[
@@ -215,8 +225,17 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
                       : "CHƯA CÓ VỊ TRÍ"}
               </Text>
             </View>
-            <Text style={[styles.deviceLabel, { color: ready ? colors.primary : colors.accent }]}>
-              {ready && !loading ? "● Sẵn sàng" : loading ? "Đang định vị" : "Cần kiểm tra"}
+            <Text
+              style={[
+                styles.deviceLabel,
+                { color: ready ? colors.primary : colors.accent },
+              ]}
+            >
+              {ready && !loading
+                ? "● Sẵn sàng"
+                : loading
+                  ? "Đang định vị"
+                  : "Cần kiểm tra"}
             </Text>
           </View>
           <View style={styles.addressBlock}>
@@ -245,7 +264,11 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
                 THỜI GIAN ĐỊNH VỊ
               </Text>
               <Text style={[styles.coordinate, { color: colors.text }]}>
-                {shownLocation ? formatCaptureTimestamp(new Date(shownLocation.capturedAt)).split(" ")[1] : "—"}
+                {shownLocation
+                  ? formatCaptureTimestamp(
+                      new Date(shownLocation.capturedAt),
+                    ).split(" ")[1]
+                  : "—"}
               </Text>
             </View>
             <View
@@ -277,7 +300,10 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
         </View>
-        <FieldNotice tone="amber">Vị trí được lấy trực tiếp từ thiết bị và sử dụng làm minh chứng cho báo cáo hiện trường.</FieldNotice>
+        <FieldNotice tone="amber">
+          Vị trí được lấy trực tiếp từ thiết bị và sử dụng làm minh chứng cho
+          báo cáo hiện trường.
+        </FieldNotice>
         {error ? (
           <View
             style={[
@@ -315,13 +341,22 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
         ) : null}
         {!ready && shownLocation ? (
           <Text style={[styles.warningText, { color: colors.accent }]}>
-            Vị trí chưa đủ chính xác hoặc đã quá 5 phút. Hãy đến nơi thoáng hơn và lấy lại GPS.
+            Vị trí chưa đủ chính xác hoặc đã quá 5 phút. Hãy đến nơi thoáng hơn
+            và lấy lại GPS.
           </Text>
         ) : null}
       </ScrollView>
       <ReportBottomActions>
         <TouchableOpacity
-          onPress={() => { if (ready && shownLocation && Date.now() - Date.parse(shownLocation.capturedAt) <= 5 * 60_000) navigation.navigate("ReportCamera"); else void acquireLocation(); }}
+          onPress={() => {
+            if (
+              ready &&
+              shownLocation &&
+              Date.now() - Date.parse(shownLocation.capturedAt) <= 5 * 60_000
+            )
+              navigation.navigate("ReportCamera");
+            else void acquireLocation();
+          }}
           disabled={!ready || loading}
           style={[
             styles.primaryButton,

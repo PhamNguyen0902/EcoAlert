@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { civicType, civicSpace } from "../../../theme/civicDesign";
+import { civicType } from "../../../theme/civicDesign";
 import { useReportTheme } from "../useReportTheme";
 
 export const ReportScreenIntro = ({

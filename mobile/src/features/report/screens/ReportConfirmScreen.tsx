@@ -18,7 +18,6 @@ import {
   Check,
   CheckCircle2,
   Eye,
-  MapPin,
   RotateCcw,
   Send,
   TriangleAlert,
@@ -35,7 +34,6 @@ import type {
 import { useReportTheme } from "../useReportTheme";
 import { ReportScreenIntro } from "../components/ReportScreenIntro";
 import { ReportBottomActions } from "../components/ReportBottomActions";
-import { WasteDetectionChips } from "../components/WasteDetectionChips";
 import {
   useCheckNearbyAlerts,
   useConfirmAlert,
@@ -53,7 +51,6 @@ import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
-import { ReportEvidenceImage } from "../components/ReportEvidenceImage";
 import { ZoomableImageViewer } from "../../../components/media/ZoomableImageViewer";
 import { FieldReportSummary } from "../components/stitch/FieldReportSummary";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
@@ -88,13 +85,13 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
     draft.description.trim().length >= 10 && draft.description.length <= 500;
   const canSubmit = Boolean(
     location &&
-    location.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS &&
-    capture?.originalLocalUri &&
-    draft.imageValidation.state === "VALID" &&
-    validDescription &&
-    draft.title.trim().length >= 5 &&
-    acknowledged &&
-    !submitting,
+      location.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS &&
+      capture?.originalLocalUri &&
+      draft.imageValidation.state === "VALID" &&
+      validDescription &&
+      draft.title.trim().length >= 5 &&
+      acknowledged &&
+      !submitting,
   );
 
   const retake = () => {
@@ -239,10 +236,6 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
       </View>
     );
 
-  const addressParts = location.address
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
   const severityColor =
     draft.imageValidation.severity?.toLowerCase() === "low"
       ? colors.primary
@@ -254,7 +247,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   // UNCLASSIFIED is a real API outcome, not a completed category or a made-up default.
   const categoryReady = Boolean(
     draft.imageValidation.suggestedCategory &&
-    draft.imageValidation.suggestedCategory !== "UNCLASSIFIED",
+      draft.imageValidation.suggestedCategory !== "UNCLASSIFIED",
   );
   return (
     <KeyboardAvoidingView
@@ -280,18 +273,61 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             title="Xác nhận báo cáo"
             description="Kiểm tra kỹ thông tin minh chứng trước khi gửi đến đơn vị xử lý."
           />
-          <FieldReportSummary capture={capture} location={location} onPress={setViewerUri} />
+          <FieldReportSummary
+            capture={capture}
+            location={location}
+            onPress={setViewerUri}
+          />
           <FieldAiResultCard analysis={draft.imageValidation} compact />
           <View style={styles.descriptionSection}>
-            <Text style={[styles.technicalLabel, { color: colors.primary }]}>HIỆU CHỈNH THÔNG TIN PHẢN ÁNH</Text>
-            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>TIÊU ĐỀ SỰ CỐ</Text>
-            <TextInput value={draft.title} onChangeText={title => setDraft(current => ({ ...current, title }))} accessibilityLabel="Tiêu đề sự cố" placeholder="Nhập tiêu đề báo cáo..." placeholderTextColor={colors.textMuted}
-              style={[styles.titleInput, { color: colors.text, backgroundColor: colors.elevated, borderColor: draft.title.trim().length >= 5 ? colors.border : colors.destructive }]} />
-            {draft.title.trim().length < 5 ? <Text style={[styles.inputError, { color: colors.destructive }]}>Tiêu đề cần ít nhất 5 ký tự.</Text> : null}
-            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>PHÂN LOẠI DO AI GỢI Ý</Text>
+            <Text style={[styles.technicalLabel, { color: colors.primary }]}>
+              HIỆU CHỈNH THÔNG TIN PHẢN ÁNH
+            </Text>
+            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
+              TIÊU ĐỀ SỰ CỐ
+            </Text>
+            <TextInput
+              value={draft.title}
+              onChangeText={(title) =>
+                setDraft((current) => ({ ...current, title }))
+              }
+              accessibilityLabel="Tiêu đề sự cố"
+              placeholder="Nhập tiêu đề báo cáo..."
+              placeholderTextColor={colors.textMuted}
+              style={[
+                styles.titleInput,
+                {
+                  color: colors.text,
+                  backgroundColor: colors.elevated,
+                  borderColor:
+                    draft.title.trim().length >= 5
+                      ? colors.border
+                      : colors.destructive,
+                },
+              ]}
+            />
+            {draft.title.trim().length < 5 ? (
+              <Text style={[styles.inputError, { color: colors.destructive }]}>
+                Tiêu đề cần ít nhất 5 ký tự.
+              </Text>
+            ) : null}
+            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
+              PHÂN LOẠI DO AI GỢI Ý
+            </Text>
             <View style={styles.classificationChips}>
-              <Text style={styles.categoryChip}>{categoryReady && draft.imageValidation.suggestedCategory ? getCategoryLabel(draft.imageValidation.suggestedCategory, "vi") : "Chờ cán bộ xác nhận"}</Text>
-              <Text style={[styles.categoryChip, { color: severityColor }]}>{draft.imageValidation.severity ? getSeverityLabel(draft.imageValidation.severity, "vi") : "Chưa có đánh giá mức độ"}</Text>
+              <Text style={styles.categoryChip}>
+                {categoryReady && draft.imageValidation.suggestedCategory
+                  ? getCategoryLabel(
+                      draft.imageValidation.suggestedCategory,
+                      "vi",
+                    )
+                  : "Chờ cán bộ xác nhận"}
+              </Text>
+              <Text style={[styles.categoryChip, { color: severityColor }]}>
+                {draft.imageValidation.severity
+                  ? getSeverityLabel(draft.imageValidation.severity, "vi")
+                  : "Chưa có đánh giá mức độ"}
+              </Text>
             </View>
           </View>
           <View style={styles.descriptionSection}>
@@ -500,80 +536,28 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
   },
-  viewerHint: {
-    marginTop: -space.md,
-    fontSize: 11,
-    lineHeight: 17,
-    textAlign: "center",
-  },
-  imageBadge: {
-    position: "absolute",
-    bottom: 12,
-    left: 12,
-    alignSelf: "flex-start",
-    borderRadius: 8,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.xs,
-    backgroundColor: "rgba(7,16,31,0.76)",
-  },
-  imageBadgeText: {
-    color: "#22C55E",
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-  },
-  analysisMetadata: { flexDirection: "row", gap: space.lg },
-  analysisField: { flex: 1, minWidth: 0, gap: space.sm },
-  analysisValueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.sm,
-  },
-  analysisValue: {
-    flexShrink: 1,
+  technicalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
+  descriptionSection: { gap: space.md },
+  titleInput: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
     fontSize: 13,
     lineHeight: 20,
-    fontWeight: "600",
   },
-  pendingDot: { width: 6, height: 6, borderRadius: 3 },
-  pendingNote: { marginTop: -8, fontSize: 11, lineHeight: 17 },
-  technicalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
-  detectionSection: { gap: space.md },
-  locationCard: {
-    borderRadius: radius.card,
-    padding: space.lg,
-    flexDirection: "row",
-    gap: space.md,
-  },
-  pinIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.round,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  locationCopy: { flex: 1, gap: space.sm },
-  address: { fontSize: 15, lineHeight: 21, fontWeight: "700" },
-  addressDetail: { fontSize: 13, lineHeight: 20 },
-  locationMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: space.sm,
-    alignItems: "center",
-  },
-  coordinate: {
-    fontSize: 10,
-    fontWeight: "600",
-    fontVariant: ["tabular-nums"],
-  },
-  accuracy: { fontSize: 11, fontWeight: "700" },
-  descriptionSection: { gap: space.md },
-  titleInput: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 20 },
   classificationChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  categoryChip: { backgroundColor: "rgba(34,197,94,0.1)", color: "#4ADE80", borderRadius: 8, padding: 8, fontSize: 11, lineHeight: 16, overflow: "hidden", fontWeight: "700", flexShrink: 1 },
+  categoryChip: {
+    backgroundColor: "rgba(34,197,94,0.1)",
+    color: "#4ADE80",
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 11,
+    lineHeight: 16,
+    overflow: "hidden",
+    fontWeight: "700",
+    flexShrink: 1,
+  },
   inputBox: { borderWidth: 1, borderRadius: 12, padding: space.md },
   input: { minHeight: 110, fontSize: 13, lineHeight: 20, padding: 0 },
   counter: {

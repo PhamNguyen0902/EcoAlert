@@ -13,7 +13,8 @@ import {
   StyleSheet,
   Text,
   View,
-  type StyleProp, type ViewStyle,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import type { ImageLoadEvent } from "react-native";
 import { Expand } from "lucide-react-native";
@@ -68,7 +69,9 @@ function DetectionImageSession({
   showLabels = true,
   resizeMode = "contain",
   emptyMessage,
-  frameStyle, frameOverlay, showHints = true,
+  frameStyle,
+  frameOverlay,
+  showHints = true,
 }: WasteDetectionImageProps) {
   const [original, setOriginal] = useState<ImageSize | null>(null);
   const [container, setContainer] = useState<ImageSize>({
@@ -295,24 +298,26 @@ function DetectionImageSession({
         ) : null}
         {frameOverlay}
       </View>
-      {showHints ? <>
-      <Text style={styles.message}>
-        Chạm ảnh hoặc nút mở rộng để xem ảnh gốc.
-      </Text>
-      {showLabels && boxes.length ? (
-        <Text style={styles.message}>
-          {boxes.length} vùng được đánh dấu · Chạm một vùng để xem chi tiết.
-        </Text>
+      {showHints ? (
+        <>
+          <Text style={styles.message}>
+            Chạm ảnh hoặc nút mở rộng để xem ảnh gốc.
+          </Text>
+          {showLabels && boxes.length ? (
+            <Text style={styles.message}>
+              {boxes.length} vùng được đánh dấu · Chạm một vùng để xem chi tiết.
+            </Text>
+          ) : null}
+          {loaded && !imageError && !original ? (
+            <Text style={styles.message}>
+              Chưa xác định được kích thước ảnh để vẽ vùng nhận diện.
+            </Text>
+          ) : null}
+          {!detections.length && emptyMessage ? (
+            <Text style={styles.message}>{emptyMessage}</Text>
+          ) : null}
+        </>
       ) : null}
-      {loaded && !imageError && !original ? (
-        <Text style={styles.message}>
-          Chưa xác định được kích thước ảnh để vẽ vùng nhận diện.
-        </Text>
-      ) : null}
-      {!detections.length && emptyMessage ? (
-        <Text style={styles.message}>{emptyMessage}</Text>
-      ) : null}
-      </> : null}
       <ZoomableImageViewer
         visible={viewerOpen}
         imageUri={imageUri}

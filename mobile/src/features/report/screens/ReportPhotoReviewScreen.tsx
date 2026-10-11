@@ -275,7 +275,11 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           />
           <IntegrityRow
             title="GPS thiết bị"
-            body={integrity.gps ? `±${Math.round(location.accuracyMeters)}m` : "Cần kiểm tra"}
+            body={
+              integrity.gps
+                ? `±${Math.round(location.accuracyMeters)}m`
+                : "Cần kiểm tra"
+            }
             valid={integrity.gps}
             colors={colors}
           />
@@ -286,7 +290,12 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             colors={colors}
           />
         </View>
-        <FieldEntrance><FieldNotice title="Ảnh đã rõ nội dung cần phản ánh chưa?">Hãy đảm bảo khu vực rác được nhìn thấy rõ, không bị quá tối hoặc che khuất.</FieldNotice></FieldEntrance>
+        <FieldEntrance>
+          <FieldNotice title="Ảnh đã rõ nội dung cần phản ánh chưa?">
+            Hãy đảm bảo khu vực rác được nhìn thấy rõ, không bị quá tối hoặc che
+            khuất.
+          </FieldNotice>
+        </FieldEntrance>
       </ScrollView>
       <ReportBottomActions>
         <View style={styles.actions}>
@@ -305,12 +314,21 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate("ReportImageValidation")}
-            disabled={integrityCount !== 3}
+            disabled={
+              integrityCount !== 3 ||
+              rendering ||
+              (!capture.displayLocalUri && !watermarkError)
+            }
             style={[
               styles.useButton,
               {
                 backgroundColor: colors.cta,
-                opacity: integrityCount === 3 ? 1 : 0.45,
+                opacity:
+                  integrityCount === 3 &&
+                  !rendering &&
+                  (capture.displayLocalUri || watermarkError)
+                    ? 1
+                    : 0.45,
               },
             ]}
             accessibilityRole="button"
@@ -352,8 +370,26 @@ const IntegrityRow = ({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: fieldStyles.content,
-  evidenceFrame: { width: "100%", maxWidth: 480, aspectRatio: 3 / 4, borderWidth: 1, borderColor: "rgba(56,189,248,0.22)", borderRadius: 18 },
-  photoBadge: { position: "absolute", top: 12, left: 12, backgroundColor: "rgba(7,16,31,0.82)", color: "#22C55E", fontSize: 10, lineHeight: 15, fontWeight: "800", padding: 6, borderRadius: 6 },
+  evidenceFrame: {
+    width: "100%",
+    maxWidth: 480,
+    aspectRatio: 3 / 4,
+    borderWidth: 1,
+    borderColor: "rgba(56,189,248,0.22)",
+    borderRadius: 18,
+  },
+  photoBadge: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    backgroundColor: "rgba(7,16,31,0.82)",
+    color: "#22C55E",
+    fontSize: 10,
+    lineHeight: 15,
+    fontWeight: "800",
+    padding: 6,
+    borderRadius: 6,
+  },
   // Keep capture attached/in bounds behind the opaque header and ScrollView.
   // Outside ScrollView, Android clipping cannot remove this capture source.
   captureSource: { position: "absolute", left: 16 },
@@ -425,19 +461,14 @@ const styles = StyleSheet.create({
   },
   retryText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.4 },
   integrityCard: {
-    flexDirection: "row", gap: 6,
-  },
-  integrityHeader: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: space.sm,
-    paddingBottom: space.md,
+    gap: 6,
   },
-  technicalLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
-  passed: { fontSize: 10, fontWeight: "700", letterSpacing: 0.6 },
   integrityRow: {
-    flex: 1, minWidth: 0, backgroundColor: "#101D31", borderRadius: 10,
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: "#101D31",
+    borderRadius: 10,
     alignItems: "center",
     gap: 4,
     padding: 8,
@@ -451,8 +482,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(34,197,94,0.12)",
   },
   integrityCopy: { alignItems: "center" },
-  integrityTitle: { fontSize: 10, lineHeight: 15, fontWeight: "700", textAlign: "center" },
-  integrityBody: { marginTop: 4, fontSize: 10, lineHeight: 15, textAlign: "center" },
+  integrityTitle: {
+    fontSize: 10,
+    lineHeight: 15,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  integrityBody: {
+    marginTop: 4,
+    fontSize: 10,
+    lineHeight: 15,
+    textAlign: "center",
+  },
   actions: { flexDirection: "row", gap: space.sm },
   secondaryButton: {
     flex: 2,
