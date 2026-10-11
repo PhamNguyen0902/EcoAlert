@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  ScrollView, useWindowDimensions,
   Linking,
   StyleSheet,
   Text,
@@ -21,6 +22,7 @@ import {
   MapPin,
   ShieldAlert,
   X,
+  ZoomIn,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -31,39 +33,48 @@ import { persistOriginalFieldImage } from "../../../utils/watermark";
 import { normalizeFieldCaptureImage } from "../../../utils/fieldCaptureImage";
 import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
+import { ReportHeader } from "../components/ReportHeader";
+import { ReportProgress } from "../components/ReportProgress";
+import { FieldEvidenceMetaOverlay, useFieldReducedMotion } from "../components/stitch/FieldUI";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportCamera">;
 const MAX_LOCATION_AGE_MS = 5 * 60_000;
 
 export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const [previewWidth, setPreviewWidth] = useState(0);
+  const { width } = useWindowDimensions();
+  const previewWidth = Math.min(width - 32, 440);
   const { colors } = useReportTheme();
   const { draft, setDraft } = useFieldReport();
   const [permission, requestPermission] = useCameraPermissions();
   const [flash, setFlash] = useState<FlashMode>("off");
   const [capturing, setCapturing] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [zoom, setZoom] = useState(0);
+  const [now, setNow] = useState(Date.now());
+  const captureLock = useRef(false);
+  const reducedMotion = useFieldReducedMotion();
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const shutterScale = useRef(new Animated.Value(1)).current;
   const pressShutter = (pressed: boolean) =>
     Animated.timing(shutterScale, {
       toValue: pressed ? 0.94 : 1,
-      duration: 180,
+      duration: reducedMotion ? 0 : 120,
       useNativeDriver: true,
     }).start();
   const isFocused = useIsFocused();
   const location = draft.location;
   const locationAge = location
-    ? Date.now() - Date.parse(location.capturedAt)
+    ? now - Date.parse(location.capturedAt)
     : Number.POSITIVE_INFINITY;
   const locationReady = Boolean(
     location &&
     location.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS &&
     locationAge <= MAX_LOCATION_AGE_MS,
   );
-  const currentTime = useMemo(() => formatCaptureTimestamp(new Date()), []);
+  useEffect(() => { if (!isFocused) setCameraReady(false); }, [isFocused]);
 
   useEffect(() => {
     if (permission === null) void requestPermission();
@@ -76,8 +87,10 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const takePicture = async () => {
-    if (!cameraRef.current || capturing || !cameraReady || !locationReady)
+    if (!cameraRef.current || captureLock.current || capturing || !cameraReady || !locationReady)
       return;
+    if (!location || Date.now() - Date.parse(location.capturedAt) > MAX_LOCATION_AGE_MS) { returnToGps(); return; }
+    captureLock.current = true;
     setCapturing(true);
     setCaptureError(null);
     try {
@@ -108,6 +121,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         "Không thể chụp ảnh. Vui lòng kiểm tra Camera và thử lại.",
       );
     } finally {
+      captureLock.current = false;
       setCapturing(false);
     }
   };
@@ -205,49 +219,18 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
     );
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.topOverlay, { paddingTop: insets.top + space.sm }]}>
-        <TouchableOpacity
-          onPress={navigation.goBack}
-          style={styles.roundControl}
-          accessibilityRole="button"
-          accessibilityLabel="Đóng Camera"
-        >
-          <X size={23} color="#F8FAFC" />
-        </TouchableOpacity>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ReportHeader title="Chụp ảnh hiện trường" onBack={navigation.goBack} />
+      <ScrollView contentContainerStyle={styles.captureContent} showsVerticalScrollIndicator={false}>
+      <ReportProgress step={2} status="THẨM ĐỊNH THỰC ĐỊA" />
+      <View style={styles.stageRow}>
+        <Text style={styles.stageText}>CHỤP BAO QUÁT ĐIỂM RÁC</Text>
         <View style={styles.liveChip}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE CAM</Text>
+          <View style={[styles.liveDot, !cameraReady && { backgroundColor: "#94A3B8" }]} />
+          <Text style={styles.liveText}>{cameraReady ? "LIVE SENSOR" : "ĐANG CHUẨN BỊ"}</Text>
         </View>
-        <TouchableOpacity
-          onPress={() =>
-            setFlash((current) => (current === "off" ? "on" : "off"))
-          }
-          style={styles.roundControl}
-          accessibilityRole="button"
-          accessibilityLabel={
-            flash === "off" ? "Bật đèn flash" : "Tắt đèn flash"
-          }
-        >
-          {flash === "off" ? (
-            <FlashlightOff size={21} color="#F8FAFC" />
-          ) : (
-            <Flashlight size={21} color="#22C55E" />
-          )}
-        </TouchableOpacity>
       </View>
-      <View
-        style={styles.previewArea}
-        onLayout={({ nativeEvent: { layout } }) => {
-          // Fit the live preview between controls; this does not crop the saved photo.
-          setPreviewWidth(
-            Math.max(
-              0,
-              Math.min(320, layout.width - 32, ((layout.height - 16) * 3) / 4),
-            ),
-          );
-        }}
-      >
+      <View style={styles.previewArea}>
         <View style={[styles.previewFrame, { width: previewWidth }]}>
           {isFocused && previewWidth > 0 ? (
             <CameraView
@@ -255,6 +238,8 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
               style={StyleSheet.absoluteFill}
               facing="back"
               flash={flash}
+              zoom={zoom}
+              ratio="4:3"
               mode="picture"
               responsiveOrientationWhenOrientationLocked
               onCameraReady={() => setCameraReady(true)}
@@ -265,42 +250,31 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             />
           ) : null}
           <View pointerEvents="none" style={styles.guide}>
+            <View style={[styles.thirdVertical, { left: "33.33%" }]} />
+            <View style={[styles.thirdVertical, { left: "66.66%" }]} />
+            <View style={[styles.thirdHorizontal, { top: "33.33%" }]} />
+            <View style={[styles.thirdHorizontal, { top: "66.66%" }]} />
             <View style={[styles.corner, styles.topLeft]} />
             <View style={[styles.corner, styles.topRight]} />
             <View style={[styles.corner, styles.bottomLeft]} />
             <View style={[styles.corner, styles.bottomRight]} />
             <View style={styles.guideTextBox}>
-              <Text style={styles.guideTitle}>Đưa điểm rác vào trong khung</Text>
-              <Text style={styles.guideRatio}>3:4</Text>
+              <Text style={styles.guideTitle}>Giữ máy ổn định & chụp bao quát hiện trường</Text>
             </View>
           </View>
+          <FieldEvidenceMetaOverlay location={location} live timestamp={new Date(now).toISOString()} />
+          {capturing ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.18)" }]} /> : null}
         </View>
       </View>
-      <View
-        style={[
-          styles.bottomOverlay,
-          { paddingBottom: Math.max(insets.bottom, 12) + 8 },
-        ]}
-      >
-        <View style={styles.instruction}>
-          <Text style={styles.instructionText}>
-            Chụp rõ điểm rác và bối cảnh xung quanh
-          </Text>
-        </View>
-        <View style={styles.locationOverlay}>
-          <MapPin size={17} color="#22C55E" />
-          <View style={styles.locationCopy}>
-            <Text style={styles.address} numberOfLines={2}>
-              {location?.address}
-            </Text>
-            <Text style={styles.locationMeta}>
-              GPS ±{Math.round(location?.accuracyMeters ?? 0)}m · {currentTime}
-            </Text>
-          </View>
-        </View>
         {captureError ? (
-          <Text style={styles.captureError}>{captureError}</Text>
+          <Text style={styles.captureError} accessibilityRole="alert">{captureError}</Text>
         ) : null}
+      </ScrollView>
+      <View style={[styles.bottomOverlay, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={styles.controlPanel}>
+        <TouchableOpacity onPress={() => setFlash(current => current === "off" ? "auto" : current === "auto" ? "on" : "off")} disabled={capturing} style={styles.controlWithLabel} accessibilityRole="button" accessibilityLabel={`Đèn flash: ${flash}. Chạm để đổi chế độ`}>
+          {flash === "off" ? <FlashlightOff size={22} color="#94A3B8" /> : <Flashlight size={22} color="#F59E0B" />}<Text style={styles.controlText}>{flash.toUpperCase()}</Text>
+        </TouchableOpacity>
         <Animated.View style={{ transform: [{ scale: shutterScale }] }}>
           <TouchableOpacity
             onPress={() => void takePicture()}
@@ -322,10 +296,14 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </TouchableOpacity>
         </Animated.View>
+        <TouchableOpacity onPress={() => setZoom(current => current >= 0.2 ? 0 : current + 0.1)} disabled={capturing} style={styles.controlWithLabel} accessibilityRole="button" accessibilityLabel={`Thu phóng camera ${Math.round(zoom * 100)} phần trăm. Chạm để đổi`}>
+          <ZoomIn size={22} color="#22C55E" /><Text style={styles.controlText}>{zoom ? `${Math.round(zoom * 100)}%` : "ZOOM"}</Text>
+        </TouchableOpacity>
+        </View>
         <View style={styles.requirement}>
           <ShieldAlert size={13} color="#F59E0B" />
           <Text style={styles.requirementText}>
-            ẢNH CHỤP TRỰC TIẾP · KHÔNG DÙNG ẢNH THƯ VIỆN
+            Chụp trực tiếp từ camera • Không chấp nhận ảnh từ thư viện
           </Text>
         </View>
       </View>
@@ -335,6 +313,14 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#07101F" },
+  captureContent: { padding: 16, gap: 12, paddingBottom: 12 },
+  stageRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" },
+  stageText: { fontSize: 9, lineHeight: 14, color: "#38BDF8", fontWeight: "700" },
+  controlPanel: { alignSelf: "stretch", flexDirection: "row", justifyContent: "space-around", alignItems: "center", backgroundColor: "#101D31", padding: 8, borderRadius: 16 },
+  controlWithLabel: { minWidth: 56, minHeight: 56, alignItems: "center", justifyContent: "center", gap: 4 },
+  controlText: { color: "#CBD5E1", fontSize: 10, fontWeight: "700" },
+  thirdVertical: { position: "absolute", top: 0, bottom: 0, width: 1, backgroundColor: "rgba(255,255,255,0.16)" },
+  thirdHorizontal: { position: "absolute", left: 0, right: 0, height: 1, backgroundColor: "rgba(255,255,255,0.16)" },
   permissionScreen: {
     flex: 1,
     paddingHorizontal: space.section,
@@ -424,7 +410,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   previewArea: {
-    flex: 1,
     minHeight: 0,
     alignItems: "center",
     justifyContent: "center",
@@ -434,6 +419,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     backgroundColor: "#050D17",
+    borderWidth: 1, borderColor: "rgba(56,189,248,0.3)",
   },
   guide: {
     position: "absolute",
@@ -462,7 +448,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     right: 16,
-    bottom: 16,
+    top: 8,
     alignItems: "center",
   },
   guideTitle: {
@@ -541,7 +527,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radius.round,
-    backgroundColor: "#22C55E",
+    backgroundColor: "#F8FAFC",
     alignItems: "center",
     justifyContent: "center",
   },

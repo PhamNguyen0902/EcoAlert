@@ -4,7 +4,7 @@ import {
   civicType,
   civicStyles,
 } from "../../../theme/civicDesign";
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -21,6 +21,7 @@ import {
   RefreshCw,
   ShieldCheck,
   TriangleAlert,
+  ArrowRight, Clock3, MapPin,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -33,6 +34,10 @@ import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
+import { FieldMapPreview } from "../components/stitch/FieldMapPreview";
+import { FieldNotice } from "../components/stitch/FieldUI";
+import { fieldStyles } from "../components/stitch/fieldDesign";
+import { formatCaptureTimestamp } from "../../../utils/watermark";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportLocation">;
 
@@ -64,6 +69,8 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
     fetchLocation,
   } = useLocation();
   const requestedRef = useRef(false);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 15000); return () => clearInterval(timer); }, []);
 
   const acquireLocation = useCallback(async () => {
     const result = await fetchLocation();
@@ -102,7 +109,8 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
       : draft.location;
   const ready = Boolean(
     shownLocation?.source === "DEVICE_GPS" &&
-    shownLocation.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS,
+    shownLocation.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS &&
+    now - Date.parse(shownLocation.capturedAt) <= 5 * 60_000,
   );
   const tone = accuracyTone(shownLocation?.accuracyMeters ?? null);
   const toneColor =
@@ -141,17 +149,18 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <ReportHeader onBack={navigation.goBack} />
+      <ReportHeader title="Xác nhận vị trí" onBack={navigation.goBack} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         <ReportProgress step={1} />
         <ReportScreenIntro
-          eyebrow="XÁC MINH HIỆN TRƯỜNG"
-          title="Xác minh vị trí"
-          description="EcoAlert sử dụng vị trí thiết bị tại thời điểm chụp để tăng độ tin cậy của báo cáo."
+          eyebrow="⌖ TỌA ĐỘ THỜI GIAN THỰC"
+          title="Bạn đang ở đâu?"
+          description="EcoAlert tự động xác định vị trí thực tế để bảo đảm tính minh bạch và tin cậy của điểm phản ánh."
         />
+        <FieldMapPreview location={shownLocation} loading={loading} />
         <View
           style={[
             styles.locationCard,
@@ -206,13 +215,13 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
                       : "CHƯA CÓ VỊ TRÍ"}
               </Text>
             </View>
-            <Text style={[styles.deviceLabel, { color: colors.subtle }]}>
-              DEVICE GPS
+            <Text style={[styles.deviceLabel, { color: ready ? colors.primary : colors.accent }]}>
+              {ready && !loading ? "● Sẵn sàng" : loading ? "Đang định vị" : "Cần kiểm tra"}
             </Text>
           </View>
           <View style={styles.addressBlock}>
             <Text style={[styles.label, { color: colors.textMuted }]}>
-              VỊ TRÍ HIỆN TẠI
+              VỊ TRÍ HIỆN TẠI (GPS THIẾT BỊ)
             </Text>
             <Text style={[styles.address, { color: colors.text }]}>
               {shownLocation
@@ -233,13 +242,10 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
           <View style={[styles.metrics, { borderTopColor: colors.divider }]}>
             <View style={styles.metric}>
               <Text style={[styles.label, { color: colors.textMuted }]}>
-                TỌA ĐỘ GPS
+                THỜI GIAN ĐỊNH VỊ
               </Text>
               <Text style={[styles.coordinate, { color: colors.text }]}>
-                {shownLocation?.latitude.toFixed(6) ?? "—"}
-              </Text>
-              <Text style={[styles.coordinate, { color: colors.text }]}>
-                {shownLocation?.longitude.toFixed(6) ?? "—"}
+                {shownLocation ? formatCaptureTimestamp(new Date(shownLocation.capturedAt)).split(" ")[1] : "—"}
               </Text>
             </View>
             <View
@@ -271,6 +277,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
         </View>
+        <FieldNotice tone="amber">Vị trí được lấy trực tiếp từ thiết bị và sử dụng làm minh chứng cho báo cáo hiện trường.</FieldNotice>
         {error ? (
           <View
             style={[
@@ -308,19 +315,18 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
         ) : null}
         {!ready && shownLocation ? (
           <Text style={[styles.warningText, { color: colors.accent }]}>
-            Vị trí hiện chưa đủ chính xác. Hãy di chuyển đến nơi thoáng hơn hoặc
-            bật độ chính xác cao rồi lấy lại GPS.
+            Vị trí chưa đủ chính xác hoặc đã quá 5 phút. Hãy đến nơi thoáng hơn và lấy lại GPS.
           </Text>
         ) : null}
       </ScrollView>
       <ReportBottomActions>
         <TouchableOpacity
-          onPress={() => navigation.navigate("ReportCamera")}
+          onPress={() => { if (ready && shownLocation && Date.now() - Date.parse(shownLocation.capturedAt) <= 5 * 60_000) navigation.navigate("ReportCamera"); else void acquireLocation(); }}
           disabled={!ready || loading}
           style={[
             styles.primaryButton,
             {
-              backgroundColor: colors.primary,
+              backgroundColor: colors.cta,
               opacity: ready && !loading ? 1 : 0.45,
             },
           ]}
@@ -329,6 +335,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Camera size={18} color="#07101F" />
           <Text style={styles.primaryText}>TIẾP TỤC CHỤP ẢNH</Text>
+          <ArrowRight size={18} color="#07101F" />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => void acquireLocation()}
@@ -347,12 +354,12 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
 };
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: civicStyles.content,
+  content: fieldStyles.content,
   locationCard: {
     ...civicStyles.card,
     borderRadius: radius.major,
-    padding: space.xl,
-    gap: space.section,
+    padding: 14,
+    gap: 12,
   },
   statusRow: {
     flexDirection: "row",
@@ -373,13 +380,13 @@ const styles = StyleSheet.create({
   deviceLabel: civicType.technical,
   addressBlock: { gap: space.sm },
   label: civicType.eyebrow,
-  address: { ...civicType.title, fontSize: 22, lineHeight: 28 },
+  address: { ...civicType.title, fontSize: 18, lineHeight: 24 },
   addressDetail: civicType.body,
   metrics: {
     flexDirection: "row",
     borderTopWidth: 1,
-    paddingTop: space.lg,
-    gap: space.section,
+    paddingTop: 12,
+    gap: 12,
   },
   metric: { flex: 1, minWidth: 0, gap: space.sm },
   metricRight: {},
@@ -388,7 +395,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
   },
-  accuracy: { fontSize: 22, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  accuracy: { fontSize: 17, fontWeight: "800", fontVariant: ["tabular-nums"] },
   rating: civicType.meta,
   trustNote: { flexDirection: "row", gap: space.sm, alignItems: "flex-start" },
   trustText: { flex: 1, ...civicType.meta },
