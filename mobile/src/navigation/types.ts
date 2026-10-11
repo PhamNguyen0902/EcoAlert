@@ -10,6 +10,7 @@ export type CitizenTabParamList = {
   MapTab: undefined;
   ReportTab: { selectedLocation?: LocationSelection } | undefined;
   MyReportsTab: undefined;
+  SettingsTab: undefined;
 };
 export type ReportFlowParamList = {
   ReportLocation: undefined;
