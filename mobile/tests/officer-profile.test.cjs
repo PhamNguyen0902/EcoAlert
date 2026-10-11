@@ -134,7 +134,7 @@ function screenFixture(overrides = {}) {
   };
 }
 
-test("Officer navigation adds typed Profile while preserving Tasks, Map and RAG assistant", () => {
+test("Officer navigation preserves Tasks, Map and Profile after upstream RAG removal", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "../src/navigation/OfficerTabNavigator.tsx"),
     "utf8",
@@ -145,7 +145,6 @@ test("Officer navigation adds typed Profile while preserving Tasks, Map and RAG 
   assert.deepEqual(routes, [
     "OfficerTasksTab",
     "OfficerMapTab",
-    "OfficerAssistantTab",
     "OfficerProfileTab",
   ]);
   assert.match(source, /createBottomTabNavigator<OfficerTabParamList>/);
