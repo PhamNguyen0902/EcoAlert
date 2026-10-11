@@ -55,6 +55,9 @@ import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { ReportEvidenceImage } from "../components/ReportEvidenceImage";
 import { ZoomableImageViewer } from "../../../components/media/ZoomableImageViewer";
+import { FieldReportSummary } from "../components/stitch/FieldReportSummary";
+import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
+import { fieldStyles } from "../components/stitch/fieldDesign";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportConfirm">;
 const isBackendUrl = (value?: string): value is string =>
@@ -264,7 +267,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
           { backgroundColor: colors.background, paddingTop: insets.top },
         ]}
       >
-        <ReportHeader onBack={navigation.goBack} />
+        <ReportHeader title="Xác nhận báo cáo" onBack={navigation.goBack} />
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -275,130 +278,20 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
           <ReportScreenIntro
             eyebrow="HỒ SƠ HIỆN TRƯỜNG"
             title="Xác nhận báo cáo"
-            description="Kiểm tra thông tin và bổ sung mô tả trước khi gửi."
+            description="Kiểm tra kỹ thông tin minh chứng trước khi gửi đến đơn vị xử lý."
           />
-          <ReportEvidenceImage
-            imageUri={capture.displayLocalUri || capture.originalLocalUri}
-            fallbackUri={capture.originalLocalUri}
-            onPress={setViewerUri}
-            overlay={
-              <View style={styles.imageBadge}>
-                <CheckCircle2 size={12} color="#22C55E" />
-                <Text style={styles.imageBadgeText}>ẢNH PHÙ HỢP</Text>
-              </View>
-            }
-          />
-          <Text style={[styles.viewerHint, { color: colors.textMuted }]}>
-            Chạm để phóng to ảnh
-          </Text>
-          <View style={styles.analysisMetadata}>
-            <View style={styles.analysisField}>
-              <Text
-                style={[styles.technicalLabel, { color: colors.textMuted }]}
-              >
-                PHÂN LOẠI
-              </Text>
-              <View style={styles.analysisValueRow}>
-                {!categoryReady ? (
-                  <View
-                    style={[
-                      styles.pendingDot,
-                      { backgroundColor: colors.secondary },
-                    ]}
-                  />
-                ) : null}
-                <Text
-                  style={[
-                    styles.analysisValue,
-                    {
-                      color: categoryReady ? colors.text : colors.secondary,
-                    },
-                  ]}
-                >
-                  {categoryReady && draft.imageValidation.suggestedCategory
-                    ? getCategoryLabel(
-                        draft.imageValidation.suggestedCategory,
-                        "vi",
-                      )
-                    : draft.imageValidation.suggestedCategory === "UNCLASSIFIED"
-                      ? "Chờ cán bộ xác nhận"
-                      : "Đang hoàn tất"}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.analysisField}>
-              <Text
-                style={[styles.technicalLabel, { color: colors.textMuted }]}
-              >
-                MỨC ĐỘ
-              </Text>
-              <View style={styles.analysisValueRow}>
-                {!draft.imageValidation.severity ? (
-                  <View
-                    style={[
-                      styles.pendingDot,
-                      { backgroundColor: colors.secondary },
-                    ]}
-                  />
-                ) : null}
-                <Text style={[styles.analysisValue, { color: severityColor }]}>
-                  {draft.imageValidation.severity
-                    ? getSeverityLabel(draft.imageValidation.severity, "vi")
-                    : "Đang đánh giá"}
-                </Text>
-              </View>
-            </View>
-          </View>
-          {!categoryReady || !draft.imageValidation.severity ? (
-            <Text style={[styles.pendingNote, { color: colors.textMuted }]}>
-              Chưa có đủ kết quả phân tích bối cảnh. AI sẽ tiếp tục phân tích
-              sau khi gửi báo cáo; cán bộ sẽ xác nhận kết quả.
-            </Text>
-          ) : null}
-          {draft.imageValidation.detectedObjects.length ? (
-            <View style={styles.detectionSection}>
-              <Text
-                style={[styles.technicalLabel, { color: colors.textMuted }]}
-              >
-                PHÁT HIỆN TỪ ẢNH
-              </Text>
-              <WasteDetectionChips
-                detections={draft.imageValidation.detectedObjects}
-                showCount
-              />
-            </View>
-          ) : null}
-          <View
-            style={[styles.locationCard, { backgroundColor: colors.elevated }]}
-          >
-            <View
-              style={[styles.pinIcon, { backgroundColor: colors.greenSoft }]}
-            >
-              <MapPin size={20} color={colors.primary} />
-            </View>
-            <View style={styles.locationCopy}>
-              <Text
-                style={[styles.technicalLabel, { color: colors.textMuted }]}
-              >
-                ĐỊA ĐIỂM
-              </Text>
-              <Text style={[styles.address, { color: colors.text }]}>
-                {addressParts[0]}
-              </Text>
-              <Text
-                style={[styles.addressDetail, { color: colors.textSecondary }]}
-              >
-                {addressParts.slice(1).join(", ")}
-              </Text>
-              <View style={styles.locationMeta}>
-                <Text style={[styles.coordinate, { color: colors.textMuted }]}>
-                  {location.latitude.toFixed(6)},{" "}
-                  {location.longitude.toFixed(6)}
-                </Text>
-                <Text style={[styles.accuracy, { color: colors.primary }]}>
-                  ±{Math.round(location.accuracyMeters)}m
-                </Text>
-              </View>
+          <FieldReportSummary capture={capture} location={location} onPress={setViewerUri} />
+          <FieldAiResultCard analysis={draft.imageValidation} compact />
+          <View style={styles.descriptionSection}>
+            <Text style={[styles.technicalLabel, { color: colors.primary }]}>HIỆU CHỈNH THÔNG TIN PHẢN ÁNH</Text>
+            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>TIÊU ĐỀ SỰ CỐ</Text>
+            <TextInput value={draft.title} onChangeText={title => setDraft(current => ({ ...current, title }))} accessibilityLabel="Tiêu đề sự cố" placeholder="Nhập tiêu đề báo cáo..." placeholderTextColor={colors.textMuted}
+              style={[styles.titleInput, { color: colors.text, backgroundColor: colors.elevated, borderColor: draft.title.trim().length >= 5 ? colors.border : colors.destructive }]} />
+            {draft.title.trim().length < 5 ? <Text style={[styles.inputError, { color: colors.destructive }]}>Tiêu đề cần ít nhất 5 ký tự.</Text> : null}
+            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>PHÂN LOẠI DO AI GỢI Ý</Text>
+            <View style={styles.classificationChips}>
+              <Text style={styles.categoryChip}>{categoryReady && draft.imageValidation.suggestedCategory ? getCategoryLabel(draft.imageValidation.suggestedCategory, "vi") : "Chờ cán bộ xác nhận"}</Text>
+              <Text style={[styles.categoryChip, { color: severityColor }]}>{draft.imageValidation.severity ? getSeverityLabel(draft.imageValidation.severity, "vi") : "Chưa có đánh giá mức độ"}</Text>
             </View>
           </View>
           <View style={styles.descriptionSection}>
@@ -413,7 +306,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
                   borderColor: !validDescription
                     ? colors.destructive
                     : descriptionFocused
-                      ? colors.primary
+                      ? colors.secondary
                       : colors.border,
                 },
               ]}
@@ -428,7 +321,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
                 maxLength={500}
                 multiline
                 textAlignVertical="top"
-                placeholder="Mô tả tình trạng rác tại hiện trường…"
+                placeholder="Mô tả ngắn gọn tình trạng rác tại hiện trường..."
                 placeholderTextColor={colors.textMuted}
                 style={[styles.input, { color: colors.textSecondary }]}
                 accessibilityLabel="Mô tả hiện trường"
@@ -456,7 +349,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
               <TriangleAlert size={18} color={colors.accent} />
               <View style={styles.nearbyCopy}>
                 <Text style={[styles.nearbyTitle, { color: colors.accent }]}>
-                  Đã có báo cáo đang xử lý gần vị trí này
+                  Có báo cáo tương tự ở gần vị trí này
                 </Text>
                 <Text
                   style={[styles.nearbyName, { color: colors.text }]}
@@ -525,7 +418,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
               ) : null}
             </View>
             <Text style={[styles.ackText, { color: colors.textMuted }]}>
-              Báo cáo sẽ được gửi đến EcoAlert để tiếp nhận và xử lý.
+              Tôi xác nhận ảnh và vị trí được ghi nhận tại hiện trường.
             </Text>
           </TouchableOpacity>
           {isOffline ? (
@@ -550,7 +443,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             style={[
               styles.submitButton,
               {
-                backgroundColor: colors.primary,
+                backgroundColor: colors.cta,
                 opacity: canSubmit ? 1 : 0.45,
               },
             ]}
@@ -563,10 +456,10 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             )}
             <Text style={styles.primaryText}>
               {submitting
-                ? "ĐANG GỬI…"
+                ? "ĐANG GỬI BÁO CÁO..."
                 : isOffline
                   ? "LƯU BÁO CÁO NGOẠI TUYẾN"
-                  : "GỬI BÁO CÁO"}
+                  : "GỬI BÁO CÁO NGAY"}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -594,11 +487,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { flex: 1, minHeight: 0 },
-  content: {
-    padding: space.lg,
-    paddingBottom: space.section,
-    gap: space.section,
-  },
+  content: fieldStyles.content,
   centered: {
     flex: 1,
     alignItems: "center",
@@ -682,6 +571,9 @@ const styles = StyleSheet.create({
   },
   accuracy: { fontSize: 11, fontWeight: "700" },
   descriptionSection: { gap: space.md },
+  titleInput: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 20 },
+  classificationChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  categoryChip: { backgroundColor: "rgba(34,197,94,0.1)", color: "#4ADE80", borderRadius: 8, padding: 8, fontSize: 11, lineHeight: 16, overflow: "hidden", fontWeight: "700", flexShrink: 1 },
   inputBox: { borderWidth: 1, borderRadius: 12, padding: space.md },
   input: { minHeight: 110, fontSize: 13, lineHeight: 20, padding: 0 },
   counter: {

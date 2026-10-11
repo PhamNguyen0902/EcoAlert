@@ -1,351 +1,83 @@
-import {
-  civicSpace as space,
-  civicRadius as radius,
-  civicType,
-} from "../../../theme/civicDesign";
-import React, { useEffect, useRef } from "react";
-import {
-  Animated,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import {
-  Check,
-  ChevronRight,
-  Clock3,
-  FileText,
-  Home,
-  MapPin,
-  WifiOff,
-} from "lucide-react-native";
+import React, { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Check, ChevronRight, Copy, FileText, Home, Leaf, MapPin, WifiOff } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
-import type {
-  CitizenStackParamList,
-  ReportFlowParamList,
-} from "../../../navigation/types";
-import { useReportTheme } from "../useReportTheme";
+import type { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { CitizenStackParamList, ReportFlowParamList } from "../../../navigation/types";
 import { useAlert } from "../../../hooks/useAlerts";
-import {
-  getCategoryLabel,
-  getWorkflowStatusLabel,
-} from "../../../utils/aiAnalysis";
+import { getWorkflowStatusLabel } from "../../../utils/aiAnalysis";
+import { reportTime } from "../../../utils/citizenPresentation";
 import { useFieldReport } from "../FieldReportContext";
 import { formatAlertReference } from "../utils";
-import { ReportHeader } from "../components/ReportHeader";
+import { FieldEntrance, FieldNotice } from "../components/stitch/FieldUI";
+import { FieldProcessingTimeline } from "../components/stitch/FieldProcessingTimeline";
+import { readableFieldAddress } from "../components/stitch/fieldPresentation";
+import { fieldColors as c, fieldStyles as s } from "../components/stitch/fieldDesign";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportSuccess">;
 
 export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
-  const { colors } = useReportTheme();
   const { draft, resetDraft } = useFieldReport();
-  const successScale = useRef(new Animated.Value(0.85)).current;
-  useEffect(() => {
-    const animation = Animated.timing(successScale, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [successScale]);
   const queued = route.params?.queued === true;
-  const alertId = route.params?.alertId || draft.createdAlert?._id || "";
+  const candidateId = route.params?.alertId || draft.createdAlert?._id || "";
+  const alertId = !queued && /^[a-f0-9]{24}$/i.test(candidateId) ? candidateId : "";
   const alertQuery = useAlert(alertId);
-  const alert = draft.createdAlert ?? alertQuery.data;
-  const rootNavigation =
-    navigation.getParent<NativeStackNavigationProp<CitizenStackParamList>>();
-  const verified = alert?.status?.toUpperCase() === "VERIFIED";
-  const statusLabel = queued
-    ? "ĐÃ LƯU NGOẠI TUYẾN"
-    : verified
-      ? "ĐÃ XÁC MINH"
-      : "ĐÃ GHI NHẬN";
-
-  const goHome = () => {
-    resetDraft();
-    rootNavigation?.navigate("CitizenTabs", { screen: "DashboardTab" });
-  };
+  const alert = queued ? undefined : alertQuery.data ?? draft.createdAlert;
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const rootNavigation = navigation.getParent<NativeStackNavigationProp<CitizenStackParamList>>();
+  const goHome = () => { resetDraft(); rootNavigation?.navigate("CitizenTabs", { screen: "DashboardTab" }); };
   const viewProgress = () => {
-    if (!alertId) return;
     resetDraft();
-    rootNavigation?.navigate("AlertDetail", { id: alertId });
+    if (alertId) rootNavigation?.navigate("AlertDetail", { id: alertId });
+    else rootNavigation?.navigate("CitizenTabs", { screen: "MyReportsTab" });
   };
-
-  return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.background, paddingTop: insets.top },
-      ]}
-    >
-      <ReportHeader onBack={goHome} />
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: Math.max(insets.bottom, 16) + 16 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.hero}>
-          <Animated.View
-            style={[
-              styles.glow,
-              { transform: [{ scale: successScale }] },
-              {
-                backgroundColor: queued
-                  ? "rgba(245,158,11,0.10)"
-                  : "rgba(34,197,94,0.10)",
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.successIcon,
-                { backgroundColor: queued ? colors.accent : colors.primary },
-              ]}
-            >
-              {queued ? (
-                <WifiOff size={31} color="#07101F" />
-              ) : (
-                <Check size={34} color="#07101F" strokeWidth={3} />
-              )}
-            </View>
-          </Animated.View>
-          <Text
-            style={[
-              styles.statusChip,
-              {
-                color: queued ? colors.accent : colors.primary,
-                borderColor: queued
-                  ? "rgba(245,158,11,0.3)"
-                  : "rgba(34,197,94,0.3)",
-                backgroundColor: queued
-                  ? "rgba(245,158,11,0.08)"
-                  : "rgba(34,197,94,0.08)",
-              },
-            ]}
-          >
-            {statusLabel}
-          </Text>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {queued ? "Báo cáo đã được lưu!" : "Báo cáo đã được gửi!"}
-          </Text>
-          {alertId ? (
-            <Text style={[styles.reference, { color: colors.secondary }]}>
-              {formatAlertReference(alertId)}
-            </Text>
-          ) : null}
-          <Text style={[styles.description, { color: colors.textMuted }]}>
-            {queued
-              ? "EcoAlert sẽ tải ảnh và gửi báo cáo khi thiết bị kết nối mạng trở lại."
-              : "EcoAlert sẽ thông báo cho bạn khi trạng thái xử lý thay đổi."}
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.summaryCard,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <SummaryRow
-            label="Loại sự cố"
-            value={
-              alert?.category
-                ? getCategoryLabel(alert.category, "vi")
-                : draft.imageValidation.suggestedCategory
-                  ? getCategoryLabel(
-                      draft.imageValidation.suggestedCategory,
-                      "vi",
-                    )
-                  : "Rác thải cần kiểm tra"
-            }
-            colors={colors}
-          />
-          <SummaryRow
-            label="Địa điểm"
-            value={alert?.address || draft.location?.address || "Chưa xác định"}
-            icon={<MapPin size={14} color={colors.secondary} />}
-            colors={colors}
-          />
-          <SummaryRow
-            label="Trạng thái"
-            value={
-              queued
-                ? "Chờ kết nối để đồng bộ"
-                : alert
-                  ? getWorkflowStatusLabel(alert.status, "vi")
-                  : "Đã ghi nhận"
-            }
-            icon={
-              <Clock3
-                size={14}
-                color={queued ? colors.accent : colors.primary}
-              />
-            }
-            colors={colors}
-            last
-          />
-        </View>
-        {!queued && alertId ? (
-          <TouchableOpacity
-            onPress={viewProgress}
-            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-            accessibilityRole="button"
-          >
-            <Text style={styles.primaryText}>XEM TIẾN TRÌNH XỬ LÝ</Text>
-            <ChevronRight size={18} color="#07101F" />
-          </TouchableOpacity>
-        ) : null}
-        <TouchableOpacity
-          onPress={goHome}
-          style={[
-            styles.secondaryButton,
-            { borderColor: colors.border, backgroundColor: colors.surface },
-          ]}
-          accessibilityRole="button"
-        >
-          <Home size={17} color={colors.text} />
-          <Text style={[styles.secondaryText, { color: colors.text }]}>
-            Về trang chủ
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
-  );
+  const copyReference = async () => {
+    if (!alertId) return;
+    try { await Clipboard.setStringAsync(formatAlertReference(alertId)); setCopyState("copied"); }
+    catch { setCopyState("error"); }
+  };
+  const color = queued ? c.amber : c.primary;
+  return <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) + 16 }]} showsVerticalScrollIndicator={false}>
+      <FieldEntrance style={styles.hero}>
+        <LinearGradient colors={[queued ? "rgba(245,158,11,0.14)" : "rgba(34,197,94,0.18)", "transparent"]} style={styles.halo}>
+          <View style={[styles.emblem, { borderColor: color, shadowColor: color }]}>{queued ? <WifiOff size={38} color={color} /> : <Check size={42} color={color} strokeWidth={3} />}</View>
+          <View style={[styles.spark, { backgroundColor: color }]} />
+        </LinearGradient>
+        <Text style={styles.title}>{queued ? "Báo cáo đã được lưu trên thiết bị" : alertId ? "Báo cáo đã gửi thành công!" : "Chưa có xác nhận gửi báo cáo"}</Text>
+        <Text style={styles.description}>{queued ? "Báo cáo sẽ được đồng bộ khi thiết bị có kết nối mạng." : alertId ? "Cảm ơn bạn đã chung tay bảo vệ môi trường và xây dựng đô thị văn minh, sạch đẹp." : "Vui lòng kiểm tra trong mục Của tôi."}</Text>
+      </FieldEntrance>
+      <View style={styles.contribution}><View style={styles.leaf}><Leaf size={20} color={color} /></View><View style={{ flex: 1, gap: 4 }}><Text style={[s.title, { fontSize: 14 }]}>Cảm ơn đóng góp của bạn</Text><Text style={s.meta}>Mỗi báo cáo chính xác đều góp phần cải thiện môi trường sống.</Text></View></View>
+      <FieldEntrance style={s.card}>
+        <View style={s.row}><FileText size={15} color={c.cyan} /><Text style={[s.eyebrow, { color: c.cyan, flex: 1 }]}>HỒ SƠ ĐIỆN TỬ</Text><Text style={[s.eyebrow, { color }]}>{queued ? "CHỜ ĐỒNG BỘ" : alert ? getWorkflowStatusLabel(alert.status, "vi") : "ĐÃ GỬI"}</Text></View>
+        {alertId ? <View style={styles.referenceRow}><View style={{ flex: 1, gap: 4 }}><Text style={s.meta}>MÃ THAM CHIẾU</Text><Text style={styles.reference}>{formatAlertReference(alertId)}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Sao chép mã báo cáo" onPress={() => void copyReference()} style={styles.copyButton}><Copy size={13} color={c.cyan} /><Text style={[s.meta, { color: c.text }]}>{copyState === "copied" ? "Đã sao chép" : "Sao chép"}</Text></Pressable></View> : null}
+        {copyState === "error" ? <Text style={[s.meta, { color: c.amber }]} accessibilityRole="alert">Không thể sao chép. Vui lòng thử lại.</Text> : null}
+        <View style={{ gap: 4 }}><Text style={s.meta}>{queued ? "THỜI GIAN CHỤP" : "THỜI GIAN GỬI"}</Text><Text style={[s.body, { fontWeight: "700", color: c.text }]}>{reportTime(queued ? draft.capture?.capturedAt : alert?.createdAt)}</Text></View>
+        <View style={[s.row, { alignItems: "flex-start" }]}><MapPin size={15} color={c.primary} /><Text style={[s.body, { flex: 1 }]}>{readableFieldAddress(alert?.address || draft.location?.address)}</Text></View>
+      </FieldEntrance>
+      <FieldProcessingTimeline alert={alert} queued={queued} />
+      <FieldNotice tone={queued ? "amber" : "green"}>{queued ? "Ảnh gốc và ảnh minh chứng vẫn được giữ trên thiết bị để đồng bộ. Đây chưa phải báo cáo đã được máy chủ tiếp nhận." : "Hệ thống đã ghi nhận đóng góp của bạn cho môi trường. Bạn có thể theo dõi tiến độ trong mục Của tôi."}</FieldNotice>
+      <Pressable onPress={viewProgress} style={s.button} accessibilityRole="button"><Text style={s.buttonText}>{queued ? "XEM BÁO CÁO NGOẠI TUYẾN" : "XEM BÁO CÁO CỦA TÔI"}</Text><ChevronRight size={18} color={c.background} /></Pressable>
+      <Pressable onPress={goHome} style={styles.homeButton} accessibilityRole="button"><Home size={16} color={c.text} /><Text style={[s.buttonText, { color: c.text }]}>VỀ TRANG CHỦ</Text></Pressable>
+    </ScrollView>
+  </View>;
 };
-
-const SummaryRow = ({
-  label,
-  value,
-  icon,
-  colors,
-  last = false,
-}: {
-  label: string;
-  value: string;
-  icon?: React.ReactNode;
-  colors: { text: string; textMuted: string; border: string };
-  last?: boolean;
-}) => (
-  <View
-    style={[
-      styles.summaryRow,
-      !last && { borderBottomWidth: 1, borderBottomColor: colors.border },
-    ]}
-  >
-    <View style={styles.summaryLabelRow}>
-      {icon}
-      <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>
-        {label}
-      </Text>
-    </View>
-    <Text style={[styles.summaryValue, { color: colors.text }]}>{value}</Text>
-  </View>
-);
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: space.lg,
-    paddingTop: space.section,
-    gap: space.section,
-  },
-  hero: { alignItems: "center" },
-  glow: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.round,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  successIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.round,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statusChip: {
-    overflow: "hidden",
-    marginTop: space.section,
-    borderWidth: 0,
-    borderRadius: 8,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  title: {
-    marginTop: space.lg,
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: "800",
-    textAlign: "center",
-    letterSpacing: -0.5,
-  },
-  reference: {
-    marginTop: space.md,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  description: {
-    marginTop: space.md,
-    maxWidth: 330,
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: "center",
-  },
-  summaryCard: {
-    borderWidth: 1,
-    borderRadius: radius.card,
-    paddingHorizontal: space.lg,
-  },
-  summaryRow: { paddingVertical: space.lg },
-  summaryLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.sm,
-  },
-  summaryLabel: { fontSize: 11, fontWeight: "600" },
-  summaryValue: {
-    marginTop: space.sm,
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: "700",
-  },
-  primaryButton: {
-    minHeight: 52,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space.sm,
-  },
-  primaryText: {
-    color: "#07101F",
-    fontSize: 14,
-    fontWeight: "800",
-    letterSpacing: 0,
-  },
-  secondaryButton: {
-    minHeight: 48,
-    marginTop: -12,
-    borderWidth: 1,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space.sm,
-  },
-  secondaryText: civicType.button,
+  screen: { flex: 1, backgroundColor: c.background },
+  content: { padding: 16, gap: 16 },
+  hero: { alignItems: "center", paddingTop: 12, gap: 8 },
+  halo: { width: 126, height: 112, alignItems: "center", justifyContent: "center", borderRadius: 60 },
+  emblem: { width: 76, height: 76, borderRadius: 38, borderWidth: 2, backgroundColor: "#0D2E26", alignItems: "center", justifyContent: "center", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 12 },
+  spark: { position: "absolute", right: 24, top: 14, width: 7, height: 7, borderRadius: 4 },
+  title: { color: c.text, fontSize: 23, lineHeight: 29, fontWeight: "800", textAlign: "center" },
+  description: { ...s.body, textAlign: "center", maxWidth: 350 },
+  contribution: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(34,197,94,0.09)", borderRadius: 12, padding: 12 },
+  leaf: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18, backgroundColor: "rgba(34,197,94,0.12)" },
+  referenceRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  reference: { color: c.text, fontSize: 18, fontWeight: "800", letterSpacing: 0.8 },
+  copyButton: { minHeight: 44, paddingHorizontal: 10, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#233449" },
+  homeButton: { ...s.button, backgroundColor: c.elevated, borderWidth: 1, borderColor: c.border },
 });
