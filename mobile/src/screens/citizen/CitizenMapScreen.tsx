@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -9,7 +10,13 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { LocateFixed, MapPin, X } from "lucide-react-native";
+import {
+  LocateFixed,
+  MapPin,
+  SlidersHorizontal,
+  Navigation,
+  X,
+} from "lucide-react-native";
 import { formatDistanceToNow, isValid } from "date-fns";
 import { enUS, vi } from "date-fns/locale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -27,10 +34,16 @@ import { useLocation } from "../../hooks/useLocation";
 import { useLanguage } from "../../context/LanguageContext";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../theme/civicDesign";
-import { CitizenHeader } from "../../components/citizen/CitizenHeader";
+import {
+  CitizenSearch,
+  CitizenTopBar,
+} from "../../components/citizen/v2/CitizenUI";
+import { matchesReportSearch } from "../../utils/citizenPresentation";
+import { openGoogleMaps } from "../../utils/maps";
 import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
 import {
   getCategoryLabel,
+  getSeverityLabel,
   getWorkflowStatusLabel,
 } from "../../utils/aiAnalysis";
 import {
@@ -53,7 +66,7 @@ const FILTERS: MapFilter[] = [
 
 export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { colors } = useCivicTheme();
+  const { colors, isDark } = useCivicTheme();
   const { language } = useLanguage();
   const isVietnamese = language === "vi";
   const alertsQuery = useAlerts(1, 100);
@@ -64,6 +77,15 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
   const [mapReady, setMapReady] = useState(false);
   const [filter, setFilter] = useState<MapFilter>("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filtersVisible, setFiltersVisible] = useState(true);
+  const [mapHeight, setMapHeight] = useState(600);
+  const [overlayHeight, setOverlayHeight] = useState(180);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
   const markers = useMemo(
     () =>
       (alertsQuery.data?.items ?? []).flatMap((alert) => {
@@ -76,10 +98,15 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
     [alertsQuery.data],
   );
   const { location } = useDashboardLocation(markers[0]?.alert);
-  const currentCoordinate = toMapCoordinate(device.coords);
+  const currentCoordinate =
+    toMapCoordinate(device.coords) ??
+    (location.source === "device"
+      ? { latitude: location.latitude, longitude: location.longitude }
+      : null);
   const visibleMarkers = useMemo(
     () =>
       markers.filter((marker) => {
+        if (!matchesReportSearch(marker.alert, debouncedSearch)) return false;
         if (filter === "ALL") return true;
         if (filter === "NEARBY")
           return currentCoordinate
@@ -91,6 +118,7 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
     [
       markers,
       filter,
+      debouncedSearch,
       currentCoordinate?.latitude,
       currentCoordinate?.longitude,
     ],
@@ -102,7 +130,7 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
     ? {
         ALL: "Tất cả",
         NEARBY: "Gần tôi",
-        PENDING: "Chưa xử lý",
+        PENDING: "Chờ tiếp nhận",
         PROCESSING: "Đang xử lý",
         RESOLVED: "Đã xử lý",
       }
@@ -141,6 +169,30 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
       400,
     );
   };
+  const selectMarker = (id: string) => {
+    const marker = markers.find((item) => item.alert._id === id);
+    if (!marker) return;
+    setSelectedId(id);
+    setSearch("");
+    mapRef.current?.animateToRegion(
+      { ...marker.coordinate, latitudeDelta: 0.012, longitudeDelta: 0.012 },
+      350,
+    );
+  };
+  const markerElements = useMemo(
+    () =>
+      visibleMarkers.map(({ alert, coordinate, group }) => (
+        <Marker
+          key={alert._id}
+          coordinate={coordinate}
+          pinColor={INCIDENT_COLORS[group]}
+          tracksViewChanges={false}
+          title={alert.title}
+          onPress={() => setSelectedId(alert._id)}
+        />
+      )),
+    [visibleMarkers],
+  );
   const time =
     selected && isValid(new Date(selected.alert.createdAt))
       ? formatDistanceToNow(new Date(selected.alert.createdAt), {
@@ -160,21 +212,25 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <CitizenHeader
+      <CitizenTopBar
+        title="Gần tôi"
+        user={profile.data}
         unreadCount={unread.data ?? 0}
         onNotifications={() =>
           navigation
             .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
             ?.navigate("Notifications")
         }
-        avatarLabel={profile.data?.fullName?.charAt(0).toUpperCase() || "E"}
         onProfile={() =>
           navigation
             .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
             ?.navigate("Profile")
         }
       />
-      <View style={styles.mapArea}>
+      <View
+        style={styles.mapArea}
+        onLayout={(event) => setMapHeight(event.nativeEvent.layout.height)}
+      >
         <MapView
           ref={mapRef}
           style={StyleSheet.absoluteFill}
@@ -185,78 +241,130 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
             longitudeDelta: 0.08,
           }}
           onMapReady={() => setMapReady(true)}
-          showsUserLocation={Boolean(currentCoordinate)}
+          showsUserLocation={false}
+          userInterfaceStyle={isDark ? "dark" : "light"}
           showsMyLocationButton={false}
         >
-          {visibleMarkers.map(({ alert, coordinate, group }) => (
+          {markerElements}
+          {currentCoordinate && (
             <Marker
-              key={alert._id}
-              coordinate={coordinate}
-              pinColor={INCIDENT_COLORS[group]}
+              coordinate={currentCoordinate}
+              title="Bạn ở đây"
+              pinColor="#22C55E"
               tracksViewChanges={false}
-              onPress={() => setSelectedId(alert._id)}
             />
-          ))}
+          )}
         </MapView>
-        <View pointerEvents="box-none" style={styles.topOverlay}>
+        <View
+          pointerEvents="box-none"
+          style={styles.topOverlay}
+          onLayout={(event) =>
+            setOverlayHeight(event.nativeEvent.layout.height)
+          }
+        >
+          <CitizenSearch
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Tìm trong các báo cáo đã tải…"
+          />
           <View
             style={[
               styles.heading,
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <MapPin size={18} color={colors.primary} />
-            <View style={styles.headingCopy}>
-              <Text style={[civicType.section, { color: colors.text }]}>
-                {isVietnamese ? "Bản đồ điểm rác" : "Waste incident map"}
-              </Text>
-              <Text style={[civicType.meta, { color: colors.textMuted }]}>
-                {visibleMarkers.length}{" "}
-                {isVietnamese
-                  ? "điểm hiển thị · tối đa 100 báo cáo gần nhất"
-                  : "points shown · latest 100 reports"}
-                {filter === "NEARBY" ? " · 5 km" : ""}
-              </Text>
-            </View>
+            <Text
+              style={[civicType.meta, { color: colors.textMuted, flex: 1 }]}
+            >
+              {visibleMarkers.length}{" "}
+              {isVietnamese
+                ? "điểm hiển thị · tối đa 100 báo cáo gần nhất"
+                : "points shown · latest 100 reports"}
+              {filter === "NEARBY" ? " · 5 km" : ""}
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Hiện hoặc ẩn bộ lọc"
+              accessibilityState={{ expanded: filtersVisible }}
+              onPress={() => setFiltersVisible((value) => !value)}
+              style={civicStyles.iconButton}
+            >
+              <SlidersHorizontal size={18} color={colors.cyan} />
+            </TouchableOpacity>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filters}
-          >
-            {FILTERS.map((item) => (
-              <TouchableOpacity
-                key={item}
-                accessibilityRole="button"
-                accessibilityState={{
-                  selected: filter === item,
-                  disabled: item === "NEARBY" && device.loading,
-                }}
-                disabled={item === "NEARBY" && device.loading}
-                onPress={() =>
-                  item === "NEARBY" ? void locate(true) : setFilter(item)
-                }
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor:
-                      filter === item ? colors.primary : colors.surface,
-                    borderColor:
-                      filter === item ? colors.primary : colors.border,
-                  },
-                ]}
-              >
-                <Text
+          {filtersVisible && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filters}
+            >
+              {FILTERS.map((item) => (
+                <TouchableOpacity
+                  key={item}
+                  accessibilityRole="button"
+                  accessibilityState={{
+                    selected: filter === item,
+                    disabled: item === "NEARBY" && device.loading,
+                  }}
+                  disabled={item === "NEARBY" && device.loading}
+                  onPress={() =>
+                    item === "NEARBY" ? void locate(true) : setFilter(item)
+                  }
                   style={[
-                    styles.chipText,
-                    { color: filter === item ? "#07101F" : colors.text },
+                    styles.chip,
+                    {
+                      backgroundColor:
+                        filter === item ? colors.primary : colors.surface,
+                      borderColor:
+                        filter === item ? colors.primary : colors.border,
+                    },
                   ]}
                 >
-                  {labels[item]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      { color: filter === item ? "#07101F" : colors.text },
+                    ]}
+                  >
+                    {labels[item]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+          {debouncedSearch.trim() && !selected && visibleMarkers.length > 0 && (
+            <View
+              style={[
+                styles.searchResults,
+                { backgroundColor: colors.surface },
+              ]}
+            >
+              {visibleMarkers.slice(0, 3).map((marker) => (
+                <TouchableOpacity
+                  key={marker.alert._id}
+                  onPress={() => selectMarker(marker.alert._id)}
+                  style={styles.searchResult}
+                  accessibilityRole="button"
+                >
+                  <MapPin size={15} color={INCIDENT_COLORS[marker.group]} />
+                  <View style={styles.headingCopy}>
+                    <Text
+                      numberOfLines={1}
+                      style={[civicType.cardTitle, { color: colors.text }]}
+                    >
+                      {marker.alert.title}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[civicType.meta, { color: colors.textMuted }]}
+                    >
+                      {marker.alert.address}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           {(alertsQuery.isLoading ||
             alertsQuery.isError ||
             !visibleMarkers.length ||
@@ -328,11 +436,17 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
             )}
           </TouchableOpacity>
           {selected && (
-            <View
+            <ScrollView
               style={[
                 styles.preview,
-                { backgroundColor: colors.surface, borderColor: colors.border },
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  maxHeight: Math.max(96, mapHeight - overlayHeight - 88),
+                },
               ]}
+              contentContainerStyle={{ padding: 12, gap: 8 }}
+              showsVerticalScrollIndicator={false}
             >
               <View style={styles.previewRow}>
                 {imageUri ? (
@@ -380,6 +494,26 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
                   <Text style={[civicType.meta, { color: colors.textMuted }]}>
                     {time}
                   </Text>
+                  {currentCoordinate && (
+                    <Text style={[civicType.meta, { color: colors.cyan }]}>
+                      {(
+                        distanceMeters(currentCoordinate, selected.coordinate) /
+                        1000
+                      ).toFixed(1)}{" "}
+                      km · đường thẳng
+                    </Text>
+                  )}
+                  {selected.alert.confirmationsCount !== undefined && (
+                    <Text style={[civicType.meta, { color: colors.textMuted }]}>
+                      {selected.alert.confirmationsCount} xác nhận
+                    </Text>
+                  )}
+                  <Text style={[civicType.meta, { color: colors.textMuted }]}>
+                    {getCategoryLabel(selected.alert.category, language)} ·{" "}
+                    {selected.alert.severity
+                      ? getSeverityLabel(selected.alert.severity, language)
+                      : "Chờ đánh giá mức độ"}
+                  </Text>
                 </View>
                 <TouchableOpacity
                   accessibilityRole="button"
@@ -410,7 +544,31 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
                   {isVietnamese ? "Xem chi tiết" : "View details"}
                 </Text>
               </TouchableOpacity>
-            </View>
+              <TouchableOpacity
+                accessibilityRole="button"
+                style={[
+                  civicStyles.secondaryButton,
+                  { borderColor: colors.border },
+                ]}
+                onPress={() => {
+                  void openGoogleMaps(
+                    selected.coordinate.latitude,
+                    selected.coordinate.longitude,
+                  ).then((result) => {
+                    if (!result.success)
+                      Alert.alert(
+                        "Không mở được Google Maps",
+                        "Vui lòng thử lại.",
+                      );
+                  });
+                }}
+              >
+                <Navigation size={16} color={colors.cyan} />
+                <Text style={[civicType.button, { color: colors.cyan }]}>
+                  Chỉ đường · Google Maps
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           )}
         </View>
       </View>
@@ -425,7 +583,7 @@ const styles = StyleSheet.create({
   heading: {
     borderWidth: 1,
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 12,
     flexDirection: "row",
     gap: 10,
     alignItems: "center",
@@ -433,7 +591,7 @@ const styles = StyleSheet.create({
   headingCopy: { flex: 1, minWidth: 0, gap: 2 },
   filters: { gap: 6 },
   chip: {
-    minHeight: 38,
+    minHeight: 44,
     borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -466,9 +624,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  preview: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 12 },
+  preview: {
+    borderRadius: 18,
+    borderWidth: 1,
+    width: "100%",
+    maxWidth: 520,
+    alignSelf: "center",
+  },
   previewRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   previewCopy: { flex: 1, minWidth: 0, gap: 4 },
-  image: { width: 72, height: 96, aspectRatio: undefined, borderRadius: 10 },
+  image: { width: 64, height: 86, aspectRatio: undefined, borderRadius: 10 },
+  searchResults: { borderRadius: 16, padding: 8, gap: 4 },
+  searchResult: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 48,
+    paddingHorizontal: 8,
+  },
   imagePlaceholder: { alignItems: "center", justifyContent: "center" },
 });
