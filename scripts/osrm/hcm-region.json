@@ -1,0 +1,12 @@
+{
+  "name": "Ho Chi Minh urban service area (historical municipality) + 10 km buffer",
+  "boundaryUrl": "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/VNM/ADM1/geoBoundaries-VNM-ADM1.geojson",
+  "boundarySha256": "25dbc2fec9862016710118fc98042d3e803830c72361c91c4e864ae668fa9541",
+  "boundaryProperty": "shapeISO",
+  "boundaryValue": "VN-SG",
+  "boundaryYear": "2008",
+  "boundaryLicense": "Public Domain (geoBoundaries gbOpen VNM ADM1)",
+  "bufferMeters": 10000,
+  "metricCrs": "EPSG:32648",
+  "notes": "Operational routing footprint, not a current legal/administrative boundary. Includes the historical HCMC municipality and surrounding roads, not the entire post-2025 merged municipality."
+}

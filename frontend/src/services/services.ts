@@ -1,6 +1,5 @@
 
 import { api } from "./api";
-import axios from "axios";
 import type {
   Alert,
   CreateAlertData,
@@ -399,44 +398,9 @@ export const gisService = {
       endLat: String(end.lat),
       endLng: String(end.lng),
     });
-    try {
-      const res = await api.get(`/v1/gis/route?${params.toString()}`);
-      return res.data.data;
-    } catch (proxyError) {
-      const status = axios.isAxiosError(proxyError) ? proxyError.response?.status : undefined;
-      if (status !== 502 && status !== 504) throw proxyError;
-
-      const coordinates = `${start.lng},${start.lat};${end.lng},${end.lat}`;
-      const response = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true`,
-      );
-      if (!response.ok) throw proxyError;
-
-      const payload = await response.json() as {
-        code?: string;
-        routes?: Array<{
-          distance?: number;
-          duration?: number;
-          geometry?: { type?: string; coordinates?: [number, number][] };
-        }>;
-      };
-      const route = payload.routes?.[0];
-      if (
-        payload.code !== 'Ok' ||
-        route?.geometry?.type !== 'LineString' ||
-        !Array.isArray(route.geometry.coordinates) ||
-        !Number.isFinite(route.distance) ||
-        !Number.isFinite(route.duration)
-      ) {
-        throw proxyError;
-      }
-
-      return {
-        distanceMeters: route.distance!,
-        durationSeconds: route.duration!,
-        geometry: { type: 'LineString', coordinates: route.geometry.coordinates },
-      };
-    }
+    // All routing stays behind authenticated GIS. Never send coordinates to a public fallback.
+    const res = await api.get(`/v1/gis/route?${params.toString()}`, { timeout: 15000 });
+    return res.data.data;
   },
   // lấy danh sách sự cố xung quanh tọa độ theo bán kính mét
   getNearby: async (lng: number, lat: number, maxDistance = 5000) => {

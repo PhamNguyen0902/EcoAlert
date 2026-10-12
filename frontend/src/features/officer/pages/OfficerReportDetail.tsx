@@ -193,6 +193,7 @@ export default function OfficerReportDetail() {
   const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const routingLock = useRef(false);
   const evidenceRef = useRef<EvidenceDraft[]>([]);
 
   useEffect(() => {
@@ -260,10 +261,11 @@ export default function OfficerReportDetail() {
 
   // bắt đầu chỉ đường từ vị trí hiện tại của cán bộ đến địa điểm sự cố
   const handleStartNavigation = async () => {
-    if (!hasCoordinates || isRouting) return;
-
+    if (!hasCoordinates || routingLock.current) return;
+    routingLock.current = true;
     setIsRouting(true);
     setRouteError(null);
+    setActiveRoute(null);
     try {
       const currentLocation = await getOfficerLocation();
       setOfficerLocation(currentLocation);
@@ -273,14 +275,16 @@ export default function OfficerReportDetail() {
       });
       setActiveRoute(route);
     } catch (routeFailure) {
-      const isGeolocationFailure = routeFailure instanceof GeolocationPositionError ||
+      const isGeolocationFailure = (typeof GeolocationPositionError !== 'undefined' && routeFailure instanceof GeolocationPositionError) ||
+        (typeof routeFailure === 'object' && routeFailure !== null && 'code' in routeFailure && typeof routeFailure.code === 'number') ||
         (routeFailure instanceof Error && routeFailure.message === "GEOLOCATION_UNAVAILABLE");
       const message = isGeolocationFailure
         ? "Không thể lấy vị trí hiện tại. Vui lòng cho phép EcoAlert truy cập vị trí."
-        : "Không tìm được tuyến đường phù hợp. Vui lòng thử lại.";
+        : getApiErrorMessage(routeFailure, "Không tính được tuyến đường từ dịch vụ nội bộ. Vui lòng thử lại.");
       setRouteError(message);
       toast.error(message);
     } finally {
+      routingLock.current = false;
       setIsRouting(false);
     }
   };
@@ -1338,6 +1342,7 @@ export default function OfficerReportDetail() {
                     {formatRouteDistance(activeRoute.distanceMeters)} · khoảng {formatRouteDuration(activeRoute.durationSeconds)}
                   </p>
                   <p className="mt-1 truncate text-xs text-muted-foreground">Điểm đến: {alert.address || "Vị trí sự cố"}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">OSRM nội bộ · Tuyến ô tô, không có giao thông trực tiếp. Chưa hỗ trợ đầy đủ hạn chế riêng của xe máy.</p>
                   <Button className="mt-3" size="sm" variant="outline" onClick={handleStopNavigation}>
                     Kết thúc chỉ đường
                   </Button>

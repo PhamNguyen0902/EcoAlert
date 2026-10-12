@@ -37,6 +37,9 @@ export class GisController {
 
   // tiếp nhận yêu cầu tìm đường đi và trả về lộ trình đường bộ
   async getRoute(req: Request, res: Response) {
+    if (!['startLat', 'startLng', 'endLat', 'endLng'].every((key) =>
+      typeof req.query[key] === 'string' && (req.query[key] as string).trim() !== ''))
+      throw new BadRequestError('Valid start and end coordinates are required');
     const startLat = Number(req.query.startLat);
     const startLng = Number(req.query.startLng);
     const endLat = Number(req.query.endLat);

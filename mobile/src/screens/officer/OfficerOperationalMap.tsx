@@ -45,6 +45,7 @@ import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../utils/maps";
 import {
   filterOfficerTasks,
   getOfficerTaskState,
+  officerErrorMessage,
   type OfficerTaskFilter,
 } from "../../utils/officerWorkflow";
 import { searchOfficerTasks } from "../../utils/officerPresentation";
@@ -74,6 +75,7 @@ export function OfficerOperationalMap() {
   const [routeRequested, setRouteRequested] = useState(false);
   const [opening, setOpening] = useState(false);
   const [mapHeight, setMapHeight] = useState(0);
+  const [mapReady, setMapReady] = useState(false);
   const openingLock = useRef(false);
   const map = useRef<MapView>(null);
   const region = useRef({
@@ -124,12 +126,17 @@ export function OfficerOperationalMap() {
     reducedMotion,
   ]);
   useEffect(() => {
-    if (route.data && fresh && routeRequested)
+    if (mapReady && mapHeight > 0 && route.data && fresh && routeRequested)
       map.current?.fitToCoordinates(route.data.points, {
-        edgePadding: { top: 130, left: 40, right: 60, bottom: 70 },
+        edgePadding: {
+          top: Math.min(130, Math.round(mapHeight * 0.3)),
+          left: 24,
+          right: 48,
+          bottom: Math.min(70, Math.round(mapHeight * 0.15)),
+        },
         animated: false,
       });
-  }, [route.data, fresh, routeRequested]);
+  }, [mapReady, mapHeight, route.data, fresh, routeRequested]);
   const external = async () => {
     if (!destination || openingLock.current) return;
     openingLock.current = true;
@@ -217,7 +224,8 @@ export function OfficerOperationalMap() {
             region.current = next;
           }}
           onMapReady={() => {
-            if (destination)
+            setMapReady(true);
+            if (destination && !routeRequested)
               map.current?.animateToRegion(
                 { ...destination, latitudeDelta: 0.01, longitudeDelta: 0.01 },
                 0,
@@ -315,9 +323,9 @@ export function OfficerOperationalMap() {
             </Pressable>
           ))}
         </View>
-        {(query.isLoading || gps.pending) && (
+        {(query.isLoading || gps.pending || route.isFetching) && (
           <ActivityIndicator
-            accessibilityLabel="Đang tải bản đồ hoặc GPS"
+            accessibilityLabel="Đang tải bản đồ, GPS hoặc tuyến đường"
             style={{ position: "absolute", bottom: 16, left: 16 }}
             color={colors.primary}
           />
@@ -368,7 +376,10 @@ export function OfficerOperationalMap() {
                 {gps.error ||
                   (!fresh
                     ? "GPS đã cũ. Lấy lại GPS để tính tuyến mới."
-                    : "Chưa tính được tuyến đường. Bạn vẫn có thể mở Google Maps.")}
+                    : officerErrorMessage(
+                        route.error,
+                        "Chưa tính được tuyến đường nội bộ TP.HCM. Vui lòng thử lại.",
+                      ))}
               </Text>
             )}
             <View style={s.row}>
@@ -376,7 +387,7 @@ export function OfficerOperationalMap() {
                 <Button
                   appearance="civic"
                   size="sm"
-                  title="XEM LỘ TRÌNH"
+                  title="BẮT ĐẦU CHỈ ĐƯỜNG"
                   textStyle={{ fontSize: 11 }}
                   loading={gps.pending || route.isFetching}
                   disabled={!destination || gps.pending || route.isFetching}
@@ -390,7 +401,7 @@ export function OfficerOperationalMap() {
                   appearance="civic"
                   size="sm"
                   variant="outline"
-                  title="ĐI ĐẾN HIỆN TRƯỜNG"
+                  title="MỞ GOOGLE MAPS"
                   textStyle={{ fontSize: 11 }}
                   loading={opening}
                   disabled={!destination}
@@ -399,8 +410,10 @@ export function OfficerOperationalMap() {
               </View>
             </View>
             <Text style={[s.meta, { color: colors.textMuted }]}>
-              Xem lộ trình gửi tọa độ GPS tới dịch vụ GIS/OSRM. Chỉ đường mở
-              Google Maps; không phải điều hướng giọng nói trong app.
+              OSRM nội bộ · TP.HCM và vùng đệm 10 km. Tuyến ô tô, không có giao
+              thông trực tiếp hoặc điều hướng giọng nói. Chưa hỗ trợ đầy đủ hạn
+              chế riêng của xe máy. Google Maps chỉ mở khi bạn chủ động chọn nút
+              riêng.
             </Text>
           </>
         )}

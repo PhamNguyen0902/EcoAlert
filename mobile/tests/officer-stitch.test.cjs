@@ -182,6 +182,7 @@ const colors = {
 };
 function fixture(file, extra = {}, state = {}) {
   let index = 0;
+  const effects = [];
   const writes = [],
     navigationCalls = [];
   const navigation = {
@@ -208,6 +209,7 @@ function fixture(file, extra = {}, state = {}) {
       __esModule: true,
       default: React,
       useRef: (initial) => ({ current: initial }),
+      useEffect: (effect) => effects.push(effect),
       useState: (initial) => {
         const at = index++;
         return [
@@ -319,8 +321,136 @@ function fixture(file, extra = {}, state = {}) {
     route: { params: { id: task._id } },
     navigation,
   });
-  return { tree, all: nodes(tree), writes, navigationCalls };
+  return { tree, all: nodes(tree), writes, navigationCalls, effects };
 }
+
+test("mobile routing waits for map readiness, fits the actual points and surfaces HCMC region errors", async () => {
+  const points = [
+    { latitude: 10.7769, longitude: 106.7009 },
+    { latitude: 10.78, longitude: 106.701 },
+    { latitude: 10.84498, longitude: 106.708477 },
+  ];
+  let externalCalls = 0;
+  const fits = [];
+  const gps = {
+    position: { ...points[0], recordedAt: new Date().toISOString() },
+    pending: false,
+    error: null,
+    refresh: async () => points[0],
+  };
+  const base = {
+    "react-native-maps": {
+      __esModule: true,
+      default: "MapView",
+      Marker: "Marker",
+      Polyline: "Polyline",
+      PROVIDER_GOOGLE: "google",
+    },
+    "@react-navigation/native": {
+      useNavigation: () => ({ navigate() {} }),
+      useRoute: () => ({ params: { selectedId: task._id } }),
+    },
+    "../../hooks/useAlerts": {
+      useOfficerTasks: () => ({ data: { items: [task] } }),
+    },
+    "../../hooks/useOfficerPosition": { useOfficerPosition: () => gps },
+    "../../hooks/useForegroundScreen": {
+      useForegroundScreen: () => true,
+      useScreenClock: () => Date.now(),
+    },
+    "../../api/officerRouting": {
+      getOfficerRoute: async () => ({
+        points,
+        distanceMeters: 10117.6,
+        durationSeconds: 690.8,
+      }),
+    },
+    "../../components/officer/OfficerTaskCard": {
+      OfficerTaskCard: "OfficerTaskCard",
+    },
+    "../../components/officer/OfficerTaskFilters": {
+      OfficerTaskFilters: "OfficerTaskFilters",
+    },
+    "../../utils/maps": {
+      ...maps,
+      openGoogleMaps: async () => {
+        externalCalls++;
+        return { success: true };
+      },
+    },
+    "../../features/report/components/stitch/FieldUI": {
+      useFieldReducedMotion: () => true,
+    },
+    "lucide-react-native": Object.fromEntries(
+      ["Crosshair", "Minus", "Plus", "Search", "Flag", "RefreshCw"].map(
+        (name) => [name, name],
+      ),
+    ),
+  };
+  const rendered = (ready, route) => {
+    const effects = [];
+    let index = 0;
+    const state = { 3: true, 5: 500, 6: ready };
+    const writes = [];
+    const actual = fixture("OfficerOperationalMap", {
+      ...base,
+      "@tanstack/react-query": { useQuery: () => route },
+      react: {
+        __esModule: true,
+        default: React,
+        useState: (initial) => {
+          const at = index++;
+          return [
+            at in state ? state[at] : initial,
+            (value) => writes.push([at, value]),
+          ];
+        },
+        useRef: (initial) => ({
+          current:
+            initial === null
+              ? {
+                  fitToCoordinates: (...args) => fits.push(args),
+                  animateToRegion() {},
+                }
+              : initial,
+        }),
+        useEffect: (effect) => effects.push(effect),
+      },
+    });
+    return { ...actual, effects, writes };
+  };
+  const route = {
+    data: { points, distanceMeters: 10117.6, durationSeconds: 690.8 },
+    isFetching: false,
+  };
+  rendered(false, route).effects.at(-1)();
+  assert.equal(fits.length, 0);
+  const ready = rendered(true, route);
+  ready.effects.at(-1)();
+  assert.equal(fits.length, 1);
+  assert.equal(fits[0][0], points);
+  assert.equal(
+    ready.all.find((node) => node.type === "Polyline").props.coordinates,
+    points,
+  );
+  assert.match(JSON.stringify(ready.tree), /10\.1/);
+  await ready.all
+    .find(
+      (node) =>
+        node.type === "Button" && node.props.title === "BẮT ĐẦU CHỈ ĐƯỜNG",
+    )
+    .props.onPress();
+  assert.ok(ready.writes.some(([at, value]) => at === 3 && value === true));
+  assert.equal(externalCalls, 0);
+  const message = "Vị trí nằm ngoài vùng định tuyến TP.HCM được hỗ trợ";
+  const failed = rendered(true, {
+    data: undefined,
+    isError: true,
+    error: { response: { status: 422, data: { message } } },
+  });
+  assert.ok(JSON.stringify(failed.tree).includes(message));
+  assert.equal(failed.all.filter((node) => node.type === "Polyline").length, 0);
+});
 test("detail renders one real AI card, real notes/timeline and GPS route; crafted ownership has no action", () => {
   const actual = fixture("OfficerAlertDetailScreen");
   const ai = actual.all.filter((node) => node.type === "OverallAiAnalysisCard");
@@ -484,6 +614,17 @@ test("navigation has all nine screens, exactly three tabs, no new Citizen/Admin 
   const map = read("screens/officer/OfficerOperationalMap.tsx");
   assert.match(map, /getOfficerRoute\(gps.position!, destination!, signal\)/);
   assert.match(map, /Polyline\s+coordinates=\{route.data.points\}/);
+  const startAction = map.slice(
+    map.indexOf('title="BẮT ĐẦU CHỈ ĐƯỜNG"'),
+    map.indexOf('title="MỞ GOOGLE MAPS"'),
+  );
+  assert.match(startAction, /await gps\.refresh\(\)/);
+  assert.match(startAction, /setRouteRequested\(true\)/);
+  assert.doesNotMatch(startAction, /external\(|openGoogleMaps|Linking\./);
+  assert.doesNotMatch(
+    read("api/officerRouting.ts"),
+    /router\.project-osrm|https?:\/\//,
+  );
   assert.match(map, /Platform.OS === "android" \? PROVIDER_GOOGLE : undefined/);
   assert.doesNotMatch(map, /coordinates=\{\[.*destination/);
 });

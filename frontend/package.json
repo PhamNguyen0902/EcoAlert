@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "test": "tsx --test src/lib/gis-heatmap.test.ts src/lib/admin-incident-density.test.ts src/lib/incident-presentation.test.ts",
+    "test:routing": "tsx --test src/services/officer-routing.test.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
