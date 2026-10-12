@@ -30,10 +30,14 @@ export type CitizenStackParamList = {
 };
 export type OfficerTabParamList = {
   OfficerTasksTab: undefined;
-  OfficerMapTab: undefined;
+  OfficerMapTab: { selectedId?: string } | undefined;
   OfficerProfileTab: undefined;
 };
 export type OfficerStackParamList = {
+  OfficerTaskList: undefined;
+  OfficerGpsCheckIn: { id: string };
+  OfficerResolutionSubmitted: { id: string };
+  OfficerNotifications: undefined;
   OfficerTabs: NavigatorScreenParams<OfficerTabParamList> | undefined;
   OfficerAlertDetail: { id: string };
   OfficerResolution: { id: string };
