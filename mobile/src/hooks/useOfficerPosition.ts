@@ -34,6 +34,12 @@ export function useOfficerPosition() {
         permission: async () =>
           (await Location.requestForegroundPermissionsAsync()).granted,
         position: async () => {
+          if (
+            !alive.current ||
+            !activeRef.current ||
+            AppState.currentState !== "active"
+          )
+            throw new Error("INACTIVE");
           const fix = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Highest,
           });
@@ -73,10 +79,13 @@ export function useOfficerPosition() {
       const next = { ...gps, recordedAt };
       setPosition(next);
       return next;
-    } catch {
+    } catch (failure) {
       if (alive.current)
         setError(
-          "Chưa lấy được GPS mới. Kiểm tra quyền vị trí, ra nơi thoáng rồi thử lại.",
+          failure instanceof Error &&
+            failure.message.startsWith("Cần quyền GPS")
+            ? "Chưa cấp quyền vị trí. Mở cài đặt để cho phép GPS khi dùng ứng dụng."
+            : "Chưa lấy được GPS mới. Kiểm tra quyền vị trí, ra nơi thoáng rồi thử lại.",
         );
       return null;
     } finally {
