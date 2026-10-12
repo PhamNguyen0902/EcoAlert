@@ -142,6 +142,7 @@ export const CitizenSectionHeading = ({
           onPress={onPress}
           style={styles.sectionAction}
           accessibilityRole="button"
+          accessibilityLabel={`${action}: ${title}`}
         >
           <Text style={[civicType.meta, { color: colors.cyan }]}>{action}</Text>
           <ChevronRight size={14} color={colors.cyan} />
@@ -313,6 +314,7 @@ export const CitizenSettingsRow = ({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={[title, detail].filter(Boolean).join(". ")}
       style={styles.settingsRow}
     >
       {content}

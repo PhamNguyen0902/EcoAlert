@@ -16,6 +16,10 @@ import type {
   FieldReportLocationDraft,
 } from "../../types";
 import { fieldColors as c, fieldStyles as s } from "./fieldDesign";
+import {
+  useForegroundScreen,
+  useScreenClock,
+} from "../../../../hooks/useForegroundScreen";
 
 /** Default to reduced motion until the OS preference has been read. */
 export function useFieldReducedMotion() {
@@ -153,42 +157,78 @@ export function FieldEvidenceMetaOverlay({
   );
 }
 
+/** Keep the live clock local so each tick does not rerender the native camera. */
+export function FieldLiveEvidenceMetaOverlay({
+  location,
+  active,
+}: {
+  location?: FieldReportLocationDraft;
+  active: boolean;
+}) {
+  const now = useScreenClock(1000, active);
+  return (
+    <FieldEvidenceMetaOverlay
+      location={location}
+      live
+      timestamp={new Date(now).toISOString()}
+    />
+  );
+}
+
 /** Processing indicator only, never a fabricated progress percentage. */
 export function FieldScanLine() {
   const reduced = useFieldReducedMotion();
+  const active = useForegroundScreen();
+  const [height, setHeight] = useState(0);
   const position = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (reduced) return;
+    position.setValue(0);
+    if (reduced || !active || !height) return;
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(position, {
           toValue: 1,
           duration: 1800,
-          useNativeDriver: false,
+          useNativeDriver: true,
+          isInteraction: false,
         }),
         Animated.timing(position, {
           toValue: 0,
           duration: 1800,
-          useNativeDriver: false,
+          useNativeDriver: true,
+          isInteraction: false,
         }),
       ]),
     );
     animation.start();
     return () => animation.stop();
-  }, [position, reduced]);
+  }, [position, reduced, active, height]);
   return (
-    <Animated.View
+    <View
       pointerEvents="none"
-      style={[
-        styles.scanLine,
-        {
-          top: position.interpolate({
-            inputRange: [0, 1],
-            outputRange: ["12%", "85%"],
-          }),
-        },
-      ]}
-    />
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={StyleSheet.absoluteFill}
+      onLayout={({ nativeEvent }) => setHeight(nativeEvent.layout.height)}
+    >
+      <Animated.View
+        style={[
+          styles.scanLine,
+          {
+            top: 0,
+            transform: [
+              {
+                translateY: position.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [height * 0.12, height * 0.85],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+    </View>
   );
 }
 

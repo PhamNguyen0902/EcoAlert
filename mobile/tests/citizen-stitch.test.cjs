@@ -242,6 +242,7 @@ function fixture(screen, overrides = {}) {
     },
     "../../components/citizen/v2/CitizenUI": ui,
     "../../components/citizen/hero/HomeHero": { HomeHero: "HomeHero" },
+    "../../components/citizen/CitizenActivitySkeleton": { CitizenActivitySkeleton: "CitizenActivitySkeleton" },
     "../../components/citizen/v2/CitizenReportProgress": {
       CitizenReportProgress: "CitizenReportProgress",
     },
@@ -379,6 +380,39 @@ test("Home does not place a fake user marker at its default map center", () => {
   assert.equal(f.all("Marker").length, 0);
   assert.equal(f.find("HomeHero").props.user, null);
   assert.ok(f.text().includes("Chưa có điểm rác có tọa độ hợp lệ"));
+});
+
+test("Home activity loading retains approved hero/actions/map and API failure retries instead of creating a report", () => {
+  const loading = fixture("CitizenDashboardScreen", { query: { isLoading: true } });
+  assert.ok(loading.find("CitizenActivitySkeleton"));
+  assert.ok(loading.find("HomeHero"));
+  assert.ok(loading.find("MapView"));
+  assert.ok(loading.all("CitizenActionTile").length > 0);
+  const failed = fixture("CitizenDashboardScreen", {
+    query: { isError: true, data: { pages: [], items: [] } },
+  });
+  failed.find("Pressable", (p) => text(p.children) === "Thử lại").props.onPress();
+  assert.ok(failed.calls.includes("refetch"));
+  assert.equal(failed.calls.some((c) => Array.isArray(c) && c[0] === "ReportTab"), false);
+});
+
+test("My Reports pagination cannot cancel an in-flight refresh and search keyboard keeps card taps", () => {
+  for (const flag of ["isFetching", "isRefetching", "isFetchingNextPage"]) {
+    const f = fixture("MyReportsScreen", { query: { [flag]: true } });
+    const footer = f.find("FlatList").props.ListFooterComponent;
+    assert.equal(footer.props.disabled, true);
+    assert.equal(footer.props.accessibilityState.busy, true);
+    footer.props.onPress();
+    assert.equal(f.calls.includes("next-page"), false);
+    assert.equal(f.calls.includes("refetch"), false);
+  }
+  let options;
+  const f = fixture("MyReportsScreen", { query: { fetchNextPage: (value) => { options = value; } } });
+  const list = f.find("FlatList");
+  assert.equal(list.props.keyboardShouldPersistTaps, "handled");
+  assert.equal(list.props.keyboardDismissMode, "on-drag");
+  list.props.ListFooterComponent.props.onPress();
+  assert.equal(options.cancelRefetch, false);
 });
 test("Nearby excludes rejected/deleted/invalid coordinates and no GPS means no user marker", () => {
   const f = fixture("CitizenMapScreen", {

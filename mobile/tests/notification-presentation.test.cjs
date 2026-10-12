@@ -239,6 +239,22 @@ test("legacy and unknown presentation hide technical values without inferring un
     "info",
   );
 });
+
+test("notification pagination waits for current requests and never cancels background refetch", () => {
+  for (const flag of ["isFetching", "isRefetching", "isFetchingNextPage"]) {
+    const f = fixture({ query: { [flag]: true } });
+    const footer = f.list().props.ListFooterComponent;
+    assert.equal(footer.props.disabled, true);
+    assert.equal(footer.props.accessibilityState.busy, true);
+    footer.props.onPress();
+    assert.equal(f.calls.includes("next"), false);
+    assert.equal(f.calls.includes("refresh"), false);
+  }
+  let options;
+  const f = fixture({ query: { fetchNextPage: (value) => { options = value; } } });
+  f.list().props.ListFooterComponent.props.onPress();
+  assert.equal(options.cancelRefetch, false);
+});
 test("notification card displays localized text, type icon, unread marker and valid detail CTA", () => {
   const f = fixture(),
     card = f.card();

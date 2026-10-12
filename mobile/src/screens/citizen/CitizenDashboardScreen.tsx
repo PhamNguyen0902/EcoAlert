@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo } from "react";
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   RefreshControl,
@@ -37,6 +36,7 @@ import {
   CitizenTopBar,
 } from "../../components/citizen/v2/CitizenUI";
 import { CitizenReportCard } from "../../components/citizen/CitizenReportCard";
+import { CitizenActivitySkeleton } from "../../components/citizen/CitizenActivitySkeleton";
 import { HomeHero } from "../../components/citizen/hero/HomeHero";
 import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
@@ -69,11 +69,34 @@ export const CitizenDashboardScreen: React.FC<
     [alertsQuery.data],
   );
   const { location } = useDashboardLocation(markers[0]?.alert);
-  const recent =
-    ownReports.data?.pages
+  const mapRegion = useMemo(
+    () => ({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      latitudeDelta: 0.08,
+      longitudeDelta: 0.08,
+    }),
+    [location.latitude, location.longitude],
+  );
+  const markerElements = useMemo(
+    () => markers.map(({ alert, coordinate, group }) => (
+      <Marker
+        key={alert._id}
+        coordinate={coordinate}
+        pinColor={INCIDENT_COLORS[group]}
+        title={alert.title}
+        tracksViewChanges={false}
+      />
+    )),
+    [markers],
+  );
+  const recent = useMemo(
+    () => ownReports.data?.pages
       .flatMap((page) => page.items)
       .filter((alert) => !alert.isDeleted)
-      .slice(0, 3) ?? [];
+      .slice(0, 3) ?? [],
+    [ownReports.data],
+  );
   const parent = () =>
     navigation.getParent<NativeStackNavigationProp<CitizenStackParamList>>();
   const report = useCallback(
@@ -178,26 +201,14 @@ export const CitizenDashboardScreen: React.FC<
               provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
               style={StyleSheet.absoluteFill}
               pointerEvents="none"
-              region={{
-                ...location,
-                latitudeDelta: 0.08,
-                longitudeDelta: 0.08,
-              }}
+              region={mapRegion}
               scrollEnabled={false}
               zoomEnabled={false}
               rotateEnabled={false}
               pitchEnabled={false}
               userInterfaceStyle={isDark ? "dark" : "light"}
             >
-              {markers.map(({ alert, coordinate, group }) => (
-                <Marker
-                  key={alert._id}
-                  coordinate={coordinate}
-                  pinColor={INCIDENT_COLORS[group]}
-                  title={alert.title}
-                  tracksViewChanges={false}
-                />
-              ))}
+              {markerElements}
             </MapView>
             <View
               style={[styles.mapCaption, { backgroundColor: colors.surface }]}
@@ -255,7 +266,7 @@ export const CitizenDashboardScreen: React.FC<
             onPress={mine}
           />
           {profile && ownReports.isLoading ? (
-            <ActivityIndicator color={colors.primary} />
+            <CitizenActivitySkeleton />
           ) : recent.length ? (
             recent.map((alert) => (
               <Pressable
@@ -294,7 +305,18 @@ export const CitizenDashboardScreen: React.FC<
                     : "Đăng nhập để xem hoạt động của bạn."}
               </Text>
               <Pressable
-                onPress={profile ? report : () => parent()?.navigate("Profile")}
+                onPress={
+                  profile
+                    ? ownReports.isError
+                      ? () => void ownReports.refetch({ cancelRefetch: false })
+                      : report
+                    : () => parent()?.navigate("Profile")
+                }
+                disabled={Boolean(profile && ownReports.isRefetching)}
+                accessibilityState={{
+                  disabled: Boolean(profile && ownReports.isRefetching),
+                  busy: Boolean(profile && ownReports.isRefetching),
+                }}
                 accessibilityRole="button"
                 style={[
                   civicStyles.secondaryButton,
@@ -302,7 +324,11 @@ export const CitizenDashboardScreen: React.FC<
                 ]}
               >
                 <Text style={[civicType.button, { color: colors.primary }]}>
-                  {profile ? "Tạo báo cáo đầu tiên" : "Thông tin đăng nhập"}
+                  {profile
+                    ? ownReports.isError
+                      ? "Thử lại"
+                      : "Tạo báo cáo đầu tiên"
+                    : "Thông tin đăng nhập"}
                 </Text>
               </Pressable>
             </Card>

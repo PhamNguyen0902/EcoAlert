@@ -94,7 +94,11 @@ export const MyReportsScreen: React.FC<
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    isFetching,
   } = useCitizenReports(profile?._id);
+  const paginationBusy = Boolean(
+    isFetching || isRefetching || isFetchingNextPage,
+  );
   const alerts = useMemo(
     () =>
       profile
@@ -394,6 +398,8 @@ export const MyReportsScreen: React.FC<
         }
       />
       <FlatList
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         data={filteredAlerts}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
@@ -566,8 +572,16 @@ export const MyReportsScreen: React.FC<
           hasNextPage || isError ? (
             <TouchableOpacity
               accessibilityRole="button"
-              disabled={isFetchingNextPage}
-              onPress={() => (isError ? void refetch() : void fetchNextPage())}
+              disabled={paginationBusy}
+              accessibilityState={{
+                disabled: paginationBusy,
+                busy: paginationBusy,
+              }}
+              onPress={() => {
+                if (paginationBusy) return;
+                if (isError) void refetch({ cancelRefetch: false });
+                else void fetchNextPage({ cancelRefetch: false });
+              }}
               style={[
                 civicStyles.secondaryButton,
                 { borderColor: colors.border },

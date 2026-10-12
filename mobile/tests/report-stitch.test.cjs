@@ -40,6 +40,7 @@ const presentation = load("components/stitch/fieldPresentation.ts", {
 const rn = {
   StyleSheet: { create: (v) => v, absoluteFill: {} },
   Platform: { OS: "ios" },
+  AppState: { currentState: "active" },
   Animated: {
     View: "AnimatedView",
     Value: class {
@@ -52,6 +53,7 @@ const rn = {
       interpolate() {
         return 0;
       }
+      stopAnimation() {}
     },
     timing: () => ({ start() {}, stop() {} }),
   },
@@ -276,6 +278,10 @@ function fixture(screen, options = {}) {
       formatAlertReference: (v) => `#ECO-${v.slice(-6).toUpperCase()}`,
     },
     "../../../hooks/useLocation": { useLocation: () => locationState },
+    "../../../hooks/useForegroundScreen": {
+      useForegroundScreen: () => options.active !== false,
+      useScreenClock: () => Date.now(),
+    },
     "../../../hooks/useOfflineSync": {
       useOfflineSync: () => ({ isOffline: options.offline || false }),
     },
@@ -352,6 +358,7 @@ function fixture(screen, options = {}) {
       FieldNotice: "FieldNotice",
       FieldEntrance: "FieldEntrance",
       FieldEvidenceMetaOverlay: "FieldEvidenceMetaOverlay",
+      FieldLiveEvidenceMetaOverlay: "FieldLiveEvidenceMetaOverlay",
       FieldScanLine: "FieldScanLine",
       useFieldReducedMotion: () => true,
     },
@@ -578,6 +585,45 @@ test("camera capture errors are recoverable and never navigate to review", async
     false,
   );
 });
+
+test("inactive camera releases native view; stale async capture cannot overwrite draft or reopen review", async () => {
+  const options = { active: true };
+  const f = fixture("ReportCameraScreen", options);
+  const cleanup = f.effects[0]();
+  f.find((n) => n.type === "CameraView").props.onCameraReady();
+  f.render();
+  let resolvePhoto;
+  f.refs.find((r) => r.current === null).current = {
+    takePictureAsync: () => new Promise((resolve) => { resolvePhoto = resolve; }),
+  };
+  f.button("Chụp ảnh hiện trường").props.onPress();
+  cleanup();
+  options.active = false;
+  f.render();
+  f.effects[0]();
+  assert.equal(f.find((n) => n.type === "CameraView"), undefined);
+  // Even if the user returns before native capture finishes, it is an old session.
+  options.active = true;
+  f.render();
+  f.effects[0]();
+  resolvePhoto({ uri: "file:///late-capture.jpg" });
+  await tick();
+  assert.equal(f.draft.capture.originalLocalUri, "file:///original.jpg");
+  assert.equal(f.calls.some((c) => c[1] === "ReportPhotoReview"), false);
+  const inactive = fixture("ReportCameraScreen", { active: false });
+  assert.equal(inactive.find((n) => n.type === "CameraView"), undefined);
+});
+
+test("camera live timestamp owns its fast clock and shutter exposes busy state", () => {
+  const f = fixture("ReportCameraScreen");
+  const overlay = f.find((n) => n.type === "FieldLiveEvidenceMetaOverlay");
+  assert.equal(overlay.props.active, true);
+  assert.equal(overlay.props.location, f.draft.location);
+  assert.equal(f.button("Chụp ảnh hiện trường").props.accessibilityState.disabled, true);
+  f.find((n) => n.type === "CameraView").props.onCameraReady();
+  f.render();
+  assert.equal(f.button("Chụp ảnh hiện trường").props.accessibilityState.disabled, false);
+});
 test("photo review displays watermarked evidence without applying watermark twice", async () => {
   const f = fixture("ReportPhotoReviewScreen");
   assert.equal(
@@ -724,6 +770,9 @@ test("submit keeps GeoJSON order, evidence/GPS/AI payload and guards double subm
   await tick();
   const creates = f.calls.filter((c) => c[0] === "create");
   assert.equal(creates.length, 1);
+  f.render();
+  assert.equal(f.button("ĐANG GỬI BÁO CÁO...").props.accessibilityState.busy, true);
+  assert.equal(f.button("ĐANG GỬI BÁO CÁO...").props.disabled, true);
   const data = creates[0][1];
   assert.deepEqual(plain(data.location.coordinates), [106.775, 10.823]);
   assert.equal(data.captureMetadata.method, "LIVE_CAMERA");
@@ -745,6 +794,7 @@ test("failed submit preserves draft and shows retryable error", async () => {
   await tick();
   f.render();
   assert.match(text(f.tree), /Dữ liệu của bạn vẫn được giữ lại/);
+  assert.ok(f.find((n) => n.props?.accessibilityRole === "alert" && n.props.accessibilityLiveRegion === "polite"));
   assert.equal(f.draft.capture.originalLocalUri, "file:///original.jpg");
   assert.equal(
     f.calls.some((c) => c[1] === "ReportSuccess"),

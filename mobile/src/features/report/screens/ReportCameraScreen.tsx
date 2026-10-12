@@ -5,6 +5,7 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Animated,
   ScrollView,
   useWindowDimensions,
@@ -15,7 +16,6 @@ import {
   View,
 } from "react-native";
 import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
-import { useIsFocused } from "@react-navigation/native";
 import {
   Camera,
   Flashlight,
@@ -31,10 +31,14 @@ import { persistOriginalFieldImage } from "../../../utils/watermark";
 import { normalizeFieldCaptureImage } from "../../../utils/fieldCaptureImage";
 import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
+import {
+  useForegroundScreen,
+  useScreenClock,
+} from "../../../hooks/useForegroundScreen";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import {
-  FieldEvidenceMetaOverlay,
+  FieldLiveEvidenceMetaOverlay,
   useFieldReducedMotion,
 } from "../components/stitch/FieldUI";
 import { fieldLocationReady } from "../components/stitch/fieldPresentation";
@@ -53,13 +57,14 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [capturing, setCapturing] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [zoom, setZoom] = useState(0);
-  const [now, setNow] = useState(Date.now());
+  const isActive = useForegroundScreen();
+  // Freshness UI needs a coarse clock; the HUD owns its one-second clock.
+  const now = useScreenClock(15000, isActive);
+  const activeRef = useRef(isActive);
+  const activityEpoch = useRef(0);
+  activeRef.current = isActive;
   const captureLock = useRef(false);
   const reducedMotion = useFieldReducedMotion();
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const shutterScale = useRef(new Animated.Value(1)).current;
@@ -69,15 +74,24 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       duration: reducedMotion ? 0 : 120,
       useNativeDriver: true,
     }).start();
-  const isFocused = useIsFocused();
   const location = draft.location;
   const locationAge = location
     ? now - Date.parse(location.capturedAt)
     : Number.POSITIVE_INFINITY;
   const locationReady = fieldLocationReady(location, now);
   useEffect(() => {
-    if (!isFocused) setCameraReady(false);
-  }, [isFocused]);
+    activeRef.current = isActive;
+    if (!isActive) {
+      setCameraReady(false);
+      shutterScale.stopAnimation();
+      shutterScale.setValue(1);
+    }
+    return () => {
+      activityEpoch.current += 1;
+      activeRef.current = false;
+      shutterScale.stopAnimation();
+    };
+  }, [isActive, shutterScale]);
 
   useEffect(() => {
     if (permission === null) void requestPermission();
@@ -95,7 +109,9 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       captureLock.current ||
       capturing ||
       !cameraReady ||
-      !locationReady
+      !locationReady ||
+      !activeRef.current ||
+      AppState.currentState !== "active"
     )
       return;
     if (!fieldLocationReady(location, Date.now())) {
@@ -103,6 +119,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
     captureLock.current = true;
+    const epoch = activityEpoch.current;
     setCapturing(true);
     setCaptureError(null);
     try {
@@ -117,6 +134,12 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         normalized.uri,
         capturedAt,
       );
+      // A finished native capture must not reopen this flow after leaving it.
+      if (
+        !activeRef.current ||
+        epoch !== activityEpoch.current ||
+        AppState.currentState !== "active"
+      ) return;
       setDraft((current) => ({
         ...current,
         capture: {
@@ -129,9 +152,15 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       }));
       navigation.navigate("ReportPhotoReview");
     } catch {
-      setCaptureError(
-        "Không thể chụp ảnh. Vui lòng kiểm tra Camera và thử lại.",
-      );
+      if (
+        activeRef.current &&
+        epoch === activityEpoch.current &&
+        AppState.currentState === "active"
+      ) {
+        setCaptureError(
+          "Không thể chụp ảnh. Vui lòng kiểm tra Camera và thử lại.",
+        );
+      }
     } finally {
       captureLock.current = false;
       setCapturing(false);
@@ -254,7 +283,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         </View>
         <View style={styles.previewArea}>
           <View style={[styles.previewFrame, { width: previewWidth }]}>
-            {isFocused && previewWidth > 0 ? (
+            {isActive && previewWidth > 0 ? (
               <CameraView
                 ref={cameraRef}
                 style={StyleSheet.absoluteFill}
@@ -264,8 +293,11 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
                 ratio="4:3"
                 mode="picture"
                 responsiveOrientationWhenOrientationLocked
-                onCameraReady={() => setCameraReady(true)}
+                onCameraReady={() => {
+                  if (activeRef.current) setCameraReady(true);
+                }}
                 onMountError={() => {
+                  if (!activeRef.current) return;
                   setCameraReady(false);
                   setCaptureError("Camera không khả dụng trên thiết bị này.");
                 }}
@@ -286,10 +318,9 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               </View>
             </View>
-            <FieldEvidenceMetaOverlay
+            <FieldLiveEvidenceMetaOverlay
               location={location}
-              live
-              timestamp={new Date(now).toISOString()}
+              active={isActive}
             />
             {capturing ? (
               <View
@@ -342,6 +373,10 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
               style={[styles.shutterOuter, { opacity: cameraReady ? 1 : 0.5 }]}
               accessibilityRole="button"
               accessibilityLabel="Chụp ảnh hiện trường"
+              accessibilityState={{
+                disabled: capturing || !cameraReady,
+                busy: capturing,
+              }}
             >
               <View style={styles.shutterMiddle}>
                 <View style={styles.shutterInner}>

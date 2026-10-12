@@ -49,6 +49,9 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { data: profile } = useProfile();
   const query = useInfiniteNotifications();
+  const paginationBusy = Boolean(
+    query.isFetching || query.isRefetching || query.isFetchingNextPage,
+  );
   const unread = useUnreadNotificationCount();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
@@ -324,12 +327,16 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
           query.hasNextPage || query.isError ? (
             <TouchableOpacity
               accessibilityRole="button"
-              disabled={query.isFetchingNextPage}
-              onPress={() =>
-                query.isError
-                  ? void query.refetch()
-                  : void query.fetchNextPage()
-              }
+              disabled={paginationBusy}
+              accessibilityState={{
+                disabled: paginationBusy,
+                busy: paginationBusy,
+              }}
+              onPress={() => {
+                if (paginationBusy) return;
+                if (query.isError) void query.refetch({ cancelRefetch: false });
+                else void query.fetchNextPage({ cancelRefetch: false });
+              }}
               style={[
                 civicStyles.secondaryButton,
                 { borderColor: colors.border },

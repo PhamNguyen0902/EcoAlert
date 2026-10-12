@@ -4,13 +4,7 @@ import {
   civicType,
   civicStyles,
 } from "../../../theme/civicDesign";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -36,6 +30,10 @@ import { useReportTheme } from "../useReportTheme";
 import { ReportScreenIntro } from "../components/ReportScreenIntro";
 import { ReportBottomActions } from "../components/ReportBottomActions";
 import { useLocation } from "../../../hooks/useLocation";
+import {
+  useForegroundScreen,
+  useScreenClock,
+} from "../../../hooks/useForegroundScreen";
 import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
@@ -78,11 +76,8 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
     fetchLocation,
   } = useLocation();
   const requestedRef = useRef(false);
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 15000);
-    return () => clearInterval(timer);
-  }, []);
+  const active = useForegroundScreen();
+  const now = useScreenClock(15000, active);
 
   const acquireLocation = useCallback(async () => {
     const result = await fetchLocation();

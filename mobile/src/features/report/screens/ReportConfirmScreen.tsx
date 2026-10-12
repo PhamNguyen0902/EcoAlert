@@ -467,7 +467,11 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           ) : null}
           {submitError ? (
-            <Text style={[styles.submitError, { color: colors.destructive }]}>
+            <Text
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              style={[styles.submitError, { color: colors.destructive }]}
+            >
               {submitError}
             </Text>
           ) : null}
@@ -476,6 +480,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             onPress={() => void submit()}
             disabled={!canSubmit}
+            accessibilityState={{ disabled: !canSubmit, busy: submitting }}
             style={[
               styles.submitButton,
               {
