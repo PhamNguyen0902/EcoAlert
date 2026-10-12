@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -8,12 +9,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { AlertTriangle, ChevronRight, Filter, MapPin, ShieldCheck } from "lucide-react-native";
+import { AlertTriangle, ChevronRight, Filter, LogOut, MapPin } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Alert as Incident } from "../../types";
 import { useAlerts, useCategories } from "../../hooks/useAlerts";
+import { useLogout } from "../../hooks/useAuth";
 import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
+import { InlineBanner } from "../../components/ui/InlineBanner";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
 import { SEVERITY_COLORS, STATUS_COLORS } from "../../utils/constants";
@@ -26,6 +30,8 @@ export const AdminIncidentsScreen: React.FC<{ navigation: any }> = ({ navigation
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const { language } = useLanguage();
+  const logout = useLogout();
+  const confirmationOpen = useRef(false);
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("ALL");
   const [severity, setSeverity] = useState<(typeof SEVERITY_FILTERS)[number]>("ALL");
   const [category, setCategory] = useState("ALL");
@@ -43,12 +49,43 @@ export const AdminIncidentsScreen: React.FC<{ navigation: any }> = ({ navigation
         title: "Sự cố", subtitle: "Xem xét, phân loại và điều phối sự cố", filters: "Bộ lọc", all: "Tất cả",
         active: "Đang mở", loading: "Đang tải sự cố…", empty: "Không có sự cố phù hợp", retry: "Thử lại",
         loadMore: "Tải thêm", page: "Trang", location: "Chưa có địa chỉ", details: "Xem chi tiết",
+        logout: "Đăng xuất", loggingOut: "Đang đăng xuất...", cancel: "Hủy",
+        logoutTitle: "Đăng xuất khỏi EcoAlert?",
+        logoutBody: "Bạn sẽ cần đăng nhập lại để tiếp tục quản lý sự cố.",
+        logoutError: "Không thể đăng xuất. Vui lòng thử lại.",
       }
     : {
         title: "Incidents", subtitle: "Review, classify, and route incidents", filters: "Filters", all: "All",
         active: "Active", loading: "Loading incidents…", empty: "No incidents match these filters", retry: "Retry",
         loadMore: "Load more", page: "Page", location: "Address unavailable", details: "View details",
+        logout: "Sign out", loggingOut: "Signing out...", cancel: "Cancel",
+        logoutTitle: "Sign out of EcoAlert?",
+        logoutBody: "You will need to sign in again to continue managing incidents.",
+        logoutError: "Unable to sign out. Please try again.",
       };
+
+  const confirmLogout = () => {
+    if (logout.isPending || confirmationOpen.current) return;
+    confirmationOpen.current = true;
+    Alert.alert(copy.logoutTitle, copy.logoutBody, [
+      {
+        text: copy.cancel,
+        style: "cancel",
+        onPress: () => { confirmationOpen.current = false; },
+      },
+      {
+        text: copy.logout,
+        style: "destructive",
+        onPress: () => {
+          confirmationOpen.current = false;
+          logout.mutate();
+        },
+      },
+    ], {
+      cancelable: true,
+      onDismiss: () => { confirmationOpen.current = false; },
+    });
+  };
 
   const selectStatus = (next: (typeof STATUS_FILTERS)[number]) => { setPage(1); setStatus(next); };
   const selectSeverity = (next: (typeof SEVERITY_FILTERS)[number]) => { setPage(1); setSeverity(next); };
@@ -104,7 +141,21 @@ export const AdminIncidentsScreen: React.FC<{ navigation: any }> = ({ navigation
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>{copy.subtitle}</Text>
         </View>
         <View style={[styles.filterIcon, { backgroundColor: isDark ? "rgba(124,58,237,0.30)" : "#F3E8FF" }]}><Filter size={19} color="#7C3AED" /></View>
+        <Button
+          title={logout.isPending ? copy.loggingOut : copy.logout}
+          variant="destructive"
+          size="sm"
+          style={{ marginLeft: 8, minHeight: 44 }}
+          textStyle={{ fontSize: 12 }}
+          loading={logout.isPending}
+          disabled={logout.isPending}
+          onPress={confirmLogout}
+          accessibilityLabel={copy.logout}
+          accessibilityState={{ disabled: logout.isPending, busy: logout.isPending }}
+          icon={<LogOut size={16} color="#FFFFFF" style={{ marginRight: 6 }} />}
+        />
       </View>
+      {logout.isError && <InlineBanner type="error" message={copy.logoutError} />}
       <FlatList
         data={rows}
         keyExtractor={(item) => item._id}
