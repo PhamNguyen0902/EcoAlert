@@ -28,10 +28,11 @@ import {
   filterOfficerTasks,
 } from "../../utils/officerWorkflow";
 import { getGeoJsonMapCoordinates } from "../../utils/maps";
+import { OfficerOperationalMap } from "./OfficerOperationalMap";
 
 type MapScreenProps = { mode?: "admin" | "officer" };
 
-export const OfficerMapScreen: React.FC<MapScreenProps> = ({
+const LegacyOfficerMapScreen: React.FC<MapScreenProps> = ({
   mode = "officer",
 }) => {
   const navigation =
@@ -225,3 +226,13 @@ const styles = StyleSheet.create({
   calloutStatus: { fontSize: 11, fontWeight: "600", marginTop: 2 },
   calloutCta: { fontSize: 11, fontWeight: "700", marginTop: 4 },
 });
+
+// Keep the existing shared Admin map branch intact; Officer presentation is isolated.
+export const OfficerMapScreen: React.FC<MapScreenProps> = ({
+  mode = "officer",
+}) =>
+  mode === "admin" ? (
+    <LegacyOfficerMapScreen mode="admin" />
+  ) : (
+    <OfficerOperationalMap />
+  );
