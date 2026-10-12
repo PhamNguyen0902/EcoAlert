@@ -42,6 +42,7 @@ import { getNotificationAlertId } from "../../utils/notificationNavigation";
 import { notificationPresentation } from "../../utils/notificationPresentation";
 
 type Props = NativeStackScreenProps<CitizenStackParamList, "Notifications">;
+// màn hình danh sách thông báo về tiến độ xử lý sự cố gửi đến người dân
 export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
   const { colors } = useCivicTheme();
   const { language } = useLanguage();
@@ -62,6 +63,7 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
     () => query.data?.pages.flatMap((page) => page.items) ?? [],
     [query.data],
   );
+  // hiển thị thông báo lỗi khi không thể cập nhật trạng thái thông báo
   const showError = () =>
     Alert.alert(
       isVietnamese
@@ -71,6 +73,7 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
         ? "Vui lòng kiểm tra kết nối và thử lại."
         : "Check your connection and try again.",
     );
+  // đánh dấu thông báo đã đọc và mở màn hình chi tiết sự cố liên quan
   const openItem = async (item: NotificationItem) => {
     if (opening.current) return;
     opening.current = true;
@@ -84,6 +87,7 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
       opening.current = false;
     }
   };
+  // đánh dấu tất cả thông báo hiện có là đã đọc
   const markAllRead = async () => {
     try {
       await markAll.mutateAsync();
@@ -91,6 +95,7 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
       showError();
     }
   };
+  // hiển thị hộp thoại xác nhận và xóa một thông báo cụ thể
   const deleteItem = (item: NotificationItem) =>
     Alert.alert(
       isVietnamese ? "Xóa thông báo này?" : "Delete this notification?",
@@ -106,6 +111,7 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
         },
       ],
     );
+  // hiển thị từng phần tử thông báo kèm mốc thời gian tương đối
   const renderItem = ({ item }: { item: NotificationItem }) => {
     const content = notificationPresentation(item);
     const tone =

@@ -59,7 +59,7 @@ import {
 } from "../../utils/aiAnalysis";
 import { format } from "date-fns";
 import { enUS, vi } from "date-fns/locale";
-
+// trích xuất thông báo lỗi từ phản hồi máy chủ hoặc dùng thông báo mặc định
 const getRequestErrorMessage = (error: unknown, fallback: string): string => {
   const requestError = error as {
     response?: { data?: { message?: string } };
@@ -69,7 +69,7 @@ const getRequestErrorMessage = (error: unknown, fallback: string): string => {
     requestError.response?.data?.message || requestError.message || fallback
   );
 };
-
+// màn hình chi tiết sự cố hiển thị tiến độ, phân tích ai, bằng chứng và phản hồi từ cán bộ
 export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
   navigation,
@@ -396,7 +396,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Workflow and AI badges */}
+        {/*huy hiệu trạng thái quy trình xử lý và đánh giá từ ai*/}
         <View style={styles.badgesRow}>
           {aiState === "COMPLETED" ? (
             <>
@@ -450,12 +450,12 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           ) : null}
         </View>
 
-        {/* Title & Description */}
+        {/* tiêu đề và nội dung mô tả chi tiết sự cố */}
         <Text style={[styles.title, { color: colors.text }]}>
           {alert.title}
         </Text>
 
-        {/* Close Incident Action Banner for Admin */}
+        {/* thanh thông báo đóng sự cố dành cho quản trị viên */}
         {canClose ? (
           <Card appearance="civic" style={styles.closeCard}>
             <View style={styles.closeHeader}>
@@ -509,7 +509,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           </Card>
         ) : null}
 
-        {/* Restore Banner if soft-deleted (Admin) */}
+        {/* thanh thông báo khôi phục sự cố nếu đã bị xóa tạm thời */}
         {alert.isDeleted && isAdmin ? (
           <View
             style={[
@@ -659,7 +659,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           </Card>
         ) : null}
 
-        {/* Photos Gallery */}
+        {/* bộ sưu tập hình ảnh và bằng chứng hiện trường */}
         {evidencePhotoUrls.length > 0 ? (
           <View style={styles.sectionBox}>
             <Text style={[styles.sectionHeading, { color: colors.text }]}>
@@ -681,7 +681,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           <WasteDetectionEvidence key={evidence.imageUrl} evidence={evidence} />
         ))}
 
-        {/* Location Map */}
+        {/* bản đồ vị trí gắn thẻ sự cố */}
         <View style={styles.sectionBox}>
           <Text style={[styles.sectionHeading, { color: colors.text }]}>
             {pageCopy.location}
@@ -720,7 +720,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           </Card>
         </View>
 
-        {/* Officer Response / Verification Note */}
+        {/* phản hồi và kết quả xử lý từ cán bộ môi trường */}
         {alert.officerNote ? (
           <Card appearance="civic" style={styles.officerNoteCard}>
             <View style={styles.officerHeader}>
@@ -740,7 +740,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
           </Card>
         ) : null}
 
-        {/* Report Metadata */}
+        {/* siêu dữ liệu thời gian tạo và cập nhật báo cáo */}
         <Card appearance="civic" style={styles.metaCard}>
           <View style={styles.metaRow}>
             <Calendar size={16} color={colors.textMuted} />

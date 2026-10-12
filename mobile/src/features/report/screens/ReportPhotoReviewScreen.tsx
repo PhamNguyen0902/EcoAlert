@@ -41,7 +41,7 @@ import { fieldStyles } from "../components/stitch/fieldDesign";
 import { fieldIntegrity } from "../components/stitch/fieldPresentation";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportPhotoReview">;
-
+// màn hình bước ba xem lại ảnh hiện trường và kiểm tra tính toàn vẹn dữ liệu
 export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
@@ -54,7 +54,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   );
   const [rendering, setRendering] = useState(false);
   const [watermarkError, setWatermarkError] = useState<string | null>(null);
-
+  // định dạng thông tin watermark gồm tọa độ, địa chỉ, thời gian và nhãn tác nghiệp
   const watermark = useMemo(
     () =>
       formatWatermarkData(
@@ -77,7 +77,6 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const integrity = fieldIntegrity(capture, location);
   const integrityCount =
     Number(integrity.camera) + Number(integrity.gps) + Number(integrity.time);
-
   const renderDisplayImage = useCallback(async () => {
     if (
       !capture ||
@@ -113,7 +112,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
       setRendering(false);
     }
   }, [capture, rendering, setDraft]);
-
+  // xóa ảnh hiện tại trong bản nháp và quay lại camera để chụp lại
   const retake = () => {
     setDraft((current) => ({
       ...current,
@@ -155,7 +154,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      {/* Keep the existing watermark rendition dimensions independent of UI framing. */}
+      {/* giữ kích thước hiển thị đóng dấu watermark độc lập với khung giao diện */}
       <View
         style={[
           styles.captureSource,
@@ -313,6 +312,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+          // xác nhận sử dụng ảnh này và chuyển sang bước kiểm tra nhận diện ai
             onPress={() => navigation.navigate("ReportImageValidation")}
             disabled={
               integrityCount !== 3 ||
@@ -341,7 +341,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 };
-
+// hiển thị từng dòng kiểm tra tính toàn vẹn của dữ liệu hiện trường
 const IntegrityRow = ({
   title,
   body,
@@ -390,8 +390,8 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 6,
   },
-  // Keep capture attached/in bounds behind the opaque header and ScrollView.
-  // Outside ScrollView, Android clipping cannot remove this capture source.
+  // giữ ảnh chụp gắn liền trong khung nền phía sau thanh tiêu đề và danh sách cuộn
+  // ngoài danh sách cuộn thì cơ chế cắt giao diện trên android không làm mất nguồn ảnh này
   captureSource: { position: "absolute", left: 16 },
   previewWatermark: { maxHeight: "30%", overflow: "hidden", padding: space.sm },
   viewerHint: {

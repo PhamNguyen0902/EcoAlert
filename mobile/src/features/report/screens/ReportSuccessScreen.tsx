@@ -36,7 +36,7 @@ import {
 } from "../components/stitch/fieldDesign";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportSuccess">;
-
+// màn hình bước sáu hiển thị kết quả gửi báo cáo thành công hoặc đã lưu ngoại tuyến
 export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { draft, resetDraft } = useFieldReport();
@@ -59,6 +59,7 @@ export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
     resetDraft();
     rootNavigation?.navigate("CitizenTabs", { screen: "DashboardTab" });
   };
+  // dọn sạch bản nháp và điều hướng đến màn hình chi tiết sự cố vừa tạo
   const viewProgress = () => {
     resetDraft();
     if (alertId) rootNavigation?.navigate("AlertDetail", { id: alertId });

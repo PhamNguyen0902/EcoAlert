@@ -11,7 +11,7 @@ import { FieldReportProvider } from "./FieldReportContext";
 
 const Stack = createNativeStackNavigator<ReportFlowParamList>();
 
-/** Full-screen citizen reporting flow, with shared draft state across steps. */
+// luồng điều hướng báo cáo toàn màn hình dành cho người dân
 export const ReportFlowNavigator = () => (
   <FieldReportProvider>
     <Stack.Navigator

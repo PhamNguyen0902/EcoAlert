@@ -63,7 +63,7 @@ const FILTERS: MapFilter[] = [
   "PROCESSING",
   "RESOLVED",
 ];
-
+// màn hình bản đồ tương tác hiển thị các điểm nóng sự cố môi trường
 export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useCivicTheme();
@@ -142,7 +142,7 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
         RESOLVED: "Resolved",
       };
 
-  // Passive cached locations can resolve after native MapView has mounted.
+  // định vị vị trí trong bộ nhớ đệm sau khi bản đồ gốc đã gắn kết thành công
   useEffect(() => {
     if (mapReady && !currentCoordinate) {
       mapRef.current?.animateToRegion(
@@ -157,12 +157,12 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
     currentCoordinate?.latitude,
     currentCoordinate?.longitude,
   ]);
-
+  // lấy tọa độ gps tức thời và di chuyển tâm bản đồ về vị trí người dùng
   const locate = async (nearby: boolean) => {
     if (device.loading) return;
     const result = await device.fetchLocation();
     const coordinate = toMapCoordinate(result?.coords);
-    if (!coordinate) return; // Incidents remain visible if GPS is denied/unavailable.
+    if (!coordinate) return; // sự cố vẫn hiển thị bình thường nếu quyền gps bị từ chối hoặc không khả dụng
     if (nearby) setFilter("NEARBY");
     mapRef.current?.animateToRegion(
       { ...coordinate, latitudeDelta: 0.045, longitudeDelta: 0.045 },

@@ -117,7 +117,7 @@ export const CitizenTabNavigator = () => (
     <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
     <Stack.Screen name="Profile" component={CitizenProfileScreen} />
     <Stack.Screen name="Notifications" component={CitizenNotificationsScreen} />
-    {/* Kept for legacy/admin-compatible navigation. Field reporting no longer exposes manual relocation. */}
+    {/* giữ lại để tương thích điều hướng cũ hoặc quản trị viên, luồng báo cáo hiện trường không cho phép tự chọn lại vị trí thủ công */}
     <Stack.Screen name="LocationPicker" component={LocationPickerScreen} />
   </Stack.Navigator>
 );

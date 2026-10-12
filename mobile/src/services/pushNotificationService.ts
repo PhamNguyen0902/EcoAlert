@@ -4,7 +4,7 @@ import Constants from "expo-constants";
 import { api } from "../api/client";
 import { getNotificationAlertId } from "../utils/notificationNavigation";
 
-// Configure how notifications are handled when the app is in foreground
+// cấu hình cách hiển thị thông báo khi ứng dụng đang chạy ở chế độ nền trước
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -16,9 +16,7 @@ Notifications.setNotificationHandler({
 });
 
 export const pushNotificationService = {
-  /**
-   * Request notification permissions and register device Push Token with backend
-   */
+  // yêu cầu cấp quyền nhận thông báo và đăng ký mã đẩy thiết bị với máy chủ
   registerForPushNotifications: async (): Promise<string | null> => {
     try {
       if (Platform.OS === "android") {
@@ -40,12 +38,11 @@ export const pushNotificationService = {
       }
 
       if (finalStatus !== "granted") {
-        if (__DEV__)
-          console.log("[PushNotifications] Permission not granted.");
+        if (__DEV__) console.log("[PushNotifications] Permission not granted.");
         return null;
       }
 
-      // Get Expo Push Token safely
+      // lấy mã đẩy thiết bị an toàn từ dịch vụ expo
       let token: string | null = null;
       try {
         const projectId =
@@ -64,7 +61,7 @@ export const pushNotificationService = {
         return null;
       }
 
-      // Save token to backend user profile
+      // lưu mã đẩy thiết bị vào thông tin tài khoản người dùng trên máy chủ
       if (token) {
         try {
           await api.patch("/v1/users/profile", { pushToken: token });

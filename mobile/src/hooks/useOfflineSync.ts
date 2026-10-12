@@ -4,18 +4,20 @@ import { useQueryClient } from "@tanstack/react-query";
 import { offlineQueue, OfflineReportDraft } from "../utils/offlineQueue";
 import { alertService } from "../api/alertService";
 
+// hook quản lý trạng thái kết nối mạng và quy trình đồng bộ dữ liệu ngoại tuyến
 export function useOfflineSync() {
   const [isConnected, setIsConnected] = useState<boolean | null>(true);
   const [offlineDrafts, setOfflineDrafts] = useState<OfflineReportDraft[]>([]);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const queryClient = useQueryClient();
 
+  // nạp danh sách bản nháp từ bộ nhớ bảo mật vào trạng thái ứng dụng
   const loadDrafts = useCallback(async () => {
     const drafts = await offlineQueue.getOfflineDrafts();
     setOfflineDrafts(drafts);
   }, []);
 
-  // Synchronize drafts with backend
+  // đồng bộ các bản nháp ngoại tuyến lên máy chủ qua api tạo báo cáo
   const syncOfflineDrafts = useCallback(async () => {
     const currentDrafts = await offlineQueue.getOfflineDrafts();
     if (currentDrafts.length === 0) return { successCount: 0, errorCount: 0 };
@@ -26,11 +28,11 @@ export function useOfflineSync() {
 
     for (const draft of currentDrafts) {
       try {
-        // Legacy drafts only have localMediaUris. Field-capture drafts preserve
-        // the original/display relationship explicitly so AI still uses original.
+        // bản nháp cũ chỉ có mảng ảnh cục bộ, bản nháp hiện trường giữ riêng liên kết giữa ảnh gốc và ảnh hiển thị để ai dùng ảnh gốc
         const originalLocalUri = draft.originalLocalUri || draft.localMediaUris[0];
         if (!originalLocalUri) throw new Error("Offline draft has no original evidence image");
 
+        // tải ảnh cục bộ lên máy chủ nếu đường dẫn chưa phải là liên kết mạng
         const uploadLocalImage = async (localUri: string, fileName: string): Promise<string> => {
           if (localUri.startsWith("http://") || localUri.startsWith("https://")) {
             return localUri;
@@ -47,7 +49,7 @@ export function useOfflineSync() {
           try {
             displayUploadedUrl = await uploadLocalImage(draft.displayLocalUri, `offline_display_${draft.id}.jpg`);
           } catch (displayError) {
-            // Original evidence remains sufficient for AI/report creation.
+            // bằng chứng ảnh gốc vẫn đủ điều kiện để ai xử lý và tạo báo cáo
             console.warn(`[OfflineSync] Display evidence upload failed for ${draft.id}:`, displayError);
           }
         }
@@ -60,7 +62,8 @@ export function useOfflineSync() {
                 uploadLocalImage(localUri, `offline_${draft.id}_${index + 1}.jpg`),
               )),
             ];
-        // Submit alert to backend
+
+        // gửi dữ liệu báo cáo lên máy chủ
         await alertService.createAlert({
           title: draft.title,
           description: draft.description,
@@ -81,7 +84,7 @@ export function useOfflineSync() {
           isAnonymous: draft.isAnonymous,
         });
 
-        // Remove successfully synced draft from offline storage
+        // xóa bản nháp đã đồng bộ thành công khỏi bộ nhớ ngoại tuyến
         await offlineQueue.removeOfflineDraft(draft.id);
         successCount++;
       } catch (err) {
@@ -100,7 +103,7 @@ export function useOfflineSync() {
     return { successCount, errorCount };
   }, [loadDrafts, queryClient]);
 
-  // Subscribe to network changes
+  // lắng nghe sự thay đổi trạng thái kết nối mạng
   useEffect(() => {
     void loadDrafts();
 
@@ -108,7 +111,7 @@ export function useOfflineSync() {
       const online = Boolean(state.isConnected && state.isInternetReachable !== false);
       setIsConnected(online);
 
-      // Auto-sync when coming back online
+      // tự động đồng bộ khi thiết bị có kết nối mạng trở lại
       if (online && !isSyncing) {
         void syncOfflineDrafts();
       }

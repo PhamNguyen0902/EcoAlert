@@ -48,6 +48,7 @@ import {
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportLocation">;
 
+// đánh giá mức độ tin cậy của sai số gps theo khoảng cách mét
 const accuracyTone = (accuracy: number | null) =>
   accuracy === null
     ? "missing"
@@ -58,7 +59,7 @@ const accuracyTone = (accuracy: number | null) =>
         : accuracy <= 50
           ? "acceptable"
           : "weak";
-
+// màn hình bước một xác minh vị trí gps hiện trường của thiết bị
 export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
@@ -78,7 +79,6 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
   const requestedRef = useRef(false);
   const active = useForegroundScreen();
   const now = useScreenClock(15000, active);
-
   const acquireLocation = useCallback(async () => {
     const result = await fetchLocation();
     if (!result?.coords || result.accuracyMeters === null) return;
@@ -95,7 +95,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
       },
     }));
   }, [fetchLocation, setDraft]);
-
+  // tự động kích hoạt lấy vị trí gps khi vào màn hình nếu bản nháp chưa có dữ liệu vị trí
   useEffect(() => {
     if (!draft.location && !requestedRef.current) {
       requestedRef.current = true;
@@ -342,6 +342,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
         ) : null}
       </ScrollView>
       <ReportBottomActions>
+        {/* kiểm tra vị trí gps hợp lệ trước khi cho phép chuyển sang bước chụp ảnh */}
         <TouchableOpacity
           onPress={() => {
             if (
@@ -368,6 +369,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
           <ArrowRight size={18} color="#07101F" />
         </TouchableOpacity>
         <TouchableOpacity
+          // thử lấy lại vị trí gps nếu độ chính xác chưa đạt yêu cầu
           onPress={() => void acquireLocation()}
           disabled={loading}
           style={styles.textButton}

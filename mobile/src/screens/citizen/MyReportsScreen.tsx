@@ -57,7 +57,7 @@ import { useOfflineSync } from "../../hooks/useOfflineSync";
 import { CloudUpload, RefreshCw } from "lucide-react-native";
 import { matchesMyReportFilter } from "../../utils/citizenIncidents";
 import type { MyReportFilter } from "../../utils/citizenIncidents";
-
+// màn hình danh sách các báo cáo do chính người dân tạo và quản lý
 export const MyReportsScreen: React.FC<
   BottomTabScreenProps<CitizenTabParamList, "MyReportsTab">
 > = ({ navigation }) => {
@@ -76,7 +76,7 @@ export const MyReportsScreen: React.FC<
   const { offlineCount, isSyncing, syncOfflineDrafts, isOffline } =
     useOfflineSync();
   const deleteAlertMutation = useDeleteAlert();
-
+  // đồng bộ toàn bộ bản nháp báo cáo đã lưu ngoại tuyến lên máy chủ khi có mạng
   const handleSyncOffline = async () => {
     const res = await syncOfflineDrafts();
     RNAlert.alert(
@@ -112,6 +112,7 @@ export const MyReportsScreen: React.FC<
         : [],
     [data, profile],
   );
+  // lọc danh sách báo cáo theo tab tất cả, đang xử lý hoặc đã xử lý
   const filteredAlerts = useMemo(
     () =>
       alerts.filter(
@@ -149,7 +150,6 @@ export const MyReportsScreen: React.FC<
           PROCESSING: "In progress",
           RESOLVED: "Resolved",
         };
-
   const handleDelete = (item: AlertItem) => {
     RNAlert.alert(
       t("myReports.deleteTitle", "Delete Report"),

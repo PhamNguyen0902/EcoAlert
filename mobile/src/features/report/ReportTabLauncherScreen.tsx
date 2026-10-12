@@ -11,7 +11,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 type Props = BottomTabScreenProps<CitizenTabParamList, "ReportTab">;
 
-/** Opens the full-screen flow while keeping Dashboard selected behind it. */
+// mở luồng báo cáo toàn màn hình và giữ tab trang chủ được chọn ở phía sau
 export const ReportTabLauncherScreen: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme();
   const launchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,7 +40,6 @@ export const ReportTabLauncherScreen: React.FC<Props> = ({ navigation }) => {
       }, 0);
     }, [navigation]),
   );
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ActivityIndicator color={colors.primary} />

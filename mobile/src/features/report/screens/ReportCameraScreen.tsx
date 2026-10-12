@@ -45,7 +45,7 @@ import { fieldLocationReady } from "../components/stitch/fieldPresentation";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportCamera">;
 const MAX_LOCATION_AGE_MS = 5 * 60_000;
-
+// màn hình bước hai chụp ảnh trực tiếp tại hiện trường bằng camera
 export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -68,6 +68,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [captureError, setCaptureError] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const shutterScale = useRef(new Animated.Value(1)).current;
+  // hiệu ứng hoạt họa thu nhỏ nút chụp khi người dùng bấm
   const pressShutter = (pressed: boolean) =>
     Animated.timing(shutterScale, {
       toValue: pressed ? 0.94 : 1,
@@ -92,17 +93,16 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       shutterScale.stopAnimation();
     };
   }, [isActive, shutterScale]);
-
   useEffect(() => {
     if (permission === null) void requestPermission();
   }, [permission, requestPermission]);
-
+  // quay lại màn hình xác minh vị trí khi dữ liệu gps đã quá hạn thời gian
   const returnToGps = () => {
     if (locationAge > MAX_LOCATION_AGE_MS)
       setDraft((current) => ({ ...current, location: undefined }));
     navigation.navigate("ReportLocation");
   };
-
+  // chụp ảnh trực tiếp từ camera, chuẩn hóa kích thước và lưu trữ ảnh gốc vào bộ nhớ an toàn
   const takePicture = async () => {
     if (
       !cameraRef.current ||
@@ -150,6 +150,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         },
         imageValidation: { state: "IDLE", detectedObjects: [] },
       }));
+      // chuyển sang màn hình xem lại và đóng dấu ảnh
       navigation.navigate("ReportPhotoReview");
     } catch {
       if (
