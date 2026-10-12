@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Leaf, LogOut, Mail, ShieldCheck } from "lucide-react-native";
+import { LogOut, Mail, ShieldCheck } from "lucide-react-native";
 import { useProfile, useLogout } from "../../hooks/useAuth";
 import { useAssignedServiceAreas } from "../../hooks/useServiceAreas";
 import { useLanguage } from "../../context/LanguageContext";
@@ -9,6 +9,8 @@ import { useCivicTheme } from "../../theme/useCivicTheme";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { InlineBanner } from "../../components/ui/InlineBanner";
+import { OfficerHeader } from "../../components/officer/OfficerUI";
+import { OfficerProfileTools } from "../../components/officer/OfficerProfileTools";
 import {
   civicRadius as radius,
   civicSpace as space,
@@ -111,20 +113,7 @@ export const OfficerProfileScreen: React.FC = () => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: colors.surface,
-            borderBottomColor: colors.divider,
-          },
-        ]}
-      >
-        <Leaf size={22} color={colors.primary} />
-        <Text style={[civicType.section, { color: colors.text }]}>
-          EcoAlert
-        </Text>
-      </View>
+      <OfficerHeader title="Cá nhân" />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -136,16 +125,17 @@ export const OfficerProfileScreen: React.FC = () => {
           >
             {copy.title}
           </Text>
-          <Text style={[civicType.body, { color: colors.textMuted }]}>
-            {copy.subtitle}
-          </Text>
         </View>
 
         <Card appearance="civic" style={styles.profileCard}>
           <View style={[styles.avatar, { backgroundColor: colors.greenSoft }]}>
-            <Text style={[styles.initials, { color: colors.primary }]}>
-              {initials}
-            </Text>
+            {profile?.avatar ? (
+              <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+            ) : (
+              <Text style={[styles.initials, { color: colors.primary }]}>
+                {initials}
+              </Text>
+            )}
           </View>
           <View style={styles.profileCopy}>
             <Text style={[civicType.eyebrow, { color: colors.textMuted }]}>
@@ -157,8 +147,20 @@ export const OfficerProfileScreen: React.FC = () => {
             <Text style={[civicType.body, { color: colors.textMuted }]}>
               {profile?.email || "—"}
             </Text>
+            <Text style={[civicType.meta, { color: colors.primary }]}>
+              {copy.role}
+            </Text>
+            <Text style={[civicType.meta, { color: colors.textMuted }]}>
+              {areas.data?.pages
+                .flatMap((page) => page.items)
+                .slice(0, 2)
+                .map((area) => area.name)
+                .join(" · ") || "Khu vực phân công xem bên dưới"}
+            </Text>
           </View>
         </Card>
+
+        <OfficerProfileTools />
 
         <Card appearance="civic" style={styles.details}>
           <View style={styles.detailRow}>
@@ -263,7 +265,13 @@ export const OfficerProfileScreen: React.FC = () => {
         <Button
           appearance="civic"
           variant="destructive"
-          title={logout.isPending ? copy.loggingOut : copy.logout}
+          title={
+            logout.isPending
+              ? copy.loggingOut
+              : language === "vi"
+                ? "ĐĂNG XUẤT TÀI KHOẢN CÔNG VỤ"
+                : copy.logout
+          }
           loading={logout.isPending}
           disabled={logout.isPending}
           onPress={confirmLogout}
@@ -289,18 +297,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: space.sm,
   },
-  content: civicStyles.content,
+  content: { ...civicStyles.content, gap: 16 },
   heading: { gap: space.sm },
-  profileCard: { flexDirection: "row", alignItems: "center", gap: space.md },
+  profileCard: { alignItems: "center", gap: space.md, paddingVertical: 24 },
   avatar: {
-    width: 56,
-    height: 56,
+    width: 76,
+    height: 76,
     borderRadius: radius.round,
     alignItems: "center",
     justifyContent: "center",
   },
   initials: { fontSize: 22, fontWeight: "800" },
-  profileCopy: { flex: 1, minWidth: 0, gap: space.xs },
+  profileCopy: { minWidth: 0, gap: space.xs, alignItems: "center" },
   details: { gap: space.lg },
   detailRow: { flexDirection: "row", alignItems: "center", gap: space.md },
   detailCopy: { flex: 1, minWidth: 0, gap: space.xs },

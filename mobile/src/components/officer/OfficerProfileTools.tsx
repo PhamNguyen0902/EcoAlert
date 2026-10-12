@@ -19,6 +19,7 @@ import {
 import { officerDate } from "../../utils/officerPresentation";
 import { Button } from "../ui/Button";
 import { OfficerCard, OfficerMetric, officerStyles as s } from "./OfficerUI";
+import appConfig from "../../../app.json";
 export function OfficerProfileTools() {
   const { colors, isDark, setThemeMode } = useCivicTheme();
   const query = useOfficerTasks(1, 100, undefined, { allPages: true });
@@ -219,6 +220,9 @@ export function OfficerProfileTools() {
         <Text style={[s.meta, { color: colors.textMuted }]}>
           GPS chỉ được lấy khi thao tác; không tự theo dõi nền. Quyền thông báo
           phụ thuộc hệ điều hành và bản dựng ứng dụng.
+        </Text>
+        <Text style={[s.meta, { color: colors.textMuted }]}>
+          EcoAlert Mobile · Phiên bản {appConfig.expo.version}
         </Text>
       </OfficerCard>
     </View>
