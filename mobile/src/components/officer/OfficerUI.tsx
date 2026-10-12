@@ -24,6 +24,7 @@ import { useProfile } from "../../hooks/useAuth";
 import { useUnreadNotificationCount } from "../../hooks/useNotifications";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicType } from "../../theme/civicDesign";
+import { unreadBadgeLabel } from "../../utils/notificationNavigation";
 
 export const officerStyles = StyleSheet.create({
   screen: { flex: 1 },
@@ -100,7 +101,13 @@ export function OfficerHeader({
         accessibilityLabel={`Thông báo${unread.data ? `, ${unread.data} chưa đọc` : ""}`}
       >
         <Bell size={20} color={colors.textMuted} />
-        {Boolean(unread.data) && <View style={styles.dot} />}
+        {Boolean(unread.data) && (
+          <View style={styles.dot}>
+            <Text style={styles.unreadCount}>
+              {unreadBadgeLabel(unread.data || 0)}
+            </Text>
+          </View>
+        )}
       </Pressable>
       <Pressable
         disabled={disabled}
@@ -280,13 +287,17 @@ const styles = StyleSheet.create({
   },
   dot: {
     position: "absolute",
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#4ADE80",
-    right: 9,
-    top: 9,
+    right: 1,
+    top: 3,
   },
+  unreadCount: { fontSize: 8, fontWeight: "800", color: "#07101F" },
   badge: {
     alignSelf: "flex-start",
     paddingHorizontal: 8,

@@ -14,14 +14,14 @@ Baseline: feature/mobile-field-capture at 41f4595. Mobile TypeScript passes; 174
 ## Nine-screen reference checklist
 
 1. Dashboard: compact field header, real greeting, contour hero/three counts, prominent priority task, filters/list, actual timestamp activity.
-2. List: scoped search, status pills, rich photo cards, real count statistics; evidence shortcut only after own verified check-in.
+2. List: scoped search, status pills, rich photo cards, real count statistics; floating map shortcut never bypasses evidence prerequisites.
 3. Detail: evidence first, incident summary, exactly one overall AI card, map, six-stage timeline, notes, state-gated action.
 4. Map: native full-height map, status/search controls, own position, actual OSRM route, selected-task sheet, functional recenter/zoom/destination controls. Admin branch unchanged.
 5. GPS: dedicated map/status/metadata/guidance; fresh confirmation GPS, server verified result, explicit permission/error/retry.
 6. Resolution: before/after comparison, original camera/review/retake, existing required summary/treatment/equipment/notes, duplicate-safe submission.
 7. Submitted: success only for own server RESOLVED/CLOSED task; real receipt/evidence, pending Admin review (not CLOSED).
 8. Profile: actual identity, work counts, areas/pagination, theme/permissions, existing confirmed logout.
-9. Notifications: paginated localized real notifications, unread/read/important filters, mark read/all, validated alertId Officer route only.
+9. Notifications: paginated localized real notifications, all/unread/read filters, mark read/all, validated alertId Officer route only.
 
 ## Native QA required
 

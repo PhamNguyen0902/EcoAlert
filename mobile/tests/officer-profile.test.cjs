@@ -108,6 +108,10 @@ function screenFixture(overrides = {}) {
     "../../components/ui/Card": { Card: "Card" },
     "../../components/ui/Button": { Button: "Button" },
     "../../components/ui/InlineBanner": { InlineBanner: "InlineBanner" },
+    "../../components/officer/OfficerUI": { OfficerHeader: "OfficerHeader" },
+    "../../components/officer/OfficerProfileTools": {
+      OfficerProfileTools: "OfficerProfileTools",
+    },
     "../../theme/civicDesign": {
       civicRadius: { round: 999 },
       civicSpace: { lg: 16, md: 12, sm: 8, xs: 4 },
@@ -195,7 +199,8 @@ test("assigned areas use actual API names, support errors/loading/pagination and
       (n) => n.type === "Button" && n.props.title === "Xem thêm khu vực",
     ),
   );
-  assert.equal(screen.button.props.title, "Đăng xuất");
+  assert.equal(screen.button.props.title, "ĐĂNG XUẤT TÀI KHOẢN CÔNG VỤ");
+  assert.equal(screen.button.props.accessibilityLabel, "Đăng xuất");
   assert.match(
     text(screenFixture({ areas: { isPending: true } }).tree),
     /Đang tải khu vực/,

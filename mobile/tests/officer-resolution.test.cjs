@@ -180,7 +180,7 @@ test("double submit while upload pending makes only one upload/resolve call", as
   assert.equal(uploads, 1);
   assert.equal(resolves, 1);
 });
-test("active officer evidence uses native camera only, review/retake and in-content CTA", () => {
+test("active officer evidence uses native camera only, review/retake and a non-overlapping action footer", () => {
   const detail = read("screens/officer/OfficerAlertDetailScreen.tsx");
   const screen = read("screens/officer/OfficerResolutionScreen.tsx");
   const camera = read("screens/officer/OfficerResolutionCamera.tsx");
@@ -199,8 +199,14 @@ test("active officer evidence uses native camera only, review/retake and in-cont
   assert.match(screen, /submittingRef/);
   assert.match(
     screen,
-    /<Button[^>]*title="GỬI KẾT QUẢ XỬ LÝ"[\s\S]*?<\/ScrollView>/,
+    /<\/ScrollView>\s*<View[^>]*paddingBottom:[\s\S]*?<Button[^>]*title="GỬI KẾT QUẢ ĐỂ NGHIỆM THU"/,
   );
+  assert.match(screen, /KeyboardAvoidingView/);
+  assert.match(
+    screen,
+    /disabled=\{!allowed \|\| !photoConfirmed \|\| submitted\}/,
+  );
+  assert.match(screen, /OfficerEvidenceComparison/);
   assert.match(detail, /ẢNH HIỆN TRƯỜNG · TRƯỚC XỬ LÝ/);
   assert.match(detail, /SAU XỬ LÝ/);
   assert.match(detail, /EvidenceImageFrame/);
