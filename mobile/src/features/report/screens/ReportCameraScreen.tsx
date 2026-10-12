@@ -34,7 +34,7 @@ import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportCamera">;
 const MAX_LOCATION_AGE_MS = 5 * 60_000;
-
+// màn hình bước hai chụp ảnh trực tiếp tại hiện trường bằng camera
 export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [previewWidth, setPreviewWidth] = useState(0);
@@ -47,6 +47,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [captureError, setCaptureError] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const shutterScale = useRef(new Animated.Value(1)).current;
+  // hiệu ứng hoạt họa thu nhỏ nút chụp khi người dùng bấm
   const pressShutter = (pressed: boolean) =>
     Animated.timing(shutterScale, {
       toValue: pressed ? 0.94 : 1,
@@ -58,23 +59,24 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const locationAge = location
     ? Date.now() - Date.parse(location.capturedAt)
     : Number.POSITIVE_INFINITY;
+  // kiểm tra tọa độ gps có sẵn sàng, độ chính xác đạt chuẩn và thời gian ghi nhận không quá năm phút
   const locationReady = Boolean(
     location &&
     location.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS &&
     locationAge <= MAX_LOCATION_AGE_MS,
   );
   const currentTime = useMemo(() => formatCaptureTimestamp(new Date()), []);
-
+// tự động yêu cầu cấp quyền sử dụng camera nếu ứng dụng chưa có quyền
   useEffect(() => {
     if (permission === null) void requestPermission();
   }, [permission, requestPermission]);
-
+  // quay lại màn hình xác minh vị trí khi dữ liệu gps đã quá hạn thời gian
   const returnToGps = () => {
     if (locationAge > MAX_LOCATION_AGE_MS)
       setDraft((current) => ({ ...current, location: undefined }));
     navigation.navigate("ReportLocation");
   };
-
+  // chụp ảnh trực tiếp từ camera, chuẩn hóa kích thước và lưu trữ ảnh gốc vào bộ nhớ an toàn
   const takePicture = async () => {
     if (!cameraRef.current || capturing || !cameraReady || !locationReady)
       return;
@@ -102,6 +104,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         },
         imageValidation: { state: "IDLE", detectedObjects: [] },
       }));
+      // chuyển sang màn hình xem lại và đóng dấu ảnh
       navigation.navigate("ReportPhotoReview");
     } catch {
       setCaptureError(
@@ -239,7 +242,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       <View
         style={styles.previewArea}
         onLayout={({ nativeEvent: { layout } }) => {
-          // Fit the live preview between controls; this does not crop the saved photo.
+          // điều chỉnh chế độ xem trước trực tiếp giữa các nút điều khiển, không cắt ảnh gốc đã lưu
           setPreviewWidth(
             Math.max(
               0,
@@ -270,7 +273,9 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             <View style={[styles.corner, styles.bottomLeft]} />
             <View style={[styles.corner, styles.bottomRight]} />
             <View style={styles.guideTextBox}>
-              <Text style={styles.guideTitle}>Đưa điểm rác vào trong khung</Text>
+              <Text style={styles.guideTitle}>
+                Đưa điểm rác vào trong khung
+              </Text>
               <Text style={styles.guideRatio}>3:4</Text>
             </View>
           </View>

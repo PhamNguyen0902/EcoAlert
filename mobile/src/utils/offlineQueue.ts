@@ -10,11 +10,11 @@ export interface OfflineReportDraft {
     type: "Point";
     coordinates: [number, number]; // [longitude, latitude]
   };
-  // Kept for legacy drafts created before field-capture evidence was split.
+ // giữ lại cho các bản nháp cũ được tạo trước khi tách riêng bằng chứng chụp hiện trường
   localMediaUris: string[];
   originalLocalUri?: string;
   displayLocalUri?: string;
-  // Optional so drafts created by previous app versions remain syncable.
+  // trường tùy chọn để các bản nháp từ phiên bản ứng dụng cũ vẫn có thể đồng bộ bình thường
   captureMetadata?: CaptureMetadata;
   imageValidation?: ImageValidation;
   category?: AlertCategory;
@@ -25,9 +25,7 @@ export interface OfflineReportDraft {
 const OFFLINE_QUEUE_KEY = "ecoalert_offline_incident_drafts_v1";
 
 export const offlineQueue = {
-  /**
-   * Retrieves all saved offline report drafts from secure storage
-   */
+  // lấy toàn bộ danh sách bản nháp báo cáo ngoại tuyến từ bộ nhớ bảo mật
   getOfflineDrafts: async (): Promise<OfflineReportDraft[]> => {
     try {
       const data = await SecureStore.getItemAsync(OFFLINE_QUEUE_KEY);
@@ -39,9 +37,7 @@ export const offlineQueue = {
     }
   },
 
-  /**
-   * Saves a new report draft to the offline queue
-   */
+  // lưu bản nháp báo cáo mới vào hàng đợi ngoại tuyến
   saveOfflineDraft: async (
     draftInput: Omit<OfflineReportDraft, "id" | "createdAt">,
   ): Promise<OfflineReportDraft> => {
@@ -57,9 +53,7 @@ export const offlineQueue = {
     return newDraft;
   },
 
-  /**
-   * Removes a specific draft from the queue after successful upload
-   */
+ // xóa một bản nháp cụ thể khỏi hàng đợi sau khi đã tải lên thành công
   removeOfflineDraft: async (id: string): Promise<void> => {
     const existing = await offlineQueue.getOfflineDrafts();
     const updated = existing.filter((item) => item.id !== id);
@@ -67,9 +61,7 @@ export const offlineQueue = {
     console.log("[OfflineQueue] Removed draft:", id);
   },
 
-  /**
-   * Clears all offline drafts
-   */
+  // xóa sạch toàn bộ bản nháp trong hàng đợi ngoại tuyến
   clearOfflineDrafts: async (): Promise<void> => {
     await SecureStore.deleteItemAsync(OFFLINE_QUEUE_KEY);
     console.log("[OfflineQueue] Cleared offline queue.");

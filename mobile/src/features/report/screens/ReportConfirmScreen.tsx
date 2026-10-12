@@ -59,7 +59,7 @@ import { ZoomableImageViewer } from "../../../components/media/ZoomableImageView
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportConfirm">;
 const isBackendUrl = (value?: string): value is string =>
   Boolean(value && /^https?:\/\//i.test(value));
-
+// màn hình bước năm xác nhận thông tin, kiểm tra trùng lặp và gửi báo cáo
 export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
@@ -75,6 +75,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   const [viewerUri, setViewerUri] = useState<string | null>(null);
   const location = draft.location;
   const capture = draft.capture;
+  // kiểm tra các sự cố môi trường đã tồn tại xung quanh vị trí hiện tại trong bán kính hai trăm mét
   const nearby = useCheckNearbyAlerts(
     location?.latitude,
     location?.longitude,
@@ -83,6 +84,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
 
   const validDescription =
     draft.description.trim().length >= 10 && draft.description.length <= 500;
+  // kiểm tra toàn bộ điều kiện hợp lệ gồm gps, ảnh, kiểm định ai, độ dài mô tả và xác nhận trước khi cho phép gửi
   const canSubmit = Boolean(
     location &&
     location.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS &&
@@ -93,7 +95,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
     acknowledged &&
     !submitting,
   );
-
+  // chụp lại ảnh nếu muốn thay đổi bằng chứng hiện trường
   const retake = () => {
     setDraft((current) => ({
       ...current,
@@ -102,10 +104,12 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
     }));
     navigation.navigate("ReportCamera");
   };
+  // mở xem chi tiết sự cố lân cận đã tồn tại để tránh gửi trùng
   const viewNearby = (id: string) =>
     navigation
       .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
       ?.navigate("AlertDetail", { id });
+  // xác nhận sự cố lân cận đã có sẵn thay vì tạo báo cáo mới
   const confirmExisting = async (id: string) => {
     try {
       await confirmAlert.mutateAsync(id);
@@ -114,12 +118,13 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
       setSubmitError("Không thể xác nhận báo cáo gần đó. Vui lòng thử lại.");
     }
   };
-
+  // gửi báo cáo lên máy chủ nếu có mạng hoặc lưu vào hàng đợi ngoại tuyến nếu mất mạng
   const submit = async () => {
     if (!canSubmit || !location || !capture || submittingRef.current) return;
     submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
+    // đóng gói siêu dữ liệu bằng chứng hiện trường gồm phương thức chụp trực tiếp, mốc thời gian và sai số gps
     const captureMetadata = {
       method: "LIVE_CAMERA" as const,
       capturedAt: capture.capturedAt,
@@ -156,6 +161,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
           "image/jpeg",
         );
       if (!isBackendUrl(originalUrl)) throw new Error("ORIGINAL_UPLOAD_FAILED");
+      // tải ảnh hiển thị có watermark lên máy chủ để phục vụ công tác giám sát trực quan
       let displayUrl = capture.displayUploadedUrl;
       if (capture.displayLocalUri && !isBackendUrl(displayUrl)) {
         try {
@@ -248,7 +254,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
         : draft.imageValidation.severity?.toLowerCase() === "high"
           ? colors.accent
           : colors.secondary;
-  // UNCLASSIFIED is a real API outcome, not a completed category or a made-up default.
+  // chưa phân loại là kết quả hợp lệ từ máy chủ, không phải danh mục hoàn tất hay giá trị mặc định
   const categoryReady = Boolean(
     draft.imageValidation.suggestedCategory &&
     draft.imageValidation.suggestedCategory !== "UNCLASSIFIED",

@@ -61,13 +61,13 @@ const PROCESSING_STATUSES = new Set([
 ]);
 const COMPLETED_STATUSES = new Set(["RESOLVED", "CLOSED"]);
 const INACTIVE_STATUSES = new Set(["RESOLVED", "CLOSED", "REJECTED"]);
-
+// lấy tên hiển thị ngắn gọn từ họ tên người dùng
 const displayName = (fullName?: string): string => {
   const normalized = fullName?.trim();
   if (!normalized) return "EcoAlert";
   return normalized.split(/\s+/).at(-1) ?? normalized;
 };
-
+// màn hình trang chủ người dân hiển thị tổng quan, thống kê và sự cố gần đây
 export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useCivicTheme();
@@ -145,7 +145,7 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
           officer: "Officer",
           unassigned: "Awaiting assignment",
         };
-
+  // tính toán thống kê số lượng báo cáo tổng, đang xử lý và đã hoàn thành
   const stats = useMemo(() => {
     let processing = 0;
     let completed = 0;
@@ -160,14 +160,14 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
       completed,
     };
   }, [alerts, alertsQuery.data?.total]);
-
+  // lọc danh sách các báo cáo đang hoạt động để hiển thị nhanh
   const activeReports = useMemo(() => {
     const active = alerts.filter(
       (alert) => !INACTIVE_STATUSES.has(alert.status?.toUpperCase()),
     );
     return (active.length ? active : alerts).slice(0, 3);
   }, [alerts]);
-
+  // lọc các báo cáo có tọa độ hợp lệ để hiển thị trên bản đồ thu nhỏ
   const mappableAlerts = useMemo(
     () =>
       alerts
@@ -178,11 +178,12 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
         .slice(0, 12),
     [alerts],
   );
-
+  // mở màn hình chi tiết sự cố theo mã định danh
   const openAlert = (id: string) =>
     navigation
       .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
       ?.navigate("AlertDetail", { id });
+  // làm mới dữ liệu danh sách sự cố khi kéo vuốt màn hình
   const refresh = async () => {
     setRefreshing(true);
     try {
@@ -191,7 +192,7 @@ export const CitizenDashboardScreen: React.FC<Props> = ({ navigation }) => {
       setRefreshing(false);
     }
   };
-
+  // hiển thị thẻ tóm tắt sự cố kèm huy hiệu trạng thái và ảnh bằng chứng
   const renderReport = (alert: AlertItem) => {
     const statusKey = alert.status?.toUpperCase() || "PENDING";
     const palette =

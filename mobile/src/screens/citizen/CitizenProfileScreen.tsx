@@ -28,7 +28,7 @@ import type {
   CitizenStackParamList,
   RootStackParamList,
 } from "../../navigation/types";
-
+// màn hình thông tin cá nhân và quản lý phiên đăng nhập của người dân
 export const CitizenProfileScreen: React.FC<
   NativeStackScreenProps<CitizenStackParamList, "Profile">
 > = ({ navigation }) => {
@@ -67,13 +67,13 @@ export const CitizenProfileScreen: React.FC<
             "You will need to sign in again to submit and track reports.",
           cancel: "Cancel",
         };
-
+  // điều hướng đến màn hình đăng nhập nếu đang ở chế độ khách vãng lai
   const openLogin = () => {
     navigation
       .getParent<NativeStackNavigationProp<RootStackParamList>>()
       ?.navigate("Login");
   };
-
+  // hiển thị cảnh báo xác nhận và thực hiện đăng xuất tài khoản
   const confirmLogout = () => {
     Alert.alert(copy.logoutTitle, copy.logoutBody, [
       { text: copy.cancel, style: "cancel" },
