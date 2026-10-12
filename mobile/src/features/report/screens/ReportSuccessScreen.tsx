@@ -41,12 +41,13 @@ import { formatAlertReference } from "../utils";
 import { ReportHeader } from "../components/ReportHeader";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportSuccess">;
-
+// màn hình bước sáu hiển thị kết quả gửi báo cáo thành công hoặc đã lưu ngoại tuyến
 export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
   const { draft, resetDraft } = useFieldReport();
   const successScale = useRef(new Animated.Value(0.85)).current;
+  // tạo hiệu ứng phóng to biểu tượng dấu tích khi vào màn hình thành công
   useEffect(() => {
     const animation = Animated.timing(successScale, {
       toValue: 1,
@@ -68,11 +69,12 @@ export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
     : verified
       ? "ĐÃ XÁC MINH"
       : "ĐÃ GHI NHẬN";
-
+  // dọn sạch bản nháp và quay về trang chủ người dân
   const goHome = () => {
     resetDraft();
     rootNavigation?.navigate("CitizenTabs", { screen: "DashboardTab" });
   };
+  // dọn sạch bản nháp và điều hướng đến màn hình chi tiết sự cố vừa tạo
   const viewProgress = () => {
     if (!alertId) return;
     resetDraft();

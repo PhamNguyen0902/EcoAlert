@@ -49,13 +49,15 @@ type Props = NativeStackScreenProps<
   ReportFlowParamList,
   "ReportImageValidation"
 >;
-
+// kiểm tra đường dẫn ảnh đã được tải lên máy chủ hay chưa
 const isBackendUrl = (value?: string): value is string =>
   Boolean(value && /^https?:\/\//i.test(value));
+// trích xuất danh mục sự cố từ kết quả phân tích ngữ nghĩa ai
 const categoryFromSemantic = (
   value: AlertCategory | null,
 ): AlertCategory | null => value ?? null;
 
+// màn hình bước bốn phân tích ảnh bằng ai và kiểm định tính hợp lệ của sự cố
 export const ReportImageValidationScreen: React.FC<Props> = ({
   navigation,
 }) => {
@@ -68,6 +70,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
   const capture = draft.capture;
   const requiresManualReview =
     draft.imageValidation.backendValidation?.decision === "UNCERTAIN";
+  // trích xuất danh sách bounding box các vật thể rác thải được mô hình nhận diện
   const imageDetections = useMemo(
     () =>
       draft.imageValidation.state === "VALID"
@@ -79,9 +82,10 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         : [],
     [draft.imageValidation.state, draft.imageValidation.detectedObjects],
   );
-
+  // tải ảnh lên máy chủ, gọi mô hình vision nhận diện rác thải và kiểm tra ngữ nghĩa trước khi gửi
   const analyze = useCallback(async () => {
     if (!capture || runningRef.current) return;
+    // nếu mất kết nối mạng thì tạm dừng kiểm tra và thông báo người dân cần có mạng
     if (isOffline) {
       setDraft((current) => ({
         ...current,
@@ -104,6 +108,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
     }));
     try {
       let originalUploadedUrl = capture.originalUploadedUrl;
+      // kiểm tra và tải ảnh gốc lên máy chủ nếu ảnh chưa có đường dẫn mạng
       if (!isBackendUrl(originalUploadedUrl)) {
         originalUploadedUrl = await alertService.uploadMedia(
           capture.originalLocalUri,
@@ -125,7 +130,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
             : current,
         );
       }
-
+      // gửi ảnh sang mô hình yolo để phát hiện các đối tượng rác thải
       const vision =
         await alertService.analyzeUploadedImage(originalUploadedUrl);
       if (vision.status === "error") throw new Error("VISION_UNAVAILABLE");
@@ -156,7 +161,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         }));
         return;
       }
-
+      // gửi ảnh và ngữ cảnh sang mô hình phân tích ngữ nghĩa để suy luận mức độ và tóm tắt hiện trường
       let semantic: PreSubmitSemanticResult | null = null;
       try {
         semantic = await alertService.validateImageSemantics(
@@ -182,6 +187,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         model: semantic?.model || "YOLO11n",
         validatedAt: new Date().toISOString(),
       };
+      // tự động điền tiêu đề và mô tả gợi ý vào bản nháp nếu người dân chưa nhập
       setDraft((current) => ({
         ...current,
         title:
@@ -219,11 +225,13 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
     }
   }, [capture, draft.description, draft.title, isOffline, setDraft]);
 
+  // tự động kích hoạt phân tích ảnh khi trạng thái kiểm tra đang ở mức chờ
   useEffect(() => {
     if (draft.imageValidation.state === "IDLE") void analyze();
   }, [analyze, draft.imageValidation.state]);
 
   const state = draft.imageValidation.state;
+  // xóa ảnh chụp và quay lại bước camera nếu ảnh không đạt yêu cầu
   const retake = () => {
     setDraft((current) => ({
       ...current,
@@ -473,6 +481,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
       {state === "VALID" ? (
         <ReportBottomActions>
           <TouchableOpacity
+            // xác nhận kết quả kiểm tra ảnh hợp lệ và chuyển sang bước xác nhận thông tin báo cáo
             onPress={() => navigation.navigate("ReportConfirm")}
             style={[styles.continueButton, { backgroundColor: colors.primary }]}
             accessibilityRole="button"

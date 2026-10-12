@@ -36,6 +36,7 @@ import { ReportProgress } from "../components/ReportProgress";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportLocation">;
 
+// đánh giá mức độ tin cậy của sai số gps theo khoảng cách mét
 const accuracyTone = (accuracy: number | null) =>
   accuracy === null
     ? "missing"
@@ -46,7 +47,7 @@ const accuracyTone = (accuracy: number | null) =>
         : accuracy <= 50
           ? "acceptable"
           : "weak";
-
+// màn hình bước một xác minh vị trí gps hiện trường của thiết bị
 export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
@@ -64,7 +65,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
     fetchLocation,
   } = useLocation();
   const requestedRef = useRef(false);
-
+  // kích hoạt lấy tọa độ gps từ thiết bị và cập nhật vào bản nháp
   const acquireLocation = useCallback(async () => {
     const result = await fetchLocation();
     if (!result?.coords || result.accuracyMeters === null) return;
@@ -81,7 +82,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
       },
     }));
   }, [fetchLocation, setDraft]);
-
+  // tự động kích hoạt lấy vị trí gps khi vào màn hình nếu bản nháp chưa có dữ liệu vị trí
   useEffect(() => {
     if (!draft.location && !requestedRef.current) {
       requestedRef.current = true;
@@ -100,10 +101,12 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
           source: source === "device" ? ("DEVICE_GPS" as const) : undefined,
         }
       : draft.location;
+  // kiểm tra điều kiện sẵn sàng khi tọa độ lấy trực tiếp từ gps thiết bị và sai số dưới ngưỡng cho phép
   const ready = Boolean(
     shownLocation?.source === "DEVICE_GPS" &&
     shownLocation.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS,
   );
+  // xác định trạng thái màu sắc và mức độ tin cậy dựa theo sai số gps
   const tone = accuracyTone(shownLocation?.accuracyMeters ?? null);
   const toneColor =
     tone === "weak"
@@ -128,7 +131,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
               : "Chưa có",
     [tone],
   );
-
+  // tách chuỗi địa chỉ thành các thành phần nhỏ để hiển thị phân cấp
   const addressParts =
     shownLocation?.address
       .split(",")
@@ -314,6 +317,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
         ) : null}
       </ScrollView>
       <ReportBottomActions>
+        {/* kiểm tra vị trí gps hợp lệ trước khi cho phép chuyển sang bước chụp ảnh */}
         <TouchableOpacity
           onPress={() => navigation.navigate("ReportCamera")}
           disabled={!ready || loading}
@@ -331,6 +335,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.primaryText}>TIẾP TỤC CHỤP ẢNH</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          // thử lấy lại vị trí gps nếu độ chính xác chưa đạt yêu cầu
           onPress={() => void acquireLocation()}
           disabled={loading}
           style={styles.textButton}
