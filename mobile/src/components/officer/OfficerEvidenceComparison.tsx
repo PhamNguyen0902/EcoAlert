@@ -3,15 +3,20 @@ import { Text, View } from "react-native";
 import { Camera } from "lucide-react-native";
 import { EvidenceImageFrame } from "../media/EvidenceImageFrame";
 import { useCivicTheme } from "../../theme/useCivicTheme";
+import { officerDate } from "../../utils/officerPresentation";
 import { OfficerBadge, OfficerCard, officerStyles as s } from "./OfficerUI";
 export function OfficerEvidenceComparison({
   beforeUri,
   beforeFallback,
   afterUri,
+  beforeAt,
+  afterAt,
 }: {
   beforeUri?: string;
   beforeFallback?: string;
   afterUri?: string;
+  beforeAt?: string;
+  afterAt?: string;
 }) {
   const { colors } = useCivicTheme();
   return (
@@ -26,12 +31,14 @@ export function OfficerEvidenceComparison({
             uri: beforeUri,
             fallback: beforeFallback,
             tone: colors.danger,
+            at: beforeAt,
           },
           {
             label: "SAU XỬ LÝ",
             uri: afterUri,
             fallback: undefined,
             tone: colors.primary,
+            at: afterAt,
           },
         ].map((image) => (
           <View key={image.label} style={[s.grow, { gap: 8 }]}>
@@ -67,6 +74,11 @@ export function OfficerEvidenceComparison({
                     : "Không có ảnh trước xử lý"}
                 </Text>
               </View>
+            )}
+            {image.at && (
+              <Text style={[s.meta, { color: colors.textMuted }]}>
+                {officerDate(image.at)}
+              </Text>
             )}
           </View>
         ))}

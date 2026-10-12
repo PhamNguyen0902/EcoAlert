@@ -1,16 +1,26 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
   Alert as RNAlert,
   Pressable,
   ActivityIndicator,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { usePreventRemove } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useProfile } from "../../hooks/useAuth";
+import { ownsOfficerTask } from "../../utils/officerPresentation";
+import {
+  OfficerHeader,
+  OfficerBadge,
+} from "../../components/officer/OfficerUI";
+import { OfficerEvidenceComparison } from "../../components/officer/OfficerEvidenceComparison";
 import {
   useAlert,
   useResolveIncident,
@@ -19,7 +29,6 @@ import {
 import { Card } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
-import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../theme/civicDesign";
 import { OfficerResolutionCamera } from "./OfficerResolutionCamera";
@@ -44,6 +53,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
   const insets = useSafeAreaInsets();
   const { colors } = useCivicTheme();
   const query = useAlert(route.params.id);
+  const { data: profile } = useProfile();
   const upload = useUploadMedia();
   const resolve = useResolveIncident();
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -55,7 +65,19 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  usePreventRemove(submitting, () =>
+    RNAlert.alert(
+      "Đang gửi minh chứng",
+      "Vui lòng chờ hoàn tất gửi kết quả trước khi rời trang.",
+    ),
+  );
   const submittingRef = useRef(false);
+  useEffect(() => {
+    // Release the navigation guard before replacing the completed form.
+    if (submitted && !submitting)
+      navigation.replace("OfficerResolutionSubmitted", { id: route.params.id });
+  }, [submitted, submitting, navigation, route.params.id]);
   const submitter = useRef(
     createOfficerResolutionSubmitter({
       upload: (uri) =>
@@ -70,6 +92,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
   const task = query.data;
   const allowed = Boolean(
     task &&
+    ownsOfficerTask(task, profile) &&
     isWasteOfficerTask(task) &&
     task.status.toUpperCase() === "IN_PROGRESS" &&
     task.checkIn?.verified === true,
@@ -94,11 +117,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
     setError(null);
     try {
       if (await submitter(draft)) {
-        RNAlert.alert(
-          "Đã gửi kết quả xử lý",
-          "Nhiệm vụ đã chuyển sang ĐÃ XỬ LÝ và chờ Admin duyệt.",
-        );
-        navigation.goBack();
+        setSubmitted(true);
       }
     } catch (failure: unknown) {
       setError(
@@ -116,28 +135,22 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
   const beforeUri =
     before?.displayUrl || before?.originalUrl || task?.mediaUrls?.[0];
   return (
-    <View
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={[
         styles.root,
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <View style={styles.header}>
-        <Button
-          appearance="civic"
-          variant="ghost"
-          title="‹ Quay lại"
-          disabled={submitting}
-          onPress={navigation.goBack}
-        />
-        <Text style={[civicType.section, { color: colors.text }]}>
-          Hoàn thành xử lý
-        </Text>
-      </View>
+      <OfficerHeader
+        title="Thu thập chứng cứ"
+        back={navigation.goBack}
+        disabled={submitting}
+      />
       <ScrollView
         contentContainerStyle={[
           civicStyles.content,
-          { paddingBottom: insets.bottom + 24 },
+          { paddingBottom: 24, gap: 16 },
         ]}
         keyboardShouldPersistTaps="handled"
       >
@@ -153,30 +166,23 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
               : "Nhiệm vụ phải đang xử lý và đã xác nhận hiện trường trước khi gửi kết quả."}
           </Text>
         ) : null}
-        <Card appearance="civic" style={styles.card}>
-          <Text style={[civicType.section, { color: colors.text }]}>
-            TRƯỚC XỬ LÝ
-          </Text>
-          {beforeUri ? (
-            <EvidenceImageFrame
-              imageUri={beforeUri}
-              fallbackUri={before?.originalUrl}
-              accessibilityLabel="Ảnh trước xử lý"
-            />
-          ) : (
-            <Text style={{ color: colors.textMuted }}>Chưa có ảnh.</Text>
-          )}
-        </Card>
+        <OfficerBadge
+          label="BƯỚC 04 / 06 · GHI NHẬN KẾT QUẢ THỰC TẾ"
+          color={colors.cyan}
+        />
+        <OfficerEvidenceComparison
+          beforeUri={ownsOfficerTask(task, profile) ? beforeUri : undefined}
+          beforeFallback={before?.originalUrl}
+          afterUri={photo?.originalLocalUri}
+          beforeAt={before?.capturedAt}
+          afterAt={photo?.capturedAt}
+        />
         <Card appearance="civic" style={styles.card}>
           <Text style={[civicType.section, { color: colors.primary }]}>
             SAU XỬ LÝ
           </Text>
           {photo ? (
             <>
-              <EvidenceImageFrame
-                imageUri={photo.originalLocalUri}
-                accessibilityLabel="Ảnh sau xử lý vừa chụp"
-              />
               <Text style={[civicType.meta, { color: colors.cyan }]}>
                 GPS ±{Math.round(photo.location.accuracyMeters)}m ·{" "}
                 {new Date(photo.capturedAt).toLocaleString("vi-VN")}
@@ -199,6 +205,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
                 <Button
                   appearance="civic"
                   title="SỬ DỤNG ẢNH NÀY"
+                  disabled={!allowed || submitting}
                   onPress={() => setPhotoConfirmed(true)}
                 />
               ) : (
@@ -210,7 +217,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
           ) : (
             <Button
               appearance="civic"
-              title="CAMERA SAU XỬ LÝ"
+              title="CHỤP ẢNH SAU XỬ LÝ"
               disabled={!allowed}
               onPress={() => setCameraOpen(true)}
             />
@@ -220,6 +227,9 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
           </Text>
         </Card>
         <Card appearance="civic" style={styles.card}>
+          <Text style={[civicType.section, { color: colors.cyan }]}>
+            Thông tin xử lý hiện trường
+          </Text>
           <Input
             label="Tóm tắt xử lý *"
             multiline
@@ -316,21 +326,35 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
             {error}
           </Text>
         ) : null}
+        <Text style={[civicType.meta, { color: colors.textMuted }]}>
+          Ảnh xử lý được ghi nhận cùng thời gian và vị trí thực tế để phục vụ
+          nghiệm thu. Gửi kết quả không tự động đóng báo cáo.
+        </Text>
+      </ScrollView>
+      <View
+        style={{
+          padding: 12,
+          paddingBottom: Math.max(12, insets.bottom),
+          backgroundColor: colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      >
         <Button
           appearance="civic"
-          title="GỬI KẾT QUẢ XỬ LÝ"
+          title="GỬI KẾT QUẢ ĐỂ NGHIỆM THU"
           onPress={() => void send()}
           loading={submitting}
-          disabled={!allowed || !photoConfirmed}
+          disabled={!allowed || !photoConfirmed || submitted}
         />
-      </ScrollView>
+      </View>
       <Modal
         visible={cameraOpen}
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={() => setCameraOpen(false)}
       >
-        {cameraOpen ? (
+        {cameraOpen && allowed ? (
           <OfficerResolutionCamera
             onClose={() => setCameraOpen(false)}
             onCapture={(capture) => {
@@ -342,7 +366,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
           />
         ) : null}
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 const styles = StyleSheet.create({
