@@ -46,6 +46,7 @@ import {
 import type { OfficerStackParamList } from "../../navigation/types";
 
 type Props = NativeStackScreenProps<OfficerStackParamList, "OfficerResolution">;
+// hiển thị ảnh so sánh trước và sau, chọn cách xử lý, dụng cụ đã dùng và gửi kết quả
 export const OfficerResolutionScreen: React.FC<Props> = ({
   route,
   navigation,
@@ -74,7 +75,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
   );
   const submittingRef = useRef(false);
   useEffect(() => {
-    // Release the navigation guard before replacing the completed form.
+    // tắt cảnh báo thoát trang trước khi chuyển sang màn hình gửi thành công
     if (submitted && !submitting)
       navigation.replace("OfficerResolutionSubmitted", { id: route.params.id });
   }, [submitted, submitting, navigation, route.params.id]);
@@ -105,6 +106,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
     materialsUsed: materials.join(", "),
     additionalNotes: notes,
   };
+  // tải ảnh kết quả lên hệ thống và gửi báo cáo hoàn thành công việc
   const send = async () => {
     if (submittingRef.current) return;
     const validation = validateOfficerResolution(draft);

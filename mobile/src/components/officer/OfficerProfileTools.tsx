@@ -20,6 +20,7 @@ import { officerDate } from "../../utils/officerPresentation";
 import { Button } from "../ui/Button";
 import { OfficerCard, OfficerMetric, officerStyles as s } from "./OfficerUI";
 import appConfig from "../../../app.json";
+// hiển thị thống kê nhiệm vụ, nút vào hoặc kết thúc ca trực và cài đặt quyền thiết bị
 export function OfficerProfileTools() {
   const { colors, isDark, setThemeMode } = useCivicTheme();
   const query = useOfficerTasks(1, 100, undefined, { allPages: true });
@@ -63,6 +64,7 @@ export function OfficerProfileTools() {
     };
   }, [active]);
   const tasks = filterOfficerTasks(query.data?.items || [], "ALL");
+  // lấy vị trí gps hiện tại để bật hoặc tắt trạng thái đang trong ca trực
   const toggleShift = async () => {
     if (lock.current || shift.isError || shift.isLoading) return;
     lock.current = true;
