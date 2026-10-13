@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, type StyleProp, type ViewStyle } from "react-native";
-import { useForegroundScreen } from "../../hooks/useForegroundScreen";
-import { useFieldReducedMotion } from "../../features/report/components/stitch/FieldUI";
+import { useForegroundScreen } from "../../../hooks/useForegroundScreen";
+import { useFieldReducedMotion } from "../../report/components/stitch/FieldUI";
 /** Brief native opacity/scale transition, never a continuous map/camera loop. */
 export function OfficerEntrance({
   children,

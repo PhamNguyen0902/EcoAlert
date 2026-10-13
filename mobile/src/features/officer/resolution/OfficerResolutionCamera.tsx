@@ -12,14 +12,14 @@ import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Camera, X, Flashlight } from "lucide-react-native";
-import { normalizeFieldCaptureImage } from "../../features/report/model/fieldCaptureImage";
-import { persistOriginalFieldImage } from "../../features/report/model/watermark";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { officerErrorMessage } from "../../utils/officerWorkflow";
+import { normalizeFieldCaptureImage } from "../../report/model/fieldCaptureImage";
+import { persistOriginalFieldImage } from "../../report/model/watermark";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { officerErrorMessage } from "../../../utils/officerWorkflow";
 import {
   acquireOfficerGps,
   type OfficerPhoto,
-} from "../../utils/officerResolution";
+} from "./officerResolution";
 
 export function OfficerResolutionCamera({
   onCapture,

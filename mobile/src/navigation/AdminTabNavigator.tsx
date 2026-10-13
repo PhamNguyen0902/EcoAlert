@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FileText, Map } from 'lucide-react-native';
 import { AdminIncidentsScreen } from '../screens/admin/AdminIncidentsScreen';
-import { OfficerMapScreen } from '../screens/officer/OfficerMapScreen';
+import { OfficerMapScreen } from '../features/officer/map/OfficerMapScreen';
 import { AlertDetailScreen } from '../screens/citizen/AlertDetailScreen';
 import { useTheme } from '../theme/ThemeContext';
 import { useLanguage } from '../i18n/LanguageContext';

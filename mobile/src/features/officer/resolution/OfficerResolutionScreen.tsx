@@ -14,23 +14,23 @@ import {
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { usePreventRemove } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useProfile } from "../../features/auth/hooks/useAuth";
-import { ownsOfficerTask } from "../../utils/officerPresentation";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { ownsOfficerTask } from "../../../utils/officerPresentation";
 import {
   OfficerHeader,
   OfficerBadge,
-} from "../../components/officer/OfficerUI";
-import { OfficerEvidenceComparison } from "../../components/officer/OfficerEvidenceComparison";
+} from "../../../components/officer/OfficerUI";
+import { OfficerEvidenceComparison } from "./OfficerEvidenceComparison";
 import {
   useAlert,
   useResolveIncident,
   useUploadMedia,
-} from "../../hooks/useAlerts";
-import { Card } from "../../shared/components/ui/Card";
-import { Input } from "../../shared/components/ui/Input";
-import { Button } from "../../components/ui/Button";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { civicStyles, civicType } from "../../theme/civicDesign";
+} from "../../../hooks/useAlerts";
+import { Card } from "../../../shared/components/ui/Card";
+import { Input } from "../../../shared/components/ui/Input";
+import { Button } from "../../../components/ui/Button";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { civicStyles, civicType } from "../../../theme/civicDesign";
 import { OfficerResolutionCamera } from "./OfficerResolutionCamera";
 import {
   WASTE_TREATMENTS,
@@ -38,12 +38,12 @@ import {
   createOfficerResolutionSubmitter,
   validateOfficerResolution,
   type OfficerPhoto,
-} from "../../utils/officerResolution";
+} from "./officerResolution";
 import {
   officerErrorMessage,
   isWasteOfficerTask,
-} from "../../utils/officerWorkflow";
-import type { OfficerStackParamList } from "../../navigation/types";
+} from "../../../utils/officerWorkflow";
+import type { OfficerStackParamList } from "../../../navigation/types";
 
 type Props = NativeStackScreenProps<OfficerStackParamList, "OfficerResolution">;
 export const OfficerResolutionScreen: React.FC<Props> = ({

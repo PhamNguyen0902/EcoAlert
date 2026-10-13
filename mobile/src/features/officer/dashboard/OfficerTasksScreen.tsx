@@ -9,13 +9,13 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useOfficerTasks, useCurrentShift } from "../../hooks/useAlerts";
-import { useProfile } from "../../features/auth/hooks/useAuth";
-import { useCivicTheme } from "../../theme/useCivicTheme";
+import { useOfficerTasks, useCurrentShift } from "../../../hooks/useAlerts";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
 import {
   useForegroundScreen,
   useScreenClock,
-} from "../../hooks/useForegroundScreen";
+} from "../../../hooks/useForegroundScreen";
 import {
   OfficerBadge,
   OfficerCard,
@@ -24,17 +24,17 @@ import {
   OfficerMetric,
   OfficerSection,
   officerStyles as s,
-} from "../../components/officer/OfficerUI";
-import { OfficerTaskCard } from "../../components/officer/OfficerTaskCard";
-import { OfficerTaskFilters } from "../../components/officer/OfficerTaskFilters";
-import { OfficerEntrance } from "../../components/officer/OfficerEntrance";
-import { Button } from "../../components/ui/Button";
+} from "../../../components/officer/OfficerUI";
+import { OfficerTaskCard } from "../../../components/officer/OfficerTaskCard";
+import { OfficerTaskFilters } from "../../../components/officer/OfficerTaskFilters";
+import { OfficerEntrance } from "../components/OfficerEntrance";
+import { Button } from "../../../components/ui/Button";
 import {
   filterOfficerTasks,
   type OfficerTaskFilter,
-} from "../../utils/officerWorkflow";
-import { officerDate, officerTimeline } from "../../utils/officerPresentation";
-import type { OfficerStackParamList } from "../../navigation/types";
+} from "../../../utils/officerWorkflow";
+import { officerDate, officerTimeline } from "../../../utils/officerPresentation";
+import type { OfficerStackParamList } from "../../../navigation/types";
 export const OfficerTasksScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<OfficerStackParamList>>();

@@ -15,39 +15,39 @@ import {
   useAlert,
   useAddOfficerNote,
   useStartHandling,
-} from "../../hooks/useAlerts";
-import { useProfile } from "../../features/auth/hooks/useAuth";
-import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
-import { Input } from "../../shared/components/ui/Input";
-import { Button } from "../../components/ui/Button";
-import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
+} from "../../../hooks/useAlerts";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
+import { Input } from "../../../shared/components/ui/Input";
+import { Button } from "../../../components/ui/Button";
+import { OverallAiAnalysisCard } from "../../../components/ai/OverallAiAnalysisCard";
 import {
   OfficerHeader,
   OfficerBadge,
   OfficerCard,
   officerStyles as s,
-} from "../../components/officer/OfficerUI";
-import { OfficerTimeline } from "../../components/officer/OfficerTimeline";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../utils/maps";
-import { getAlertDisplaySeverity } from "../../utils/aiAnalysis";
+} from "../../../components/officer/OfficerUI";
+import { OfficerTimeline } from "../components/OfficerTimeline";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../../utils/maps";
+import { getAlertDisplaySeverity } from "../../../utils/aiAnalysis";
 import {
   getCategoryLabel,
   getSeverityLabel,
-} from "../../utils/incidentPresentation";
-import { getWasteDetectionLabel } from "../../shared/lib/visionBoundingBox";
+} from "../../../utils/incidentPresentation";
+import { getWasteDetectionLabel } from "../../../shared/lib/visionBoundingBox";
 import {
   getOfficerTaskState,
   officerErrorMessage,
   officerStatus,
   isWasteOfficerTask,
-} from "../../utils/officerWorkflow";
+} from "../../../utils/officerWorkflow";
 import {
   ownsOfficerTask,
   officerDate,
   officerReference,
-} from "../../utils/officerPresentation";
-import type { OfficerStackParamList } from "../../navigation/types";
+} from "../../../utils/officerPresentation";
+import type { OfficerStackParamList } from "../../../navigation/types";
 type Props = NativeStackScreenProps<
   OfficerStackParamList,
   "OfficerAlertDetail"

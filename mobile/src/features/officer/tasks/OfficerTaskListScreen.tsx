@@ -11,23 +11,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Search, MapPin } from "lucide-react-native";
 import { Pressable } from "react-native";
-import { OfficerEntrance } from "../../components/officer/OfficerEntrance";
-import { useOfficerTasks } from "../../hooks/useAlerts";
-import { useCivicTheme } from "../../theme/useCivicTheme";
+import { OfficerEntrance } from "../components/OfficerEntrance";
+import { useOfficerTasks } from "../../../hooks/useAlerts";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
 import {
   OfficerHeader,
   OfficerCard,
   OfficerMetric,
   officerStyles as s,
-} from "../../components/officer/OfficerUI";
-import { OfficerTaskCard } from "../../components/officer/OfficerTaskCard";
-import { OfficerTaskFilters } from "../../components/officer/OfficerTaskFilters";
+} from "../../../components/officer/OfficerUI";
+import { OfficerTaskCard } from "../../../components/officer/OfficerTaskCard";
+import { OfficerTaskFilters } from "../../../components/officer/OfficerTaskFilters";
 import {
   filterOfficerTasks,
   type OfficerTaskFilter,
-} from "../../utils/officerWorkflow";
-import { searchOfficerTasks } from "../../utils/officerPresentation";
-import type { OfficerStackParamList } from "../../navigation/types";
+} from "../../../utils/officerWorkflow";
+import { searchOfficerTasks } from "../../../utils/officerPresentation";
+import type { OfficerStackParamList } from "../../../navigation/types";
 export function OfficerTaskListScreen({
   navigation,
 }: NativeStackScreenProps<OfficerStackParamList, "OfficerTaskList">) {

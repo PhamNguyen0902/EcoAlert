@@ -1,10 +1,10 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { Camera } from "lucide-react-native";
-import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { officerDate } from "../../utils/officerPresentation";
-import { OfficerBadge, OfficerCard, officerStyles as s } from "./OfficerUI";
+import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { officerDate } from "../../../utils/officerPresentation";
+import { OfficerBadge, OfficerCard, officerStyles as s } from "../../../components/officer/OfficerUI";
 export function OfficerEvidenceComparison({
   beforeUri,
   beforeFallback,

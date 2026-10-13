@@ -8,18 +8,18 @@ import {
   useCurrentShift,
   useStartShift,
   useEndShift,
-} from "../../hooks/useAlerts";
-import { useOfficerPosition } from "../../hooks/useOfficerPosition";
-import { useForegroundScreen } from "../../hooks/useForegroundScreen";
-import { useCivicTheme } from "../../theme/useCivicTheme";
+} from "../../../hooks/useAlerts";
+import { useOfficerPosition } from "../../../hooks/useOfficerPosition";
+import { useForegroundScreen } from "../../../hooks/useForegroundScreen";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
 import {
   filterOfficerTasks,
   officerErrorMessage,
-} from "../../utils/officerWorkflow";
-import { officerDate } from "../../utils/officerPresentation";
-import { Button } from "../ui/Button";
-import { OfficerCard, OfficerMetric, officerStyles as s } from "./OfficerUI";
-import appConfig from "../../../app.json";
+} from "../../../utils/officerWorkflow";
+import { officerDate } from "../../../utils/officerPresentation";
+import { Button } from "../../../components/ui/Button";
+import { OfficerCard, OfficerMetric, officerStyles as s } from "../../../components/officer/OfficerUI";
+import appConfig from "../../../../app.json";
 export function OfficerProfileTools() {
   const { colors, isDark, setThemeMode } = useCivicTheme();
   const query = useOfficerTasks(1, 100, undefined, { allPages: true });

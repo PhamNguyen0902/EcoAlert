@@ -3,25 +3,25 @@ import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { Check, CheckCircle2, Clock3 } from "lucide-react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAlert } from "../../hooks/useAlerts";
-import { useProfile } from "../../features/auth/hooks/useAuth";
-import { useCivicTheme } from "../../theme/useCivicTheme";
+import { useAlert } from "../../../hooks/useAlerts";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
 import {
   OfficerHeader,
   OfficerCard,
   OfficerBadge,
   officerStyles as s,
-} from "../../components/officer/OfficerUI";
-import { OfficerEvidenceComparison } from "../../components/officer/OfficerEvidenceComparison";
-import { OfficerEntrance } from "../../components/officer/OfficerEntrance";
-import { Button } from "../../components/ui/Button";
+} from "../../../components/officer/OfficerUI";
+import { OfficerEvidenceComparison } from "./OfficerEvidenceComparison";
+import { OfficerEntrance } from "../components/OfficerEntrance";
+import { Button } from "../../../components/ui/Button";
 import {
   ownsOfficerTask,
   officerDate,
   officerImage,
   officerReference,
-} from "../../utils/officerPresentation";
-import type { OfficerStackParamList } from "../../navigation/types";
+} from "../../../utils/officerPresentation";
+import type { OfficerStackParamList } from "../../../navigation/types";
 export function OfficerResolutionSubmittedScreen({
   route,
   navigation,

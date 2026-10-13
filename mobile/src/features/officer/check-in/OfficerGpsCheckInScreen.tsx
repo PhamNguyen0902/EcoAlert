@@ -13,28 +13,28 @@ import MapView, { Circle, Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MapPin, ShieldCheck } from "lucide-react-native";
-import { useAlert, useConfirmArrival } from "../../hooks/useAlerts";
-import { useProfile } from "../../features/auth/hooks/useAuth";
-import { useOfficerPosition } from "../../hooks/useOfficerPosition";
-import { useCivicTheme } from "../../theme/useCivicTheme";
+import { useAlert, useConfirmArrival } from "../../../hooks/useAlerts";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { useOfficerPosition } from "../../../hooks/useOfficerPosition";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
 import {
   OfficerHeader,
   OfficerBadge,
   OfficerCard,
   officerStyles as s,
-} from "../../components/officer/OfficerUI";
-import { Button } from "../../components/ui/Button";
-import { getGeoJsonMapCoordinates } from "../../utils/maps";
+} from "../../../components/officer/OfficerUI";
+import { Button } from "../../../components/ui/Button";
+import { getGeoJsonMapCoordinates } from "../../../utils/maps";
 import {
   officerDate,
   officerDistance,
   ownsOfficerTask,
-} from "../../utils/officerPresentation";
+} from "../../../utils/officerPresentation";
 import {
   isWasteOfficerTask,
   officerErrorMessage,
-} from "../../utils/officerWorkflow";
-import type { OfficerStackParamList } from "../../navigation/types";
+} from "../../../utils/officerWorkflow";
+import type { OfficerStackParamList } from "../../../navigation/types";
 export function OfficerGpsCheckInScreen({
   route,
   navigation,

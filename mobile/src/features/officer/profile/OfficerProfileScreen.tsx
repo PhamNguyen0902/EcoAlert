@@ -2,21 +2,21 @@ import React, { useRef } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LogOut, Mail, ShieldCheck } from "lucide-react-native";
-import { useProfile, useLogout } from "../../features/auth/hooks/useAuth";
-import { useAssignedServiceAreas } from "../../hooks/useServiceAreas";
-import { useLanguage } from "../../i18n/LanguageContext";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { Card } from "../../shared/components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { InlineBanner } from "../../shared/components/ui/InlineBanner";
-import { OfficerHeader } from "../../components/officer/OfficerUI";
-import { OfficerProfileTools } from "../../components/officer/OfficerProfileTools";
+import { useProfile, useLogout } from "../../auth/hooks/useAuth";
+import { useAssignedServiceAreas } from "../../../hooks/useServiceAreas";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { Card } from "../../../shared/components/ui/Card";
+import { Button } from "../../../components/ui/Button";
+import { InlineBanner } from "../../../shared/components/ui/InlineBanner";
+import { OfficerHeader } from "../../../components/officer/OfficerUI";
+import { OfficerProfileTools } from "./OfficerProfileTools";
 import {
   civicRadius as radius,
   civicSpace as space,
   civicStyles,
   civicType,
-} from "../../theme/civicDesign";
+} from "../../../theme/civicDesign";
 
 export const OfficerProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();

@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { OfficerStackParamList } from "../../navigation/types";
+import type { OfficerStackParamList } from "../../../navigation/types";
 import {
   View,
   Text,
@@ -13,22 +13,22 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, Callout, PROVIDER_GOOGLE } from "react-native-maps";
 import { MapPin, RefreshCw, AlertTriangle } from "lucide-react-native";
-import { useAlerts, useOfficerTasks } from "../../hooks/useAlerts";
-import { Badge } from "../../shared/components/ui/Badge";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { useLanguage } from "../../i18n/LanguageContext";
-import { SEVERITY_COLORS } from "../../shared/constants/index";
+import { useAlerts, useOfficerTasks } from "../../../hooks/useAlerts";
+import { Badge } from "../../../shared/components/ui/Badge";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { SEVERITY_COLORS } from "../../../shared/constants/index";
 import {
   getCategoryLabel,
   getStatusLabel,
   getSeverityLabel,
-} from "../../utils/incidentPresentation";
+} from "../../../utils/incidentPresentation";
 import {
   getOfficerTaskState,
   filterOfficerTasks,
-} from "../../utils/officerWorkflow";
-import { getGeoJsonMapCoordinates } from "../../utils/maps";
-import { OfficerOperationalMap } from "./OfficerOperationalMap";
+} from "../../../utils/officerWorkflow";
+import { getGeoJsonMapCoordinates } from "../../../utils/maps";
+import { OfficerOperationalMap } from "../../../screens/officer/OfficerOperationalMap";
 
 type MapScreenProps = { mode?: "admin" | "officer" };
 
