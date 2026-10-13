@@ -69,7 +69,7 @@ const getRequestErrorMessage = (error: unknown, fallback: string): string => {
     requestError.response?.data?.message || requestError.message || fallback
   );
 };
-// màn hình chi tiết sự cố hiển thị tiến độ, phân tích ai, bằng chứng và phản hồi từ cán bộ
+// hiển thị đầy đủ thông tin sự cố, lịch sử xử lý và các nút thao tác
 export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   route,
   navigation,
@@ -219,6 +219,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     (user) => user.role?.toUpperCase() === "OFFICER",
   );
 
+  // phân công cán bộ phụ trách xử lý sự cố và hiển thị thông báo kết quả
   const handleAssignOfficer = (officer: User) => {
     if (!alert || !canAssign) return;
 
@@ -242,6 +243,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     );
   };
 
+  // hiện hộp thoại xác nhận và xóa báo cáo sự cố
   const handleDeleteAlert = () => {
     if (!alert) return;
     ReactNativeAlert.alert(
@@ -269,6 +271,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
     );
   };
 
+  // khôi phục lại báo cáo sự cố đã xóa
   const handleRestoreAlert = async () => {
     if (!alert) return;
     try {

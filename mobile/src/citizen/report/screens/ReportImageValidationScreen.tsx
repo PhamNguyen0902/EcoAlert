@@ -55,7 +55,7 @@ type Props = NativeStackScreenProps<
 const isBackendUrl = (value?: string): value is string =>
   Boolean(value && /^https?:\/\//i.test(value));
 
-// màn hình bước bốn phân tích ảnh bằng ai và kiểm định tính hợp lệ của sự cố
+// hiển thị quá trình và kết quả ai phân tích bức ảnh điểm rác
 export const ReportImageValidationScreen: React.FC<Props> = ({
   navigation,
 }) => {
@@ -81,7 +81,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         : [],
     [draft.imageValidation.state, draft.imageValidation.detectedObjects],
   );
-  // tải ảnh lên máy chủ, gọi mô hình vision nhận diện rác thải và kiểm tra ngữ nghĩa trước khi gửi
+  // tải ảnh lên hệ thống và gọi ai nhận diện loại rác, mức độ nghiêm trọng
   const analyze = useCallback(async () => {
     if (!capture || runningRef.current) return;
     // nếu mất kết nối mạng thì tạm dừng kiểm tra và thông báo người dân cần có mạng
@@ -273,12 +273,14 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
+      {/* màn hình ai phân tích hình ảnh */}
       <ReportHeader title="AI phân tích hình ảnh" onBack={navigation.goBack} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* bước 3 */}
         <ReportProgress step={3} status="AI / YOLO · PHÂN TÍCH HIỆN TRƯỜNG" />
         <FieldNotice>
           EcoAlert AI đang hỗ trợ nhận diện rác thải trong ảnh hiện trường để đề

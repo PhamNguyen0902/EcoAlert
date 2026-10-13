@@ -13,14 +13,14 @@ interface FieldReportContextValue {
   setDraft: Dispatch<SetStateAction<FieldReportDraft>>;
   resetDraft: () => void;
 }
-
+// nơi lưu tạm dữ liệu báo cáo để dùng chung qua các bước chụp ảnh và gửi bài
 const FieldReportContext = createContext<FieldReportContextValue | null>(null);
-// khởi tạo nhà cung cấp ngữ cảnh lưu trữ bản nháp báo cáo hiện trường
+// chia sẻ dữ liệu báo cáo đang tạo cho tất cả màn hình trong luồng báo cáo
 export const FieldReportProvider = ({ children }: { children: ReactNode }) => {
   const [draft, setDraft] = useState<FieldReportDraft>(
     createEmptyFieldReportDraft,
   );
-  // làm mới dữ liệu bản nháp về trạng thái khởi tạo ban đầu
+  // xóa ảnh chụp tạm trong máy và làm mới lại dữ liệu báo cáo từ đầu
   const resetDraft = useCallback(
     () => setDraft(createEmptyFieldReportDraft()),
     [],

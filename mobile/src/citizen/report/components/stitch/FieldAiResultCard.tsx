@@ -17,7 +17,7 @@ import { fieldColors as c, fieldStyles as s } from "./fieldDesign";
 import { FieldEntrance, useFieldReducedMotion } from "./FieldUI";
 import { massPresentation } from "../../semanticResult";
 
-/** All displayed conclusions come from the existing draft/API, never visual fixtures. */
+// chỉ hiển thị kết quả phân tích thật từ hệ thống, không dùng dữ liệu mẫu
 export function FieldAiResultCard({
   analysis,
   compact = false,
