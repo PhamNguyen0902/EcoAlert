@@ -34,21 +34,21 @@ import type {
   CitizenStackParamList,
   CitizenTabParamList,
   RootStackParamList,
-} from "../../navigation/types";
-import { useLogout, useProfile } from "../../hooks/useAuth";
-import { useUnreadNotificationCount } from "../../hooks/useNotifications";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { civicStyles, civicType } from "../../theme/civicDesign";
-import { Card } from "../../shared/components/ui/Card";
-import { Button } from "../../components/ui/Button";
+} from "../../../navigation/types";
+import { useLogout, useProfile } from "../../auth/hooks/useAuth";
+import { useUnreadNotificationCount } from "../../../hooks/useNotifications";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { civicStyles, civicType } from "../../../theme/civicDesign";
+import { Card } from "../../../shared/components/ui/Card";
+import { Button } from "../../../components/ui/Button";
 import {
   CitizenAvatar,
   CitizenSectionHeading,
   CitizenSettingsRow,
   CitizenTopBar,
-} from "../../components/citizen/v2/CitizenUI";
-import appConfig from "../../../app.json";
-import { offlineQueue } from "../../utils/offlineQueue";
+} from "../components/v2/CitizenUI";
+import appConfig from "../../../../app.json";
+import { offlineQueue } from "../../../utils/offlineQueue";
 
 export const CitizenSettingsScreen: React.FC<
   BottomTabScreenProps<CitizenTabParamList, "SettingsTab">

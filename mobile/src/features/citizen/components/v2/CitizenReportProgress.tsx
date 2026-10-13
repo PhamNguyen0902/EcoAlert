@@ -1,8 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useCivicTheme } from "../../../theme/useCivicTheme";
-import { civicType } from "../../../theme/civicDesign";
-import { reportProgress } from "../../../utils/citizenPresentation";
+import { useCivicTheme } from "../../../../theme/useCivicTheme";
+import { civicType } from "../../../../theme/civicDesign";
+import { reportProgress } from "../../model/citizenPresentation";
 
 export const CitizenReportProgress = ({ status }: { status: string }) => {
   const { colors } = useCivicTheme();

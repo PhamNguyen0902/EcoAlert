@@ -24,7 +24,7 @@ import type {
 } from "../../../navigation/types";
 import { useAlert } from "../../../hooks/useAlerts";
 import { getWorkflowStatusLabel } from "../../../utils/aiAnalysis";
-import { reportTime } from "../../../utils/citizenPresentation";
+import { reportTime } from "../../citizen/model/citizenPresentation";
 import { useFieldReport } from "../FieldReportContext";
 import { formatAlertReference } from "../utils";
 import { FieldEntrance, FieldNotice } from "../components/stitch/FieldUI";

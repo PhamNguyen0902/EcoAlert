@@ -8,18 +8,18 @@ import {
   ShieldCheck,
   UserCircle2,
 } from "lucide-react-native";
-import { useProfile, useLogout } from "../../hooks/useAuth";
-import { Card } from "../../shared/components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { useCivicTheme } from "../../theme/useCivicTheme";
+import { useProfile, useLogout } from "../../auth/hooks/useAuth";
+import { Card } from "../../../shared/components/ui/Card";
+import { Button } from "../../../components/ui/Button";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
 import {
   civicSpace as space,
   civicRadius as radius,
   civicType,
   civicStyles,
-} from "../../theme/civicDesign";
-import { CitizenHeader } from "../../components/citizen/CitizenHeader";
-import { useLanguage } from "../../i18n/LanguageContext";
+} from "../../../theme/civicDesign";
+import { CitizenHeader } from "../components/CitizenHeader";
+import { useLanguage } from "../../../i18n/LanguageContext";
 import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
@@ -27,7 +27,7 @@ import type {
 import type {
   CitizenStackParamList,
   RootStackParamList,
-} from "../../navigation/types";
+} from "../../../navigation/types";
 // màn hình thông tin cá nhân và quản lý phiên đăng nhập của người dân
 export const CitizenProfileScreen: React.FC<
   NativeStackScreenProps<CitizenStackParamList, "Profile">

@@ -1,9 +1,9 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ArrowLeft, Bell, Leaf } from "lucide-react-native";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { civicRadius, civicSpace, civicStyles } from "../../theme/civicDesign";
-import { unreadBadgeLabel } from "../../utils/notificationNavigation";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { civicRadius, civicSpace, civicStyles } from "../../../theme/civicDesign";
+import { unreadBadgeLabel } from "../../../utils/notificationNavigation";
 
 interface Props {
   title?: string;

@@ -1,10 +1,10 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { FileText, MapPin } from "lucide-react-native";
-import { Card } from "../../shared/components/ui/Card";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { civicRadius, civicSpace, civicType } from "../../theme/civicDesign";
-import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
+import { Card } from "../../../shared/components/ui/Card";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { civicRadius, civicSpace, civicType } from "../../../theme/civicDesign";
+import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
 
 interface Props {
   title: string;

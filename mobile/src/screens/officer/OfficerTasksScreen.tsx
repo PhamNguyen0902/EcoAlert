@@ -10,7 +10,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useOfficerTasks, useCurrentShift } from "../../hooks/useAlerts";
-import { useProfile } from "../../hooks/useAuth";
+import { useProfile } from "../../features/auth/hooks/useAuth";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import {
   useForegroundScreen,

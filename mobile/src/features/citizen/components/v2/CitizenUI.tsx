@@ -15,10 +15,10 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react-native";
-import { useCivicTheme } from "../../../theme/useCivicTheme";
-import { civicStyles, civicType } from "../../../theme/civicDesign";
-import { unreadBadgeLabel } from "../../../utils/notificationNavigation";
-import type { User } from "../../../shared/types/index";
+import { useCivicTheme } from "../../../../theme/useCivicTheme";
+import { civicStyles, civicType } from "../../../../theme/civicDesign";
+import { unreadBadgeLabel } from "../../../../utils/notificationNavigation";
+import type { User } from "../../../../shared/types/index";
 
 export const CitizenAvatar = ({
   user,

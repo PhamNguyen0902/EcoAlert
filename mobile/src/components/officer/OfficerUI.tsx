@@ -20,7 +20,7 @@ import Svg, { Path } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { OfficerStackParamList } from "../../navigation/types";
-import { useProfile } from "../../hooks/useAuth";
+import { useProfile } from "../../features/auth/hooks/useAuth";
 import { useUnreadNotificationCount } from "../../hooks/useNotifications";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicType } from "../../theme/civicDesign";

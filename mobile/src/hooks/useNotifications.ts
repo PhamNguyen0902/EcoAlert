@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { notificationService } from "../api/notificationService";
-import { useProfile } from "./useAuth";
+import { useProfile } from "../features/auth/hooks/useAuth";
 
 export const useNotifications = (page = 1, limit = 20) => {
   const { data: profile } = useProfile();

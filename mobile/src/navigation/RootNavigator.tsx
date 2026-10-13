@@ -8,7 +8,7 @@ import { OfficerTabNavigator } from "./OfficerTabNavigator";
 import { AdminTabNavigator } from "./AdminTabNavigator";
 import { setUnauthorizedCallback } from "../shared/api/client";
 import { COLORS } from "../shared/constants/index";
-import { clearAuthQueryCache, useProfile } from "../hooks/useAuth";
+import { clearAuthQueryCache, useProfile } from "../features/auth/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RootStackParamList } from "./types";
 

@@ -23,30 +23,30 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type {
   CitizenStackParamList,
   CitizenTabParamList,
-} from "../../navigation/types";
-import { useAlerts, useCitizenReports } from "../../hooks/useAlerts";
-import { useProfile } from "../../hooks/useAuth";
-import { useUnreadNotificationCount } from "../../hooks/useNotifications";
-import { useDashboardLocation } from "../../hooks/useDashboardLocation";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { civicStyles, civicType } from "../../theme/civicDesign";
+} from "../../../navigation/types";
+import { useAlerts, useCitizenReports } from "../../../hooks/useAlerts";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { useUnreadNotificationCount } from "../../../hooks/useNotifications";
+import { useDashboardLocation } from "../nearby/useDashboardLocation";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { civicStyles, civicType } from "../../../theme/civicDesign";
 import {
   CitizenActionTile,
   CitizenSectionHeading,
   CitizenTopBar,
-} from "../../components/citizen/v2/CitizenUI";
-import { CitizenReportCard } from "../../components/citizen/CitizenReportCard";
-import { CitizenActivitySkeleton } from "../../components/citizen/CitizenActivitySkeleton";
-import { HomeHero } from "../../components/citizen/hero/HomeHero";
-import { Badge } from "../../shared/components/ui/Badge";
-import { Card } from "../../shared/components/ui/Card";
-import { getWorkflowStatusLabel } from "../../utils/aiAnalysis";
+} from "../components/v2/CitizenUI";
+import { CitizenReportCard } from "../components/CitizenReportCard";
+import { CitizenActivitySkeleton } from "../components/CitizenActivitySkeleton";
+import { HomeHero } from "../components/hero/HomeHero";
+import { Badge } from "../../../shared/components/ui/Badge";
+import { Card } from "../../../shared/components/ui/Card";
+import { getWorkflowStatusLabel } from "../../../utils/aiAnalysis";
 import {
   getIncidentGroup,
   INCIDENT_COLORS,
   toMapCoordinate,
-} from "../../utils/citizenIncidents";
-import { reportImage, reportTime } from "../../utils/citizenPresentation";
+} from "../model/citizenIncidents";
+import { reportImage, reportTime } from "../model/citizenPresentation";
 
 export const CitizenDashboardScreen: React.FC<
   BottomTabScreenProps<CitizenTabParamList, "DashboardTab">

@@ -25,35 +25,35 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type {
   CitizenStackParamList,
   CitizenTabParamList,
-} from "../../navigation/types";
-import { useAlerts } from "../../hooks/useAlerts";
-import { useProfile } from "../../hooks/useAuth";
-import { useUnreadNotificationCount } from "../../hooks/useNotifications";
-import { useDashboardLocation } from "../../hooks/useDashboardLocation";
-import { useLocation } from "../../shared/hooks/useLocation";
-import { useLanguage } from "../../i18n/LanguageContext";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { civicStyles, civicType } from "../../theme/civicDesign";
+} from "../../../navigation/types";
+import { useAlerts } from "../../../hooks/useAlerts";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { useUnreadNotificationCount } from "../../../hooks/useNotifications";
+import { useDashboardLocation } from "./useDashboardLocation";
+import { useLocation } from "../../../shared/hooks/useLocation";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { civicStyles, civicType } from "../../../theme/civicDesign";
 import {
   CitizenSearch,
   CitizenTopBar,
-} from "../../components/citizen/v2/CitizenUI";
-import { matchesReportSearch } from "../../utils/citizenPresentation";
-import { openGoogleMaps } from "../../utils/maps";
-import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
+} from "../components/v2/CitizenUI";
+import { matchesReportSearch } from "../model/citizenPresentation";
+import { openGoogleMaps } from "../../../utils/maps";
+import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
 import {
   getCategoryLabel,
   getSeverityLabel,
   getWorkflowStatusLabel,
-} from "../../utils/aiAnalysis";
+} from "../../../utils/aiAnalysis";
 import {
   distanceMeters,
   getIncidentGroup,
   INCIDENT_COLORS,
   NEARBY_RADIUS_METERS,
   toMapCoordinate,
-} from "../../utils/citizenIncidents";
-import type { MapFilter } from "../../utils/citizenIncidents";
+} from "../model/citizenIncidents";
+import type { MapFilter } from "../model/citizenIncidents";
 
 type Props = BottomTabScreenProps<CitizenTabParamList, "MapTab">;
 const FILTERS: MapFilter[] = [

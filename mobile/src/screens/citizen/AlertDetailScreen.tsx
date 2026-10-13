@@ -29,12 +29,12 @@ import {
   useDeleteAlert,
   useRestoreAlert,
 } from "../../hooks/useAlerts";
-import { useProfile } from "../../hooks/useAuth";
+import { useProfile } from "../../features/auth/hooks/useAuth";
 import { useOfficers, useUser } from "../../hooks/useUsers";
 import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
 import { CloseIncidentModal } from "../../components/modals/CloseIncidentModal";
 import { EditAlertModal } from "../../components/modals/EditAlertModal";
-import { CitizenHeader } from "../../components/citizen/CitizenHeader";
+import { CitizenHeader } from "../../features/citizen/components/CitizenHeader";
 import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
 import {
   civicSpace as space,

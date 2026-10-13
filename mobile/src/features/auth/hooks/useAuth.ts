@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "../api/authService";
-import { LoginCredentials, RegisterData } from "../shared/types/index";
-import { storage } from "../shared/lib/storage";
+import { LoginCredentials, RegisterData } from "../../../shared/types/index";
+import { storage } from "../../../shared/lib/storage";
 import type { QueryClient } from "@tanstack/react-query";
-import type { User } from "../shared/types/index";
+import type { User } from "../../../shared/types/index";
 
 // Keep the observed profile query alive: removing it can orphan RootNavigator
 // while a subsequent login writes the new session to a different query instance.

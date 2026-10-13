@@ -8,12 +8,12 @@ import {
   Plus,
   Settings,
 } from "lucide-react-native";
-import { CitizenDashboardScreen } from "../screens/citizen/CitizenDashboardScreen";
-import { CitizenMapScreen } from "../screens/citizen/CitizenMapScreen";
-import { CitizenNotificationsScreen } from "../screens/citizen/CitizenNotificationsScreen";
-import { MyReportsScreen } from "../screens/citizen/MyReportsScreen";
-import { CitizenProfileScreen } from "../screens/citizen/CitizenProfileScreen";
-import { CitizenSettingsScreen } from "../screens/citizen/CitizenSettingsScreen";
+import { CitizenDashboardScreen } from "../features/citizen/home/CitizenDashboardScreen";
+import { CitizenMapScreen } from "../features/citizen/nearby/CitizenMapScreen";
+import { CitizenNotificationsScreen } from "../features/citizen/notifications/CitizenNotificationsScreen";
+import { MyReportsScreen } from "../features/citizen/my-reports/MyReportsScreen";
+import { CitizenProfileScreen } from "../features/citizen/profile/CitizenProfileScreen";
+import { CitizenSettingsScreen } from "../features/citizen/settings/CitizenSettingsScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { LocationPickerScreen } from "../screens/LocationPickerScreen";
 import { useCivicTheme } from "../theme/useCivicTheme";

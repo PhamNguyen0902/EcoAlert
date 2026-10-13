@@ -10,14 +10,14 @@ import {
   TextInput,
 } from "react-native";
 import { Mail, Lock, User as UserIcon, Phone, UserPlus, ArrowLeft, Sun, Moon, Globe, Eye, EyeOff } from "lucide-react-native";
-import { useRegister } from "../../hooks/useAuth";
-import { useFormValidation } from "../../shared/hooks/useFormValidation";
-import { GlassCard } from "../../shared/components/ui/GlassCard";
-import { Input } from "../../shared/components/ui/Input";
-import { Button } from "../../components/ui/Button";
-import { InlineBanner } from "../../shared/components/ui/InlineBanner";
-import { useTheme } from "../../theme/ThemeContext";
-import { useLanguage } from "../../i18n/LanguageContext";
+import { useRegister } from "../hooks/useAuth";
+import { useFormValidation } from "../../../shared/hooks/useFormValidation";
+import { GlassCard } from "../../../shared/components/ui/GlassCard";
+import { Input } from "../../../shared/components/ui/Input";
+import { Button } from "../../../components/ui/Button";
+import { InlineBanner } from "../../../shared/components/ui/InlineBanner";
+import { useTheme } from "../../../theme/ThemeContext";
+import { useLanguage } from "../../../i18n/LanguageContext";
 
 interface RegisterValues {
   fullName: string;

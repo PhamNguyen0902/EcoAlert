@@ -4,7 +4,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import type { HeroMotion } from "./useHeroMotion";
 
 // Bundled transparent artwork: no network dependency on Home.
-export const ECO_CITY_ASSET = require("../../../../assets/hero/eco-city.png");
+export const ECO_CITY_ASSET = require("../../../../../assets/hero/eco-city.png");
 
 export const EcoCityIllustration = memo(function EcoCityIllustration({
   motion,

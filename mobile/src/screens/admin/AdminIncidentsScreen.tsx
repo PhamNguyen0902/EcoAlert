@@ -13,7 +13,7 @@ import { AlertTriangle, ChevronRight, Filter, LogOut, MapPin } from "lucide-reac
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Alert as Incident } from "../../shared/types/index";
 import { useAlerts, useCategories } from "../../hooks/useAlerts";
-import { useLogout } from "../../hooks/useAuth";
+import { useLogout } from "../../features/auth/hooks/useAuth";
 import { Badge } from "../../shared/components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../shared/components/ui/Card";

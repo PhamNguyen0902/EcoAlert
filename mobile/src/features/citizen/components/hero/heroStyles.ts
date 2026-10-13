@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { civicSpace, civicType } from "../../../theme/civicDesign";
+import { civicSpace, civicType } from "../../../../theme/civicDesign";
 
 export const heroPalette = (dark: boolean) => ({
   background: dark ? "#07101F" : "#F0FAF6",

@@ -16,7 +16,7 @@ import {
   useAddOfficerNote,
   useStartHandling,
 } from "../../hooks/useAlerts";
-import { useProfile } from "../../hooks/useAuth";
+import { useProfile } from "../../features/auth/hooks/useAuth";
 import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
 import { Input } from "../../shared/components/ui/Input";
 import { Button } from "../../components/ui/Button";

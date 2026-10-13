@@ -1,5 +1,5 @@
 import { format, isValid } from "date-fns";
-import type { Alert } from "../shared/types/index";
+import type { Alert } from "../../../shared/types/index";
 
 export const reportImage = (alert: Alert): string | undefined =>
   alert.fieldEvidence?.[0]?.displayUrl ||

@@ -1,4 +1,4 @@
-import type { Alert, GeoLocation } from "../shared/types/index";
+import type { Alert, GeoLocation } from "../../../shared/types/index";
 
 export type IncidentGroup = "PENDING" | "PROCESSING" | "RESOLVED";
 export type MyReportFilter = "ALL" | "PENDING" | "PROCESSING" | "RESOLVED";

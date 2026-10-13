@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MapPin, ShieldCheck } from "lucide-react-native";
 import { useAlert, useConfirmArrival } from "../../hooks/useAlerts";
-import { useProfile } from "../../hooks/useAuth";
+import { useProfile } from "../../features/auth/hooks/useAuth";
 import { useOfficerPosition } from "../../hooks/useOfficerPosition";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import {

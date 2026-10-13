@@ -12,51 +12,51 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FileText, PlusCircle, Edit2, Trash2 } from "lucide-react-native";
-import { useCitizenReports, useDeleteAlert } from "../../hooks/useAlerts";
-import { useProfile } from "../../hooks/useAuth";
-import { useUnreadNotificationCount } from "../../hooks/useNotifications";
-import { EditAlertModal } from "../../components/modals/EditAlertModal";
+import { useCitizenReports, useDeleteAlert } from "../../../hooks/useAlerts";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { useUnreadNotificationCount } from "../../../hooks/useNotifications";
+import { EditAlertModal } from "../../../components/modals/EditAlertModal";
 import {
   CitizenSearch,
   CitizenStat,
   CitizenTopBar,
-} from "../../components/citizen/v2/CitizenUI";
-import { CitizenReportProgress } from "../../components/citizen/v2/CitizenReportProgress";
+} from "../components/v2/CitizenUI";
+import { CitizenReportProgress } from "../components/v2/CitizenReportProgress";
 import {
   matchesReportSearch,
   reportTime,
   reportImage,
-} from "../../utils/citizenPresentation";
-import { CitizenReportCard } from "../../components/citizen/CitizenReportCard";
-import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
+} from "../model/citizenPresentation";
+import { CitizenReportCard } from "../components/CitizenReportCard";
+import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
 import {
   civicSpace as space,
   civicRadius as radius,
   civicType,
   civicStyles,
-} from "../../theme/civicDesign";
-import { Card } from "../../shared/components/ui/Card";
-import { Badge } from "../../shared/components/ui/Badge";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { useLanguage } from "../../i18n/LanguageContext";
-import type { Alert as AlertItem } from "../../shared/types/index";
+} from "../../../theme/civicDesign";
+import { Card } from "../../../shared/components/ui/Card";
+import { Badge } from "../../../shared/components/ui/Badge";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import type { Alert as AlertItem } from "../../../shared/types/index";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type {
   CitizenStackParamList,
   CitizenTabParamList,
-} from "../../navigation/types";
+} from "../../../navigation/types";
 import {
   getAiAnalysisState,
   getCategoryLabel,
   getSeverityLabel,
   getWorkflowStatusLabel,
-} from "../../utils/aiAnalysis";
+} from "../../../utils/aiAnalysis";
 
-import { useOfflineSync } from "../../hooks/useOfflineSync";
+import { useOfflineSync } from "../../../hooks/useOfflineSync";
 import { CloudUpload, RefreshCw } from "lucide-react-native";
-import { matchesMyReportFilter } from "../../utils/citizenIncidents";
-import type { MyReportFilter } from "../../utils/citizenIncidents";
+import { matchesMyReportFilter } from "../model/citizenIncidents";
+import type { MyReportFilter } from "../model/citizenIncidents";
 // màn hình danh sách các báo cáo do chính người dân tạo và quản lý
 export const MyReportsScreen: React.FC<
   BottomTabScreenProps<CitizenTabParamList, "MyReportsTab">

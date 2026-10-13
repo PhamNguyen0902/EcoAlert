@@ -149,6 +149,28 @@ if (mode === 'inventory') {
   for (const [old,values] of replacements) if(values.size===1) test=test.split(`'${old}'`).join(`'${[...values][0]}'`);
   fs.writeFileSync(path.join(root,testFile),test);
   console.log(`Phase ${mode}: moved ${moves.length}; ambiguous test mocks:`,[...replacements].filter(([,v])=>v.size>1).map(([k,v])=>[k,[...v]]));
+} else if (mode === 'tests') {
+  const inventory=JSON.parse(read(snapshot));
+  const current=f=>fs.existsSync(path.join(root,f.to))?f.to:f.file;
+  const baseline=cp.execFileSync('git',['show',`${inventory.baseline}:mobile/tests/report-semantic-flow.test.cjs`],{cwd:root,encoding:'utf8'});
+  const cardStart=baseline.indexOf("test('shared Step 3/");
+  const harnessStart=baseline.indexOf('function harness(');
+  const blocks=[baseline.slice(0,cardStart),baseline.slice(cardStart,harnessStart),baseline.slice(harnessStart)];
+  const contexts=['src/api/alertService.ts','src/features/report/components/stitch/FieldAiResultCard.tsx','src/features/report/screens/ReportConfirmScreen.tsx'];
+  const output=blocks.map((block,i)=>block.replace(/'([^'\r\n]+)'/g,(whole,spec)=>{
+    const direct=inventory.files.find(f=>f.file==='src/'+spec);
+    if(direct) return `'${current(direct).replace(/^src\//,'')}'`;
+    if(!spec.startsWith('.')) return whole;
+    const base=path.posix.normalize(path.posix.join(path.posix.dirname(contexts[i]),spec));
+    const target=inventory.files.find(f=>[base,base+'.ts',base+'.tsx',base+'/index.ts'].includes(f.file));
+    if(!target) return whole;
+    const origin=current(inventory.files.find(f=>f.file===contexts[i]));
+    let relative=slash(path.relative(path.dirname(origin),current(target))).replace(/\.tsx?$/,'');
+    if(!relative.startsWith('.')) relative='./'+relative;
+    return `'${relative}'`;
+  })).join('');
+  fs.writeFileSync(path.join(root,'tests/report-semantic-flow.test.cjs'),output);
+  console.log('Updated existing test source paths and contextual mock identifiers; assertions unchanged.');
 } else if (mode === 'commit') {
   const inventory=JSON.parse(read(snapshot));
   const eligible=inventory.files.filter(f=>!inventory.protectedFiles.includes(f.file)).flatMap(f=>[f.file,f.to]).filter(f=>fs.existsSync(path.join(root,f)));

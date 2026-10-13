@@ -1,8 +1,8 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Card } from "../../shared/components/ui/Card";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { civicRadius, civicSpace } from "../../theme/civicDesign";
+import { Card } from "../../../shared/components/ui/Card";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { civicRadius, civicSpace } from "../../../theme/civicDesign";
 
 /** Same thumbnail/copy geometry as compact CitizenReportCard; no extra animation. */
 export function CitizenActivitySkeleton() {

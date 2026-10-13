@@ -24,22 +24,22 @@ import { formatDistanceToNow, isValid } from "date-fns";
 import { enUS, vi } from "date-fns/locale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { CitizenStackParamList } from "../../navigation/types";
-import type { NotificationItem } from "../../shared/types/notification";
-import { CitizenHeader } from "../../components/citizen/CitizenHeader";
+import type { CitizenStackParamList } from "../../../navigation/types";
+import type { NotificationItem } from "../../../shared/types/notification";
+import { CitizenHeader } from "../components/CitizenHeader";
 import {
   useInfiniteNotifications,
   useUnreadNotificationCount,
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
   useDeleteNotification,
-} from "../../hooks/useNotifications";
-import { useProfile } from "../../hooks/useAuth";
-import { useLanguage } from "../../i18n/LanguageContext";
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { civicStyles, civicType } from "../../theme/civicDesign";
-import { getNotificationAlertId } from "../../utils/notificationNavigation";
-import { notificationPresentation } from "../../utils/notificationPresentation";
+} from "../../../hooks/useNotifications";
+import { useProfile } from "../../auth/hooks/useAuth";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { civicStyles, civicType } from "../../../theme/civicDesign";
+import { getNotificationAlertId } from "../../../utils/notificationNavigation";
+import { notificationPresentation } from "../../../utils/notificationPresentation";
 
 type Props = NativeStackScreenProps<CitizenStackParamList, "Notifications">;
 // màn hình danh sách thông báo về tiến độ xử lý sự cố gửi đến người dân

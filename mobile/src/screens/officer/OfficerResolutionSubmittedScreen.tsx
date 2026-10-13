@@ -4,7 +4,7 @@ import { Check, CheckCircle2, Clock3 } from "lucide-react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAlert } from "../../hooks/useAlerts";
-import { useProfile } from "../../hooks/useAuth";
+import { useProfile } from "../../features/auth/hooks/useAuth";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import {
   OfficerHeader,
