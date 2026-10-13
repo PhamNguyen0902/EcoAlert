@@ -20,6 +20,7 @@ interface CloseIncidentModalProps {
   onClose: () => void;
 }
 
+// hiển thị cửa sổ chọn số sao hài lòng, nhập nhận xét và đóng sự cố
 export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
   visible,
   alertId,
@@ -31,6 +32,7 @@ export const CloseIncidentModal: React.FC<CloseIncidentModalProps> = ({
   const [rating, setRating] = useState(5);
   const closeMutation = useCloseIncident();
 
+  // gửi đánh giá số sao, nhận xét và đóng báo cáo sau khi đã xử lý xong
   const handleCloseIncident = async () => {
     try {
       await closeMutation.mutateAsync({

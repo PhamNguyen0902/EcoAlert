@@ -59,7 +59,7 @@ const accuracyTone = (accuracy: number | null) =>
         : accuracy <= 50
           ? "acceptable"
           : "weak";
-// màn hình bước một xác minh vị trí gps hiện trường của thiết bị
+// màn hình kiểm tra vị trí gps hiện tại của điện thoại
 export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
@@ -79,6 +79,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
   const requestedRef = useRef(false);
   const active = useForegroundScreen();
   const now = useScreenClock(15000, active);
+  // lấy tọa độ gps và địa chỉ hiện tại rồi lưu vào bản nháp báo cáo
   const acquireLocation = useCallback(async () => {
     const result = await fetchLocation();
     if (!result?.coords || result.accuracyMeters === null) return;
@@ -154,11 +155,13 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
+      {/* màn hình xác nhân vị trí */}
       <ReportHeader title="Xác nhận vị trí" onBack={navigation.goBack} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* bước 1 */}
         <ReportProgress step={1} />
         <ReportScreenIntro
           eyebrow="⌖ TỌA ĐỘ THỜI GIAN THỰC"
