@@ -1,7 +1,7 @@
 import React from "react";
 import { EvidenceImageFrame } from "../../../components/media/EvidenceImageFrame";
 
-/** Confirmation shows the watermarked rendition, preserving the original fallback. */
+// ưu tiên hiển thị ảnh đã gắn thông tin ngày giờ và tọa độ, nếu lỗi thì hiển thị ảnh gốc
 export const ReportEvidenceImage = (props: {
   imageUri: string;
   fallbackUri: string;

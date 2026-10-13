@@ -45,7 +45,7 @@ import { fieldLocationReady } from "../components/stitch/fieldPresentation";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportCamera">;
 const MAX_LOCATION_AGE_MS = 5 * 60_000;
-// màn hình bước hai chụp ảnh trực tiếp tại hiện trường bằng camera
+// hiển thị camera kèm thông tin tọa độ và ngày giờ trên màn hình chụp
 export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -58,7 +58,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [cameraReady, setCameraReady] = useState(false);
   const [zoom, setZoom] = useState(0);
   const isActive = useForegroundScreen();
-  // Freshness UI needs a coarse clock; the HUD owns its one-second clock.
+  // kiểm tra định kỳ xem vị trí gps còn mới hay đã quá hạn
   const now = useScreenClock(15000, isActive);
   const activeRef = useRef(isActive);
   const activityEpoch = useRef(0);
@@ -96,13 +96,13 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     if (permission === null) void requestPermission();
   }, [permission, requestPermission]);
-  // quay lại màn hình xác minh vị trí khi dữ liệu gps đã quá hạn thời gian
+  // quay về màn hình lấy lại gps nếu để quá lâu chưa chụp ảnh
   const returnToGps = () => {
     if (locationAge > MAX_LOCATION_AGE_MS)
       setDraft((current) => ({ ...current, location: undefined }));
     navigation.navigate("ReportLocation");
   };
-  // chụp ảnh trực tiếp từ camera, chuẩn hóa kích thước và lưu trữ ảnh gốc vào bộ nhớ an toàn
+  // chụp ảnh từ camera, chỉnh lại kích thước và lưu ảnh vào máy
   const takePicture = async () => {
     if (
       !cameraRef.current ||
@@ -134,7 +134,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         normalized.uri,
         capturedAt,
       );
-      // A finished native capture must not reopen this flow after leaving it.
+      // nếu người dùng đã thoát màn hình thì khi chụp ảnh xong cũng không tự chuyển trang nữa
       if (
         !activeRef.current ||
         epoch !== activityEpoch.current ||
@@ -267,6 +267,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.captureContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* bước 2: chụp ảnh hiện trường */}
         <ReportProgress step={2} status="THẨM ĐỊNH THỰC ĐỊA" />
         <View style={styles.stageRow}>
           <Text style={styles.stageText}>CHỤP BAO QUÁT ĐIỂM RÁC</Text>
