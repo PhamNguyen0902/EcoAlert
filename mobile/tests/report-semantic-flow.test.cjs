@@ -13,7 +13,7 @@ function load(file, imports = {}) {
   }).outputText, { exports, Error, Date, Number, console, require(id) { assert.ok(id in imports, id); return imports[id]; } });
   return exports;
 }
-const utils = load('features/report/semanticResult.ts');
+const utils = load('citizen/report/semanticResult.ts');
 const result = (extra = {}) => ({
   category: 'illegal_dumping', categoryConfidence: 0.75, incidentConfidence: 0.9, isIncident: true,
   classificationStatus: 'AI_SUGGESTED', confidenceTier: 'REVIEW_REQUIRED', analysisMode: 'IMAGE_AND_TEXT',
@@ -71,7 +71,7 @@ test('manual selection stays separate from AI suggestion and serializes correct 
 test('mobile API adapter preserves the real response envelope and mass fields', async () => {
   const data = result();
   let request;
-  const service = load('api/alertService.ts', { './client': { api: { post: async (...args) => { request = args; return { data: { success: true, data } }; } } } }).alertService;
+  const service = load('shared/api/alertService.ts', { './client': { api: { post: async (...args) => { request = args; return { data: { success: true, data } }; } } } }).alertService;
   const response = await service.validateImageSemantics('https://example.com/evidence.jpg');
   assert.equal(response, data);
   assert.equal(request[0], '/v1/ai/validate-image');
@@ -89,11 +89,11 @@ function text(tree) {
   return tree?.props ? text(tree.props.children) : '';
 }
 test('shared Step 3/confirmation card distinguishes category confidence from YOLO and displays API mass', () => {
-  const Card = load('features/report/components/stitch/FieldAiResultCard.tsx', {
+  const Card = load('citizen/report/components/stitch/FieldAiResultCard.tsx', {
     react: { ...React, default: React },
     'react-native': { View: 'View', Text: 'Text', Animated: {}, StyleSheet: { create: x => x } },
     'lucide-react-native': new Proxy({}, { get: (_, key) => String(key) }),
-    '../../../../utils/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
+    '../../../../shared/utils/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
     '../WasteDetectionChips': { WasteDetectionChips: 'WasteDetectionChips' },
     './fieldPresentation': { fieldConfidence: n => typeof n === 'number' ? n : null },
     './fieldDesign': { fieldColors: {}, fieldStyles: {} },
@@ -136,12 +136,12 @@ function harness(semantic = async () => result()) {
     react, 'react-native': native,
     'lucide-react-native': new Proxy({}, { get: (_, key) => String(key) }),
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
-    '../../../theme/civicDesign': { civicSpace: {}, civicRadius: {}, civicType: {} },
-    '../../../api/alertService': { alertService: service },
-    '../../../hooks/useOfflineSync': { useOfflineSync: () => ({ isOffline: offline }) },
-    '../../../hooks/useAlerts': { useCheckNearbyAlerts: () => ({ data: [] }), useConfirmAlert: () => ({}), useCreateAlert: () => ({ mutateAsync: async p => { payload = p; return { _id: 'created' }; } }) },
-    '../../../utils/offlineQueue': { offlineQueue: { saveOfflineDraft: async p => { queued = p; } } },
-    '../../../utils/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
+    '../../../shared/theme/civicDesign': { civicSpace: {}, civicRadius: {}, civicType: {} },
+    '../../../shared/api/alertService': { alertService: service },
+    '../hooks/useOfflineSync': { useOfflineSync: () => ({ isOffline: offline }) },
+    '../../../shared/hooks/useAlerts': { useCheckNearbyAlerts: () => ({ data: [] }), useConfirmAlert: () => ({}), useCreateAlert: () => ({ mutateAsync: async p => { payload = p; return { _id: 'created' }; } }) },
+    '../offlineQueue': { offlineQueue: { saveOfflineDraft: async p => { queued = p; } } },
+    '../../../shared/utils/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
     '../useReportTheme': { useReportTheme: () => ({ colors: {} }) },
     '../FieldReportContext': { useFieldReport: () => ({ draft, setDraft: update => { draft = typeof update === 'function' ? update(draft) : update; } }) },
     '../semanticResult': utils,
@@ -151,12 +151,12 @@ function harness(semantic = async () => result()) {
   for (const [id, names] of Object.entries({
     '../components/ReportBottomActions': ['ReportBottomActions'], '../components/ReportHeader': ['ReportHeader'],
     '../components/ReportProgress': ['ReportProgress'], '../components/ReportScreenIntro': ['ReportScreenIntro'],
-    '../../../components/vision/WasteDetectionImage': ['WasteDetectionImage'], '../../../components/media/ZoomableImageViewer': ['ZoomableImageViewer'],
+    '../../../shared/components/vision/WasteDetectionImage': ['WasteDetectionImage'], '../../../shared/components/media/ZoomableImageViewer': ['ZoomableImageViewer'],
     '../components/stitch/FieldAiResultCard': ['FieldAiResultCard'], '../components/stitch/FieldReportSummary': ['FieldReportSummary'],
     '../components/stitch/FieldUI': ['FieldEvidenceMetaOverlay','FieldNotice','FieldScanLine'],
   })) imports[id] = Object.fromEntries(names.map(n => [n,n]));
-  const Validation = load('features/report/screens/ReportImageValidationScreen.tsx', imports).ReportImageValidationScreen;
-  const Confirm = load('features/report/screens/ReportConfirmScreen.tsx', imports).ReportConfirmScreen;
+  const Validation = load('citizen/report/screens/ReportImageValidationScreen.tsx', imports).ReportImageValidationScreen;
+  const Confirm = load('citizen/report/screens/ReportConfirmScreen.tsx', imports).ReportConfirmScreen;
   const navigation = { navigate: (...args) => calls.nav.push(args), goBack() {} };
   return {
     calls, get draft() { return draft; }, get payload() { return payload; }, get queued() { return queued; },

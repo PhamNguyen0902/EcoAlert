@@ -9,10 +9,10 @@ import {
   DarkTheme,
 } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { RootNavigator } from "./src/navigation/RootNavigator";
-import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
-import { LanguageProvider } from "./src/context/LanguageContext";
-import { SocketProvider } from "./src/context/SocketContext";
+import { RootNavigator } from "./src/app/navigation/RootNavigator";
+import { ThemeProvider, useTheme } from "./src/shared/context/ThemeContext";
+import { LanguageProvider } from "./src/shared/context/LanguageContext";
+import { SocketProvider } from "./src/app/providers/SocketContext";
 
 // Create TanStack Query client with custom retry and cache policies
 const queryClient = new QueryClient({
@@ -25,15 +25,15 @@ const queryClient = new QueryClient({
   },
 });
 
-import { pushNotificationService } from "./src/services/pushNotificationService";
-import { useOfflineSync } from "./src/hooks/useOfflineSync";
-import { getPhysicalDeviceApiUrlWarning } from "./src/utils/constants";
-import { useProfile } from "./src/hooks/useAuth";
+import { pushNotificationService } from "./src/shared/services/pushNotificationService";
+import { useOfflineSync } from "./src/citizen/report/hooks/useOfflineSync";
+import { getPhysicalDeviceApiUrlWarning } from "./src/shared/utils/constants";
+import { useProfile } from "./src/auth/hooks/useAuth";
 import {
   navigationRef,
   flushPendingNotification,
   openNotificationPayload,
-} from "./src/navigation/navigationRef";
+} from "./src/app/navigation/navigationRef";
 
 const AppContent: React.FC = () => {
   const { isDark, colors } = useTheme();
