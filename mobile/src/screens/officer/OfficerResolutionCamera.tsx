@@ -21,6 +21,7 @@ import {
   type OfficerPhoto,
 } from "../../utils/officerResolution";
 
+// chụp ảnh sau khi dọn xong
 export function OfficerResolutionCamera({
   onCapture,
   onClose,
@@ -53,6 +54,7 @@ export function OfficerResolutionCamera({
       listener.remove();
     };
   }, []);
+  // lấy tọa độ gps, chụp ảnh sau khi dọn xong và lưu ảnh vào máy
   const capture = async () => {
     if (!camera.current || !ready || captureLock.current) return;
     captureLock.current = true;

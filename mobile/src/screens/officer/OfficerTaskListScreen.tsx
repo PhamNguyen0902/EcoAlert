@@ -28,6 +28,7 @@ import {
 } from "../../utils/officerWorkflow";
 import { searchOfficerTasks } from "../../utils/officerPresentation";
 import type { OfficerStackParamList } from "../../navigation/types";
+// hiển thị toàn bộ công việc được giao kèm ô tìm kiếm và nút lọc tiến độ
 export function OfficerTaskListScreen({
   navigation,
 }: NativeStackScreenProps<OfficerStackParamList, "OfficerTaskList">) {

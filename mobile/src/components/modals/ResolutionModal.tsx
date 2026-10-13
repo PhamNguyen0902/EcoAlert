@@ -44,6 +44,7 @@ const MATERIAL_OPTIONS = [
   "Máy bơm hút xả",
 ];
 
+// hiển thị cửa sổ điền kết quả xử lý, phương pháp, dụng cụ và ảnh chụp sau khi dọn xong
 export const ResolutionModal: React.FC<ResolutionModalProps> = ({
   visible,
   alertId,
@@ -60,10 +61,12 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
   const resolveMutation = useResolveIncident();
   const uploadMutation = useUploadMedia();
 
+  // chọn nhanh một phương pháp xử lý sự cố từ danh sách gợi ý
   const handleSelectTreatment = (val: string) => {
     setTreatmentMethod(val);
   };
 
+  // thêm hoặc bớt vật tư thiết bị sử dụng vào danh sách
   const handleSelectMaterial = (val: string) => {
     if (!materialsUsed) {
       setMaterialsUsed(val);
@@ -74,6 +77,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
     }
   };
 
+  // mở hộp thoại chọn chụp ảnh mới từ camera hoặc lấy ảnh từ thư viện
   const handlePickPhoto = () => {
     RNAlert.alert(
       "Attach Resolution Proof Evidence",
@@ -119,6 +123,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
     );
   };
 
+  // tải ảnh chụp sau khi xử lý lên hệ thống
   const uploadSelectedPhoto = async (localUri: string) => {
     setIsUploading(true);
     try {
@@ -135,6 +140,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
     }
   };
 
+  // kiểm tra đủ thông tin, lấy vị trí gps và gửi kết quả hoàn thành xử lý
   const handleResolve = async () => {
     if (!resolutionSummary.trim()) {
       RNAlert.alert("Lỗi xác thực", "Tóm tắt giải quyết là bắt buộc.");
@@ -170,7 +176,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
             accuracyMeters: current.coords.accuracy ?? Number.MAX_SAFE_INTEGER,
           };
         } catch {
-          // GPS context is best-effort; the verified check-in remains mandatory server-side.
+          // lấy thêm tọa độ gps lúc gửi nếu có, còn bước điểm danh tại chỗ vẫn bắt buộc trên hệ thống
         }
       }
 
@@ -226,7 +232,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
               onChangeText={setResolutionSummary}
             />
 
-            {/* Quick Select Treatment Method Chips */}
+            {/* danh sách thẻ chọn nhanh phương pháp xử lý */}
             <Text style={[styles.label, { color: colors.text }]}>Phương pháp xử lý (Chọn tùy chọn) *</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {TREATMENT_OPTIONS.map((opt) => {
@@ -269,7 +275,7 @@ export const ResolutionModal: React.FC<ResolutionModalProps> = ({
               onChangeText={setTreatmentMethod}
             />
 
-            {/* Quick Select Materials Chips */}
+            {/* danh sách thẻ chọn nhanh vật tư và thiết bị */}
             <Text style={[styles.label, { color: colors.text }]}>Vật tư & Thiết bị sử dụng</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
               {MATERIAL_OPTIONS.map((mat) => {
