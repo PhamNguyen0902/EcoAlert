@@ -36,7 +36,6 @@
     " D mobile/tests/report-stitch.test.cjs",
     " D mobile/tests/visionBoundingBox.test.cjs",
     "?? mobile/docs/officer-map-interaction-qa.md",
-    "?? mobile/scripts/architecture-migration.cjs",
     "?? mobile/src/hooks/useOfficerMapFollow.ts",
     "?? mobile/src/utils/officerMapCamera.ts",
     "?? mobile/tests/officer-map-interaction.test.cjs"
@@ -76,7 +75,6 @@
     "tests/report-stitch.test.cjs",
     "tests/visionBoundingBox.test.cjs",
     "docs/officer-map-interaction-qa.md",
-    "scripts/architecture-migration.cjs",
     "src/hooks/useOfficerMapFollow.ts",
     "src/utils/officerMapCamera.ts",
     "tests/officer-map-interaction.test.cjs"

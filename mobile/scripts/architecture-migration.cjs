@@ -143,11 +143,8 @@ if (mode === 'inventory') {
     if (file!==target) { fs.mkdirSync(path.dirname(path.join(root,target)),{recursive:true}); cp.execFileSync('git',['mv',file,target],{cwd:root}); }
     if (source!==updated) fs.writeFileSync(path.join(root,target),updated);
   }
-  // Existing tests use literal paths and literal mock identifiers. Only unambiguous mappings are rewritten.
-  const testFile='tests/report-semantic-flow.test.cjs'; let test=read(testFile);
-  for (const [old,next] of map) test=test.split(`'${old.replace(/^src\//,'')}'`).join(`'${next.replace(/^src\//,'')}'`);
-  for (const [old,values] of replacements) if(values.size===1) test=test.split(`'${old}'`).join(`'${[...values][0]}'`);
-  fs.writeFileSync(path.join(root,testFile),test);
+  // Mock identifiers are relative to the tested module, never globally replace them.
+  cp.execFileSync(process.execPath,[__filename,'tests'],{cwd:root,stdio:'inherit'});
   console.log(`Phase ${mode}: moved ${moves.length}; ambiguous test mocks:`,[...replacements].filter(([,v])=>v.size>1).map(([k,v])=>[k,[...v]]));
 } else if (mode === 'tests') {
   const inventory=JSON.parse(read(snapshot));
@@ -195,6 +192,14 @@ if (mode === 'inventory') {
   const report={ cycles:[...cycles], duplicateNames:duplicates, barrels:nodes.filter(f=>f.file.endsWith('/index.ts')).map(f=>({file:f.file,exports:f.exports,consumers:f.consumers})), navigation:nodes.filter(f=>f.routes.length).map(f=>({file:f.file,routes:f.routes})), testPathLiterals:nodes.filter(f=>f.file.startsWith('tests/')).map(f=>({file:f.file,paths:[...read(f.file).matchAll(/['"]([^'"\n]*(?:screens|hooks|utils|features|api|navigation)\/[^'"\n]+)['"]/g)].map(m=>m[1])})) };
   fs.writeFileSync(path.join(root,'docs/architecture-baseline-audit.json'),JSON.stringify(report,null,2)+'\n');
   console.log(JSON.stringify(report,null,2));
+} else if (mode === 'boundaries') {
+  const edges=[];
+  for(const file of walk('src')) for(const r of refs(file,read(file)).refs) {
+    const target=resolve(file,r.spec);
+    const feature=p=>(p?.match(/^src\/features\/([^/]+)/)||[])[1];
+    if(feature(file)&&feature(target)&&feature(file)!==feature(target)) edges.push({from:file,to:target});
+  }
+  console.log(JSON.stringify(Object.groupBy(edges,e=>e.to),null,2));
 } else if (mode === 'verify') {
   const inventory=JSON.parse(read(snapshot)); let checked=0;
   for(const f of inventory.files) {
@@ -203,8 +208,17 @@ if (mode === 'inventory') {
     const source=read(location), parsed=refs(location,source);
     if(hash(parsed.refs.reduceRight((s,r)=>s.slice(0,r.start)+'<module>'+s.slice(r.end),source))!==f.contentHash) throw Error(`Non-import change: ${location}`);
     for(const r of parsed.refs) if(r.spec.startsWith('.')&&!resolve(location,r.spec)) throw Error(`Unresolved ${location}: ${r.spec}`);
+    for(let i=0;i<f.imports.length;i++) {
+      const old=f.imports[i]; if(!old.target) continue;
+      const entry=inventory.files.find(x=>x.file===old.target);
+      const expected=entry&&fs.existsSync(path.join(root,entry.to))?entry.to:old.target;
+      const actual=resolve(location,parsed.refs[i].spec);
+      // The only deliberate graph change: Root now consumes Auth's two-screen public entry.
+      if(f.file==='src/navigation/RootNavigator.tsx'&&old.target==='src/screens/index.ts'&&actual==='src/features/auth/index.ts') continue;
+      if(actual!==expected) throw Error(`Dependency changed: ${location} -> ${actual}, expected ${expected}`);
+    }
     if(inventory.protectedFiles.includes(f.file)&&hash(source)!==f.hash) throw Error(`Protected file changed: ${f.file}`);
     checked++;
   }
-  console.log(`${checked} files retain exact non-import source; relative imports resolve; protected source unchanged.`);
+  console.log(`${checked} files retain exact non-import source and dependency targets (except the explicit Auth entry); relative imports resolve; protected source unchanged.`);
 } else { throw Error('Usage: inventory | B | C | D | E | F | verify'); }

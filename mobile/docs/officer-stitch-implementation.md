@@ -1,5 +1,7 @@
 # EcoAlert Officer Stitch — báo cáo triển khai
 
+Ghi chú refactor 13/10/2026: đường dẫn và trạng thái local bên dưới là bằng chứng lịch sử của đợt triển khai này. Tra đường dẫn hiện tại tại [migration ledger](architecture-migration.md) và [ARCHITECTURE](ARCHITECTURE.md). Operational Map đang sửa local vẫn giữ đường dẫn cũ; các màn Officer sạch đã chuyển sang `src/features/officer`.
+
 Ngày: 12/10/2026. Branch: `feature/mobile-field-capture`. Baseline: `41f4595`.
 
 ## 1. Chín màn hình đã tích hợp
