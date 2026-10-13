@@ -25,14 +25,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
-import { useReportTheme } from "../useReportTheme";
+import { useReportTheme } from "../hooks/useReportTheme";
 import { ReportScreenIntro } from "../components/ReportScreenIntro";
 import { ReportBottomActions } from "../components/ReportBottomActions";
 import {
   formatWatermarkData,
   persistWatermarkedDisplayImage,
-} from "../../../utils/watermark";
-import { useFieldReport } from "../FieldReportContext";
+} from "../model/watermark";
+import { useFieldReport } from "../model/FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";

@@ -13,7 +13,7 @@ function load(file, imports = {}) {
   }).outputText, { exports, Error, Date, Number, console, require(id) { assert.ok(id in imports, id); return imports[id]; } });
   return exports;
 }
-const utils = load('features/report/semanticResult.ts');
+const utils = load('features/report/model/semanticResult.ts');
 const result = (extra = {}) => ({
   category: 'illegal_dumping', categoryConfidence: 0.75, incidentConfidence: 0.9, isIncident: true,
   classificationStatus: 'AI_SUGGESTED', confidenceTier: 'REVIEW_REQUIRED', analysisMode: 'IMAGE_AND_TEXT',
@@ -98,7 +98,7 @@ test('shared Step 3/confirmation card distinguishes category confidence from YOL
     './fieldPresentation': { fieldConfidence: n => typeof n === 'number' ? n : null },
     './fieldDesign': { fieldColors: {}, fieldStyles: {} },
     './FieldUI': { FieldEntrance: 'FieldEntrance' },
-    '../../semanticResult': utils,
+    '../../model/semanticResult': utils,
   }).FieldAiResultCard;
   const a = { ...utils.mapSemanticResult(result()), detectedObjects: [{ label: 'plastic_bag', confidence: 0.92 }], yoloConfidence: 0.92 };
   for (const compact of [true, false]) {
@@ -138,14 +138,14 @@ function harness(semantic = async () => result()) {
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '../../../theme/civicDesign': { civicSpace: {}, civicRadius: {}, civicType: {} },
     '../../../api/alertService': { alertService: service },
-    '../../../hooks/useOfflineSync': { useOfflineSync: () => ({ isOffline: offline }) },
+    '../offline/useOfflineSync': { useOfflineSync: () => ({ isOffline: offline }) },
     '../../../hooks/useAlerts': { useCheckNearbyAlerts: () => ({ data: [] }), useConfirmAlert: () => ({}), useCreateAlert: () => ({ mutateAsync: async p => { payload = p; return { _id: 'created' }; } }) },
-    '../../../utils/offlineQueue': { offlineQueue: { saveOfflineDraft: async p => { queued = p; } } },
+    '../offline/offlineQueue': { offlineQueue: { saveOfflineDraft: async p => { queued = p; } } },
     '../../../utils/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
-    '../useReportTheme': { useReportTheme: () => ({ colors: {} }) },
-    '../FieldReportContext': { useFieldReport: () => ({ draft, setDraft: update => { draft = typeof update === 'function' ? update(draft) : update; } }) },
-    '../semanticResult': utils,
-    '../types': { MAX_FIELD_GPS_ACCURACY_METERS: 50 },
+    '../hooks/useReportTheme': { useReportTheme: () => ({ colors: {} }) },
+    '../model/FieldReportContext': { useFieldReport: () => ({ draft, setDraft: update => { draft = typeof update === 'function' ? update(draft) : update; } }) },
+    '../model/semanticResult': utils,
+    '../model/types': { MAX_FIELD_GPS_ACCURACY_METERS: 50 },
     '../components/stitch/fieldDesign': { fieldStyles: {} },
   };
   for (const [id, names] of Object.entries({

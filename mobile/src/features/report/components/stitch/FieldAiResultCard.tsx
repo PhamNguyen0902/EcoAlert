@@ -10,12 +10,12 @@ import {
   getCategoryLabel,
   getSeverityLabel,
 } from "../../../../utils/aiAnalysis";
-import type { FieldReportImageValidationDraft } from "../../types";
+import type { FieldReportImageValidationDraft } from "../../model/types";
 import { WasteDetectionChips } from "../WasteDetectionChips";
 import { fieldConfidence } from "./fieldPresentation";
 import { fieldColors as c, fieldStyles as s } from "./fieldDesign";
 import { FieldEntrance, useFieldReducedMotion } from "./FieldUI";
-import { massPresentation } from "../../semanticResult";
+import { massPresentation } from "../../model/semanticResult";
 
 /** All displayed conclusions come from the existing draft/API, never visual fixtures. */
 export function FieldAiResultCard({

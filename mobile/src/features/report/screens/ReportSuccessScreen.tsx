@@ -25,8 +25,8 @@ import type {
 import { useAlert } from "../../../hooks/useAlerts";
 import { getWorkflowStatusLabel } from "../../../utils/aiAnalysis";
 import { reportTime } from "../../citizen/model/citizenPresentation";
-import { useFieldReport } from "../FieldReportContext";
-import { formatAlertReference } from "../utils";
+import { useFieldReport } from "../model/FieldReportContext";
+import { formatAlertReference } from "../model/utils";
 import { FieldEntrance, FieldNotice } from "../components/stitch/FieldUI";
 import { FieldProcessingTimeline } from "../components/stitch/FieldProcessingTimeline";
 import { readableFieldAddress } from "../components/stitch/fieldPresentation";

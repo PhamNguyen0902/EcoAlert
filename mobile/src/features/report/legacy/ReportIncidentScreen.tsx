@@ -37,19 +37,19 @@ import {
   useConfirmAlert,
   useCreateAlert,
   useUploadMedia,
-} from "../../hooks/useAlerts";
-import { useLocation } from "../../shared/hooks/useLocation";
-import { useOfflineSync } from "../../hooks/useOfflineSync";
-import { offlineQueue } from "../../utils/offlineQueue";
-import { formatWatermarkData } from "../../utils/watermark";
-import { GlassCard } from "../../shared/components/ui/GlassCard";
-import { Card } from "../../shared/components/ui/Card";
-import { Input } from "../../shared/components/ui/Input";
-import { Button } from "../../components/ui/Button";
-import { useTheme } from "../../theme/ThemeContext";
-import { useLanguage } from "../../i18n/LanguageContext";
-import type { CitizenStackParamList, CitizenTabParamList } from "../../navigation/types";
-import { getAiAnalysisState, getWorkflowStatusLabel } from "../../utils/aiAnalysis";
+} from "../../../hooks/useAlerts";
+import { useLocation } from "../../../shared/hooks/useLocation";
+import { useOfflineSync } from "../offline/useOfflineSync";
+import { offlineQueue } from "../offline/offlineQueue";
+import { formatWatermarkData } from "../model/watermark";
+import { GlassCard } from "../../../shared/components/ui/GlassCard";
+import { Card } from "../../../shared/components/ui/Card";
+import { Input } from "../../../shared/components/ui/Input";
+import { Button } from "../../../components/ui/Button";
+import { useTheme } from "../../../theme/ThemeContext";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import type { CitizenStackParamList, CitizenTabParamList } from "../../../navigation/types";
+import { getAiAnalysisState, getWorkflowStatusLabel } from "../../../utils/aiAnalysis";
 
 type Props = BottomTabScreenProps<CitizenTabParamList, "ReportTab">;
 

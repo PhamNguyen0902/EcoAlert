@@ -26,7 +26,7 @@ const queryClient = new QueryClient({
 });
 
 import { pushNotificationService } from "./src/services/pushNotificationService";
-import { useOfflineSync } from "./src/hooks/useOfflineSync";
+import { useOfflineSync } from "./src/features/report/offline/useOfflineSync";
 import { getPhysicalDeviceApiUrlWarning } from "./src/shared/constants/index";
 import { useProfile } from "./src/features/auth/hooks/useAuth";
 import {

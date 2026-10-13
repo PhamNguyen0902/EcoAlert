@@ -1,13 +1,13 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ReportLocationScreen } from "./screens/ReportLocationScreen";
-import { ReportCameraScreen } from "./screens/ReportCameraScreen";
-import { ReportPhotoReviewScreen } from "./screens/ReportPhotoReviewScreen";
-import { ReportImageValidationScreen } from "./screens/ReportImageValidationScreen";
-import { ReportConfirmScreen } from "./screens/ReportConfirmScreen";
-import { ReportSuccessScreen } from "./screens/ReportSuccessScreen";
-import type { ReportFlowParamList } from "../../navigation/types";
-import { FieldReportProvider } from "./FieldReportContext";
+import { ReportLocationScreen } from "../screens/ReportLocationScreen";
+import { ReportCameraScreen } from "../screens/ReportCameraScreen";
+import { ReportPhotoReviewScreen } from "../screens/ReportPhotoReviewScreen";
+import { ReportImageValidationScreen } from "../screens/ReportImageValidationScreen";
+import { ReportConfirmScreen } from "../screens/ReportConfirmScreen";
+import { ReportSuccessScreen } from "../screens/ReportSuccessScreen";
+import type { ReportFlowParamList } from "../../../navigation/types";
+import { FieldReportProvider } from "../model/FieldReportContext";
 
 const Stack = createNativeStackNavigator<ReportFlowParamList>();
 

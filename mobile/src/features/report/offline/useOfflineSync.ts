@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import NetInfo from "@react-native-community/netinfo";
 import { useQueryClient } from "@tanstack/react-query";
-import { offlineQueue, OfflineReportDraft } from "../utils/offlineQueue";
-import { alertService } from "../api/alertService";
+import { offlineQueue, OfflineReportDraft } from "./offlineQueue";
+import { alertService } from "../../../api/alertService";
 
 // hook quản lý trạng thái kết nối mạng và quy trình đồng bộ dữ liệu ngoại tuyến
 export function useOfflineSync() {

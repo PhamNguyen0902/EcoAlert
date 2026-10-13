@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import type { WasteDetectionDraft } from "../types";
+import type { WasteDetectionDraft } from "../model/types";
 import { WasteDetectionResults } from "../../../components/vision/WasteDetectionResults";
 
 /** Groups actual detections for display; no changes to draft data or submitted results. */

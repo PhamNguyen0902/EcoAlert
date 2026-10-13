@@ -15,13 +15,13 @@ import { MyReportsScreen } from "../features/citizen/my-reports/MyReportsScreen"
 import { CitizenProfileScreen } from "../features/citizen/profile/CitizenProfileScreen";
 import { CitizenSettingsScreen } from "../features/citizen/settings/CitizenSettingsScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
-import { LocationPickerScreen } from "../screens/LocationPickerScreen";
+import { LocationPickerScreen } from "../features/report/legacy/LocationPickerScreen";
 import { useCivicTheme } from "../theme/useCivicTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "../i18n/LanguageContext";
 import type { CitizenStackParamList, CitizenTabParamList } from "./types";
-import { ReportFlowNavigator } from "../features/report/ReportFlowNavigator";
-import { ReportTabLauncherScreen } from "../features/report/ReportTabLauncherScreen";
+import { ReportFlowNavigator } from "../features/report/navigation/ReportFlowNavigator";
+import { ReportTabLauncherScreen } from "../features/report/navigation/ReportTabLauncherScreen";
 
 const Tab = createBottomTabNavigator<CitizenTabParamList>();
 const Stack = createNativeStackNavigator<CitizenStackParamList>();

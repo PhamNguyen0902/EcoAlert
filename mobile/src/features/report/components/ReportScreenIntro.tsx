@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { civicType } from "../../../theme/civicDesign";
-import { useReportTheme } from "../useReportTheme";
+import { useReportTheme } from "../hooks/useReportTheme";
 
 export const ReportScreenIntro = ({
   eyebrow,

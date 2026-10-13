@@ -1,5 +1,5 @@
-import { useCivicTheme } from "../../theme/useCivicTheme";
-import { fieldColors } from "./components/stitch/fieldDesign";
+import { useCivicTheme } from "../../../theme/useCivicTheme";
+import { fieldColors } from "../components/stitch/fieldDesign";
 
 export function useReportTheme() {
   const theme = useCivicTheme();

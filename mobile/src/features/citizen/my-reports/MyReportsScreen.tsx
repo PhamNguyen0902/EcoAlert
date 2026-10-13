@@ -53,7 +53,7 @@ import {
   getWorkflowStatusLabel,
 } from "../../../utils/aiAnalysis";
 
-import { useOfflineSync } from "../../../hooks/useOfflineSync";
+import { useOfflineSync } from "../../report/offline/useOfflineSync";
 import { CloudUpload, RefreshCw } from "lucide-react-native";
 import { matchesMyReportFilter } from "../model/citizenIncidents";
 import type { MyReportFilter } from "../model/citizenIncidents";

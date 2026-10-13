@@ -48,7 +48,7 @@ import {
   CitizenTopBar,
 } from "../components/v2/CitizenUI";
 import appConfig from "../../../../app.json";
-import { offlineQueue } from "../../../utils/offlineQueue";
+import { offlineQueue } from "../../report/offline/offlineQueue";
 
 export const CitizenSettingsScreen: React.FC<
   BottomTabScreenProps<CitizenTabParamList, "SettingsTab">

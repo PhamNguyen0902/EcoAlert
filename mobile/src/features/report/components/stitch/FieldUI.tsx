@@ -10,11 +10,11 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Clock3, MapPin, ShieldCheck } from "lucide-react-native";
-import { formatCaptureTimestamp } from "../../../../utils/watermark";
+import { formatCaptureTimestamp } from "../../model/watermark";
 import type {
   FieldReportCaptureDraft,
   FieldReportLocationDraft,
-} from "../../types";
+} from "../../model/types";
 import { fieldColors as c, fieldStyles as s } from "./fieldDesign";
 import {
   useForegroundScreen,
