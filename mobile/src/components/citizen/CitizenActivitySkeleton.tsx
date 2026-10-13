@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Card } from "../ui/Card";
+import { Card } from "../../shared/components/ui/Card";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicRadius, civicSpace } from "../../theme/civicDesign";
 

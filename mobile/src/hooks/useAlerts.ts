@@ -10,7 +10,7 @@ import {
   OfficerShift,
   ResolutionInput,
   ShiftLocationInput,
-} from "../types";
+} from "../shared/types/index";
 import { AI_POLL_INTERVAL_MS, shouldPollAiAnalysis } from "../utils/aiAnalysis";
 
 const EMPTY_FILTERS: Record<string, string> = {};

@@ -9,7 +9,7 @@ import {
   UserCircle2,
 } from "lucide-react-native";
 import { useProfile, useLogout } from "../../hooks/useAuth";
-import { Card } from "../../components/ui/Card";
+import { Card } from "../../shared/components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import {
@@ -19,7 +19,7 @@ import {
   civicStyles,
 } from "../../theme/civicDesign";
 import { CitizenHeader } from "../../components/citizen/CitizenHeader";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,

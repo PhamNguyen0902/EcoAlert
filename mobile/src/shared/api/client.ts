@@ -1,6 +1,6 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
-import { API_BASE_URL } from "../utils/constants";
-import { storage } from "../utils/storage";
+import { API_BASE_URL } from "../constants/index";
+import { storage } from "../lib/storage";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

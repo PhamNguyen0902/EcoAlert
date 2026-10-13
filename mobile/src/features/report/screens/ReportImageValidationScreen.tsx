@@ -29,7 +29,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
-import type { ImageValidation } from "../../../types";
+import type { ImageValidation } from "../../../shared/types/index";
 import { mapSemanticResult, semanticErrorMessage } from "../semanticResult";
 import { alertService } from "../../../api/alertService";
 import { useOfflineSync } from "../../../hooks/useOfflineSync";

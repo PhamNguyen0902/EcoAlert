@@ -28,18 +28,18 @@ import {
   reportImage,
 } from "../../utils/citizenPresentation";
 import { CitizenReportCard } from "../../components/citizen/CitizenReportCard";
-import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
+import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
 import {
   civicSpace as space,
   civicRadius as radius,
   civicType,
   civicStyles,
 } from "../../theme/civicDesign";
-import { Card } from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
+import { Card } from "../../shared/components/ui/Card";
+import { Badge } from "../../shared/components/ui/Badge";
 import { useCivicTheme } from "../../theme/useCivicTheme";
-import { useLanguage } from "../../context/LanguageContext";
-import type { Alert as AlertItem } from "../../types";
+import { useLanguage } from "../../i18n/LanguageContext";
+import type { Alert as AlertItem } from "../../shared/types/index";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type {

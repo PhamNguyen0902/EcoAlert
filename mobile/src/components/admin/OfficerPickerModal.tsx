@@ -10,9 +10,9 @@ import {
 } from "react-native";
 import { X, UserCheck, ShieldCheck, RefreshCw, AlertCircle, Check } from "lucide-react-native";
 import { Button } from "../ui/Button";
-import { useTheme } from "../../context/ThemeContext";
-import { useLanguage } from "../../context/LanguageContext";
-import type { User } from "../../types";
+import { useTheme } from "../../theme/ThemeContext";
+import { useLanguage } from "../../i18n/LanguageContext";
+import type { User } from "../../shared/types/index";
 
 interface OfficerPickerModalProps {
   visible: boolean;

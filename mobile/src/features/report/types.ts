@@ -1,4 +1,4 @@
-import type { Alert, AlertCategory, ImageValidation, Severity, PreSubmitSemanticResult, VisualMassEstimate } from "../../types";
+import type { Alert, AlertCategory, ImageValidation, Severity, PreSubmitSemanticResult, VisualMassEstimate } from "../../shared/types/index";
 // khoảng cách sai số gps tối đa cho phép đối với báo cáo tác nghiệp hiện trường là năm mươi mét
 export const MAX_FIELD_GPS_ACCURACY_METERS = 50;
 // cấu trúc dữ liệu vị trí gps ghi nhận tại hiện trường

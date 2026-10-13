@@ -18,12 +18,12 @@ import {
 } from "react-native";
 import type { ImageLoadEvent } from "react-native";
 import { Expand } from "lucide-react-native";
-import { ZoomableImageViewer } from "../media/ZoomableImageViewer";
+import { ZoomableImageViewer } from "../../shared/components/media/ZoomableImageViewer";
 import {
   EVIDENCE_FRAME_MAX_WIDTH,
   EVIDENCE_FRAME_WIDTH,
-} from "../../utils/evidenceImageFrame";
-import type { VisionEvidence } from "../../types";
+} from "../../shared/lib/evidenceImageFrame";
+import type { VisionEvidence } from "../../shared/types/index";
 import {
   calculateContainedImageRect,
   calculateReportImageHeight,
@@ -34,12 +34,12 @@ import {
   positionDetectionLabel,
   shouldNumberDetectionLabels,
   transformBoundingBox,
-} from "../../utils/visionBoundingBox";
+} from "../../shared/lib/visionBoundingBox";
 import type {
   ContainedImageRect,
   ImageSize,
   ScreenBoundingBox,
-} from "../../utils/visionBoundingBox";
+} from "../../shared/lib/visionBoundingBox";
 
 export interface WasteDetectionImageProps {
   imageUri: string;

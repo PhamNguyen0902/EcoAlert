@@ -28,16 +28,16 @@ import {
   X,
 } from "lucide-react-native";
 import { useCreateAlert, useUploadMedia } from "../../hooks/useAlerts";
-import { useLocation } from "../../hooks/useLocation";
+import { useLocation } from "../../shared/hooks/useLocation";
 import { useOfflineSync } from "../../hooks/useOfflineSync";
 import { offlineQueue } from "../../utils/offlineQueue";
 import { formatWatermarkData, persistWatermarkedDisplayImage } from "../../utils/watermark";
-import { Card } from "../../components/ui/Card";
-import type { CaptureMetadata } from "../../types";
-import { GlassCard } from "../../components/ui/GlassCard";
+import { Card } from "../../shared/components/ui/Card";
+import type { CaptureMetadata } from "../../shared/types/index";
+import { GlassCard } from "../../shared/components/ui/GlassCard";
 import { Button } from "../../components/ui/Button";
-import { useTheme } from "../../context/ThemeContext";
-import { useLanguage } from "../../context/LanguageContext";
+import { useTheme } from "../../theme/ThemeContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import type { CitizenStackParamList, ReportFlowParamList } from "../../navigation/types";
 import { useFieldReport } from "../../features/report/FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../../features/report/types";

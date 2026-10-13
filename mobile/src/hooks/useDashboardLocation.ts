@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import type { Alert } from "../types";
+import type { Alert } from "../shared/types/index";
 
 export interface DashboardLocation {
   latitude: number;

@@ -18,7 +18,7 @@ import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { LocationPickerScreen } from "../screens/LocationPickerScreen";
 import { useCivicTheme } from "../theme/useCivicTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { CitizenStackParamList, CitizenTabParamList } from "./types";
 import { ReportFlowNavigator } from "../features/report/ReportFlowNavigator";
 import { ReportTabLauncherScreen } from "../features/report/ReportTabLauncherScreen";

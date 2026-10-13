@@ -1,16 +1,16 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { BrainCircuit } from "lucide-react-native";
-import type { Alert } from "../../types";
+import type { Alert } from "../../shared/types/index";
 import {
   getCivicColors,
   civicStyles,
   civicType,
   civicSpace as space,
 } from "../../theme/civicDesign";
-import { useTheme } from "../../context/ThemeContext";
-import { useLanguage } from "../../context/LanguageContext";
-import { Card } from "../ui/Card";
+import { useTheme } from "../../theme/ThemeContext";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { Card } from "../../shared/components/ui/Card";
 import {
   getCategoryLabel,
   getConfidenceTierLabel,

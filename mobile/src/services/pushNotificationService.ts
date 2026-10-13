@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
-import { api } from "../api/client";
+import { api } from "../shared/api/client";
 import { getNotificationAlertId } from "../utils/notificationNavigation";
 
 // cấu hình cách hiển thị thông báo khi ứng dụng đang chạy ở chế độ nền trước

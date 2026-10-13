@@ -9,12 +9,12 @@ import {
   Alert as RNAlert,
 } from "react-native";
 import { X, Edit3, Sparkles } from "lucide-react-native";
-import { Input } from "../ui/Input";
+import { Input } from "../../shared/components/ui/Input";
 import { Button } from "../ui/Button";
-import { useTheme } from "../../context/ThemeContext";
-import { useLanguage } from "../../context/LanguageContext";
+import { useTheme } from "../../theme/ThemeContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { useUpdateAlert } from "../../hooks/useAlerts";
-import type { Alert } from "../../types";
+import type { Alert } from "../../shared/types/index";
 
 interface EditAlertModalProps {
   visible: boolean;

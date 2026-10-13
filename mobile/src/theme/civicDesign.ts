@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import type { ThemeColors } from "../utils/constants";
+import type { ThemeColors } from "../shared/constants/index";
 
 export const civicSpace = {
   xs: 4,

@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from "react-native";
 import { GlassCard } from "./GlassCard";
-import { COLORS } from "../../utils/constants";
-import { useTheme } from "../../context/ThemeContext";
+import { COLORS } from "../../constants/index";
+import { useTheme } from "../../../theme/ThemeContext";
 
 interface StatCardProps {
   title: string;

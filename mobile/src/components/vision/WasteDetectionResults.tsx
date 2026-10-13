@@ -11,8 +11,8 @@ import {
   getDetectionConfidenceColor,
   getWasteDetectionLabel,
   groupDetectionsByClass,
-} from "../../utils/visionBoundingBox";
-import type { DetectionSummaryInput } from "../../utils/visionBoundingBox";
+} from "../../shared/lib/visionBoundingBox";
+import type { DetectionSummaryInput } from "../../shared/lib/visionBoundingBox";
 
 export function WasteDetectionResults({
   detections,

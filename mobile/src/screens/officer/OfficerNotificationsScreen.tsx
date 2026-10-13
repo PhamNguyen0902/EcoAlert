@@ -35,7 +35,7 @@ import {
 import { Button } from "../../components/ui/Button";
 import { notificationPresentation } from "../../utils/notificationPresentation";
 import { getNotificationAlertId } from "../../utils/notificationNavigation";
-import type { NotificationItem } from "../../types/notification";
+import type { NotificationItem } from "../../shared/types/notification";
 import type { OfficerStackParamList } from "../../navigation/types";
 export function OfficerNotificationsScreen({
   navigation,

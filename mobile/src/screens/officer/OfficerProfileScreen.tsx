@@ -4,11 +4,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LogOut, Mail, ShieldCheck } from "lucide-react-native";
 import { useProfile, useLogout } from "../../hooks/useAuth";
 import { useAssignedServiceAreas } from "../../hooks/useServiceAreas";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { useCivicTheme } from "../../theme/useCivicTheme";
-import { Card } from "../../components/ui/Card";
+import { Card } from "../../shared/components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { InlineBanner } from "../../components/ui/InlineBanner";
+import { InlineBanner } from "../../shared/components/ui/InlineBanner";
 import { OfficerHeader } from "../../components/officer/OfficerUI";
 import { OfficerProfileTools } from "../../components/officer/OfficerProfileTools";
 import {

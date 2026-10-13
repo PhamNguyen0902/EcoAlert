@@ -7,7 +7,7 @@ import type {
   CitizenStackParamList,
   CitizenTabParamList,
 } from "../../navigation/types";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../theme/ThemeContext";
 
 type Props = BottomTabScreenProps<CitizenTabParamList, "ReportTab">;
 

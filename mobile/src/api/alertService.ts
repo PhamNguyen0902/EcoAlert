@@ -1,5 +1,5 @@
-import { api } from "./client";
-import { Alert, PaginatedResult, CreateAlertData, Category, ResolutionInput, PreSubmitSemanticResult, PreSubmitVisionResult } from "../types";
+import { api } from "../shared/api/client";
+import { Alert, PaginatedResult, CreateAlertData, Category, ResolutionInput, PreSubmitSemanticResult, PreSubmitVisionResult } from "../shared/types/index";
 
 export const alertService = {
   // Paginate only when necessary: counts/map cover all authorized tasks.

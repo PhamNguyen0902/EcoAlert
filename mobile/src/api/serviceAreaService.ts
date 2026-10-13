@@ -1,5 +1,5 @@
-import { api } from "./client";
-import type { PaginatedResult } from "../types";
+import { api } from "../shared/api/client";
+import type { PaginatedResult } from "../shared/types/index";
 export interface OfficerServiceArea {
   _id: string;
   code: string;

@@ -1,4 +1,4 @@
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "./ThemeContext";
 import { getCivicColors } from "./civicDesign";
 
 export const useCivicTheme = () => {

@@ -14,8 +14,8 @@ import {
   civicType,
   getCivicColors,
 } from "../../theme/civicDesign";
-import { COLORS } from "../../utils/constants";
-import { useTheme } from "../../context/ThemeContext";
+import { COLORS } from "../../shared/constants/index";
+import { useTheme } from "../../theme/ThemeContext";
 
 export interface ButtonProps extends TouchableOpacityProps {
   title: string;

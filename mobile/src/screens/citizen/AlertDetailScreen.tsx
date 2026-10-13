@@ -35,21 +35,21 @@ import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
 import { CloseIncidentModal } from "../../components/modals/CloseIncidentModal";
 import { EditAlertModal } from "../../components/modals/EditAlertModal";
 import { CitizenHeader } from "../../components/citizen/CitizenHeader";
-import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
+import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
 import {
   civicSpace as space,
   civicRadius as radius,
 } from "../../theme/civicDesign";
-import { Card } from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
+import { Card } from "../../shared/components/ui/Card";
+import { Badge } from "../../shared/components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
 import { WasteDetectionEvidence } from "../../components/vision/WasteDetectionEvidence";
-import { matchVisionEvidence } from "../../utils/visionBoundingBox";
+import { matchVisionEvidence } from "../../shared/lib/visionBoundingBox";
 import { useCivicTheme } from "../../theme/useCivicTheme";
-import { useLanguage } from "../../context/LanguageContext";
-import { SEVERITY_COLORS } from "../../utils/constants";
-import type { User } from "../../types";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { SEVERITY_COLORS } from "../../shared/constants/index";
+import type { User } from "../../shared/types/index";
 import {
   getAiAnalysisState,
   getAlertDisplaySeverity,

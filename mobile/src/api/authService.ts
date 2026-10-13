@@ -1,8 +1,8 @@
-import { api } from "./client";
-import { LoginCredentials, RegisterData, User } from "../types";
-import { storage } from "../utils/storage";
+import { api } from "../shared/api/client";
+import { LoginCredentials, RegisterData, User } from "../shared/types/index";
+import { storage } from "../shared/lib/storage";
 import axios from "axios";
-import { API_BASE_URL } from "../utils/constants";
+import { API_BASE_URL } from "../shared/constants/index";
 
 export const authService = {
   login: async (credentials: LoginCredentials) => {

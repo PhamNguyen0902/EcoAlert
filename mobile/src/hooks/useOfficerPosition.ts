@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import * as Location from "expo-location";
-import type { ShiftLocationInput } from "../types";
+import type { ShiftLocationInput } from "../shared/types/index";
 import { acquireOfficerGps } from "../utils/officerResolution";
 import { useForegroundScreen } from "./useForegroundScreen";
 export type OfficerPosition = ShiftLocationInput & { recordedAt: string };

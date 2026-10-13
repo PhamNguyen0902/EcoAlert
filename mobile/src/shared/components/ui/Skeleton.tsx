@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../../theme/ThemeContext";
 
 export const DashboardSkeleton: React.FC = () => {
   const { colors } = useTheme();

@@ -39,7 +39,7 @@ import { useLogout, useProfile } from "../../hooks/useAuth";
 import { useUnreadNotificationCount } from "../../hooks/useNotifications";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../theme/civicDesign";
-import { Card } from "../../components/ui/Card";
+import { Card } from "../../shared/components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import {
   CitizenAvatar,

@@ -1,6 +1,6 @@
-import { api } from "./client";
-import type { PaginatedResult } from "../types";
-import type { NotificationItem } from "../types/notification";
+import { api } from "../shared/api/client";
+import type { PaginatedResult } from "../shared/types/index";
+import type { NotificationItem } from "../shared/types/notification";
 
 const endpoint = "/v1/notifications"; // API_BASE_URL already includes /api.
 export const notificationService = {

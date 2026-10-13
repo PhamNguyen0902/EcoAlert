@@ -1,4 +1,4 @@
-import type { NotificationItem } from "../types/notification";
+import type { NotificationItem } from "../shared/types/notification";
 // API is the canonical formatter; this exact-template fallback also covers cached legacy pages.
 const catalog: Record<string, [string, string]> = {
   REPORT_RECEIVED: [

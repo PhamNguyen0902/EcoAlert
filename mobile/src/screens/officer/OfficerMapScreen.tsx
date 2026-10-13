@@ -14,10 +14,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, Callout, PROVIDER_GOOGLE } from "react-native-maps";
 import { MapPin, RefreshCw, AlertTriangle } from "lucide-react-native";
 import { useAlerts, useOfficerTasks } from "../../hooks/useAlerts";
-import { Badge } from "../../components/ui/Badge";
+import { Badge } from "../../shared/components/ui/Badge";
 import { useCivicTheme } from "../../theme/useCivicTheme";
-import { useLanguage } from "../../context/LanguageContext";
-import { SEVERITY_COLORS } from "../../utils/constants";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { SEVERITY_COLORS } from "../../shared/constants/index";
 import {
   getCategoryLabel,
   getStatusLabel,

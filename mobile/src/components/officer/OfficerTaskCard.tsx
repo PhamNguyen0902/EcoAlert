@@ -1,7 +1,7 @@
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { MapPin, ImageOff } from "lucide-react-native";
-import type { Alert } from "../../types";
+import type { Alert } from "../../shared/types/index";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { getOfficerTaskState } from "../../utils/officerWorkflow";
 import {

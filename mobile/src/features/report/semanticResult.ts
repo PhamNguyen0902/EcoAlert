@@ -1,4 +1,4 @@
-import type { AlertCategory, PreSubmitSemanticResult, VisualMassEstimate, CreateAlertData } from "../../types";
+import type { AlertCategory, PreSubmitSemanticResult, VisualMassEstimate, CreateAlertData } from "../../shared/types/index";
 import type { FieldReportImageValidationDraft } from "./types";
 
 // These are backend enum codes, not detector materials or Vietnamese labels.

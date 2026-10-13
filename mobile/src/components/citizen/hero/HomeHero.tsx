@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { Leaf } from "lucide-react-native";
-import type { User } from "../../../types";
+import type { User } from "../../../shared/types/index";
 import { useCivicTheme } from "../../../theme/useCivicTheme";
 import { AnimatedTopographicBackground } from "./AnimatedTopographicBackground";
 import { EcoCityIllustration } from "./EcoCityIllustration";

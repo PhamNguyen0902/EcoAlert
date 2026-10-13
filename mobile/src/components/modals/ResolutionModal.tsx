@@ -12,10 +12,10 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { X, CheckCircle2, Camera, UploadCloud } from "lucide-react-native";
-import { Input } from "../ui/Input";
+import { Input } from "../../shared/components/ui/Input";
 import { Button } from "../ui/Button";
-import { useTheme } from "../../context/ThemeContext";
-import { EvidenceImageFrame } from "../media/EvidenceImageFrame";
+import { useTheme } from "../../theme/ThemeContext";
+import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
 import {
   useResolveIncident,
   useUploadMedia,

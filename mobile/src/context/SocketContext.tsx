@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
-import { API_BASE_URL } from '../utils/constants';
+import { API_BASE_URL } from '../shared/constants/index';
 import { useProfile } from '../hooks/useAuth';
-import { storage } from '../utils/storage';
+import { storage } from '../shared/lib/storage';
 import { AppState } from 'react-native';
 
 interface SocketContextType {

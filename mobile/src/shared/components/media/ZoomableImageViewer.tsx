@@ -23,14 +23,14 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { calculateContainedImageRect } from "../../utils/visionBoundingBox";
-import type { ImageSize } from "../../utils/visionBoundingBox";
+import { calculateContainedImageRect } from "../../lib/visionBoundingBox";
+import type { ImageSize } from "../../lib/visionBoundingBox";
 import {
   calculateImagePanBounds,
   clampImagePan,
   clampImageZoom,
   getDoubleTapImageZoom,
-} from "../../utils/imageViewer";
+} from "../../lib/imageViewer";
 
 export interface ZoomableImageViewerProps {
   visible: boolean;

@@ -11,11 +11,11 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, Check, MapPin } from "lucide-react-native";
-import { useLocation } from "../hooks/useLocation";
-import { defaultReverseGeocoder } from "../services/reverseGeocoder";
+import { useLocation } from "../shared/hooks/useLocation";
+import { defaultReverseGeocoder } from "../shared/location/reverseGeocoder";
 import type { CitizenStackParamList, LocationSelection } from "../navigation/types";
 import { Button } from "../components/ui/Button";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../theme/ThemeContext";
 
 type Props = NativeStackScreenProps<CitizenStackParamList, "LocationPicker">;
 

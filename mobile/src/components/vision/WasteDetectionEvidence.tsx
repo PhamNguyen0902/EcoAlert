@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import type { VisionEvidence } from "../../types";
+import type { VisionEvidence } from "../../shared/types/index";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicType, civicStyles, civicSpace } from "../../theme/civicDesign";
 import { WasteDetectionImage } from "./WasteDetectionImage";

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { AlertCircle, CheckCircle } from "lucide-react-native";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../../theme/ThemeContext";
 
 interface InlineBannerProps {
   message?: string | null;

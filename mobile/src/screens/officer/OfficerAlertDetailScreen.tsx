@@ -17,8 +17,8 @@ import {
   useStartHandling,
 } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
-import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
-import { Input } from "../../components/ui/Input";
+import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
+import { Input } from "../../shared/components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
 import {
@@ -35,7 +35,7 @@ import {
   getCategoryLabel,
   getSeverityLabel,
 } from "../../utils/incidentPresentation";
-import { getWasteDetectionLabel } from "../../utils/visionBoundingBox";
+import { getWasteDetectionLabel } from "../../shared/lib/visionBoundingBox";
 import {
   getOfficerTaskState,
   officerErrorMessage,

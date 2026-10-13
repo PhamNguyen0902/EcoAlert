@@ -26,8 +26,8 @@ import {
   useResolveIncident,
   useUploadMedia,
 } from "../../hooks/useAlerts";
-import { Card } from "../../components/ui/Card";
-import { Input } from "../../components/ui/Input";
+import { Card } from "../../shared/components/ui/Card";
+import { Input } from "../../shared/components/ui/Input";
 import { Button } from "../../components/ui/Button";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../theme/civicDesign";

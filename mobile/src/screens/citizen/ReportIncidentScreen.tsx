@@ -38,16 +38,16 @@ import {
   useCreateAlert,
   useUploadMedia,
 } from "../../hooks/useAlerts";
-import { useLocation } from "../../hooks/useLocation";
+import { useLocation } from "../../shared/hooks/useLocation";
 import { useOfflineSync } from "../../hooks/useOfflineSync";
 import { offlineQueue } from "../../utils/offlineQueue";
 import { formatWatermarkData } from "../../utils/watermark";
-import { GlassCard } from "../../components/ui/GlassCard";
-import { Card } from "../../components/ui/Card";
-import { Input } from "../../components/ui/Input";
+import { GlassCard } from "../../shared/components/ui/GlassCard";
+import { Card } from "../../shared/components/ui/Card";
+import { Input } from "../../shared/components/ui/Input";
 import { Button } from "../../components/ui/Button";
-import { useTheme } from "../../context/ThemeContext";
-import { useLanguage } from "../../context/LanguageContext";
+import { useTheme } from "../../theme/ThemeContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import type { CitizenStackParamList, CitizenTabParamList } from "../../navigation/types";
 import { getAiAnalysisState, getWorkflowStatusLabel } from "../../utils/aiAnalysis";
 

@@ -51,7 +51,7 @@ import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
-import { ZoomableImageViewer } from "../../../components/media/ZoomableImageViewer";
+import { ZoomableImageViewer } from "../../../shared/components/media/ZoomableImageViewer";
 import { FieldReportSummary } from "../components/stitch/FieldReportSummary";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
 import { fieldStyles } from "../components/stitch/fieldDesign";

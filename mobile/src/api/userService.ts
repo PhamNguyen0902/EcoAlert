@@ -1,5 +1,5 @@
-import { api } from './client';
-import type { PaginatedResult, User } from '../types';
+import { api } from '../shared/api/client';
+import type { PaginatedResult, User } from '../shared/types/index';
 
 const OFFICER_PAGE_SIZE = 100;
 

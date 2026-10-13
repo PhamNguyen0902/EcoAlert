@@ -1,5 +1,5 @@
 import React from "react";
-import { EvidenceImageFrame } from "../../../components/media/EvidenceImageFrame";
+import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
 
 /** Confirmation shows the watermarked rendition, preserving the original fallback. */
 export const ReportEvidenceImage = (props: {

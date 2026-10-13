@@ -30,8 +30,8 @@ import { useAlerts } from "../../hooks/useAlerts";
 import { useProfile } from "../../hooks/useAuth";
 import { useUnreadNotificationCount } from "../../hooks/useNotifications";
 import { useDashboardLocation } from "../../hooks/useDashboardLocation";
-import { useLocation } from "../../hooks/useLocation";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLocation } from "../../shared/hooks/useLocation";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../theme/civicDesign";
 import {
@@ -40,7 +40,7 @@ import {
 } from "../../components/citizen/v2/CitizenUI";
 import { matchesReportSearch } from "../../utils/citizenPresentation";
 import { openGoogleMaps } from "../../utils/maps";
-import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
+import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
 import {
   getCategoryLabel,
   getSeverityLabel,

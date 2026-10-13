@@ -7,7 +7,7 @@ import { OfficerMapScreen } from "../screens/officer/OfficerMapScreen";
 import { OfficerAlertDetailScreen } from "../screens/officer/OfficerAlertDetailScreen";
 import { AlertDetailScreen } from "../screens/citizen/AlertDetailScreen";
 import { useCivicTheme } from "../theme/useCivicTheme";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "../i18n/LanguageContext";
 
 import { OfficerProfileScreen } from "../screens/officer/OfficerProfileScreen";
 import { OfficerResolutionScreen } from "../screens/officer/OfficerResolutionScreen";

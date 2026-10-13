@@ -14,7 +14,7 @@ import {
   EVIDENCE_FRAME_ASPECT_RATIO,
   EVIDENCE_FRAME_MAX_WIDTH,
   EVIDENCE_FRAME_WIDTH,
-} from "../../utils/evidenceImageFrame";
+} from "../../lib/evidenceImageFrame";
 import { ZoomableImageViewer } from "./ZoomableImageViewer";
 
 export interface EvidenceImageFrameProps {

@@ -1,4 +1,4 @@
-import type { ResolutionInput, ShiftLocationInput } from "../types";
+import type { ResolutionInput, ShiftLocationInput } from "../shared/types/index";
 
 export interface OfficerPhoto {
   originalLocalUri: string;

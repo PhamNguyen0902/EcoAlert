@@ -11,13 +11,13 @@ import {
 } from "react-native";
 import { Mail, Lock, ShieldAlert, Sun, Moon, Globe, Eye, EyeOff } from "lucide-react-native";
 import { useLogin } from "../../hooks/useAuth";
-import { useFormValidation } from "../../hooks/useFormValidation";
-import { GlassCard } from "../../components/ui/GlassCard";
-import { Input } from "../../components/ui/Input";
+import { useFormValidation } from "../../shared/hooks/useFormValidation";
+import { GlassCard } from "../../shared/components/ui/GlassCard";
+import { Input } from "../../shared/components/ui/Input";
 import { Button } from "../../components/ui/Button";
-import { InlineBanner } from "../../components/ui/InlineBanner";
-import { useTheme } from "../../context/ThemeContext";
-import { useLanguage } from "../../context/LanguageContext";
+import { InlineBanner } from "../../shared/components/ui/InlineBanner";
+import { useTheme } from "../../theme/ThemeContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 interface LoginValues {
   email: string;

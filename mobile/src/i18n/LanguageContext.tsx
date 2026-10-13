@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { vi, Translations } from "../i18n/vi";
-import { en } from "../i18n/en";
-import { storage } from "../utils/storage";
+import { vi, Translations } from "./vi";
+import { en } from "./en";
+import { storage } from "../shared/lib/storage";
 
 export type Language = "vi" | "en";
 

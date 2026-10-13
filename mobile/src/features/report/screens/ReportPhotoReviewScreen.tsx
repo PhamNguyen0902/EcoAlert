@@ -35,7 +35,7 @@ import {
 import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
-import { EvidenceImageFrame } from "../../../components/media/EvidenceImageFrame";
+import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
 import { FieldNotice, FieldEntrance } from "../components/stitch/FieldUI";
 import { fieldStyles } from "../components/stitch/fieldDesign";
 import { fieldIntegrity } from "../components/stitch/fieldPresentation";

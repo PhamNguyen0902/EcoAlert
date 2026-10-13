@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, StyleProp, ViewStyle } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { civicStyles, getCivicColors } from "../../theme/civicDesign";
+import { useTheme } from "../../../theme/ThemeContext";
+import { civicStyles, getCivicColors } from "../../../theme/civicDesign";
 
 interface CardProps {
   children: React.ReactNode;

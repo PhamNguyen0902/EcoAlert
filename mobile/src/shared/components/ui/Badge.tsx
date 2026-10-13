@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
-import { STATUS_COLORS, DARK_STATUS_COLORS } from "../../utils/constants";
-import { civicRadius, civicSpace } from "../../theme/civicDesign";
-import { useTheme } from "../../context/ThemeContext";
+import { STATUS_COLORS, DARK_STATUS_COLORS } from "../../constants/index";
+import { civicRadius, civicSpace } from "../../../theme/civicDesign";
+import { useTheme } from "../../../theme/ThemeContext";
 
 interface BadgeProps {
   label: string;

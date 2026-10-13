@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import * as FileSystem from "expo-file-system/legacy";
-import type { Language } from "../context/LanguageContext";
+import type { Language } from "../i18n/LanguageContext";
 
 export interface WatermarkData {
   latitude?: number;

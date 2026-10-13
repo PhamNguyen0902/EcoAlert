@@ -1,4 +1,4 @@
-import type { Alert, AlertCategory, Severity } from "../types";
+import type { Alert, AlertCategory, Severity } from "../shared/types/index";
 import {
   getCategoryLabel as getPresentationCategoryLabel,
   getSeverityLabel as getPresentationSeverityLabel,

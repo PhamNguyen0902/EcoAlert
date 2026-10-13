@@ -11,16 +11,16 @@ import {
 } from "react-native";
 import { AlertTriangle, ChevronRight, Filter, LogOut, MapPin } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { Alert as Incident } from "../../types";
+import type { Alert as Incident } from "../../shared/types/index";
 import { useAlerts, useCategories } from "../../hooks/useAlerts";
 import { useLogout } from "../../hooks/useAuth";
-import { Badge } from "../../components/ui/Badge";
+import { Badge } from "../../shared/components/ui/Badge";
 import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
-import { InlineBanner } from "../../components/ui/InlineBanner";
-import { useLanguage } from "../../context/LanguageContext";
-import { useTheme } from "../../context/ThemeContext";
-import { SEVERITY_COLORS, STATUS_COLORS } from "../../utils/constants";
+import { Card } from "../../shared/components/ui/Card";
+import { InlineBanner } from "../../shared/components/ui/InlineBanner";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { useTheme } from "../../theme/ThemeContext";
+import { SEVERITY_COLORS, STATUS_COLORS } from "../../shared/constants/index";
 import { getCategoryLabel, getSeverityLabel, getStatusLabel } from "../../utils/incidentPresentation";
 
 const STATUS_FILTERS = ["ALL", "ACTIVE", "PENDING", "VERIFIED", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const;

@@ -1,5 +1,5 @@
-import { api } from "./client";
-import type { IncidentDensity, IncidentDensityDrilldown } from "../types";
+import { api } from "../shared/api/client";
+import type { IncidentDensity, IncidentDensityDrilldown } from "../shared/types/index";
 
 type GisFilters = Record<string, string>;
 

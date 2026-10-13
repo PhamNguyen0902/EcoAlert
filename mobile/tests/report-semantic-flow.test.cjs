@@ -71,7 +71,7 @@ test('manual selection stays separate from AI suggestion and serializes correct 
 test('mobile API adapter preserves the real response envelope and mass fields', async () => {
   const data = result();
   let request;
-  const service = load('api/alertService.ts', { './client': { api: { post: async (...args) => { request = args; return { data: { success: true, data } }; } } } }).alertService;
+  const service = load('api/alertService.ts', { '../shared/api/client': { api: { post: async (...args) => { request = args; return { data: { success: true, data } }; } } } }).alertService;
   const response = await service.validateImageSemantics('https://example.com/evidence.jpg');
   assert.equal(response, data);
   assert.equal(request[0], '/v1/ai/validate-image');
@@ -151,7 +151,7 @@ function harness(semantic = async () => result()) {
   for (const [id, names] of Object.entries({
     '../components/ReportBottomActions': ['ReportBottomActions'], '../components/ReportHeader': ['ReportHeader'],
     '../components/ReportProgress': ['ReportProgress'], '../components/ReportScreenIntro': ['ReportScreenIntro'],
-    '../../../components/vision/WasteDetectionImage': ['WasteDetectionImage'], '../../../components/media/ZoomableImageViewer': ['ZoomableImageViewer'],
+    '../../../components/vision/WasteDetectionImage': ['WasteDetectionImage'], '../../../shared/components/media/ZoomableImageViewer': ['ZoomableImageViewer'],
     '../components/stitch/FieldAiResultCard': ['FieldAiResultCard'], '../components/stitch/FieldReportSummary': ['FieldReportSummary'],
     '../components/stitch/FieldUI': ['FieldEvidenceMetaOverlay','FieldNotice','FieldScanLine'],
   })) imports[id] = Object.fromEntries(names.map(n => [n,n]));

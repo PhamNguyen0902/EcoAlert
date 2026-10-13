@@ -38,8 +38,8 @@ import {
 import { CitizenReportCard } from "../../components/citizen/CitizenReportCard";
 import { CitizenActivitySkeleton } from "../../components/citizen/CitizenActivitySkeleton";
 import { HomeHero } from "../../components/citizen/hero/HomeHero";
-import { Badge } from "../../components/ui/Badge";
-import { Card } from "../../components/ui/Card";
+import { Badge } from "../../shared/components/ui/Badge";
+import { Card } from "../../shared/components/ui/Card";
 import { getWorkflowStatusLabel } from "../../utils/aiAnalysis";
 import {
   getIncidentGroup,

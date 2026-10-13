@@ -25,7 +25,7 @@ import { enUS, vi } from "date-fns/locale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { CitizenStackParamList } from "../../navigation/types";
-import type { NotificationItem } from "../../types/notification";
+import type { NotificationItem } from "../../shared/types/notification";
 import { CitizenHeader } from "../../components/citizen/CitizenHeader";
 import {
   useInfiniteNotifications,
@@ -35,7 +35,7 @@ import {
   useDeleteNotification,
 } from "../../hooks/useNotifications";
 import { useProfile } from "../../hooks/useAuth";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../theme/civicDesign";
 import { getNotificationAlertId } from "../../utils/notificationNavigation";

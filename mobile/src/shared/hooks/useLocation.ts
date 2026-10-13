@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 import * as Location from "expo-location";
-import { GeoLocation } from "../types";
+import { GeoLocation } from "../types/index";
 import {
   defaultReverseGeocoder,
   ReverseGeocoder,
-} from "../services/reverseGeocoder";
+} from "../location/reverseGeocoder";
 
 export type LocationSource = "device" | "manual" | null;
 

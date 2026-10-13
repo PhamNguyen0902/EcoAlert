@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Clock3, MapPin, ShieldCheck } from "lucide-react-native";
-import { EvidenceImageFrame } from "../../../../components/media/EvidenceImageFrame";
+import { EvidenceImageFrame } from "../../../../shared/components/media/EvidenceImageFrame";
 import { formatCaptureTimestamp } from "../../../../utils/watermark";
 import type {
   FieldReportCaptureDraft,

@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Check, Clock3, Route } from "lucide-react-native";
-import type { Alert } from "../../../../types";
+import type { Alert } from "../../../../shared/types/index";
 import { reportTime } from "../../../../utils/citizenPresentation";
 import { fieldColors as c, fieldStyles as s } from "./fieldDesign";
 

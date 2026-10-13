@@ -29,7 +29,7 @@ import type { ReportFlowParamList } from "../../../navigation/types";
 import { useReportTheme } from "../useReportTheme";
 import { ReportScreenIntro } from "../components/ReportScreenIntro";
 import { ReportBottomActions } from "../components/ReportBottomActions";
-import { useLocation } from "../../../hooks/useLocation";
+import { useLocation } from "../../../shared/hooks/useLocation";
 import {
   useForegroundScreen,
   useScreenClock,
