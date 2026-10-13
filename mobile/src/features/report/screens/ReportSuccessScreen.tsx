@@ -23,10 +23,10 @@ import type {
   ReportFlowParamList,
 } from "../../../navigation/types";
 import { useAlert } from "../../../hooks/useAlerts";
-import { getWorkflowStatusLabel } from "../../incidents/model/aiAnalysis";
-import { reportTime } from "../../citizen/model/citizenPresentation";
-import { useFieldReport } from "../model/FieldReportContext";
-import { formatAlertReference } from "../model/utils";
+import { getWorkflowStatusLabel } from "../../../utils/aiAnalysis";
+import { reportTime } from "../../../utils/citizenPresentation";
+import { useFieldReport } from "../FieldReportContext";
+import { formatAlertReference } from "../utils";
 import { FieldEntrance, FieldNotice } from "../components/stitch/FieldUI";
 import { FieldProcessingTimeline } from "../components/stitch/FieldProcessingTimeline";
 import { readableFieldAddress } from "../components/stitch/fieldPresentation";

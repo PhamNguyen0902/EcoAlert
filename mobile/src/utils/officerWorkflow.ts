@@ -1,4 +1,4 @@
-import type { Alert } from "../shared/types/index";
+import type { Alert } from "../types";
 
 export type OfficerTaskFilter = "ALL" | "NEW" | "ACTIVE" | "COMPLETED";
 export const officerStatus = (alert: Pick<Alert, "status">) =>

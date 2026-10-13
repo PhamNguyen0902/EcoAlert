@@ -1,4 +1,4 @@
-import type { Alert, User } from "../shared/types/index";
+import type { Alert, User } from "../types";
 import { getGeoJsonMapCoordinates, type MapCoordinates } from "./maps";
 
 export function ownsOfficerTask(

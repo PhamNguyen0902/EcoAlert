@@ -29,16 +29,16 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
-import type { ImageValidation } from "../../../shared/types/index";
-import { mapSemanticResult, semanticErrorMessage } from "../model/semanticResult";
-import { alertService } from "../../incidents/api/alertService";
-import { useOfflineSync } from "../offline/useOfflineSync";
-import { useReportTheme } from "../hooks/useReportTheme";
+import type { ImageValidation } from "../../../types";
+import { mapSemanticResult, semanticErrorMessage } from "../semanticResult";
+import { alertService } from "../../../api/alertService";
+import { useOfflineSync } from "../../../hooks/useOfflineSync";
+import { useReportTheme } from "../useReportTheme";
 import { ReportBottomActions } from "../components/ReportBottomActions";
-import { useFieldReport } from "../model/FieldReportContext";
+import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
-import { WasteDetectionImage } from "../../incidents/components/vision/WasteDetectionImage";
+import { WasteDetectionImage } from "../../../components/vision/WasteDetectionImage";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
 import {
   FieldEvidenceMetaOverlay,

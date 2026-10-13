@@ -1,0 +1,981 @@
+import React, { useState } from "react";
+import {
+  Alert as ReactNativeAlert,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import {
+  MapPin,
+  Calendar,
+  ShieldCheck,
+  AlertTriangle,
+  Clock,
+  UserCheck,
+  CheckSquare,
+  Edit2,
+  Trash2,
+  RotateCcw,
+} from "lucide-react-native";
+import {
+  useAlert,
+  useAssignOfficer,
+  useDeleteAlert,
+  useRestoreAlert,
+} from "../../hooks/useAlerts";
+import { useProfile } from "../../hooks/useAuth";
+import { useOfficers, useUser } from "../../hooks/useUsers";
+import { OfficerPickerModal } from "../../components/admin/OfficerPickerModal";
+import { CloseIncidentModal } from "../../components/modals/CloseIncidentModal";
+import { EditAlertModal } from "../../components/modals/EditAlertModal";
+import { CitizenHeader } from "../../components/citizen/CitizenHeader";
+import { EvidenceImageFrame } from "../../components/media/EvidenceImageFrame";
+import {
+  civicSpace as space,
+  civicRadius as radius,
+} from "../../theme/civicDesign";
+import { Card } from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { OverallAiAnalysisCard } from "../../components/ai/OverallAiAnalysisCard";
+import { WasteDetectionEvidence } from "../../components/vision/WasteDetectionEvidence";
+import { matchVisionEvidence } from "../../utils/visionBoundingBox";
+import { useCivicTheme } from "../../theme/useCivicTheme";
+import { useLanguage } from "../../context/LanguageContext";
+import { SEVERITY_COLORS } from "../../utils/constants";
+import type { User } from "../../types";
+import {
+  getAiAnalysisState,
+  getAlertDisplaySeverity,
+  getCategoryLabel,
+  getSeverityLabel,
+  getWorkflowStatusLabel,
+} from "../../utils/aiAnalysis";
+import { format } from "date-fns";
+import { enUS, vi } from "date-fns/locale";
+// trích xuất thông báo lỗi từ phản hồi máy chủ hoặc dùng thông báo mặc định
+const getRequestErrorMessage = (error: unknown, fallback: string): string => {
+  const requestError = error as {
+    response?: { data?: { message?: string } };
+    message?: string;
+  };
+  return (
+    requestError.response?.data?.message || requestError.message || fallback
+  );
+};
+// màn hình chi tiết sự cố hiển thị tiến độ, phân tích ai, bằng chứng và phản hồi từ cán bộ
+export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
+  route,
+  navigation,
+}) => {
+  const insets = useSafeAreaInsets();
+  const { colors, isDark } = useCivicTheme();
+  const { language, t } = useLanguage();
+  const alertId = route.params?.id;
+  const { data: alert, isLoading, error } = useAlert(alertId);
+  const { data: profile } = useProfile();
+  const assignOfficer = useAssignOfficer();
+  const deleteAlertMutation = useDeleteAlert();
+  const restoreAlertMutation = useRestoreAlert();
+  const pageCopy =
+    language === "vi"
+      ? {
+          assignmentSuccess: "Đã phân công cán bộ",
+          assignmentSuccessBody: (name: string) =>
+            `${name} đã được phân công xử lý sự cố này.`,
+          assignError: "Không thể phân công cán bộ",
+          retry: "Vui lòng làm mới báo cáo và thử lại.",
+          deleteTitle: "Xóa báo cáo sự cố",
+          deleteQuestion: (title: string) =>
+            `Bạn có chắc muốn xóa báo cáo “${title}” không?`,
+          cancel: "Hủy",
+          delete: "Xóa",
+          restoreError: "Lỗi khôi phục",
+          restoreFailed: "Không thể khôi phục báo cáo.",
+          detailsUnavailable:
+            "Không thể tải chi tiết báo cáo. Báo cáo có thể đã bị xóa hoặc không còn khả dụng.",
+          title: "Chi tiết sự cố",
+          officersResolved:
+            "Cán bộ đã xử lý sự cố này. Nhấn bên dưới để xác minh và đóng báo cáo.",
+          description: "Mô tả",
+          assign: "Phân công cán bộ",
+          assignBody: "Chọn cán bộ chịu trách nhiệm xử lý sự cố này.",
+          photos: "Hình ảnh & minh chứng",
+          location: "Vị trí gắn thẻ",
+          officerResponse: "Phản hồi của cán bộ môi trường",
+          coordinates: "Tọa độ",
+          submitted: "Thời điểm gửi:",
+          updated: "Cập nhật gần nhất:",
+          unavailable: "Không có",
+          connection: "Vui lòng kiểm tra kết nối và thử lại.",
+        }
+      : {
+          assignmentSuccess: "Officer assigned",
+          assignmentSuccessBody: (name: string) =>
+            `${name} has been assigned to this incident.`,
+          assignError: "Unable to assign officer",
+          retry: "Please refresh the incident and try again.",
+          deleteTitle: "Delete incident report",
+          deleteQuestion: (title: string) =>
+            `Are you sure you want to delete report “${title}”?`,
+          cancel: "Cancel",
+          delete: "Delete",
+          restoreError: "Restore error",
+          restoreFailed: "Failed to restore report.",
+          detailsUnavailable:
+            "Could not fetch details for this alert. It may have been removed or unavailable.",
+          title: "Incident details",
+          officersResolved:
+            "Officers have resolved this issue. Click below to verify and close the report.",
+          description: "Description",
+          assign: "Assign to officer",
+          assignBody: "Choose an officer to take ownership of this incident.",
+          photos: "Photos & evidence",
+          location: "Location geotag",
+          officerResponse: "Environmental officer response",
+          coordinates: "Coordinates",
+          submitted: "Submitted on:",
+          updated: "Last updated:",
+          unavailable: "Not available",
+          connection: "Please check your connection and try again.",
+        };
+
+  const [isOfficerPickerOpen, setOfficerPickerOpen] = useState(false);
+  const [isCloseModalOpen, setCloseModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+
+  const normalizedStatus = alert?.status?.toUpperCase();
+  const isAdmin = profile?.role?.toUpperCase() === "ADMIN";
+  const citizenIdStr =
+    typeof alert?.citizenId === "object"
+      ? alert.citizenId._id
+      : alert?.citizenId;
+  const isOwnReport = profile?._id && citizenIdStr === profile._id;
+
+  const canAssign =
+    isAdmin &&
+    normalizedStatus !== "RESOLVED" &&
+    normalizedStatus !== "CLOSED" &&
+    normalizedStatus !== "REJECTED";
+  const canClose = isAdmin && normalizedStatus === "RESOLVED";
+  const isPendingAdminReview = !isAdmin && normalizedStatus === "RESOLVED";
+  const canEdit =
+    (isOwnReport || isAdmin) &&
+    (normalizedStatus === "PENDING" || normalizedStatus === "AI_ANALYZING");
+  const canDelete = isOwnReport || isAdmin;
+
+  const assignedOfficerIdStr =
+    typeof alert?.assignedOfficerId === "object"
+      ? alert.assignedOfficerId._id
+      : alert?.assignedOfficerId;
+
+  const { data: fetchedOfficer } = useUser(assignedOfficerIdStr);
+
+  const {
+    data: officerData,
+    isLoading: isLoadingOfficers,
+    isFetching: isFetchingOfficers,
+    error: officersError,
+    refetch: refetchOfficers,
+  } = useOfficers(Boolean(canAssign));
+
+  const assignedOfficerObj =
+    typeof alert?.assignedOfficerId === "object"
+      ? alert.assignedOfficerId
+      : fetchedOfficer ||
+        officerData?.find((u) => u._id === alert?.assignedOfficerId);
+
+  const evidencePhotoUrls = alert?.fieldEvidence?.length
+    ? alert.fieldEvidence.map((item) => item.displayUrl || item.originalUrl)
+    : alert?.mediaUrls || [];
+  const originalEvidenceUrls = alert?.fieldEvidence?.length
+    ? alert.fieldEvidence.map((item) => item.originalUrl)
+    : alert?.mediaUrls || [];
+  const matchedVisionEvidence =
+    alert?.analysisPipeline === "WASTE_DETECTION"
+      ? matchVisionEvidence(originalEvidenceUrls, alert.visionEvidence ?? [])
+      : [];
+
+  const officerDisplayName =
+    alert?.assignedOfficerName ||
+    assignedOfficerObj?.fullName ||
+    fetchedOfficer?.fullName ||
+    (typeof alert?.assignedOfficerId === "string"
+      ? `Cán bộ (${alert.assignedOfficerId.slice(-6)})`
+      : undefined);
+
+  const officerDisplayEmail =
+    alert?.assignedOfficerEmail ||
+    assignedOfficerObj?.email ||
+    fetchedOfficer?.email;
+
+  const officers = (officerData ?? []).filter(
+    (user) => user.role?.toUpperCase() === "OFFICER",
+  );
+
+  const handleAssignOfficer = (officer: User) => {
+    if (!alert || !canAssign) return;
+
+    assignOfficer.mutate(
+      { id: alert._id, officerId: officer._id },
+      {
+        onSuccess: () => {
+          setOfficerPickerOpen(false);
+          ReactNativeAlert.alert(
+            pageCopy.assignmentSuccess,
+            pageCopy.assignmentSuccessBody(officer.fullName),
+          );
+        },
+        onError: (mutationError) => {
+          ReactNativeAlert.alert(
+            pageCopy.assignError,
+            getRequestErrorMessage(mutationError, pageCopy.retry),
+          );
+        },
+      },
+    );
+  };
+
+  const handleDeleteAlert = () => {
+    if (!alert) return;
+    ReactNativeAlert.alert(
+      pageCopy.deleteTitle,
+      pageCopy.deleteQuestion(alert.title),
+      [
+        { text: pageCopy.cancel, style: "cancel" },
+        {
+          text: pageCopy.delete,
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAlertMutation.mutateAsync(alert._id);
+              ReactNativeAlert.alert("Đã xóa", "Báo cáo sự cố đã bị gỡ.");
+              navigation.goBack();
+            } catch (err: any) {
+              ReactNativeAlert.alert(
+                "Lỗi xóa",
+                getRequestErrorMessage(err, "Không thể xóa báo cáo."),
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleRestoreAlert = async () => {
+    if (!alert) return;
+    try {
+      await restoreAlertMutation.mutateAsync(alert._id);
+      ReactNativeAlert.alert(
+        "Đã khôi phục",
+        "Khôi phục báo cáo sự cố thành công.",
+      );
+    } catch (err: any) {
+      ReactNativeAlert.alert(
+        pageCopy.restoreError,
+        getRequestErrorMessage(err, pageCopy.restoreFailed),
+      );
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: colors.background, paddingTop: insets.top },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+          Đang tải chi tiết sự cố...
+        </Text>
+      </View>
+    );
+  }
+
+  if (error || !alert) {
+    return (
+      <View
+        style={[
+          styles.errorContainer,
+          { backgroundColor: colors.background, paddingTop: insets.top },
+        ]}
+      >
+        <AlertTriangle size={48} color={colors.destructive} />
+        <Text style={[styles.errorTitle, { color: colors.text }]}>
+          Không tìm thấy báo cáo
+        </Text>
+        <Text style={[styles.errorSub, { color: colors.textMuted }]}>
+          {pageCopy.detailsUnavailable}
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.backBtn,
+            {
+              backgroundColor: isDark
+                ? "rgba(22, 163, 74, 0.25)"
+                : colors.primaryLight,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text
+            style={[
+              styles.backBtnText,
+              { color: isDark ? "#4ADE80" : colors.primaryDark },
+            ]}
+          >
+            Quay lại
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const coords = alert.location?.coordinates;
+  const latitude = coords ? coords[1] : 10.762622;
+  const longitude = coords ? coords[0] : 106.660172;
+  const aiState = getAiAnalysisState(alert);
+  const displaySeverity = getAlertDisplaySeverity(alert);
+  const sevColor = displaySeverity
+    ? SEVERITY_COLORS[displaySeverity] || { bg: "#F1F5F9", text: "#475569" }
+    : { bg: "#F1F5F9", text: "#475569" };
+  const workflowStatusLabel = getWorkflowStatusLabel(alert.status, language);
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
+      <CitizenHeader
+        title={pageCopy.title}
+        onBack={() => navigation.goBack()}
+        trailing={
+          <View style={styles.topRightActions}>
+            {canEdit ? (
+              <TouchableOpacity
+                style={[
+                  styles.iconActionBtn,
+                  { backgroundColor: colors.background },
+                ]}
+                onPress={() => setEditModalOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Sửa báo cáo"
+              >
+                <Edit2 size={18} color={colors.primary} />
+              </TouchableOpacity>
+            ) : null}
+            {canDelete ? (
+              <TouchableOpacity
+                style={[
+                  styles.iconActionBtn,
+                  { backgroundColor: colors.background },
+                ]}
+                onPress={handleDeleteAlert}
+                accessibilityRole="button"
+                accessibilityLabel="Xóa báo cáo"
+              >
+                <Trash2 size={18} color={isDark ? "#FCA5A5" : "#DC2626"} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        }
+      />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/*huy hiệu trạng thái quy trình xử lý và đánh giá từ ai*/}
+        <View style={styles.badgesRow}>
+          {aiState === "COMPLETED" ? (
+            <>
+              <Badge
+                appearance="civic"
+                label={getCategoryLabel(alert.category, language)}
+                type="custom"
+                bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
+                textColor={isDark ? colors.text : "#334155"}
+              />
+              <View style={[styles.sevBadge, { backgroundColor: sevColor.bg }]}>
+                <Text style={[styles.sevBadgeText, { color: sevColor.text }]}>
+                  {getSeverityLabel(displaySeverity, language)} ·{" "}
+                  {t("aiAnalysis.aiAssessed", "AI assessed")}
+                </Text>
+              </View>
+            </>
+          ) : null}
+          <Badge
+            appearance="civic"
+            label={workflowStatusLabel}
+            statusValue={alert.status}
+            type="status"
+          />
+          {alert.isAnonymous ? (
+            <Badge
+              appearance="civic"
+              label="ẨN DANH 👤"
+              type="custom"
+              bgColor={isDark ? "rgba(255,255,255,0.1)" : "#F1F5F9"}
+              textColor={isDark ? colors.text : "#475569"}
+            />
+          ) : null}
+          {alert.confirmationsCount && alert.confirmationsCount > 1 ? (
+            <Badge
+              appearance="civic"
+              label={`${alert.confirmationsCount} XÁC NHẬN 👍`}
+              type="custom"
+              bgColor={isDark ? "rgba(22,163,74,0.25)" : "#DCFCE7"}
+              textColor={isDark ? "#86EFAC" : "#166534"}
+            />
+          ) : null}
+          {alert.isDeleted ? (
+            <Badge
+              appearance="civic"
+              label="ĐÃ XÓA"
+              type="custom"
+              bgColor={isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2"}
+              textColor={isDark ? "#FCA5A5" : "#DC2626"}
+            />
+          ) : null}
+        </View>
+
+        {/* tiêu đề và nội dung mô tả chi tiết sự cố */}
+        <Text style={[styles.title, { color: colors.text }]}>
+          {alert.title}
+        </Text>
+
+        {/* thanh thông báo đóng sự cố dành cho quản trị viên */}
+        {canClose ? (
+          <Card appearance="civic" style={styles.closeCard}>
+            <View style={styles.closeHeader}>
+              <CheckSquare size={22} color="#16A34A" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.closeTitle}>
+                  Sự cố được đánh dấu đã giải quyết
+                </Text>
+                <Text style={styles.closeSub}>{pageCopy.officersResolved}</Text>
+              </View>
+            </View>
+            <Button
+              title="Đóng sự cố & Đánh giá"
+              onPress={() => setCloseModalOpen(true)}
+              style={styles.closeBtnAction}
+            />
+          </Card>
+        ) : isPendingAdminReview ? (
+          <Card
+            appearance="civic"
+            style={[
+              styles.closeCard,
+              {
+                borderColor: isDark ? "rgba(34,197,94,0.3)" : "#BBF7D0",
+                backgroundColor: isDark ? "rgba(22,163,74,0.15)" : "#F0FDF4",
+              },
+            ]}
+          >
+            <View style={styles.closeHeader}>
+              <CheckSquare size={22} color="#16A34A" />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.closeTitle,
+                    { color: isDark ? "#86EFAC" : "#15803D" },
+                  ]}
+                >
+                  Sự cố đã được Cán bộ xử lý
+                </Text>
+                <Text
+                  style={[
+                    styles.closeSub,
+                    { color: isDark ? "#CBD5E1" : "#475569" },
+                  ]}
+                >
+                  Cán bộ đã hoàn thành xử lý sự cố. Hồ sơ đang được Admin kiểm
+                  tra và duyệt nghiệm thu.
+                </Text>
+              </View>
+            </View>
+          </Card>
+        ) : null}
+
+        {/* thanh thông báo khôi phục sự cố nếu đã bị xóa tạm thời */}
+        {alert.isDeleted && isAdmin ? (
+          <View
+            style={[
+              styles.restoreCard,
+              { backgroundColor: isDark ? "rgba(220,38,38,0.25)" : "#FEE2E2" },
+            ]}
+          >
+            <Text
+              style={[
+                styles.restoreText,
+                { color: isDark ? "#FCA5A5" : "#DC2626" },
+              ]}
+            >
+              Báo cáo sự cố này đã bị xóa tạm thời.
+            </Text>
+            <Button
+              title="Khôi phục báo cáo"
+              onPress={handleRestoreAlert}
+              loading={restoreAlertMutation.isPending}
+              variant="outline"
+              icon={
+                <RotateCcw
+                  size={16}
+                  color={colors.primary}
+                  style={{ marginRight: space.sm }}
+                />
+              }
+            />
+          </View>
+        ) : null}
+
+        <Card appearance="civic" style={styles.mainCard}>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>
+            {pageCopy.description}
+          </Text>
+          <Text style={[styles.descriptionText, { color: colors.text }]}>
+            {alert.description}
+          </Text>
+        </Card>
+
+        <OverallAiAnalysisCard alert={alert} appearance="civic" />
+
+        {alert.assignedOfficerId ? (
+          <Card
+            appearance="civic"
+            style={[
+              styles.assignedOfficerCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.assignmentHeader}>
+              <View
+                style={[
+                  styles.assignmentIcon,
+                  { backgroundColor: colors.greenSoft },
+                ]}
+              >
+                <UserCheck size={22} color={colors.primary} />
+              </View>
+              <View style={styles.assignmentCopy}>
+                <Text
+                  style={[
+                    styles.assignedOfficerLabel,
+                    { color: colors.primary },
+                  ]}
+                >
+                  Cán bộ chịu trách nhiệm
+                </Text>
+                <Text
+                  style={[styles.assignedOfficerName, { color: colors.text }]}
+                >
+                  {officerDisplayName || "Đã phân công Cán bộ"}
+                </Text>
+                {officerDisplayEmail ? (
+                  <Text
+                    style={[
+                      styles.assignedOfficerEmail,
+                      { color: colors.textMuted },
+                    ]}
+                  >
+                    {officerDisplayEmail}
+                  </Text>
+                ) : null}
+              </View>
+              {isAdmin &&
+              normalizedStatus !== "RESOLVED" &&
+              normalizedStatus !== "CLOSED" ? (
+                <TouchableOpacity
+                  style={[
+                    styles.reassignBtn,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => setOfficerPickerOpen(true)}
+                >
+                  <Text
+                    style={[
+                      styles.reassignBtnText,
+                      { color: colors.textMuted },
+                    ]}
+                  >
+                    Thay đổi
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </Card>
+        ) : canAssign ? (
+          <Card
+            appearance="civic"
+            style={[
+              styles.assignmentCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.assignmentHeader}>
+              <View
+                style={[
+                  styles.assignmentIcon,
+                  { backgroundColor: colors.greenSoft },
+                ]}
+              >
+                <UserCheck size={22} color={colors.primary} />
+              </View>
+              <View style={styles.assignmentCopy}>
+                <Text style={[styles.assignmentTitle, { color: colors.text }]}>
+                  {pageCopy.assign}
+                </Text>
+                <Text
+                  style={[
+                    styles.assignmentDescription,
+                    { color: colors.textMuted },
+                  ]}
+                >
+                  {pageCopy.assignBody}
+                </Text>
+              </View>
+            </View>
+            <Button
+              title="Chọn Cán bộ"
+              onPress={() => setOfficerPickerOpen(true)}
+              style={styles.assignmentButton}
+              icon={<UserCheck size={18} color="#FFFFFF" />}
+            />
+          </Card>
+        ) : null}
+
+        {/* bộ sưu tập hình ảnh và bằng chứng hiện trường */}
+        {evidencePhotoUrls.length > 0 ? (
+          <View style={styles.sectionBox}>
+            <Text style={[styles.sectionHeading, { color: colors.text }]}>
+              {pageCopy.photos}
+            </Text>
+            <View style={styles.photoScroll}>
+              {evidencePhotoUrls.map((url, idx) => (
+                <EvidenceImageFrame
+                  key={idx}
+                  imageUri={url}
+                  accessibilityLabel={`${pageCopy.photos} ${idx + 1}`}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {matchedVisionEvidence.map((evidence) => (
+          <WasteDetectionEvidence key={evidence.imageUrl} evidence={evidence} />
+        ))}
+
+        {/* bản đồ vị trí gắn thẻ sự cố */}
+        <View style={styles.sectionBox}>
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>
+            {pageCopy.location}
+          </Text>
+          <Card appearance="civic" style={styles.mapCard}>
+            <MapView
+              provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+              style={styles.map}
+              initialRegion={{
+                latitude,
+                longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+            >
+              <Marker
+                coordinate={{ latitude, longitude }}
+                title={alert.title}
+                description={alert.address}
+              />
+            </MapView>
+            <View
+              style={[styles.addressBox, { backgroundColor: colors.surface }]}
+            >
+              <MapPin size={16} color={colors.primary} />
+              <Text
+                style={[styles.addressText, { color: colors.text }]}
+                numberOfLines={2}
+              >
+                {alert.address ||
+                  `${pageCopy.coordinates}: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`}
+              </Text>
+            </View>
+          </Card>
+        </View>
+
+        {/* phản hồi và kết quả xử lý từ cán bộ môi trường */}
+        {alert.officerNote ? (
+          <Card appearance="civic" style={styles.officerNoteCard}>
+            <View style={styles.officerHeader}>
+              <ShieldCheck size={20} color={colors.primary} />
+              <Text
+                style={[
+                  styles.officerTitle,
+                  { color: isDark ? "#4ADE80" : colors.primaryDark },
+                ]}
+              >
+                {pageCopy.officerResponse}
+              </Text>
+            </View>
+            <Text style={[styles.officerNoteContent, { color: colors.text }]}>
+              {alert.officerNote}
+            </Text>
+          </Card>
+        ) : null}
+
+        {/* siêu dữ liệu thời gian tạo và cập nhật báo cáo */}
+        <Card appearance="civic" style={styles.metaCard}>
+          <View style={styles.metaRow}>
+            <Calendar size={16} color={colors.textMuted} />
+            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>
+              {pageCopy.submitted}
+            </Text>
+            <Text style={[styles.metaValue, { color: colors.text }]}>
+              {alert.createdAt
+                ? format(new Date(alert.createdAt), "PPP - HH:mm", {
+                    locale: language === "vi" ? vi : enUS,
+                  })
+                : pageCopy.unavailable}
+            </Text>
+          </View>
+
+          <View style={[styles.metaRow, { marginTop: 12 }]}>
+            <Clock size={16} color={colors.textMuted} />
+            <Text style={[styles.metaLabel, { color: colors.textMuted }]}>
+              {pageCopy.updated}
+            </Text>
+            <Text style={[styles.metaValue, { color: colors.text }]}>
+              {alert.updatedAt
+                ? format(new Date(alert.updatedAt), "PPP - HH:mm", {
+                    locale: language === "vi" ? vi : enUS,
+                  })
+                : pageCopy.unavailable}
+            </Text>
+          </View>
+        </Card>
+      </ScrollView>
+
+      <OfficerPickerModal
+        visible={isOfficerPickerOpen && canAssign}
+        officers={officers}
+        isLoading={isLoadingOfficers}
+        isRefreshing={isFetchingOfficers && !isLoadingOfficers}
+        isAssigning={assignOfficer.isPending}
+        errorMessage={
+          officersError
+            ? getRequestErrorMessage(officersError, pageCopy.connection)
+            : undefined
+        }
+        onClose={() => setOfficerPickerOpen(false)}
+        onRetry={() => refetchOfficers()}
+        onAssign={handleAssignOfficer}
+      />
+
+      <CloseIncidentModal
+        visible={isCloseModalOpen}
+        alertId={alert._id}
+        onClose={() => setCloseModalOpen(false)}
+      />
+
+      <EditAlertModal
+        visible={isEditModalOpen}
+        alert={alert}
+        onClose={() => setEditModalOpen(false)}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
+  loadingText: { marginTop: space.md, fontSize: 14, fontWeight: "500" },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: space.section,
+  },
+  errorTitle: { fontSize: 20, fontWeight: "800", marginTop: space.lg },
+  errorSub: {
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: space.sm,
+    lineHeight: 18,
+  },
+  backBtn: {
+    minHeight: 48,
+    justifyContent: "center",
+    marginTop: space.xl,
+    paddingHorizontal: space.xl,
+    paddingVertical: space.md,
+    borderRadius: 12,
+  },
+  backBtnText: { fontSize: 14, fontWeight: "700" },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: space.lg,
+    paddingBottom: space.md,
+    borderBottomWidth: 1,
+    zIndex: 10,
+  },
+  topRightActions: { flexDirection: "row", gap: space.sm },
+  circleBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconActionBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.card,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topBarTitle: { fontSize: 17, fontWeight: "700" },
+  scrollContent: { padding: space.lg, paddingBottom: space.page },
+  badgesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: space.sm,
+    marginBottom: space.md,
+  },
+  sevBadge: {
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
+    borderRadius: 12,
+  },
+  sevBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5 },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    marginBottom: space.lg,
+    lineHeight: 28,
+  },
+  closeCard: {
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.card,
+    backgroundColor: "#DCFCE7",
+  },
+  closeHeader: { flexDirection: "row", gap: space.md, marginBottom: space.md },
+  closeTitle: { fontSize: 16, fontWeight: "800", color: "#15803D" },
+  closeSub: {
+    fontSize: 13,
+    color: "#166534",
+    marginTop: space.xs,
+    lineHeight: 18,
+  },
+  closeBtnAction: { backgroundColor: "#16A34A" },
+  restoreCard: {
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.card,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  restoreText: { fontSize: 13, fontWeight: "600" },
+  mainCard: {
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.card,
+  },
+  sectionHeading: { fontSize: 15, fontWeight: "700", marginBottom: space.sm },
+  descriptionText: { fontSize: 14, lineHeight: 22 },
+  assignmentCard: { padding: space.lg, marginBottom: space.xl },
+  assignedOfficerCard: { padding: space.lg, marginBottom: space.xl },
+  assignedOfficerLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  assignedOfficerName: { fontSize: 16, fontWeight: "800", marginTop: space.xs },
+  assignedOfficerEmail: { fontSize: 12, marginTop: space.xs },
+  reassignBtn: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.button,
+    borderWidth: 1,
+  },
+  reassignBtnText: { fontSize: 12, fontWeight: "700" },
+  assignmentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
+  },
+  assignmentIcon: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.button,
+  },
+  assignmentCopy: { flex: 1 },
+  assignmentTitle: { fontSize: 16, fontWeight: "800" },
+  assignmentDescription: { marginTop: space.xs, fontSize: 12, lineHeight: 17 },
+  assignmentButton: { marginTop: space.lg },
+  sectionBox: { marginBottom: space.xl },
+  photoScroll: { marginTop: space.xs },
+  mapCard: { padding: 0, overflow: "hidden", marginTop: space.xs },
+  map: { width: "100%", height: 180 },
+  addressBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: space.md,
+    gap: space.sm,
+  },
+  addressText: { fontSize: 13, flex: 1, fontWeight: "500" },
+  officerNoteCard: {
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.card,
+  },
+  officerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
+    marginBottom: space.sm,
+  },
+  officerTitle: { fontSize: 14, fontWeight: "700" },
+  officerNoteContent: { fontSize: 13, lineHeight: 20 },
+  metaCard: { padding: space.lg },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: space.xs,
+  },
+  metaLabel: { fontSize: 13, marginLeft: 8, width: 100 },
+  metaValue: {
+    flexBasis: "100%",
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
+});

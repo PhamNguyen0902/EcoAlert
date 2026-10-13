@@ -1,1 +1,0 @@
-export { ReportIncidentScreen } from "./ReportIncidentScreen";

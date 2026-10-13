@@ -9,13 +9,13 @@ import {
 import {
   getCategoryLabel,
   getSeverityLabel,
-} from "../../../incidents/model/aiAnalysis";
-import type { FieldReportImageValidationDraft } from "../../model/types";
+} from "../../../../utils/aiAnalysis";
+import type { FieldReportImageValidationDraft } from "../../types";
 import { WasteDetectionChips } from "../WasteDetectionChips";
 import { fieldConfidence } from "./fieldPresentation";
 import { fieldColors as c, fieldStyles as s } from "./fieldDesign";
 import { FieldEntrance, useFieldReducedMotion } from "./FieldUI";
-import { massPresentation } from "../../model/semanticResult";
+import { massPresentation } from "../../semanticResult";
 
 /** All displayed conclusions come from the existing draft/API, never visual fixtures. */
 export function FieldAiResultCard({

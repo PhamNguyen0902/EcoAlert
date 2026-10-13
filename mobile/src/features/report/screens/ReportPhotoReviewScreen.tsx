@@ -25,17 +25,17 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
-import { useReportTheme } from "../hooks/useReportTheme";
+import { useReportTheme } from "../useReportTheme";
 import { ReportScreenIntro } from "../components/ReportScreenIntro";
 import { ReportBottomActions } from "../components/ReportBottomActions";
 import {
   formatWatermarkData,
   persistWatermarkedDisplayImage,
-} from "../model/watermark";
-import { useFieldReport } from "../model/FieldReportContext";
+} from "../../../utils/watermark";
+import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
-import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
+import { EvidenceImageFrame } from "../../../components/media/EvidenceImageFrame";
 import { FieldNotice, FieldEntrance } from "../components/stitch/FieldUI";
 import { fieldStyles } from "../components/stitch/fieldDesign";
 import { fieldIntegrity } from "../components/stitch/fieldPresentation";

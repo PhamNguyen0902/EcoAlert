@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useReportTheme } from "../hooks/useReportTheme";
+import { useReportTheme } from "../useReportTheme";
 
 export const ReportBottomActions = ({
   children,

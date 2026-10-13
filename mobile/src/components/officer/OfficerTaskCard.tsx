@@ -1,13 +1,13 @@
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { MapPin, ImageOff } from "lucide-react-native";
-import type { Alert } from "../../shared/types/index";
+import type { Alert } from "../../types";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { getOfficerTaskState } from "../../utils/officerWorkflow";
 import {
   getCategoryLabel,
   getSeverityLabel,
-} from "../../features/incidents/model/incidentPresentation";
+} from "../../utils/incidentPresentation";
 import {
   officerDate,
   officerImage,

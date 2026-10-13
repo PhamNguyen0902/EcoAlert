@@ -1,7 +1,7 @@
 import React from "react";
 import { ScrollView, Pressable, Text } from "react-native";
 import { useCivicTheme } from "../../theme/useCivicTheme";
-import type { Alert } from "../../shared/types/index";
+import type { Alert } from "../../types";
 import {
   filterOfficerTasks,
   type OfficerTaskFilter,

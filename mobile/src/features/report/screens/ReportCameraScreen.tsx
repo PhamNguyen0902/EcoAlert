@@ -26,11 +26,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
-import { useReportTheme } from "../hooks/useReportTheme";
-import { persistOriginalFieldImage } from "../model/watermark";
-import { normalizeFieldCaptureImage } from "../model/fieldCaptureImage";
-import { useFieldReport } from "../model/FieldReportContext";
-import { MAX_FIELD_GPS_ACCURACY_METERS } from "../model/types";
+import { useReportTheme } from "../useReportTheme";
+import { persistOriginalFieldImage } from "../../../utils/watermark";
+import { normalizeFieldCaptureImage } from "../../../utils/fieldCaptureImage";
+import { useFieldReport } from "../FieldReportContext";
+import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 import {
   useForegroundScreen,
   useScreenClock,

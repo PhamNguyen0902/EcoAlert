@@ -1,7 +1,5 @@
 # ReportFlow AI classification / visual mass audit — 2026-10-13
 
-Architecture follow-up: paths below describe the original audit. Current equivalents are in [the migration ledger](architecture-migration.md) and [architecture guide](ARCHITECTURE.md): draft/model under `src/features/report/model`, incident API under `src/features/incidents/api`, report queue under `src/features/report/offline`, and wire types under `src/shared/types`. AI/backend behavior was not changed by the folder migration.
-
 ## Findings
 
 Camera stores the original local image in FieldReportContext. PhotoReview forwards the same draft. ImageValidation uploads the original via Media, calls `/v1/media/analyze-url` (Media downloads the image and invokes Vision/YOLO), then `/v1/ai/validate-image`. Gateway strips `/api/v1/ai`; AI `/validate-image` invokes OpenRouter with the image URL and report text. AI normalizes category, applies its configured thresholds and validates visual mass. A provider image rejection can fall back to TEXT_ONLY; a provider failure returns HTTP 503. Confirmation receives the same context provider; no provider remount/category overwrite was found between these screens.

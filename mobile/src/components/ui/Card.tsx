@@ -1,0 +1,51 @@
+import React from "react";
+import { View, StyleSheet, StyleProp, ViewStyle } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { civicStyles, getCivicColors } from "../../theme/civicDesign";
+
+interface CardProps {
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  appearance?: "default" | "civic";
+}
+
+export const Card: React.FC<CardProps> = ({
+  children,
+  style,
+  appearance = "default",
+}) => {
+  const theme = useTheme();
+  const colors =
+    appearance === "civic"
+      ? getCivicColors(theme.colors, theme.isDark)
+      : theme.colors;
+
+  return (
+    <View
+      style={[
+        styles.card,
+        appearance === "civic" && civicStyles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+  },
+});

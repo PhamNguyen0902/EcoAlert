@@ -31,7 +31,7 @@ import type {
   CitizenStackParamList,
   ReportFlowParamList,
 } from "../../../navigation/types";
-import { useReportTheme } from "../hooks/useReportTheme";
+import { useReportTheme } from "../useReportTheme";
 import { ReportScreenIntro } from "../components/ReportScreenIntro";
 import { ReportBottomActions } from "../components/ReportBottomActions";
 import {
@@ -39,23 +39,23 @@ import {
   useConfirmAlert,
   useCreateAlert,
 } from "../../../hooks/useAlerts";
-import { useOfflineSync } from "../offline/useOfflineSync";
-import { alertService } from "../../incidents/api/alertService";
-import { offlineQueue } from "../offline/offlineQueue";
+import { useOfflineSync } from "../../../hooks/useOfflineSync";
+import { alertService } from "../../../api/alertService";
+import { offlineQueue } from "../../../utils/offlineQueue";
 import {
   getCategoryLabel,
   getSeverityLabel,
   getWorkflowStatusLabel,
-} from "../../incidents/model/aiAnalysis";
-import { useFieldReport } from "../model/FieldReportContext";
-import { MAX_FIELD_GPS_ACCURACY_METERS } from "../model/types";
+} from "../../../utils/aiAnalysis";
+import { useFieldReport } from "../FieldReportContext";
+import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
-import { ZoomableImageViewer } from "../../../shared/components/media/ZoomableImageViewer";
+import { ZoomableImageViewer } from "../../../components/media/ZoomableImageViewer";
 import { FieldReportSummary } from "../components/stitch/FieldReportSummary";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
 import { fieldStyles } from "../components/stitch/fieldDesign";
-import { reportCategoryCodes, reportClassification } from "../model/semanticResult";
+import { reportCategoryCodes, reportClassification } from "../semanticResult";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportConfirm">;
 const isBackendUrl = (value?: string): value is string =>

@@ -1,8 +1,8 @@
 import type {
   FieldReportCaptureDraft,
   FieldReportLocationDraft,
-} from "../../model/types";
-import { MAX_FIELD_GPS_ACCURACY_METERS } from "../../model/types";
+} from "../../types";
+import { MAX_FIELD_GPS_ACCURACY_METERS } from "../../types";
 
 export const FIELD_LOCATION_MAX_AGE_MS = 5 * 60_000;
 export function fieldLocationReady(
