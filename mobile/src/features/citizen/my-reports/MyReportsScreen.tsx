@@ -14,8 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FileText, PlusCircle, Edit2, Trash2 } from "lucide-react-native";
 import { useCitizenReports, useDeleteAlert } from "../../../hooks/useAlerts";
 import { useProfile } from "../../auth/hooks/useAuth";
-import { useUnreadNotificationCount } from "../../../hooks/useNotifications";
-import { EditAlertModal } from "../../../components/modals/EditAlertModal";
+import { useUnreadNotificationCount } from "../../notifications/hooks/useNotifications";
+import { EditAlertModal } from "../../incidents/components/modals/EditAlertModal";
 import {
   CitizenSearch,
   CitizenStat,
@@ -51,7 +51,7 @@ import {
   getCategoryLabel,
   getSeverityLabel,
   getWorkflowStatusLabel,
-} from "../../../utils/aiAnalysis";
+} from "../../incidents/model/aiAnalysis";
 
 import { useOfflineSync } from "../../report/offline/useOfflineSync";
 import { CloudUpload, RefreshCw } from "lucide-react-native";

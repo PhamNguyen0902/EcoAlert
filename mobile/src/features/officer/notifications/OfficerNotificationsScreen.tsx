@@ -25,7 +25,7 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
   useUnreadNotificationCount,
-} from "../../../hooks/useNotifications";
+} from "../../notifications/hooks/useNotifications";
 import { useCivicTheme } from "../../../theme/useCivicTheme";
 import {
   OfficerHeader,
@@ -33,8 +33,8 @@ import {
   officerStyles as s,
 } from "../../../components/officer/OfficerUI";
 import { Button } from "../../../components/ui/Button";
-import { notificationPresentation } from "../../../utils/notificationPresentation";
-import { getNotificationAlertId } from "../../../utils/notificationNavigation";
+import { notificationPresentation } from "../../notifications/model/notificationPresentation";
+import { getNotificationAlertId } from "../../notifications/model/notificationNavigation";
 import type { NotificationItem } from "../../../shared/types/notification";
 import type { OfficerStackParamList } from "../../../navigation/types";
 export function OfficerNotificationsScreen({

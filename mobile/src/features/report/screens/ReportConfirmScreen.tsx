@@ -40,13 +40,13 @@ import {
   useCreateAlert,
 } from "../../../hooks/useAlerts";
 import { useOfflineSync } from "../offline/useOfflineSync";
-import { alertService } from "../../../api/alertService";
+import { alertService } from "../../incidents/api/alertService";
 import { offlineQueue } from "../offline/offlineQueue";
 import {
   getCategoryLabel,
   getSeverityLabel,
   getWorkflowStatusLabel,
-} from "../../../utils/aiAnalysis";
+} from "../../incidents/model/aiAnalysis";
 import { useFieldReport } from "../model/FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../model/types";
 import { ReportHeader } from "../components/ReportHeader";

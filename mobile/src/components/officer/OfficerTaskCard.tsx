@@ -7,7 +7,7 @@ import { getOfficerTaskState } from "../../utils/officerWorkflow";
 import {
   getCategoryLabel,
   getSeverityLabel,
-} from "../../utils/incidentPresentation";
+} from "../../features/incidents/model/incidentPresentation";
 import {
   officerDate,
   officerImage,

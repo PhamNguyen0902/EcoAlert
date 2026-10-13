@@ -3,7 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, View, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LogOut, Mail, ShieldCheck } from "lucide-react-native";
 import { useProfile, useLogout } from "../../auth/hooks/useAuth";
-import { useAssignedServiceAreas } from "../../../hooks/useServiceAreas";
+import { useAssignedServiceAreas } from "../../admin/incidents/hooks/useServiceAreas";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { useCivicTheme } from "../../../theme/useCivicTheme";
 import { Card } from "../../../shared/components/ui/Card";

@@ -17,7 +17,7 @@ import {
 } from "lucide-react-native";
 import { useCivicTheme } from "../../../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../../../theme/civicDesign";
-import { unreadBadgeLabel } from "../../../../utils/notificationNavigation";
+import { unreadBadgeLabel } from "../../../notifications/model/notificationNavigation";
 import type { User } from "../../../../shared/types/index";
 
 export const CitizenAvatar = ({

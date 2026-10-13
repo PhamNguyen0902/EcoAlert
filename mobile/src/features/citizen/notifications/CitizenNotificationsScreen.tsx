@@ -33,13 +33,13 @@ import {
   useMarkNotificationRead,
   useMarkAllNotificationsRead,
   useDeleteNotification,
-} from "../../../hooks/useNotifications";
+} from "../../notifications/hooks/useNotifications";
 import { useProfile } from "../../auth/hooks/useAuth";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { useCivicTheme } from "../../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../../theme/civicDesign";
-import { getNotificationAlertId } from "../../../utils/notificationNavigation";
-import { notificationPresentation } from "../../../utils/notificationPresentation";
+import { getNotificationAlertId } from "../../notifications/model/notificationNavigation";
+import { notificationPresentation } from "../../notifications/model/notificationPresentation";
 
 type Props = NativeStackScreenProps<CitizenStackParamList, "Notifications">;
 // màn hình danh sách thông báo về tiến độ xử lý sự cố gửi đến người dân

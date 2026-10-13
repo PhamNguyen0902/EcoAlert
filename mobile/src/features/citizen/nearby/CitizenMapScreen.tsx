@@ -28,7 +28,7 @@ import type {
 } from "../../../navigation/types";
 import { useAlerts } from "../../../hooks/useAlerts";
 import { useProfile } from "../../auth/hooks/useAuth";
-import { useUnreadNotificationCount } from "../../../hooks/useNotifications";
+import { useUnreadNotificationCount } from "../../notifications/hooks/useNotifications";
 import { useDashboardLocation } from "./useDashboardLocation";
 import { useLocation } from "../../../shared/hooks/useLocation";
 import { useLanguage } from "../../../i18n/LanguageContext";
@@ -45,7 +45,7 @@ import {
   getCategoryLabel,
   getSeverityLabel,
   getWorkflowStatusLabel,
-} from "../../../utils/aiAnalysis";
+} from "../../incidents/model/aiAnalysis";
 import {
   distanceMeters,
   getIncidentGroup,

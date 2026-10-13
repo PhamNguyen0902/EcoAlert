@@ -23,7 +23,7 @@ import type {
   ReportFlowParamList,
 } from "../../../navigation/types";
 import { useAlert } from "../../../hooks/useAlerts";
-import { getWorkflowStatusLabel } from "../../../utils/aiAnalysis";
+import { getWorkflowStatusLabel } from "../../incidents/model/aiAnalysis";
 import { reportTime } from "../../citizen/model/citizenPresentation";
 import { useFieldReport } from "../model/FieldReportContext";
 import { formatAlertReference } from "../model/utils";

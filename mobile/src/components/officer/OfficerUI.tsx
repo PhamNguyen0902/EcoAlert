@@ -21,10 +21,10 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { OfficerStackParamList } from "../../navigation/types";
 import { useProfile } from "../../features/auth/hooks/useAuth";
-import { useUnreadNotificationCount } from "../../hooks/useNotifications";
+import { useUnreadNotificationCount } from "../../features/notifications/hooks/useNotifications";
 import { useCivicTheme } from "../../theme/useCivicTheme";
 import { civicType } from "../../theme/civicDesign";
-import { unreadBadgeLabel } from "../../utils/notificationNavigation";
+import { unreadBadgeLabel } from "../../features/notifications/model/notificationNavigation";
 
 export const officerStyles = StyleSheet.create({
   screen: { flex: 1 },

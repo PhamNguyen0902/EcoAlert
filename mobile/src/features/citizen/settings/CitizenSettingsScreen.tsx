@@ -36,7 +36,7 @@ import type {
   RootStackParamList,
 } from "../../../navigation/types";
 import { useLogout, useProfile } from "../../auth/hooks/useAuth";
-import { useUnreadNotificationCount } from "../../../hooks/useNotifications";
+import { useUnreadNotificationCount } from "../../notifications/hooks/useNotifications";
 import { useCivicTheme } from "../../../theme/useCivicTheme";
 import { civicStyles, civicType } from "../../../theme/civicDesign";
 import { Card } from "../../../shared/components/ui/Card";

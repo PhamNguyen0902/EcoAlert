@@ -4,14 +4,14 @@ import {
   useQueryClient,
   useInfiniteQuery,
 } from "@tanstack/react-query";
-import { alertService } from "../api/alertService";
+import { alertService } from "../features/incidents/api/alertService";
 import {
   CreateAlertData,
   OfficerShift,
   ResolutionInput,
   ShiftLocationInput,
 } from "../shared/types/index";
-import { AI_POLL_INTERVAL_MS, shouldPollAiAnalysis } from "../utils/aiAnalysis";
+import { AI_POLL_INTERVAL_MS, shouldPollAiAnalysis } from "../features/incidents/model/aiAnalysis";
 
 const EMPTY_FILTERS: Record<string, string> = {};
 

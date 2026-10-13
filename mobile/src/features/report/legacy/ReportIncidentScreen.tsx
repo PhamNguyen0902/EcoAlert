@@ -49,7 +49,7 @@ import { Button } from "../../../components/ui/Button";
 import { useTheme } from "../../../theme/ThemeContext";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import type { CitizenStackParamList, CitizenTabParamList } from "../../../navigation/types";
-import { getAiAnalysisState, getWorkflowStatusLabel } from "../../../utils/aiAnalysis";
+import { getAiAnalysisState, getWorkflowStatusLabel } from "../../incidents/model/aiAnalysis";
 
 type Props = BottomTabScreenProps<CitizenTabParamList, "ReportTab">;
 

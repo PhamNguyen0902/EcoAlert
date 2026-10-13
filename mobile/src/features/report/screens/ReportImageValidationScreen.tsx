@@ -31,14 +31,14 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
 import type { ImageValidation } from "../../../shared/types/index";
 import { mapSemanticResult, semanticErrorMessage } from "../model/semanticResult";
-import { alertService } from "../../../api/alertService";
+import { alertService } from "../../incidents/api/alertService";
 import { useOfflineSync } from "../offline/useOfflineSync";
 import { useReportTheme } from "../hooks/useReportTheme";
 import { ReportBottomActions } from "../components/ReportBottomActions";
 import { useFieldReport } from "../model/FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
-import { WasteDetectionImage } from "../../../components/vision/WasteDetectionImage";
+import { WasteDetectionImage } from "../../incidents/components/vision/WasteDetectionImage";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
 import {
   FieldEvidenceMetaOverlay,

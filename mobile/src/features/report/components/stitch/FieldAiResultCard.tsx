@@ -9,7 +9,7 @@ import {
 import {
   getCategoryLabel,
   getSeverityLabel,
-} from "../../../../utils/aiAnalysis";
+} from "../../../incidents/model/aiAnalysis";
 import type { FieldReportImageValidationDraft } from "../../model/types";
 import { WasteDetectionChips } from "../WasteDetectionChips";
 import { fieldConfidence } from "./fieldPresentation";

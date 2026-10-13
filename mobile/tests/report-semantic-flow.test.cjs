@@ -71,7 +71,7 @@ test('manual selection stays separate from AI suggestion and serializes correct 
 test('mobile API adapter preserves the real response envelope and mass fields', async () => {
   const data = result();
   let request;
-  const service = load('api/alertService.ts', { '../shared/api/client': { api: { post: async (...args) => { request = args; return { data: { success: true, data } }; } } } }).alertService;
+  const service = load('features/incidents/api/alertService.ts', { '../../../shared/api/client': { api: { post: async (...args) => { request = args; return { data: { success: true, data } }; } } } }).alertService;
   const response = await service.validateImageSemantics('https://example.com/evidence.jpg');
   assert.equal(response, data);
   assert.equal(request[0], '/v1/ai/validate-image');
@@ -93,7 +93,7 @@ test('shared Step 3/confirmation card distinguishes category confidence from YOL
     react: { ...React, default: React },
     'react-native': { View: 'View', Text: 'Text', Animated: {}, StyleSheet: { create: x => x } },
     'lucide-react-native': new Proxy({}, { get: (_, key) => String(key) }),
-    '../../../../utils/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
+    '../../../incidents/model/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
     '../WasteDetectionChips': { WasteDetectionChips: 'WasteDetectionChips' },
     './fieldPresentation': { fieldConfidence: n => typeof n === 'number' ? n : null },
     './fieldDesign': { fieldColors: {}, fieldStyles: {} },
@@ -137,11 +137,11 @@ function harness(semantic = async () => result()) {
     'lucide-react-native': new Proxy({}, { get: (_, key) => String(key) }),
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '../../../theme/civicDesign': { civicSpace: {}, civicRadius: {}, civicType: {} },
-    '../../../api/alertService': { alertService: service },
+    '../../incidents/api/alertService': { alertService: service },
     '../offline/useOfflineSync': { useOfflineSync: () => ({ isOffline: offline }) },
     '../../../hooks/useAlerts': { useCheckNearbyAlerts: () => ({ data: [] }), useConfirmAlert: () => ({}), useCreateAlert: () => ({ mutateAsync: async p => { payload = p; return { _id: 'created' }; } }) },
     '../offline/offlineQueue': { offlineQueue: { saveOfflineDraft: async p => { queued = p; } } },
-    '../../../utils/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
+    '../../incidents/model/aiAnalysis': { getCategoryLabel: x => x, getSeverityLabel: x => x },
     '../hooks/useReportTheme': { useReportTheme: () => ({ colors: {} }) },
     '../model/FieldReportContext': { useFieldReport: () => ({ draft, setDraft: update => { draft = typeof update === 'function' ? update(draft) : update; } }) },
     '../model/semanticResult': utils,
@@ -151,7 +151,7 @@ function harness(semantic = async () => result()) {
   for (const [id, names] of Object.entries({
     '../components/ReportBottomActions': ['ReportBottomActions'], '../components/ReportHeader': ['ReportHeader'],
     '../components/ReportProgress': ['ReportProgress'], '../components/ReportScreenIntro': ['ReportScreenIntro'],
-    '../../../components/vision/WasteDetectionImage': ['WasteDetectionImage'], '../../../shared/components/media/ZoomableImageViewer': ['ZoomableImageViewer'],
+    '../../incidents/components/vision/WasteDetectionImage': ['WasteDetectionImage'], '../../../shared/components/media/ZoomableImageViewer': ['ZoomableImageViewer'],
     '../components/stitch/FieldAiResultCard': ['FieldAiResultCard'], '../components/stitch/FieldReportSummary': ['FieldReportSummary'],
     '../components/stitch/FieldUI': ['FieldEvidenceMetaOverlay','FieldNotice','FieldScanLine'],
   })) imports[id] = Object.fromEntries(names.map(n => [n,n]));

@@ -22,7 +22,7 @@ import {
   getCategoryLabel,
   getStatusLabel,
   getSeverityLabel,
-} from "../../../utils/incidentPresentation";
+} from "../../incidents/model/incidentPresentation";
 import {
   getOfficerTaskState,
   filterOfficerTasks,

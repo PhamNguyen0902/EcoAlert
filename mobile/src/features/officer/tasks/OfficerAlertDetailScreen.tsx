@@ -20,7 +20,7 @@ import { useProfile } from "../../auth/hooks/useAuth";
 import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
 import { Input } from "../../../shared/components/ui/Input";
 import { Button } from "../../../components/ui/Button";
-import { OverallAiAnalysisCard } from "../../../components/ai/OverallAiAnalysisCard";
+import { OverallAiAnalysisCard } from "../../incidents/components/ai/OverallAiAnalysisCard";
 import {
   OfficerHeader,
   OfficerBadge,
@@ -30,11 +30,11 @@ import {
 import { OfficerTimeline } from "../components/OfficerTimeline";
 import { useCivicTheme } from "../../../theme/useCivicTheme";
 import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../../utils/maps";
-import { getAlertDisplaySeverity } from "../../../utils/aiAnalysis";
+import { getAlertDisplaySeverity } from "../../incidents/model/aiAnalysis";
 import {
   getCategoryLabel,
   getSeverityLabel,
-} from "../../../utils/incidentPresentation";
+} from "../../incidents/model/incidentPresentation";
 import { getWasteDetectionLabel } from "../../../shared/lib/visionBoundingBox";
 import {
   getOfficerTaskState,
