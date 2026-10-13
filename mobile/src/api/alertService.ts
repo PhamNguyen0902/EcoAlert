@@ -136,7 +136,8 @@ export const alertService = {
       imageUrl,
       title: input.title || "Báo cáo rác hiện trường",
       description: input.description || "Ảnh được chụp trực tiếp trong luồng báo cáo rác EcoAlert.",
-    });
+    }, { timeout: 60_000 });
+    if (res.data?.success === false) throw new Error("INVALID_SEMANTIC_RESPONSE");
     return res.data?.data || res.data;
   },
 

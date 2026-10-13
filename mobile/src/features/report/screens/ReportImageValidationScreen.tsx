@@ -29,11 +29,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ReportFlowParamList } from "../../../navigation/types";
-import type {
-  AlertCategory,
-  ImageValidation,
-  PreSubmitSemanticResult,
-} from "../../../types";
+import type { ImageValidation } from "../../../types";
+import { mapSemanticResult, semanticErrorMessage } from "../semanticResult";
 import { alertService } from "../../../api/alertService";
 import { useOfflineSync } from "../../../hooks/useOfflineSync";
 import { useReportTheme } from "../useReportTheme";
@@ -57,10 +54,6 @@ type Props = NativeStackScreenProps<
 // kiểm tra đường dẫn ảnh đã được tải lên máy chủ hay chưa
 const isBackendUrl = (value?: string): value is string =>
   Boolean(value && /^https?:\/\//i.test(value));
-// trích xuất danh mục sự cố từ kết quả phân tích ngữ nghĩa ai
-const categoryFromSemantic = (
-  value: AlertCategory | null,
-): AlertCategory | null => value ?? null;
 
 // màn hình bước bốn phân tích ảnh bằng ai và kiểm định tính hợp lệ của sự cố
 export const ReportImageValidationScreen: React.FC<Props> = ({
@@ -68,11 +61,15 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
-  const { draft, setDraft } = useFieldReport();
+  const { draft, setDraft: writeDraft } = useFieldReport();
   const { isOffline } = useOfflineSync();
   const [guideVisible, setGuideVisible] = useState(false);
   const runningRef = useRef(false);
   const capture = draft.capture;
+  // A late response for a discarded photo must not overwrite the next capture.
+  const setDraft = useCallback((update: Parameters<typeof writeDraft>[0]) => writeDraft(current =>
+    current.capture?.originalLocalUri !== capture?.originalLocalUri || current.capture?.capturedAt !== capture?.capturedAt
+      ? current : typeof update === "function" ? update(current) : update), [writeDraft, capture?.originalLocalUri, capture?.capturedAt]);
   const imageDetections = useMemo(
     () =>
       draft.imageValidation.state === "VALID"
@@ -92,8 +89,10 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
       setDraft((current) => ({
         ...current,
         imageValidation: {
-          state: "UNAVAILABLE",
-          detectedObjects: [],
+          ...current.imageValidation,
+          state: current.imageValidation.detectedObjects.length ? "VALID" : "UNAVAILABLE",
+          semanticState: "UNAVAILABLE",
+          semanticError: "Cần kết nối mạng để phân loại AI.",
           reason: "Cần kết nối mạng để kiểm tra ảnh trước khi gửi.",
         },
       }));
@@ -133,8 +132,9 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         );
       }
       // gửi ảnh sang mô hình yolo để phát hiện các đối tượng rác thải
-      const vision =
-        await alertService.analyzeUploadedImage(originalUploadedUrl);
+      const vision = draft.imageValidation.detectedObjects.length
+        ? { status: "ok" as const, requiresManualReview: draft.imageValidation.backendValidation?.decision === "UNCERTAIN", detections: draft.imageValidation.detectedObjects.map(item => ({ materialClass: item.label, confidence: item.confidence ?? 0, bbox: item.bbox })) }
+        : await alertService.analyzeUploadedImage(originalUploadedUrl);
       if (vision.status === "error") throw new Error("VISION_UNAVAILABLE");
       const detections = vision.detections.map((item) => ({
         label: item.materialClass,
@@ -164,28 +164,29 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         return;
       }
       // gửi ảnh và ngữ cảnh sang mô hình phân tích ngữ nghĩa để suy luận mức độ và tóm tắt hiện trường
-      let semantic: PreSubmitSemanticResult | null = null;
+      setDraft(current => ({ ...current, imageValidation: { ...current.imageValidation, detectedObjects: detections } }));
+      let semanticFields: ReturnType<typeof mapSemanticResult> = {};
       try {
-        semantic = await alertService.validateImageSemantics(
+        const semantic = await alertService.validateImageSemantics(
           originalUploadedUrl,
           { title: draft.title, description: draft.description },
         );
-      } catch {
-        semantic = null;
+        semanticFields = mapSemanticResult(semantic);
+      } catch (error) {
+        semanticFields = { semanticState: "UNAVAILABLE", semanticError: semanticErrorMessage(error), suggestedCategory: null, severity: null, summary: null, categoryConfidence: null, massEstimate: undefined, semanticResult: undefined, analysisMode: undefined };
       }
       const averageConfidence =
         detections.reduce((sum, item) => sum + (item.confidence ?? 0), 0) /
         detections.length;
-      const suggestedCategory = semantic
-        ? categoryFromSemantic(semantic.category)
-        : null;
+      const suggestedCategory = semanticFields.suggestedCategory ?? null;
+      const semantic = semanticFields.semanticResult;
       const backendValidation: ImageValidation = {
-        decision: vision.requiresManualReview ? "UNCERTAIN" : "VALID",
-        isEnvironmentalIncident: semantic?.isIncident ?? true,
-        confidence: semantic?.incidentConfidence ?? averageConfidence,
+        decision: vision.requiresManualReview || semanticFields.semanticState !== "COMPLETE" || semantic?.confidenceTier === "REVIEW_REQUIRED" ? "UNCERTAIN" : "VALID",
+        isEnvironmentalIncident: semantic?.isIncident ?? null,
+        confidence: semanticFields.categoryConfidence ?? null,
         suggestedCategory,
         reason:
-          semantic?.shortReason || "Đã phát hiện đối tượng rác thải trong ảnh.",
+          semanticFields.semanticError || semantic?.shortReason || "Đã phát hiện đối tượng rác thải trong ảnh.",
         model: semantic?.model || "YOLO11n",
         validatedAt: new Date().toISOString(),
       };
@@ -199,16 +200,16 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
             : "Điểm rác cần được xử lý"),
         description:
           current.description ||
-          semantic?.overallSummary ||
-          semantic?.summary ||
+          semanticFields.summary ||
           "Phát hiện rác thải tại vị trí đã ghi nhận.",
         imageValidation: {
+          ...current.imageValidation,
+          ...semanticFields,
           state: "VALID",
           isWasteRelated: true,
           detectedObjects: detections,
           suggestedCategory,
-          severity: semantic?.severity ?? null,
-          summary: semantic?.overallSummary || semantic?.summary || null,
+          yoloConfidence: averageConfidence,
           reason: backendValidation.reason,
           backendValidation,
         },
@@ -220,12 +221,12 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
           : "Dịch vụ kiểm tra ảnh tạm thời không khả dụng.";
       setDraft((current) => ({
         ...current,
-        imageValidation: { state: "UNAVAILABLE", detectedObjects: [], reason },
+        imageValidation: { ...current.imageValidation, state: current.imageValidation.detectedObjects.length ? "VALID" : "UNAVAILABLE", semanticState: "UNAVAILABLE", semanticError: reason, reason },
       }));
     } finally {
       runningRef.current = false;
     }
-  }, [capture, draft.description, draft.title, isOffline, setDraft]);
+  }, [capture, draft.description, draft.title, draft.imageValidation.detectedObjects, draft.imageValidation.backendValidation?.decision, isOffline, setDraft]);
 
   // tự động kích hoạt phân tích ảnh khi trạng thái kiểm tra đang ở mức chờ
   useEffect(() => {
@@ -315,7 +316,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
             ]}
           >
             {state === "VALID"
-              ? "✓ ĐÃ PHÂN TÍCH"
+              ? draft.imageValidation.semanticState === "COMPLETE" ? "✓ ĐÃ CÓ GỢI Ý PHÂN LOẠI" : "✓ ĐÃ PHÁT HIỆN VẬT THỂ"
               : state === "PROCESSING"
                 ? "ĐANG PHÂN TÍCH"
                 : "ẢNH HIỆN TRƯỜNG"}
@@ -346,6 +347,15 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         ) : null}
         {state === "VALID" ? (
           <FieldAiResultCard analysis={draft.imageValidation} />
+        ) : null}
+        {state === "VALID" && draft.imageValidation.semanticState !== "COMPLETE" ? (
+          <View style={[styles.analysisCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.invalidTitle, { color: colors.accent }]}>Chưa hoàn tất phân loại AI</Text>
+            <Text style={[styles.invalidBody, { color: colors.textSecondary }]} accessibilityLiveRegion="polite">{draft.imageValidation.semanticError}</Text>
+            <TouchableOpacity onPress={() => void analyze()} disabled={isOffline} accessibilityRole="button" style={[styles.retryButton, { backgroundColor: colors.primary, opacity: isOffline ? 0.45 : 1 }]}>
+              <RefreshCw size={16} color="#07101F" /><Text style={styles.primaryText}>THỬ LẠI PHÂN LOẠI AI</Text>
+            </TouchableOpacity>
+          </View>
         ) : null}
         <FieldNotice>
           AI chỉ hỗ trợ gợi ý phân loại và đánh giá. Bạn có toàn quyền kiểm tra

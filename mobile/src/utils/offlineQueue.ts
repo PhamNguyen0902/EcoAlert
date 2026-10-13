@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import type { AlertCategory, CaptureMetadata, ImageValidation } from "../types";
+import type { AlertCategory, CaptureMetadata, ImageValidation, CreateAlertData } from "../types";
 
 export interface OfflineReportDraft {
   id: string;
@@ -18,6 +18,7 @@ export interface OfflineReportDraft {
   captureMetadata?: CaptureMetadata;
   imageValidation?: ImageValidation;
   category?: AlertCategory;
+  classification?: CreateAlertData["classification"];
   isAnonymous?: boolean;
   createdAt: string;
 }

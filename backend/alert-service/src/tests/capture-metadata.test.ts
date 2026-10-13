@@ -57,3 +57,16 @@ test('rejects display evidence that does not keep its original image in mediaUrl
     }],
   }));
 });
+
+test('accepts optional citizen taxonomy correction without replacing AI provenance', () => {
+  const payload = createAlertSchema.parse({
+    ...reportPayload,
+    category: 'illegal_construction_waste',
+    classification: { selectedCategory: 'illegal_construction_waste', decision: 'CORRECT' },
+    imageValidation: { decision: 'UNCERTAIN', confidence: 0.75, suggestedCategory: 'illegal_dumping', reason: 'AI gợi ý cần xác nhận.', validatedAt: '2026-10-13T00:00:00.000Z' },
+  });
+  assert.equal(payload.classification?.selectedCategory, 'illegal_construction_waste');
+  assert.equal(payload.imageValidation?.suggestedCategory, 'illegal_dumping');
+  assert.throws(() => createAlertSchema.parse({ ...reportPayload, category: 'UNCLASSIFIED' }));
+  assert.equal(createAlertSchema.parse(reportPayload).category, undefined);
+});

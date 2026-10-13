@@ -60,6 +60,7 @@ export interface IncidentAnalysis {
   incidentConfidence: number;
   categoryConfidence: number;
   classificationStatus: 'AI_SUGGESTED' | 'UNCLASSIFIED';
+  classificationReason: 'CLASSIFIED' | 'NOT_INCIDENT' | 'UNKNOWN_CATEGORY' | 'LOW_CONFIDENCE';
   confidenceTier: 'HIGH_CONFIDENCE' | 'REVIEW_REQUIRED' | 'UNCLASSIFIED';
   severityScore: number;
   severityConfidence: number;
@@ -288,7 +289,7 @@ export const resetOpenRouterForTests = () => {
 };
 
 // ước tính khối lượng không khả dụng khi phân tích chỉ dùng văn bản
-const unavailableMassEstimate = (reason: string): VisualMassEstimate => ({
+const unavailableMassEstimate = (reason: string, textOnly = false): VisualMassEstimate => ({
   available: false,
   minKg: null,
   maxKg: null,
@@ -296,7 +297,7 @@ const unavailableMassEstimate = (reason: string): VisualMassEstimate => ({
   confidence: null,
   scale: null,
   reasoningSummary: reason,
-  limitations: ['Phân tích đang chạy ở chế độ TEXT_ONLY.'],
+  limitations: textOnly ? ['Phân tích đang chạy ở chế độ TEXT_ONLY.'] : [],
 });
 
 // chuẩn hóa kết quả ước tính khối lượng từ mô hình trí tuệ nhân tạo
@@ -305,7 +306,7 @@ const normalizeMassEstimate = (
   allowVisualMassEstimate: boolean,
 ): VisualMassEstimate => {
   if (!allowVisualMassEstimate) {
-    return unavailableMassEstimate('Không có dữ liệu hình ảnh để ước tính khối lượng.');
+    return unavailableMassEstimate('Không có dữ liệu hình ảnh để ước tính khối lượng.', true);
   }
 
   if (!raw) {
@@ -401,6 +402,8 @@ export const parseIncidentAnalysis = (
     incidentConfidence,
     categoryConfidence,
     classificationStatus: canSuggest ? 'AI_SUGGESTED' : 'UNCLASSIFIED',
+    classificationReason: canSuggest ? 'CLASSIFIED' : !isIncident ? 'NOT_INCIDENT'
+      : rawCategory === UNCLASSIFIED_CATEGORY ? 'UNKNOWN_CATEGORY' : 'LOW_CONFIDENCE',
     confidenceTier,
     severityScore: raw.severityScore ?? severityScoreFor(severity),
     severityConfidence,
@@ -754,6 +757,11 @@ export const analyzeIncidentWithOpenRouter = async (
   );
 
   logger.info('Vision mass estimation result', {
+    category: result.category,
+    categoryConfidence: result.categoryConfidence,
+    classificationStatus: result.classificationStatus,
+    classificationReason: result.classificationReason,
+    confidenceTier: result.confidenceTier,
     available: result.massEstimate.available,
     minKg: result.massEstimate.minKg,
     maxKg: result.massEstimate.maxKg,

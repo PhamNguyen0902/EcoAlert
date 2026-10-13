@@ -222,6 +222,22 @@ export interface PreSubmitSemanticResult {
   overallSummary: string;
   shortReason: string;
   model: string;
+  analysisMode: "TEXT_ONLY" | "IMAGE_AND_TEXT";
+  classificationStatus: "AI_SUGGESTED" | "UNCLASSIFIED";
+  confidenceTier: "HIGH_CONFIDENCE" | "REVIEW_REQUIRED" | "UNCLASSIFIED";
+  classificationReason?: "CLASSIFIED" | "NOT_INCIDENT" | "UNKNOWN_CATEGORY" | "LOW_CONFIDENCE";
+  massEstimate?: VisualMassEstimate;
+}
+
+export interface VisualMassEstimate {
+  available: boolean;
+  minKg: number | null;
+  maxKg: number | null;
+  mostLikelyKg: number | null;
+  confidence: number | null;
+  scale: "VERY_SMALL" | "SMALL" | "MEDIUM" | "LARGE" | "VERY_LARGE" | null;
+  reasoningSummary: string | null;
+  limitations: string[];
 }
 
 export interface PaginatedResult<T> {

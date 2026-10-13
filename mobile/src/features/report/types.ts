@@ -1,4 +1,4 @@
-import type { Alert, AlertCategory, ImageValidation, Severity } from "../../types";
+import type { Alert, AlertCategory, ImageValidation, Severity, PreSubmitSemanticResult, VisualMassEstimate } from "../../types";
 // khoảng cách sai số gps tối đa cho phép đối với báo cáo tác nghiệp hiện trường là năm mươi mét
 export const MAX_FIELD_GPS_ACCURACY_METERS = 50;
 // cấu trúc dữ liệu vị trí gps ghi nhận tại hiện trường
@@ -39,6 +39,14 @@ export interface FieldReportImageValidationDraft {
   summary?: string | null;
   reason?: string | null;
   backendValidation?: ImageValidation;
+  semanticState?: "COMPLETE" | "UNCLASSIFIED" | "TEXT_ONLY" | "UNAVAILABLE";
+  semanticError?: string | null;
+  categoryConfidence?: number | null;
+  yoloConfidence?: number | null;
+  analysisMode?: PreSubmitSemanticResult["analysisMode"];
+  massEstimate?: VisualMassEstimate;
+  semanticResult?: PreSubmitSemanticResult;
+  userSelectedCategory?: AlertCategory;
 }
 // cấu trúc dữ liệu toàn bộ bản nháp báo cáo hiện trường
 export interface FieldReportDraft {

@@ -15,6 +15,7 @@ import { WasteDetectionChips } from "../WasteDetectionChips";
 import { fieldConfidence } from "./fieldPresentation";
 import { fieldColors as c, fieldStyles as s } from "./fieldDesign";
 import { FieldEntrance, useFieldReducedMotion } from "./FieldUI";
+import { massPresentation } from "../../semanticResult";
 
 /** All displayed conclusions come from the existing draft/API, never visual fixtures. */
 export function FieldAiResultCard({
@@ -24,11 +25,13 @@ export function FieldAiResultCard({
   analysis: FieldReportImageValidationDraft;
   compact?: boolean;
 }) {
-  const confidence = fieldConfidence(analysis.backendValidation?.confidence);
+  const hasCategory = analysis.semanticState === "COMPLETE" && Boolean(analysis.suggestedCategory);
+  const confidence = fieldConfidence(hasCategory ? analysis.categoryConfidence : analysis.yoloConfidence);
+  const mass = massPresentation(analysis);
   const category =
     analysis.suggestedCategory && analysis.suggestedCategory !== "UNCLASSIFIED"
       ? getCategoryLabel(analysis.suggestedCategory, "vi")
-      : "Chờ cán bộ xác nhận phân loại";
+      : "Chưa hoàn tất phân loại AI";
   const manual = analysis.backendValidation?.decision === "UNCERTAIN";
   const severityColor =
     analysis.severity === "LOW"
@@ -47,8 +50,7 @@ export function FieldAiResultCard({
         </Text>
       </View>
       <Text style={[s.eyebrow, { color: c.cyan }]}>
-        YOLO / VISION ·{" "}
-        {analysis.backendValidation?.model || "Nhận diện hình ảnh"}
+        YOLO: PHÁT HIỆN VẬT THỂ · SEMANTIC: PHÂN LOẠI BỐI CẢNH
       </Text>
       <View style={styles.classification}>
         <View style={{ flex: 1, gap: 4 }}>
@@ -68,10 +70,10 @@ export function FieldAiResultCard({
             },
           ]}
         >
-          {manual ? "CẦN KIỂM TRA" : "ĐÃ NHẬN DIỆN"}
+          {hasCategory ? manual ? "GỢI Ý · CẦN XÁC NHẬN" : "ĐÃ CÓ GỢI Ý PHÂN LOẠI" : analysis.semanticState === "UNAVAILABLE" || analysis.semanticState === "TEXT_ONLY" ? "PHÂN TÍCH CHƯA KHẢ DỤNG" : "ĐÃ PHÁT HIỆN VẬT THỂ"}
         </Text>
       </View>
-      {!compact && analysis.detectedObjects.length ? (
+      {analysis.detectedObjects.length ? (
         <WasteDetectionChips detections={analysis.detectedObjects} showCount />
       ) : null}
       <View style={styles.metrics}>
@@ -79,7 +81,7 @@ export function FieldAiResultCard({
           <View style={s.row}>
             <ChartNoAxesColumnIncreasing size={13} color={c.primary} />
             <Text style={[s.eyebrow, { color: c.primary, flexShrink: 1 }]}>
-              ĐỘ TIN CẬY
+              {hasCategory ? "TIN CẬY PHÂN LOẠI AI" : "TIN CẬY YOLO"}
             </Text>
           </View>
           <Text style={styles.value}>
@@ -96,8 +98,8 @@ export function FieldAiResultCard({
               KHỐI LƯỢNG
             </Text>
           </View>
-          <Text style={styles.value}>Chưa có ước tính</Text>
-          <Text style={s.meta}>API hiện chưa cung cấp</Text>
+          <Text style={styles.value}>{mass.value}</Text>
+          <Text style={s.meta}>{mass.note}</Text>
         </View>
       </View>
       <View style={s.row}>
@@ -128,7 +130,7 @@ export function FieldAiResultCard({
       analysis.suggestedCategory === "UNCLASSIFIED" ||
       !analysis.severity ? (
         <Text style={s.meta}>
-          Chưa đủ kết quả phân tích bối cảnh. Cán bộ sẽ kiểm tra và xác nhận;
+          {analysis.semanticError || "Chưa đủ kết quả phân tích bối cảnh."} Cán bộ sẽ kiểm tra và xác nhận;
           đây không phải kết luận cuối cùng.
         </Text>
       ) : null}

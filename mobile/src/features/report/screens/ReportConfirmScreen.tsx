@@ -55,6 +55,7 @@ import { ZoomableImageViewer } from "../../../components/media/ZoomableImageView
 import { FieldReportSummary } from "../components/stitch/FieldReportSummary";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
 import { fieldStyles } from "../components/stitch/fieldDesign";
+import { reportCategoryCodes, reportClassification } from "../semanticResult";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportConfirm">;
 const isBackendUrl = (value?: string): value is string =>
@@ -146,7 +147,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
           displayLocalUri: capture.displayLocalUri,
           captureMetadata,
           imageValidation: draft.imageValidation.backendValidation,
-          category: draft.imageValidation.suggestedCategory ?? undefined,
+          ...reportClassification(draft.imageValidation),
           isAnonymous: false,
         });
         navigation.navigate("ReportSuccess", { queued: true });
@@ -193,7 +194,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
         ],
         captureMetadata,
         imageValidation: draft.imageValidation.backendValidation,
-        category: draft.imageValidation.suggestedCategory ?? undefined,
+        ...reportClassification(draft.imageValidation),
         isAnonymous: false,
       });
       setDraft((current) => ({
@@ -285,6 +286,11 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             onPress={setViewerUri}
           />
           <FieldAiResultCard analysis={draft.imageValidation} compact />
+          {draft.imageValidation.semanticState !== "COMPLETE" ? (
+            <TouchableOpacity onPress={() => navigation.navigate("ReportImageValidation")} accessibilityRole="button" style={[styles.retakeButton, { borderColor: colors.border }]}>
+              <Text style={{ color: colors.primary }}>Thử lại phân loại AI (giữ nguyên ảnh)</Text>
+            </TouchableOpacity>
+          ) : null}
           <View style={styles.descriptionSection}>
             <Text style={[styles.technicalLabel, { color: colors.primary }]}>
               HIỆU CHỈNH THÔNG TIN PHẢN ÁNH
@@ -334,6 +340,15 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
                   ? getSeverityLabel(draft.imageValidation.severity, "vi")
                   : "Chưa có đánh giá mức độ"}
               </Text>
+            </View>
+            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>DANH MỤC DO BẠN XÁC NHẬN (TÙY CHỌN)</Text>
+            <View style={styles.classificationChips}>
+              {reportCategoryCodes.map(code => (
+                <TouchableOpacity key={code} accessibilityRole="radio" accessibilityState={{ checked: draft.imageValidation.userSelectedCategory === code }}
+                  onPress={() => setDraft(current => ({ ...current, imageValidation: { ...current.imageValidation, userSelectedCategory: current.imageValidation.userSelectedCategory === code ? undefined : code } }))}>
+                  <Text style={[styles.categoryChip, { color: draft.imageValidation.userSelectedCategory === code ? colors.primary : colors.textSecondary }]}>{draft.imageValidation.userSelectedCategory === code ? "✓ " : ""}{getCategoryLabel(code, "vi")}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
           <View style={styles.descriptionSection}>

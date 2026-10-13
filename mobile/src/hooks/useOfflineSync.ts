@@ -73,6 +73,7 @@ export function useOfflineSync() {
           captureMetadata: draft.captureMetadata,
           imageValidation: draft.imageValidation,
           category: draft.category,
+          classification: draft.classification,
           fieldEvidence: draft.originalLocalUri && draft.captureMetadata
             ? [{
                 originalUrl: originalUploadedUrl,
