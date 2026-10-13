@@ -18,11 +18,13 @@ import {
   civicType,
 } from "../../shared/theme/civicDesign";
 
+// màn hình hiển thị hồ sơ cán bộ, khu vực phụ trách và quản lý ca trực
 export const OfficerProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { colors } = useCivicTheme();
   const { language } = useLanguage();
   const { data: profile } = useProfile();
+  // lấy danh sách các khu vực và địa bàn được phân công cho cán bộ
   const areas = useAssignedServiceAreas(
     profile?.role === "OFFICER" ? profile._id : undefined,
   );
@@ -59,6 +61,7 @@ export const OfficerProfileScreen: React.FC = () => {
           error: "Unable to sign out. Please try again.",
         };
 
+  // hiển thị hộp thoại xác nhận trước khi đăng xuất tài khoản cán bộ
   const confirmLogout = () => {
     if (logout.isPending || confirmationOpen.current) return;
     confirmationOpen.current = true;

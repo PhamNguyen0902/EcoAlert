@@ -55,6 +55,7 @@ import type {
   OfficerTabParamList,
 } from "../../app/navigation/types";
 
+// hiển thị bản đồ các nhiệm vụ, vẽ đường đi bằng osrm và hỗ trợ lọc điểm rác
 export function OfficerOperationalMap() {
   const { colors, isDark } = useCivicTheme();
   const reducedMotion = useFieldReducedMotion();
@@ -91,6 +92,7 @@ export function OfficerOperationalMap() {
   const destination = getGeoJsonMapCoordinates(selected?.location?.coordinates);
   const fresh =
     gps.position && now - Date.parse(gps.position.recordedAt) < 120_000;
+  // gọi dịch vụ vẽ tuyến đường ngắn nhất từ vị trí cán bộ đến điểm rác
   const route = useQuery({
     queryKey: [
       "officer-route",
@@ -137,6 +139,7 @@ export function OfficerOperationalMap() {
         animated: false,
       });
   }, [mapReady, mapHeight, route.data, fresh, routeRequested]);
+  // mở ứng dụng google maps để chỉ đường đến vị trí điểm rác đang chọn
   const external = async () => {
     if (!destination || openingLock.current) return;
     openingLock.current = true;
@@ -154,6 +157,7 @@ export function OfficerOperationalMap() {
       setOpening(false);
     }
   };
+  // phóng to hoặc thu nhỏ khung nhìn bản đồ
   const zoom = (factor: number) =>
     map.current?.animateToRegion(
       {
@@ -169,6 +173,7 @@ export function OfficerOperationalMap() {
       },
       reducedMotion ? 0 : 250,
     );
+  // danh sách các nút điều khiển căn giữa vị trí và phóng to thu nhỏ bản đồ
   const controls = [
     {
       label: "Lấy GPS và về vị trí của tôi",

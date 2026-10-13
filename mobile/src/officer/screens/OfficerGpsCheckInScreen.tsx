@@ -35,6 +35,7 @@ import {
   officerErrorMessage,
 } from "../utils/officerWorkflow";
 import type { OfficerStackParamList } from "../../app/navigation/types";
+//điểm danh GPS hiện trường
 export function OfficerGpsCheckInScreen({
   route,
   navigation,
@@ -68,12 +69,13 @@ export function OfficerGpsCheckInScreen({
     gps.position && destination
       ? officerDistance(gps.position, destination)
       : null;
+  // lấy vị trí gps hiện tại gửi lên hệ thống để xác nhận đã có mặt tại hiện trường
   const confirm = async () => {
     if (!allowed || verified || error || lock.current) return;
     lock.current = true;
     setError(null);
     try {
-      // Always reacquire at confirmation; the preview fix alone never authorizes check-in.
+      // luôn lấy lại vị trí gps mới ngay lúc bấm nút xác nhận chứ không dùng vị trí cũ trên màn hình
       const fresh = await gps.refresh();
       if (!fresh || AppState.currentState !== "active") return;
       await arrival.mutateAsync({

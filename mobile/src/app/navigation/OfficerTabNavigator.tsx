@@ -48,6 +48,7 @@ const OfficerTabs = () => {
         },
       })}
     >
+      {/* danh sách các tab */}
       <Tab.Screen
         name="OfficerTasksTab"
         component={OfficerTasksScreen}
@@ -69,29 +70,37 @@ const OfficerTabs = () => {
 };
 export const OfficerTabNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
+    {/* thanh điều hướng chính gồm nhiệm vụ, bản đồ và cá nhân */}
     <Stack.Screen name="OfficerTabs" component={OfficerTabs} />
+    {/* xem chi tiết sự cố, bấm bắt đầu xử lý, chỉ đường và thêm ghi chú */}
     <Stack.Screen
       name="OfficerAlertDetail"
       component={OfficerAlertDetailScreen}
       getId={({ params }) => params.id}
     />
+    {/* màn hình chi tiết dự phòng khi mở từ bản đồ admin hoặc thông báo đẩy */}
     <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
+    {/* lập biên bản kết quả dọn dẹp, đính kèm ảnh sau xử lý và gửi duyệt */}
     <Stack.Screen
       name="OfficerResolution"
       component={OfficerResolutionScreen}
       getId={({ params }) => params.id}
     />
+    {/* danh sách đầy đủ tất cả nhiệm vụ được giao kèm ô tìm kiếm và bộ lọc */}
     <Stack.Screen name="OfficerTaskList" component={OfficerTaskListScreen} />
+    {/* điểm danh xác nhận cán bộ đã có mặt trực tiếp tại điểm rác */}
     <Stack.Screen
       name="OfficerGpsCheckIn"
       component={OfficerGpsCheckInScreen}
       getId={({ params }) => params.id}
     />
+    {/* thông báo cán bộ đã nộp kết quả thành công và chờ quản trị viên nghiệm thu */}
     <Stack.Screen
       name="OfficerResolutionSubmitted"
       component={OfficerResolutionSubmittedScreen}
       getId={({ params }) => params.id}
     />
+    {/* danh sách thông báo công vụ về nhiệm vụ mới và cập nhật tiến độ */}
     <Stack.Screen
       name="OfficerNotifications"
       component={OfficerNotificationsScreen}

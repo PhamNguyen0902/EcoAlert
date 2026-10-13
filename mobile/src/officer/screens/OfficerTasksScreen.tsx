@@ -35,6 +35,7 @@ import {
 } from "../utils/officerWorkflow";
 import { officerDate, officerTimeline } from "../utils/officerPresentation";
 import type { OfficerStackParamList } from "../../app/navigation/types";
+// hiển thị thống kê công việc trong ca, việc khẩn cấp và các hoạt động mới nhất
 export const OfficerTasksScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<OfficerStackParamList>>();
@@ -76,6 +77,7 @@ export const OfficerTasksScreen = () => {
     )
     .sort((a, b) => Date.parse(b.at!) - Date.parse(a.at!))
     .slice(0, 4);
+  // mở màn hình chi tiết nhiệm vụ theo mã định danh
   const detail = (id: string) =>
     navigation.navigate("OfficerAlertDetail", { id });
   return (

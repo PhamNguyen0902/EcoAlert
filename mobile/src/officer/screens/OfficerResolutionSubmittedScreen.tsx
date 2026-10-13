@@ -22,6 +22,7 @@ import {
   officerReference,
 } from "../utils/officerPresentation";
 import type { OfficerStackParamList } from "../../app/navigation/types";
+// hiển thị xác nhận đã nộp kết quả kèm ảnh trước và sau khi xử lý
 export function OfficerResolutionSubmittedScreen({
   route,
   navigation,

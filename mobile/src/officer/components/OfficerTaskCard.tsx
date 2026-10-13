@@ -14,6 +14,7 @@ import {
   officerReference,
 } from "../utils/officerPresentation";
 import { OfficerBadge, officerStyles as s } from "./OfficerUI";
+// thẻ hiển thị tóm tắt một nhiệm vụ gồm ảnh, trạng thái, địa chỉ và mã hồ sơ
 export function OfficerTaskCard({
   task,
   onPress,
@@ -24,6 +25,7 @@ export function OfficerTaskCard({
   compact?: boolean;
 }) {
   const { colors } = useCivicTheme();
+  // lấy màu sắc và nhãn trạng thái tiến độ của nhiệm vụ
   const state = getOfficerTaskState(task);
   const image = officerImage(task);
   return (

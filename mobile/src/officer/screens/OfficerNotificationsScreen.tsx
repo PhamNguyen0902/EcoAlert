@@ -37,6 +37,7 @@ import { notificationPresentation } from "../../shared/utils/notificationPresent
 import { getNotificationAlertId } from "../../shared/utils/notificationNavigation";
 import type { NotificationItem } from "../../shared/types/notification";
 import type { OfficerStackParamList } from "../../app/navigation/types";
+// màn hình danh sách thông báo công vụ gửi đến cán bộ
 export function OfficerNotificationsScreen({
   navigation,
 }: NativeStackScreenProps<OfficerStackParamList, "OfficerNotifications">) {
@@ -49,6 +50,7 @@ export function OfficerNotificationsScreen({
   const opening = useRef(false);
   const [filter, setFilter] = useState<"ALL" | "UNREAD" | "READ">("ALL");
   const items = query.data?.pages.flatMap((page) => page.items) || [];
+  // lọc danh sách thông báo theo tất cả, chưa đọc hoặc đã đọc
   const visible = items.filter(
     (item) =>
       filter === "ALL" || (filter === "UNREAD" ? !item.isRead : item.isRead),
@@ -58,6 +60,7 @@ export function OfficerNotificationsScreen({
       "Chưa cập nhật được thông báo",
       "Vui lòng kiểm tra kết nối và thử lại.",
     );
+  // đánh dấu thông báo đã đọc và chuyển sang màn hình chi tiết sự cố
   const open = async (item: NotificationItem) => {
     if (opening.current) return;
     opening.current = true;
