@@ -186,13 +186,18 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - YOLO_MODEL_PATH=models/BEST_ECOALERT_YOLO11N.pt
+      - YOLO_MODELS_CONFIG=config/models.json
       - YOLO_CONFIDENCE=${YOLO_CONFIDENCE:-0.25}
       - YOLO_IMAGE_SIZE=${YOLO_IMAGE_SIZE:-640}
       - YOLO_DEVICE=${YOLO_DEVICE:-auto}
       - YOLO_MAX_UPLOAD_MB=${YOLO_MAX_UPLOAD_MB:-10}
+      - YOLO_MERGE_IOU=${YOLO_MERGE_IOU:-0.6}
+      - YOLO_INFERENCE_TIMEOUT_SECONDS=${YOLO_INFERENCE_TIMEOUT_SECONDS:-8}
+    volumes:
+      - ./backend/vision-service/models:/app/models:ro
+      - ./backend/vision-service/config:/app/config:ro
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      test: ["CMD", "python", "-c", "import json, urllib.request; h=json.load(urllib.request.urlopen('http://localhost:8001/health', timeout=3)); assert h['model_loaded']"]
       interval: 10s
       timeout: 5s
       retries: 12

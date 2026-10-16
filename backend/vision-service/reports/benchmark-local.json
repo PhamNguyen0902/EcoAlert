@@ -1,0 +1,2119 @@
+{
+  "environment": {
+    "python": "3.13.13",
+    "torch": "2.14.0+cpu",
+    "ultralytics": "8.4.160",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cpu_threads": 6
+  },
+  "unique_class_count": 15,
+  "shared_canonical_class_count": 0,
+  "accuracy_metrics": null,
+  "accuracy_note": "No unified ground truth; no mAP/precision/recall claim.",
+  "results": [
+    {
+      "mode": "ecoalert_general",
+      "health": {
+        "status": "ok",
+        "configured_model_count": 2,
+        "enabled_model_count": 1,
+        "loaded_model_count": 1,
+        "unique_class_count": 6,
+        "startup_ms": 42.7202999999281,
+        "startup_rss_mb": 229.59375,
+        "models": [
+          {
+            "id": "ecoalert_general",
+            "enabled": true,
+            "loaded": true,
+            "error": null,
+            "device": "cpu",
+            "classes": {
+              "0": "plastic_bottle",
+              "1": "plastic_bag",
+              "2": "plastic_cup",
+              "3": "metal_can",
+              "4": "cardboard",
+              "5": "glass_bottle"
+            },
+            "class_count": 6,
+            "normalized_classes": {
+              "0": "plastic_bottle",
+              "1": "plastic_bag",
+              "2": "plastic_cup",
+              "3": "metal_can",
+              "4": "cardboard",
+              "5": "glass_bottle"
+            },
+            "review_classes": [],
+            "load_ms": 42.715499992482364,
+            "last_inference_ms": 59.51269999786746
+          },
+          {
+            "id": "asian_waste",
+            "enabled": false,
+            "loaded": false,
+            "error": null,
+            "device": "cpu",
+            "classes": {},
+            "class_count": 0,
+            "normalized_classes": {},
+            "review_classes": [],
+            "load_ms": 0,
+            "last_inference_ms": null
+          }
+        ]
+      },
+      "images": [
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\test\\images\\test_000002.jpg",
+          "sha256": "afa32f556430e931937779baa13063b52d297a431d7499c640a13cd25a319da5",
+          "samples": [
+            {
+              "total_ms_including_decode": 306.04609999863897,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 1,
+                  "class_name": "plastic_bag",
+                  "confidence": 0.6501365303993225,
+                  "x1": 145.01869201660156,
+                  "y1": 50.2825927734375,
+                  "x2": 539.8291015625,
+                  "y2": 611.9466552734375,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "plastic_bag",
+                  "original_class_id": 1,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "plastic_bag",
+                      "original_class_id": 1,
+                      "confidence": 0.6501365303993225,
+                      "bbox": [
+                        145.01869201660156,
+                        50.2825927734375,
+                        539.8291015625,
+                        611.9466552734375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 200.8600999979535,
+              "model_timings_ms": {
+                "ecoalert_general": 200.81840000057127
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 83.81070000177715,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 1,
+                  "class_name": "plastic_bag",
+                  "confidence": 0.6501365303993225,
+                  "x1": 145.01869201660156,
+                  "y1": 50.2825927734375,
+                  "x2": 539.8291015625,
+                  "y2": 611.9466552734375,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "plastic_bag",
+                  "original_class_id": 1,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "plastic_bag",
+                      "original_class_id": 1,
+                      "confidence": 0.6501365303993225,
+                      "bbox": [
+                        145.01869201660156,
+                        50.2825927734375,
+                        539.8291015625,
+                        611.9466552734375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 81.0537000070326,
+              "model_timings_ms": {
+                "ecoalert_general": 81.01219999662135
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 97.01050000148825,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 1,
+                  "class_name": "plastic_bag",
+                  "confidence": 0.6501365303993225,
+                  "x1": 145.01869201660156,
+                  "y1": 50.2825927734375,
+                  "x2": 539.8291015625,
+                  "y2": 611.9466552734375,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "plastic_bag",
+                  "original_class_id": 1,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "plastic_bag",
+                      "original_class_id": 1,
+                      "confidence": 0.6501365303993225,
+                      "bbox": [
+                        145.01869201660156,
+                        50.2825927734375,
+                        539.8291015625,
+                        611.9466552734375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 93.76259999407921,
+              "model_timings_ms": {
+                "ecoalert_general": 93.7263000087114
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        },
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\test\\images\\test_000016.jpg",
+          "sha256": "1b7bfc6d6fe7534c9b9ad8d0e4c4df99504a4aa20e4065781653db8bd66322bf",
+          "samples": [
+            {
+              "total_ms_including_decode": 75.04640000115614,
+              "width": 640,
+              "height": 640,
+              "detections": [],
+              "inference_ms": 71.71789999119937,
+              "model_timings_ms": {
+                "ecoalert_general": 71.69770001200959
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 76.14550000289455,
+              "width": 640,
+              "height": 640,
+              "detections": [],
+              "inference_ms": 72.95779998821672,
+              "model_timings_ms": {
+                "ecoalert_general": 72.93390000995714
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 103.40210000867955,
+              "width": 640,
+              "height": 640,
+              "detections": [],
+              "inference_ms": 100.25099999620579,
+              "model_timings_ms": {
+                "ecoalert_general": 100.23389999696519
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        },
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\ecoalert-waste-v1\\images\\val\\0ccffac5-AluCan534_jpg.rf.94e4bd8dea6ad161e9956a156d0e132e.jpg",
+          "sha256": "cfd1ecd079918653084966d825481f865a0e1e3c8c26298b9c39516fade918e4",
+          "samples": [
+            {
+              "total_ms_including_decode": 109.61549999774434,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 3,
+                  "class_name": "metal_can",
+                  "confidence": 0.8325845003128052,
+                  "x1": 269.1982116699219,
+                  "y1": 378.8550720214844,
+                  "x2": 456.5458068847656,
+                  "y2": 537.3970336914062,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "metal_can",
+                  "original_class_id": 3,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "metal_can",
+                      "original_class_id": 3,
+                      "confidence": 0.8325845003128052,
+                      "bbox": [
+                        269.1982116699219,
+                        378.8550720214844,
+                        456.5458068847656,
+                        537.3970336914062
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 104.97879999456927,
+              "model_timings_ms": {
+                "ecoalert_general": 104.94619999371935
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 59.276200001477264,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 3,
+                  "class_name": "metal_can",
+                  "confidence": 0.8325845003128052,
+                  "x1": 269.1982116699219,
+                  "y1": 378.8550720214844,
+                  "x2": 456.5458068847656,
+                  "y2": 537.3970336914062,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "metal_can",
+                  "original_class_id": 3,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "metal_can",
+                      "original_class_id": 3,
+                      "confidence": 0.8325845003128052,
+                      "bbox": [
+                        269.1982116699219,
+                        378.8550720214844,
+                        456.5458068847656,
+                        537.3970336914062
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 54.95679999876302,
+              "model_timings_ms": {
+                "ecoalert_general": 54.92780001077335
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 63.43419999757316,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 3,
+                  "class_name": "metal_can",
+                  "confidence": 0.8325845003128052,
+                  "x1": 269.1982116699219,
+                  "y1": 378.8550720214844,
+                  "x2": 456.5458068847656,
+                  "y2": 537.3970336914062,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "metal_can",
+                  "original_class_id": 3,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "metal_can",
+                      "original_class_id": 3,
+                      "confidence": 0.8325845003128052,
+                      "bbox": [
+                        269.1982116699219,
+                        378.8550720214844,
+                        456.5458068847656,
+                        537.3970336914062
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 59.54459999338724,
+              "model_timings_ms": {
+                "ecoalert_general": 59.51269999786746
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        }
+      ],
+      "peak_process_rss_mb": 394.90625,
+      "weights": {
+        "ecoalert_general": {
+          "bytes": 5480474,
+          "sha256": "ee760925008e997befcc56f1ab8d4b57a7cdb47b5ec49144a877bfa6155e8903"
+        }
+      }
+    },
+    {
+      "mode": "asian_waste",
+      "health": {
+        "status": "ok",
+        "configured_model_count": 2,
+        "enabled_model_count": 1,
+        "loaded_model_count": 1,
+        "unique_class_count": 9,
+        "startup_ms": 51.984599995194,
+        "startup_rss_mb": 259.1953125,
+        "models": [
+          {
+            "id": "ecoalert_general",
+            "enabled": false,
+            "loaded": false,
+            "error": null,
+            "device": "cpu",
+            "classes": {},
+            "class_count": 0,
+            "normalized_classes": {},
+            "review_classes": [],
+            "load_ms": 0,
+            "last_inference_ms": null
+          },
+          {
+            "id": "asian_waste",
+            "enabled": true,
+            "loaded": true,
+            "error": null,
+            "device": "cpu",
+            "classes": {
+              "0": "Animal Waste",
+              "1": "Construction Waste",
+              "2": "Garbage Bag",
+              "3": "Glass",
+              "4": "Metal",
+              "5": "Organic",
+              "6": "Paper",
+              "7": "Plastic",
+              "8": "waste"
+            },
+            "class_count": 9,
+            "normalized_classes": {
+              "0": "animal_waste",
+              "1": "construction_waste",
+              "2": "garbage_bag",
+              "3": "glass",
+              "4": "metal",
+              "5": "organic_waste",
+              "6": "paper",
+              "7": "plastic",
+              "8": "waste"
+            },
+            "review_classes": [
+              "Garbage Bag",
+              "Glass",
+              "Metal",
+              "Organic",
+              "Paper",
+              "Plastic",
+              "waste"
+            ],
+            "load_ms": 51.98079999536276,
+            "last_inference_ms": 402.1294999984093
+          }
+        ]
+      },
+      "images": [
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\test\\images\\test_000002.jpg",
+          "sha256": "afa32f556430e931937779baa13063b52d297a431d7499c640a13cd25a319da5",
+          "samples": [
+            {
+              "total_ms_including_decode": 365.91770000813995,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 11,
+                  "class_name": "organic_waste",
+                  "confidence": 0.7911156415939331,
+                  "x1": 120.12239074707031,
+                  "y1": 56.1246337890625,
+                  "x2": 544.7505493164062,
+                  "y2": 614.3646240234375,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Organic",
+                  "original_class_id": 5,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Organic",
+                      "original_class_id": 5,
+                      "confidence": 0.7911156415939331,
+                      "bbox": [
+                        120.12239074707031,
+                        56.1246337890625,
+                        544.7505493164062,
+                        614.3646240234375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 297.7975999965565,
+              "model_timings_ms": {
+                "asian_waste": 297.7493999933358
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 221.5373999933945,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 11,
+                  "class_name": "organic_waste",
+                  "confidence": 0.7911156415939331,
+                  "x1": 120.12239074707031,
+                  "y1": 56.1246337890625,
+                  "x2": 544.7505493164062,
+                  "y2": 614.3646240234375,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Organic",
+                  "original_class_id": 5,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Organic",
+                      "original_class_id": 5,
+                      "confidence": 0.7911156415939331,
+                      "bbox": [
+                        120.12239074707031,
+                        56.1246337890625,
+                        544.7505493164062,
+                        614.3646240234375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 216.96309999970254,
+              "model_timings_ms": {
+                "asian_waste": 216.92600000824314
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 216.84749999258202,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 11,
+                  "class_name": "organic_waste",
+                  "confidence": 0.7911156415939331,
+                  "x1": 120.12239074707031,
+                  "y1": 56.1246337890625,
+                  "x2": 544.7505493164062,
+                  "y2": 614.3646240234375,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Organic",
+                  "original_class_id": 5,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Organic",
+                      "original_class_id": 5,
+                      "confidence": 0.7911156415939331,
+                      "bbox": [
+                        120.12239074707031,
+                        56.1246337890625,
+                        544.7505493164062,
+                        614.3646240234375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 214.1253999870969,
+              "model_timings_ms": {
+                "asian_waste": 214.0895000047749
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        },
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\test\\images\\test_000016.jpg",
+          "sha256": "1b7bfc6d6fe7534c9b9ad8d0e4c4df99504a4aa20e4065781653db8bd66322bf",
+          "samples": [
+            {
+              "total_ms_including_decode": 333.9906000037445,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.9376700520515442,
+                  "x1": 70.3996810913086,
+                  "y1": 333.43267822265625,
+                  "x2": 301.1722717285156,
+                  "y2": 554.3690185546875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.9376700520515442,
+                      "bbox": [
+                        70.3996810913086,
+                        333.43267822265625,
+                        301.1722717285156,
+                        554.3690185546875
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.925276517868042,
+                  "x1": 214.1866912841797,
+                  "y1": 215.48532104492188,
+                  "x2": 396.37933349609375,
+                  "y2": 447.5434265136719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.925276517868042,
+                      "bbox": [
+                        214.1866912841797,
+                        215.48532104492188,
+                        396.37933349609375,
+                        447.5434265136719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8914991021156311,
+                  "x1": 412.38958740234375,
+                  "y1": 289.6147155761719,
+                  "x2": 530.7652587890625,
+                  "y2": 459.9379577636719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8914991021156311,
+                      "bbox": [
+                        412.38958740234375,
+                        289.6147155761719,
+                        530.7652587890625,
+                        459.9379577636719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8597801327705383,
+                  "x1": 332.13909912109375,
+                  "y1": 210.0626983642578,
+                  "x2": 483.43865966796875,
+                  "y2": 379.66131591796875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8597801327705383,
+                      "bbox": [
+                        332.13909912109375,
+                        210.0626983642578,
+                        483.43865966796875,
+                        379.66131591796875
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 330.4585999867413,
+              "model_timings_ms": {
+                "asian_waste": 330.41290000255685
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 296.9327000027988,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.9376700520515442,
+                  "x1": 70.3996810913086,
+                  "y1": 333.43267822265625,
+                  "x2": 301.1722717285156,
+                  "y2": 554.3690185546875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.9376700520515442,
+                      "bbox": [
+                        70.3996810913086,
+                        333.43267822265625,
+                        301.1722717285156,
+                        554.3690185546875
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.925276517868042,
+                  "x1": 214.1866912841797,
+                  "y1": 215.48532104492188,
+                  "x2": 396.37933349609375,
+                  "y2": 447.5434265136719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.925276517868042,
+                      "bbox": [
+                        214.1866912841797,
+                        215.48532104492188,
+                        396.37933349609375,
+                        447.5434265136719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8914991021156311,
+                  "x1": 412.38958740234375,
+                  "y1": 289.6147155761719,
+                  "x2": 530.7652587890625,
+                  "y2": 459.9379577636719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8914991021156311,
+                      "bbox": [
+                        412.38958740234375,
+                        289.6147155761719,
+                        530.7652587890625,
+                        459.9379577636719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8597801327705383,
+                  "x1": 332.13909912109375,
+                  "y1": 210.0626983642578,
+                  "x2": 483.43865966796875,
+                  "y2": 379.66131591796875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8597801327705383,
+                      "bbox": [
+                        332.13909912109375,
+                        210.0626983642578,
+                        483.43865966796875,
+                        379.66131591796875
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 293.74740000639576,
+              "model_timings_ms": {
+                "asian_waste": 293.7013000046136
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 211.91539999563247,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.9376700520515442,
+                  "x1": 70.3996810913086,
+                  "y1": 333.43267822265625,
+                  "x2": 301.1722717285156,
+                  "y2": 554.3690185546875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.9376700520515442,
+                      "bbox": [
+                        70.3996810913086,
+                        333.43267822265625,
+                        301.1722717285156,
+                        554.3690185546875
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.925276517868042,
+                  "x1": 214.1866912841797,
+                  "y1": 215.48532104492188,
+                  "x2": 396.37933349609375,
+                  "y2": 447.5434265136719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.925276517868042,
+                      "bbox": [
+                        214.1866912841797,
+                        215.48532104492188,
+                        396.37933349609375,
+                        447.5434265136719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8914991021156311,
+                  "x1": 412.38958740234375,
+                  "y1": 289.6147155761719,
+                  "x2": 530.7652587890625,
+                  "y2": 459.9379577636719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8914991021156311,
+                      "bbox": [
+                        412.38958740234375,
+                        289.6147155761719,
+                        530.7652587890625,
+                        459.9379577636719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8597801327705383,
+                  "x1": 332.13909912109375,
+                  "y1": 210.0626983642578,
+                  "x2": 483.43865966796875,
+                  "y2": 379.66131591796875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8597801327705383,
+                      "bbox": [
+                        332.13909912109375,
+                        210.0626983642578,
+                        483.43865966796875,
+                        379.66131591796875
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 208.16919999197125,
+              "model_timings_ms": {
+                "asian_waste": 208.1054000009317
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        },
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\ecoalert-waste-v1\\images\\val\\0ccffac5-AluCan534_jpg.rf.94e4bd8dea6ad161e9956a156d0e132e.jpg",
+          "sha256": "cfd1ecd079918653084966d825481f865a0e1e3c8c26298b9c39516fade918e4",
+          "samples": [
+            {
+              "total_ms_including_decode": 237.21639999712352,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 13,
+                  "class_name": "plastic",
+                  "confidence": 0.4628314971923828,
+                  "x1": 276.3131103515625,
+                  "y1": 395.49853515625,
+                  "x2": 435.9441223144531,
+                  "y2": 535.4199829101562,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Plastic",
+                  "original_class_id": 7,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Plastic",
+                      "original_class_id": 7,
+                      "confidence": 0.4628314971923828,
+                      "bbox": [
+                        276.3131103515625,
+                        395.49853515625,
+                        435.9441223144531,
+                        535.4199829101562
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 10,
+                  "class_name": "metal",
+                  "confidence": 0.33576908707618713,
+                  "x1": 276.6324768066406,
+                  "y1": 395.3271179199219,
+                  "x2": 434.7720642089844,
+                  "y2": 533.8556518554688,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Metal",
+                  "original_class_id": 4,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Metal",
+                      "original_class_id": 4,
+                      "confidence": 0.33576908707618713,
+                      "bbox": [
+                        276.6324768066406,
+                        395.3271179199219,
+                        434.7720642089844,
+                        533.8556518554688
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 231.08859999047127,
+              "model_timings_ms": {
+                "asian_waste": 231.0499000013806
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 206.36309999099467,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 13,
+                  "class_name": "plastic",
+                  "confidence": 0.4628314971923828,
+                  "x1": 276.3131103515625,
+                  "y1": 395.49853515625,
+                  "x2": 435.9441223144531,
+                  "y2": 535.4199829101562,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Plastic",
+                  "original_class_id": 7,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Plastic",
+                      "original_class_id": 7,
+                      "confidence": 0.4628314971923828,
+                      "bbox": [
+                        276.3131103515625,
+                        395.49853515625,
+                        435.9441223144531,
+                        535.4199829101562
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 10,
+                  "class_name": "metal",
+                  "confidence": 0.33576908707618713,
+                  "x1": 276.6324768066406,
+                  "y1": 395.3271179199219,
+                  "x2": 434.7720642089844,
+                  "y2": 533.8556518554688,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Metal",
+                  "original_class_id": 4,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Metal",
+                      "original_class_id": 4,
+                      "confidence": 0.33576908707618713,
+                      "bbox": [
+                        276.6324768066406,
+                        395.3271179199219,
+                        434.7720642089844,
+                        533.8556518554688
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 202.13309999962803,
+              "model_timings_ms": {
+                "asian_waste": 202.0971999882022
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 408.4730999893509,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 13,
+                  "class_name": "plastic",
+                  "confidence": 0.4628314971923828,
+                  "x1": 276.3131103515625,
+                  "y1": 395.49853515625,
+                  "x2": 435.9441223144531,
+                  "y2": 535.4199829101562,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Plastic",
+                  "original_class_id": 7,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Plastic",
+                      "original_class_id": 7,
+                      "confidence": 0.4628314971923828,
+                      "bbox": [
+                        276.3131103515625,
+                        395.49853515625,
+                        435.9441223144531,
+                        535.4199829101562
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 10,
+                  "class_name": "metal",
+                  "confidence": 0.33576908707618713,
+                  "x1": 276.6324768066406,
+                  "y1": 395.3271179199219,
+                  "x2": 434.7720642089844,
+                  "y2": 533.8556518554688,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Metal",
+                  "original_class_id": 4,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Metal",
+                      "original_class_id": 4,
+                      "confidence": 0.33576908707618713,
+                      "bbox": [
+                        276.6324768066406,
+                        395.3271179199219,
+                        434.7720642089844,
+                        533.8556518554688
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 402.17570000095293,
+              "model_timings_ms": {
+                "asian_waste": 402.1294999984093
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        }
+      ],
+      "peak_process_rss_mb": 481.390625,
+      "weights": {
+        "asian_waste": {
+          "bytes": 19218650,
+          "sha256": "8fc9d9941b5698a29c5e2209ff49868c87b669212ec54506c7c9eed6d0cbd54c"
+        }
+      }
+    },
+    {
+      "mode": "all",
+      "health": {
+        "status": "ok",
+        "configured_model_count": 2,
+        "enabled_model_count": 2,
+        "loaded_model_count": 2,
+        "unique_class_count": 15,
+        "startup_ms": 97.10569999879226,
+        "startup_rss_mb": 273.4921875,
+        "models": [
+          {
+            "id": "ecoalert_general",
+            "enabled": true,
+            "loaded": true,
+            "error": null,
+            "device": "cpu",
+            "classes": {
+              "0": "plastic_bottle",
+              "1": "plastic_bag",
+              "2": "plastic_cup",
+              "3": "metal_can",
+              "4": "cardboard",
+              "5": "glass_bottle"
+            },
+            "class_count": 6,
+            "normalized_classes": {
+              "0": "plastic_bottle",
+              "1": "plastic_bag",
+              "2": "plastic_cup",
+              "3": "metal_can",
+              "4": "cardboard",
+              "5": "glass_bottle"
+            },
+            "review_classes": [],
+            "load_ms": 47.60770000575576,
+            "last_inference_ms": 90.26559999620076
+          },
+          {
+            "id": "asian_waste",
+            "enabled": true,
+            "loaded": true,
+            "error": null,
+            "device": "cpu",
+            "classes": {
+              "0": "Animal Waste",
+              "1": "Construction Waste",
+              "2": "Garbage Bag",
+              "3": "Glass",
+              "4": "Metal",
+              "5": "Organic",
+              "6": "Paper",
+              "7": "Plastic",
+              "8": "waste"
+            },
+            "class_count": 9,
+            "normalized_classes": {
+              "0": "animal_waste",
+              "1": "construction_waste",
+              "2": "garbage_bag",
+              "3": "glass",
+              "4": "metal",
+              "5": "organic_waste",
+              "6": "paper",
+              "7": "plastic",
+              "8": "waste"
+            },
+            "review_classes": [
+              "Garbage Bag",
+              "Glass",
+              "Metal",
+              "Organic",
+              "Paper",
+              "Plastic",
+              "waste"
+            ],
+            "load_ms": 49.492199992528185,
+            "last_inference_ms": 178.44550000154413
+          }
+        ]
+      },
+      "images": [
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\test\\images\\test_000002.jpg",
+          "sha256": "afa32f556430e931937779baa13063b52d297a431d7499c640a13cd25a319da5",
+          "samples": [
+            {
+              "total_ms_including_decode": 339.31299998948816,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 1,
+                  "class_name": "plastic_bag",
+                  "confidence": 0.6501365303993225,
+                  "x1": 145.01869201660156,
+                  "y1": 50.2825927734375,
+                  "x2": 539.8291015625,
+                  "y2": 611.9466552734375,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "plastic_bag",
+                  "original_class_id": 1,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "plastic_bag",
+                      "original_class_id": 1,
+                      "confidence": 0.6501365303993225,
+                      "bbox": [
+                        145.01869201660156,
+                        50.2825927734375,
+                        539.8291015625,
+                        611.9466552734375
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 11,
+                  "class_name": "organic_waste",
+                  "confidence": 0.7911156415939331,
+                  "x1": 120.12239074707031,
+                  "y1": 56.1246337890625,
+                  "x2": 544.7505493164062,
+                  "y2": 614.3646240234375,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Organic",
+                  "original_class_id": 5,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Organic",
+                      "original_class_id": 5,
+                      "confidence": 0.7911156415939331,
+                      "bbox": [
+                        120.12239074707031,
+                        56.1246337890625,
+                        544.7505493164062,
+                        614.3646240234375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 336.43349999329075,
+              "model_timings_ms": {
+                "ecoalert_general": 81.77109999815002,
+                "asian_waste": 254.59220001357608
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 545.3207999962615,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 1,
+                  "class_name": "plastic_bag",
+                  "confidence": 0.6501365303993225,
+                  "x1": 145.01869201660156,
+                  "y1": 50.2825927734375,
+                  "x2": 539.8291015625,
+                  "y2": 611.9466552734375,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "plastic_bag",
+                  "original_class_id": 1,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "plastic_bag",
+                      "original_class_id": 1,
+                      "confidence": 0.6501365303993225,
+                      "bbox": [
+                        145.01869201660156,
+                        50.2825927734375,
+                        539.8291015625,
+                        611.9466552734375
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 11,
+                  "class_name": "organic_waste",
+                  "confidence": 0.7911156415939331,
+                  "x1": 120.12239074707031,
+                  "y1": 56.1246337890625,
+                  "x2": 544.7505493164062,
+                  "y2": 614.3646240234375,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Organic",
+                  "original_class_id": 5,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Organic",
+                      "original_class_id": 5,
+                      "confidence": 0.7911156415939331,
+                      "bbox": [
+                        120.12239074707031,
+                        56.1246337890625,
+                        544.7505493164062,
+                        614.3646240234375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 541.999000008218,
+              "model_timings_ms": {
+                "ecoalert_general": 199.65519999095704,
+                "asian_waste": 342.2342999983812
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 271.9809999980498,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 1,
+                  "class_name": "plastic_bag",
+                  "confidence": 0.6501365303993225,
+                  "x1": 145.01869201660156,
+                  "y1": 50.2825927734375,
+                  "x2": 539.8291015625,
+                  "y2": 611.9466552734375,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "plastic_bag",
+                  "original_class_id": 1,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "plastic_bag",
+                      "original_class_id": 1,
+                      "confidence": 0.6501365303993225,
+                      "bbox": [
+                        145.01869201660156,
+                        50.2825927734375,
+                        539.8291015625,
+                        611.9466552734375
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 11,
+                  "class_name": "organic_waste",
+                  "confidence": 0.7911156415939331,
+                  "x1": 120.12239074707031,
+                  "y1": 56.1246337890625,
+                  "x2": 544.7505493164062,
+                  "y2": 614.3646240234375,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Organic",
+                  "original_class_id": 5,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Organic",
+                      "original_class_id": 5,
+                      "confidence": 0.7911156415939331,
+                      "bbox": [
+                        120.12239074707031,
+                        56.1246337890625,
+                        544.7505493164062,
+                        614.3646240234375
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 268.8293000101112,
+              "model_timings_ms": {
+                "ecoalert_general": 94.98949999397155,
+                "asian_waste": 173.79760000039823
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        },
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\test\\images\\test_000016.jpg",
+          "sha256": "1b7bfc6d6fe7534c9b9ad8d0e4c4df99504a4aa20e4065781653db8bd66322bf",
+          "samples": [
+            {
+              "total_ms_including_decode": 236.33100000733975,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.9376700520515442,
+                  "x1": 70.3996810913086,
+                  "y1": 333.43267822265625,
+                  "x2": 301.1722717285156,
+                  "y2": 554.3690185546875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.9376700520515442,
+                      "bbox": [
+                        70.3996810913086,
+                        333.43267822265625,
+                        301.1722717285156,
+                        554.3690185546875
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.925276517868042,
+                  "x1": 214.1866912841797,
+                  "y1": 215.48532104492188,
+                  "x2": 396.37933349609375,
+                  "y2": 447.5434265136719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.925276517868042,
+                      "bbox": [
+                        214.1866912841797,
+                        215.48532104492188,
+                        396.37933349609375,
+                        447.5434265136719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8914991021156311,
+                  "x1": 412.38958740234375,
+                  "y1": 289.6147155761719,
+                  "x2": 530.7652587890625,
+                  "y2": 459.9379577636719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8914991021156311,
+                      "bbox": [
+                        412.38958740234375,
+                        289.6147155761719,
+                        530.7652587890625,
+                        459.9379577636719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8597801327705383,
+                  "x1": 332.13909912109375,
+                  "y1": 210.0626983642578,
+                  "x2": 483.43865966796875,
+                  "y2": 379.66131591796875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8597801327705383,
+                      "bbox": [
+                        332.13909912109375,
+                        210.0626983642578,
+                        483.43865966796875,
+                        379.66131591796875
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 232.57439999724738,
+              "model_timings_ms": {
+                "ecoalert_general": 74.23490000655875,
+                "asian_waste": 158.2996000070125
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 254.49140000273474,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.9376700520515442,
+                  "x1": 70.3996810913086,
+                  "y1": 333.43267822265625,
+                  "x2": 301.1722717285156,
+                  "y2": 554.3690185546875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.9376700520515442,
+                      "bbox": [
+                        70.3996810913086,
+                        333.43267822265625,
+                        301.1722717285156,
+                        554.3690185546875
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.925276517868042,
+                  "x1": 214.1866912841797,
+                  "y1": 215.48532104492188,
+                  "x2": 396.37933349609375,
+                  "y2": 447.5434265136719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.925276517868042,
+                      "bbox": [
+                        214.1866912841797,
+                        215.48532104492188,
+                        396.37933349609375,
+                        447.5434265136719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8914991021156311,
+                  "x1": 412.38958740234375,
+                  "y1": 289.6147155761719,
+                  "x2": 530.7652587890625,
+                  "y2": 459.9379577636719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8914991021156311,
+                      "bbox": [
+                        412.38958740234375,
+                        289.6147155761719,
+                        530.7652587890625,
+                        459.9379577636719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8597801327705383,
+                  "x1": 332.13909912109375,
+                  "y1": 210.0626983642578,
+                  "x2": 483.43865966796875,
+                  "y2": 379.66131591796875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8597801327705383,
+                      "bbox": [
+                        332.13909912109375,
+                        210.0626983642578,
+                        483.43865966796875,
+                        379.66131591796875
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 251.9354999967618,
+              "model_timings_ms": {
+                "ecoalert_general": 72.10150000173599,
+                "asian_waste": 179.79059999925084
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 291.7974000010872,
+              "width": 640,
+              "height": 640,
+              "detections": [
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.9376700520515442,
+                  "x1": 70.3996810913086,
+                  "y1": 333.43267822265625,
+                  "x2": 301.1722717285156,
+                  "y2": 554.3690185546875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.9376700520515442,
+                      "bbox": [
+                        70.3996810913086,
+                        333.43267822265625,
+                        301.1722717285156,
+                        554.3690185546875
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.925276517868042,
+                  "x1": 214.1866912841797,
+                  "y1": 215.48532104492188,
+                  "x2": 396.37933349609375,
+                  "y2": 447.5434265136719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.925276517868042,
+                      "bbox": [
+                        214.1866912841797,
+                        215.48532104492188,
+                        396.37933349609375,
+                        447.5434265136719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8914991021156311,
+                  "x1": 412.38958740234375,
+                  "y1": 289.6147155761719,
+                  "x2": 530.7652587890625,
+                  "y2": 459.9379577636719,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8914991021156311,
+                      "bbox": [
+                        412.38958740234375,
+                        289.6147155761719,
+                        530.7652587890625,
+                        459.9379577636719
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 8,
+                  "class_name": "garbage_bag",
+                  "confidence": 0.8597801327705383,
+                  "x1": 332.13909912109375,
+                  "y1": 210.0626983642578,
+                  "x2": 483.43865966796875,
+                  "y2": 379.66131591796875,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Garbage Bag",
+                  "original_class_id": 2,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Garbage Bag",
+                      "original_class_id": 2,
+                      "confidence": 0.8597801327705383,
+                      "bbox": [
+                        332.13909912109375,
+                        210.0626983642578,
+                        483.43865966796875,
+                        379.66131591796875
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 288.2028000021819,
+              "model_timings_ms": {
+                "ecoalert_general": 88.35740000358783,
+                "asian_waste": 199.79610000154935
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        },
+        {
+          "path": "D:\\KhoaLuanTotNghiep\\datasets\\ecoalert-waste-v1\\images\\val\\0ccffac5-AluCan534_jpg.rf.94e4bd8dea6ad161e9956a156d0e132e.jpg",
+          "sha256": "cfd1ecd079918653084966d825481f865a0e1e3c8c26298b9c39516fade918e4",
+          "samples": [
+            {
+              "total_ms_including_decode": 294.0095999947516,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 3,
+                  "class_name": "metal_can",
+                  "confidence": 0.8325845003128052,
+                  "x1": 269.1982116699219,
+                  "y1": 378.8550720214844,
+                  "x2": 456.5458068847656,
+                  "y2": 537.3970336914062,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "metal_can",
+                  "original_class_id": 3,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "metal_can",
+                      "original_class_id": 3,
+                      "confidence": 0.8325845003128052,
+                      "bbox": [
+                        269.1982116699219,
+                        378.8550720214844,
+                        456.5458068847656,
+                        537.3970336914062
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 13,
+                  "class_name": "plastic",
+                  "confidence": 0.4628314971923828,
+                  "x1": 276.3131103515625,
+                  "y1": 395.49853515625,
+                  "x2": 435.9441223144531,
+                  "y2": 535.4199829101562,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Plastic",
+                  "original_class_id": 7,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Plastic",
+                      "original_class_id": 7,
+                      "confidence": 0.4628314971923828,
+                      "bbox": [
+                        276.3131103515625,
+                        395.49853515625,
+                        435.9441223144531,
+                        535.4199829101562
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 10,
+                  "class_name": "metal",
+                  "confidence": 0.33576908707618713,
+                  "x1": 276.6324768066406,
+                  "y1": 395.3271179199219,
+                  "x2": 434.7720642089844,
+                  "y2": 533.8556518554688,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Metal",
+                  "original_class_id": 4,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Metal",
+                      "original_class_id": 4,
+                      "confidence": 0.33576908707618713,
+                      "bbox": [
+                        276.6324768066406,
+                        395.3271179199219,
+                        434.7720642089844,
+                        533.8556518554688
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 289.23829999985173,
+              "model_timings_ms": {
+                "ecoalert_general": 110.17480000737123,
+                "asian_waste": 179.02409999805968
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 227.37609999603592,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 3,
+                  "class_name": "metal_can",
+                  "confidence": 0.8325845003128052,
+                  "x1": 269.1982116699219,
+                  "y1": 378.8550720214844,
+                  "x2": 456.5458068847656,
+                  "y2": 537.3970336914062,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "metal_can",
+                  "original_class_id": 3,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "metal_can",
+                      "original_class_id": 3,
+                      "confidence": 0.8325845003128052,
+                      "bbox": [
+                        269.1982116699219,
+                        378.8550720214844,
+                        456.5458068847656,
+                        537.3970336914062
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 13,
+                  "class_name": "plastic",
+                  "confidence": 0.4628314971923828,
+                  "x1": 276.3131103515625,
+                  "y1": 395.49853515625,
+                  "x2": 435.9441223144531,
+                  "y2": 535.4199829101562,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Plastic",
+                  "original_class_id": 7,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Plastic",
+                      "original_class_id": 7,
+                      "confidence": 0.4628314971923828,
+                      "bbox": [
+                        276.3131103515625,
+                        395.49853515625,
+                        435.9441223144531,
+                        535.4199829101562
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 10,
+                  "class_name": "metal",
+                  "confidence": 0.33576908707618713,
+                  "x1": 276.6324768066406,
+                  "y1": 395.3271179199219,
+                  "x2": 434.7720642089844,
+                  "y2": 533.8556518554688,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Metal",
+                  "original_class_id": 4,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Metal",
+                      "original_class_id": 4,
+                      "confidence": 0.33576908707618713,
+                      "bbox": [
+                        276.6324768066406,
+                        395.3271179199219,
+                        434.7720642089844,
+                        533.8556518554688
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 223.95400000095833,
+              "model_timings_ms": {
+                "ecoalert_general": 67.98669999989215,
+                "asian_waste": 155.92830000969116
+              },
+              "model_errors": {},
+              "degraded": false
+            },
+            {
+              "total_ms_including_decode": 273.1822000059765,
+              "width": 512,
+              "height": 683,
+              "detections": [
+                {
+                  "class_id": 3,
+                  "class_name": "metal_can",
+                  "confidence": 0.8325845003128052,
+                  "x1": 269.1982116699219,
+                  "y1": 378.8550720214844,
+                  "x2": 456.5458068847656,
+                  "y2": 537.3970336914062,
+                  "model_id": "ecoalert_general",
+                  "original_class_name": "metal_can",
+                  "original_class_id": 3,
+                  "needs_review": false,
+                  "sources": [
+                    {
+                      "model_id": "ecoalert_general",
+                      "original_class_name": "metal_can",
+                      "original_class_id": 3,
+                      "confidence": 0.8325845003128052,
+                      "bbox": [
+                        269.1982116699219,
+                        378.8550720214844,
+                        456.5458068847656,
+                        537.3970336914062
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 13,
+                  "class_name": "plastic",
+                  "confidence": 0.4628314971923828,
+                  "x1": 276.3131103515625,
+                  "y1": 395.49853515625,
+                  "x2": 435.9441223144531,
+                  "y2": 535.4199829101562,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Plastic",
+                  "original_class_id": 7,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Plastic",
+                      "original_class_id": 7,
+                      "confidence": 0.4628314971923828,
+                      "bbox": [
+                        276.3131103515625,
+                        395.49853515625,
+                        435.9441223144531,
+                        535.4199829101562
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "class_id": 10,
+                  "class_name": "metal",
+                  "confidence": 0.33576908707618713,
+                  "x1": 276.6324768066406,
+                  "y1": 395.3271179199219,
+                  "x2": 434.7720642089844,
+                  "y2": 533.8556518554688,
+                  "model_id": "asian_waste",
+                  "original_class_name": "Metal",
+                  "original_class_id": 4,
+                  "needs_review": true,
+                  "sources": [
+                    {
+                      "model_id": "asian_waste",
+                      "original_class_name": "Metal",
+                      "original_class_id": 4,
+                      "confidence": 0.33576908707618713,
+                      "bbox": [
+                        276.6324768066406,
+                        395.3271179199219,
+                        434.7720642089844,
+                        533.8556518554688
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "inference_ms": 268.7508999952115,
+              "model_timings_ms": {
+                "ecoalert_general": 90.26559999620076,
+                "asian_waste": 178.44550000154413
+              },
+              "model_errors": {},
+              "degraded": false
+            }
+          ]
+        }
+      ],
+      "peak_process_rss_mb": 497.39453125,
+      "weights": {
+        "ecoalert_general": {
+          "bytes": 5480474,
+          "sha256": "ee760925008e997befcc56f1ab8d4b57a7cdb47b5ec49144a877bfa6155e8903"
+        },
+        "asian_waste": {
+          "bytes": 19218650,
+          "sha256": "8fc9d9941b5698a29c5e2209ff49868c87b669212ec54506c7c9eed6d0cbd54c"
+        }
+      }
+    }
+  ]
+}

@@ -133,10 +133,11 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
       }
       // gửi ảnh sang mô hình yolo để phát hiện các đối tượng rác thải
       const vision = draft.imageValidation.detectedObjects.length
-        ? { status: "ok" as const, requiresManualReview: draft.imageValidation.backendValidation?.decision === "UNCERTAIN", detections: draft.imageValidation.detectedObjects.map(item => ({ materialClass: item.label, confidence: item.confidence ?? 0, bbox: item.bbox })) }
+        ? { status: "ok" as const, requiresManualReview: draft.imageValidation.visionRequiresManualReview || draft.imageValidation.backendValidation?.decision === "UNCERTAIN", detections: draft.imageValidation.detectedObjects.map(item => ({ ...item, materialClass: item.label, confidence: item.confidence ?? 0, bbox: item.bbox })) }
         : await alertService.analyzeUploadedImage(originalUploadedUrl);
       if (vision.status === "error") throw new Error("VISION_UNAVAILABLE");
       const detections = vision.detections.map((item) => ({
+        ...item,
         label: item.materialClass,
         confidence: item.confidence,
         bbox: item.bbox,
@@ -148,7 +149,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
           confidence: null,
           suggestedCategory: null,
           reason: "Không phát hiện đủ bằng chứng về rác thải trong ảnh.",
-          model: "YOLO11n",
+          model: "YOLO multi-model",
           validatedAt: new Date().toISOString(),
         };
         setDraft((current) => ({
@@ -164,7 +165,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         return;
       }
       // gửi ảnh và ngữ cảnh sang mô hình phân tích ngữ nghĩa để suy luận mức độ và tóm tắt hiện trường
-      setDraft(current => ({ ...current, imageValidation: { ...current.imageValidation, detectedObjects: detections } }));
+      setDraft(current => ({ ...current, imageValidation: { ...current.imageValidation, detectedObjects: detections, visionRequiresManualReview: vision.requiresManualReview } }));
       let semanticFields: ReturnType<typeof mapSemanticResult> = {};
       try {
         const semantic = await alertService.validateImageSemantics(
@@ -175,9 +176,11 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
       } catch (error) {
         semanticFields = { semanticState: "UNAVAILABLE", semanticError: semanticErrorMessage(error), suggestedCategory: null, severity: null, summary: null, categoryConfidence: null, massEstimate: undefined, semanticResult: undefined, analysisMode: undefined };
       }
-      const averageConfidence =
-        detections.reduce((sum, item) => sum + (item.confidence ?? 0), 0) /
-        detections.length;
+      const sourceModels = new Set(detections.flatMap(item =>
+        item.sources?.length ? item.sources.map(source => source.model_id) : [item.model_id || "legacy"]));
+      // Independent models' scores are not calibrated; keep per-region scores only.
+      const averageConfidence = sourceModels.size > 1 ? null :
+        detections.reduce((sum, item) => sum + (item.confidence ?? 0), 0) / detections.length;
       const suggestedCategory = semanticFields.suggestedCategory ?? null;
       const semantic = semanticFields.semanticResult;
       const backendValidation: ImageValidation = {
@@ -187,7 +190,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         suggestedCategory,
         reason:
           semanticFields.semanticError || semantic?.shortReason || "Đã phát hiện đối tượng rác thải trong ảnh.",
-        model: semantic?.model || "YOLO11n",
+        model: semantic?.model || "YOLO multi-model",
         validatedAt: new Date().toISOString(),
       };
       // tự động điền tiêu đề và mô tả gợi ý vào bản nháp nếu người dân chưa nhập

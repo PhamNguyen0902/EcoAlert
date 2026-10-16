@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AlertStatus, AlertCategory, Severity } from "@ecoalert/shared";
+import { visionEvidenceSchema } from './vision.schema';
 
 const categorySchema = z.nativeEnum(AlertCategory);
 const imageValidationSchema = z.object({
@@ -33,19 +34,6 @@ const fieldEvidenceSchema = z.object({
   gpsAccuracyMeters: z.number().finite().nonnegative().max(10_000),
 });
 
-const visionDetectionSchema = z.object({
-  materialClass: z.string().trim().min(1).max(100),
-  suggestedCategory: z.string().trim().max(100).optional(),
-  confidence: z.number().min(0).max(1),
-  bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
-});
-
-const visionEvidenceSchema = z.object({
-  imageUrl: z.string().url(),
-  status: z.enum(['ok', 'no_detection', 'error', 'skipped_not_applicable']),
-  detections: z.array(visionDetectionSchema).max(300),
-  requiresManualReview: z.boolean(),
-});
 //backend kiểm tra  payload ở đây
 export const createAlertSchema = z.object({
   title: z.string().min(5),

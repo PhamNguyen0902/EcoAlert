@@ -1,6 +1,7 @@
 import amqp from 'amqplib';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
+import { visionEvidenceSchema } from '../dtos/vision.schema';
 import { envConfig } from '../config/env.config';
 import {
   AlertCategory,
@@ -57,11 +58,7 @@ export const aiAnalysisCompletedSchema = z.object({
   model: z.string().trim().min(1),
   pipelineVersion: z.literal('openrouter-multimodal-v1').optional(),
   analysisPipeline: z.enum(['WASTE_DETECTION', 'SEMANTIC_ONLY']).optional(),
-  visionEvidence: z.array(z.object({
-    imageUrl: z.string().url(), status: z.enum(['ok', 'no_detection', 'error', 'skipped_not_applicable']),
-    detections: z.array(z.object({ materialClass: z.string(), suggestedCategory: z.string().optional(), confidence: z.number().min(0).max(1), bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]) })),
-    requiresManualReview: z.boolean(),
-  })).optional(),
+  visionEvidence: z.array(visionEvidenceSchema).optional(),
   overallAnalysis: overallAnalysisSchema.optional(),
   processingTimeMs: z.number().int().nonnegative().optional(),
   failureReason: z.string().trim().min(1).max(500).optional(),
