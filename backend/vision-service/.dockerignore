@@ -3,3 +3,8 @@ __pycache__/
 venv/
 model/
 .env
+models/
+*.pt
+tests/
+scripts/
+reports/

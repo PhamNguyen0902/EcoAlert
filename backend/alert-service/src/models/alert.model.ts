@@ -55,6 +55,11 @@ export interface IVisionDetection {
   suggestedCategory?: string;
   confidence: number;
   bbox: [number, number, number, number];
+  model_id?: string;
+  original_class_name?: string;
+  original_class_id?: number;
+  needs_review?: boolean;
+  sources?: Array<{ model_id: string; original_class_name: string; original_class_id: number; confidence: number; bbox: number[] }>;
 }
 
 export interface IVisionEvidence {
@@ -62,6 +67,8 @@ export interface IVisionEvidence {
   status: 'ok' | 'no_detection' | 'error' | 'skipped_not_applicable';
   detections: IVisionDetection[];
   requiresManualReview: boolean;
+  degraded?: boolean;
+  model_errors?: Record<string, string>;
 }
 
 export interface IOfficerCheckIn {
@@ -343,8 +350,16 @@ const alertSchema = new Schema<IAlert>({
       suggestedCategory: { type: String },
       confidence: { type: Number, required: true, min: 0, max: 1 },
       bbox: { type: [Number], required: true },
+      model_id: String,
+      original_class_name: String,
+      original_class_id: Number,
+      needs_review: Boolean,
+      sources: { type: [{ _id: false, model_id: String, original_class_name: String,
+                         original_class_id: Number, confidence: Number, bbox: [Number] }], default: undefined },
     }],
     requiresManualReview: { type: Boolean, required: true },
+    degraded: Boolean,
+    model_errors: { type: Map, of: String },
   }],
   location: {
     type: { type: String, enum: ['Point'], required: true },

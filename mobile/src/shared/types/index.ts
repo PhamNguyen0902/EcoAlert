@@ -186,28 +186,40 @@ export interface FieldEvidence {
 }
 
 /** Per-image result returned by the asynchronous YOLO Vision pipeline. */
+export interface VisionDetectionMetadata {
+  model_id?: string;
+  original_class_name?: string;
+  original_class_id?: number;
+  needs_review?: boolean;
+  sources?: Array<{ model_id: string; original_class_name: string; original_class_id: number; confidence: number; bbox: number[] }>;
+}
+
 export interface VisionEvidence {
   imageUrl: string;
   status: "ok" | "no_detection" | "error" | "skipped_not_applicable";
-  detections: Array<{
+  detections: Array<VisionDetectionMetadata & {
     materialClass: string;
     suggestedCategory?: AlertCategory | null;
     confidence: number;
     bbox?: [number, number, number, number];
   }>;
   requiresManualReview?: boolean;
+  degraded?: boolean;
+  model_errors?: Record<string, string>;
 }
 
 export interface PreSubmitVisionResult {
   imageUrl: string;
   status: "ok" | "no_detection" | "error";
-  detections: Array<{
+  detections: Array<VisionDetectionMetadata & {
     materialClass: string;
     suggestedCategory?: string;
     confidence: number;
     bbox?: [number, number, number, number];
   }>;
   requiresManualReview: boolean;
+  degraded?: boolean;
+  model_errors?: Record<string, string>;
 }
 
 export interface PreSubmitSemanticResult {

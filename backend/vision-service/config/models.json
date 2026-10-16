@@ -1,0 +1,30 @@
+{
+  "canonical_ids": {
+    "plastic_bottle": 0, "plastic_bag": 1, "plastic_cup": 2, "metal_can": 3,
+    "cardboard": 4, "glass_bottle": 5,
+    "animal_waste": 6, "construction_waste": 7, "garbage_bag": 8,
+    "glass": 9, "metal": 10, "organic_waste": 11, "paper": 12,
+    "plastic": 13, "waste": 14
+  },
+  "review_classes": ["garbage_bag", "glass", "metal", "organic_waste", "paper", "plastic", "waste"],
+  "models": [
+    {
+      "id": "ecoalert_general", "enabled": true,
+      "path": "models/BEST_ECOALERT_YOLO11N.pt", "confidence": 0.25, "image_size": 640,
+      "label_map": {
+        "plastic_bottle": "plastic_bottle", "plastic_bag": "plastic_bag",
+        "plastic_cup": "plastic_cup", "metal_can": "metal_can",
+        "cardboard": "cardboard", "glass_bottle": "glass_bottle"
+      }
+    },
+    {
+      "id": "asian_waste", "enabled": true,
+      "path": "models/BEST_ASIAN_WASTE_YOLO11S.pt", "confidence": 0.25, "image_size": 640,
+      "label_map": {
+        "Animal Waste": "animal_waste", "Construction Waste": "construction_waste",
+        "Garbage Bag": "garbage_bag", "Glass": "glass", "Metal": "metal",
+        "Organic": "organic_waste", "Paper": "paper", "Plastic": "plastic", "waste": "waste"
+      }
+    }
+  ]
+}

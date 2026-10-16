@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 import logging
 
 from fastapi import FastAPI
+from fastapi.concurrency import run_in_threadpool
 
 from routers.detection import router as detection_router
 from services.detector import WasteDetector
@@ -28,7 +29,7 @@ async def lifespan(app: FastAPI):
     app.state.detector = detector
 
     try:
-        detector.load_model()
+        await run_in_threadpool(detector.load_model)
     except Exception:
         # giữ endpoint health khả dụng để báo trạng thái suy giảm trong khi các endpoint detect trả về mã 503 đến khi nạp mô hình thành công
         logger.exception("Vision model could not be loaded during startup")
@@ -38,8 +39,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="EcoAlert Vision Service",
-    version="1.0.0",
-    description="YOLO11n waste-object detection for EcoAlert.",
+    version="2.0.0",
+    description="Configurable multi-model waste-object detection for EcoAlert.",
     lifespan=lifespan,
 )
 

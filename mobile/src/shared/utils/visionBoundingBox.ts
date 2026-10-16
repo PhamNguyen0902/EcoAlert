@@ -187,7 +187,7 @@ export function groupDetectionsByClass(
   return [...groups.values()];
 }
 
-// Existing mobile labels, plus plastic_cup/metal_can from vision-service's actual six classes.
+// Verified weight labels; material-level classes remain distinct from object-level classes.
 const MATERIAL_LABELS: Readonly<Record<string, string>> = {
   plastic_bag: "Túi nhựa",
   plastic_bottle: "Chai nhựa",
@@ -201,6 +201,11 @@ const MATERIAL_LABELS: Readonly<Record<string, string>> = {
   construction_waste: "Phế thải xây dựng",
   styrofoam: "Xốp",
   household_waste: "Rác sinh hoạt",
+  animal_waste: "Chất thải động vật",
+  garbage_bag: "Túi rác",
+  glass: "Thủy tinh",
+  plastic: "Nhựa",
+  waste: "Rác (chưa phân loại)",
 };
 export const getWasteDetectionLabel = (materialClass: string) =>
   MATERIAL_LABELS[materialClass] ?? materialClass;

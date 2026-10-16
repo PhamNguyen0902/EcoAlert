@@ -22,11 +22,25 @@ export interface IVisualMassEstimate {
   limitations: string[];
 }
 
+export interface IVisionDetection {
+  materialClass: string;
+  suggestedCategory?: string;
+  confidence: number;
+  bbox: [number, number, number, number];
+  model_id?: string;
+  original_class_name?: string;
+  original_class_id?: number;
+  needs_review?: boolean;
+  sources?: Array<{ model_id: string; original_class_name: string; original_class_id: number; confidence: number; bbox: number[] }>;
+}
+
 export interface IVisionEvidence {
   imageUrl: string;
   status: 'ok' | 'no_detection' | 'error' | 'skipped_not_applicable';
-  detections: Array<{ materialClass: string; suggestedCategory?: string; confidence: number; bbox: [number, number, number, number] }>;
+  detections: IVisionDetection[];
   requiresManualReview: boolean;
+  degraded?: boolean;
+  model_errors?: Record<string, string>;
 }
 
 // kết quả phân tích tổng quan do mô hình ai trả về phục vụ hiển thị trực tiếp cho người dùng

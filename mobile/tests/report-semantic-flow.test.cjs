@@ -114,7 +114,7 @@ test('shared Step 3/confirmation card distinguishes category confidence from YOL
   assert.match(text(yoloOnly), /92.0%/);
   assert.match(text(yoloOnly), /PHÂN TÍCH CHƯA KHẢ DỤNG/);
 });
-function harness(semantic = async () => result()) {
+function harness(semantic = async () => result(), vision = { status: 'ok', requiresManualReview: false, detections: [{ materialClass: 'plastic_bag', confidence: 0.92, bbox: [0,0,100,100] }] }) {
   let draft = {
     capture: { originalLocalUri: 'file://evidence.jpg', capturedAt: '2026-10-13T00:00:00.000Z' },
     location: { latitude: 10.8, longitude: 106.7, address: 'Địa chỉ hiện trường', accuracyMeters: 10, source: 'DEVICE_GPS', capturedAt: '2026-10-13T00:00:00.000Z' },
@@ -129,7 +129,7 @@ function harness(semantic = async () => result()) {
   native.StyleSheet = { create: x => x }; native.Platform = { OS: 'ios' };
   const service = {
     uploadMedia: async () => { calls.upload++; return 'https://example.com/evidence.jpg'; },
-    analyzeUploadedImage: async () => { calls.yolo++; return { status: 'ok', requiresManualReview: false, detections: [{ materialClass: 'plastic_bag', confidence: 0.92, bbox: [0,0,100,100] }] }; },
+    analyzeUploadedImage: async () => { calls.yolo++; return vision; },
     validateImageSemantics: async () => { calls.semantic++; return semantic(); },
   };
   const imports = {
@@ -215,4 +215,26 @@ test('late semantic response cannot overwrite a retaken photo draft', async () =
   assert.equal(h.draft.capture.originalLocalUri, 'file://new.jpg');
   assert.equal(h.draft.imageValidation.state, 'IDLE');
   assert.equal(h.draft.imageValidation.detectedObjects.length, 0);
+});
+
+test('multi-model detections reach ReportFlow with labels, original confidence, bbox and source', async () => {
+  const vision = { status: 'ok', requiresManualReview: true, degraded: true, detections: [
+    { materialClass: 'plastic_bottle', confidence: .61, bbox: [0, 0, 30, 50], model_id: 'ecoalert_general', original_class_name: 'plastic_bottle' },
+    { materialClass: 'animal_waste', confidence: .89, bbox: [30, 20, 70, 60], model_id: 'asian_waste', original_class_name: 'Animal Waste' },
+  ] };
+  const h = harness(async () => result({ confidenceTier: 'HIGH_CONFIDENCE' }), vision);
+  h.render(); h.start(); await settle(() => h.draft.imageValidation.state === 'VALID');
+  const objects = h.draft.imageValidation.detectedObjects;
+  assert.equal(objects.length, 2);
+  assert.equal(objects[1].label, 'animal_waste');
+  assert.equal(objects[1].confidence, .89);
+  assert.deepEqual(Array.from(objects[1].bbox), [30,20,70,60]);
+  assert.equal(objects[1].model_id, 'asian_waste');
+  assert.equal(objects[1].original_class_name, 'Animal Waste');
+  assert.equal(h.draft.imageValidation.yoloConfidence, null);
+  assert.equal(h.draft.imageValidation.backendValidation.decision, 'UNCERTAIN');
+  const labels = load('shared/utils/visionBoundingBox.ts');
+  assert.equal(labels.getWasteDetectionLabel('animal_waste'), 'Chất thải động vật');
+  assert.equal(labels.getWasteDetectionLabel('future_model:unknown'), 'future_model:unknown');
+  assert.equal(labels.groupDetectionsByClass(vision.detections).length, 2);
 });

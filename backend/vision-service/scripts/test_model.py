@@ -1,4 +1,5 @@
 from pathlib import Path
+from dataclasses import replace
 import sys
 
 import cv2
@@ -23,6 +24,8 @@ EXPECTED_CLASSES = {
 # kiểm tra nhanh việc nạp mô hình yolo và chạy thử nghiệm nhận diện ảnh thực tế
 def main() -> int:
     settings = VisionSettings.from_environment()
+    # Keep this original six-class regression check scoped to the original model.
+    settings = replace(settings, models=tuple(m for m in settings.models if m.id == "ecoalert_general"))
     detector = WasteDetector(settings)
 
     print(f"Model path: {settings.model_path}")

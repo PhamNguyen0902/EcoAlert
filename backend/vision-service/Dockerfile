@@ -27,7 +27,9 @@ COPY main.py ./
 COPY routers ./routers
 COPY schemas ./schemas
 COPY services ./services
-COPY models ./models
+COPY config ./config
+# Weights are mounted read-only at runtime; never embedded in the image.
+RUN mkdir -p /app/models
 
 EXPOSE 8001
 

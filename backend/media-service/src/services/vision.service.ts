@@ -9,12 +9,19 @@ export interface DetectionResult {
   suggestedCategory: string;
   confidence: number;
   bbox: number[];
+  model_id?: string;
+  original_class_name?: string;
+  original_class_id?: number;
+  needs_review?: boolean;
+  sources?: Array<{ model_id: string; original_class_name: string; original_class_id: number; confidence: number; bbox: number[] }>;
 }
 
 export interface VisionPredictionResponse {
   status: string;
   detections: DetectionResult[];
   requiresManualReview: boolean;
+  degraded?: boolean;
+  model_errors?: Record<string, string>;
 }
 
 export class VisionService {
