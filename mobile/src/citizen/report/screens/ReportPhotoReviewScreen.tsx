@@ -43,7 +43,7 @@ import { fieldStyles } from "../components/stitch/fieldDesign";
 import { fieldIntegrity } from "../components/stitch/fieldPresentation";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportPhotoReview">;
-// màn hình bước ba xem lại ảnh hiện trường và kiểm tra tính toàn vẹn dữ liệu
+// hiển thị ảnh vừa chụp để người dân kiểm tra lại trước khi phân tích ai
 export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
@@ -80,6 +80,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const integrity = fieldIntegrity(capture, location);
   const integrityCount =
     Number(integrity.camera) + Number(integrity.gps) + Number(integrity.time);
+  // tạo ra bức ảnh có in kèm ngày giờ và tọa độ gps ở góc dưới
   const renderDisplayImage = useCallback(async () => {
     if (
       !capture ||
@@ -113,7 +114,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
       setRendering(false);
     }
   }, [capture, rendering, setDraft]);
-  // xóa ảnh hiện tại trong bản nháp và quay lại camera để chụp lại
+  // xóa bức ảnh hiện tại và quay lại camera để chụp tấm khác
   const retake = () => {
     setDraft((current) => capture?.id ? removePhoto(current, capture.id) : current);
     navigation.navigate("ReportCamera");
@@ -195,6 +196,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* bước 2 */}
         <ReportProgress step={2} />
         <ReportScreenIntro
           eyebrow="ẢNH HIỆN TRƯỜNG"
@@ -349,7 +351,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             ]}
             accessibilityRole="button"
           >
-            <Text style={styles.primaryButtonText}>DÙNG ẢNH NÀY</Text>
+            <Text style={styles.primaryButtonText}>TIẾP TỤC</Text>
             <Text style={styles.arrow}>→</Text>
           </TouchableOpacity>
         </View>

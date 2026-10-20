@@ -37,7 +37,7 @@ import {
 } from "../components/stitch/fieldDesign";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportSuccess">;
-// màn hình bước sáu hiển thị kết quả gửi báo cáo thành công hoặc đã lưu ngoại tuyến
+// hiển thị mã báo cáo và các bước xử lý tiếp theo sau khi gửi xong
 export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { draft, resetDraft } = useFieldReport();

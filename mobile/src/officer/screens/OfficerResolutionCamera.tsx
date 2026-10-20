@@ -7,11 +7,12 @@ import {
   Pressable,
   ActivityIndicator,
   Linking,
+  Image,
 } from "react-native";
 import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Camera, X, Flashlight } from "lucide-react-native";
+import { Camera, X, Flashlight, Eye, EyeOff } from "lucide-react-native";
 import { normalizeFieldCaptureImage } from "../../shared/utils/fieldCaptureImage";
 import { persistOriginalFieldImage } from "../../shared/utils/watermark";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
@@ -21,13 +22,19 @@ import {
   type OfficerPhoto,
 } from "../utils/officerResolution";
 
+// chụp ảnh sau khi dọn xong
 export function OfficerResolutionCamera({
   onCapture,
   onClose,
+  referenceImageUri,
 }: {
   onCapture: (photo: OfficerPhoto) => void;
   onClose: () => void;
+  referenceImageUri?: string;
 }) {
+  // Thêm state bật/tắt lớp ảnh mờ (mặc định bật nếu có ảnh ban đầu)
+  const [showGhost, setShowGhost] = useState(Boolean(referenceImageUri));
+  const [ghostOpacity, setGhostOpacity] = useState(0.35); // 35% độ mờ
   const insets = useSafeAreaInsets();
   const { colors } = useCivicTheme();
   const [permission, requestPermission] = useCameraPermissions();
@@ -53,6 +60,7 @@ export function OfficerResolutionCamera({
       listener.remove();
     };
   }, []);
+  // lấy tọa độ gps, chụp ảnh sau khi dọn xong và lưu ảnh vào máy
   const capture = async () => {
     if (!camera.current || !ready || captureLock.current) return;
     captureLock.current = true;
@@ -131,17 +139,37 @@ export function OfficerResolutionCamera({
         <Text style={[styles.title, { color: colors.primary }]}>
           LIVE CAM · SAU XỬ LÝ
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Đổi chế độ flash"
-          style={styles.control}
-          onPress={() => setFlash(flash === "off" ? "on" : "off")}
-        >
-          <Flashlight
-            size={22}
-            color={flash === "on" ? colors.primary : colors.textMuted}
-          />
-        </Pressable>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {/* 👇 THÊM NÚT BẬT/TẮT CON MẮT ĐỐI CHIẾU Ở ĐÂY */}
+          {referenceImageUri ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Bật tắt đối chiếu ảnh"
+              style={[styles.toolButton, showGhost && styles.toolButtonActive]}
+              onPress={() => setShowGhost((prev) => !prev)}
+            >
+              {showGhost ? (
+                <Eye size={18} color="#22C55E" />
+              ) : (
+                <EyeOff size={18} color="#94A3B8" />
+              )}
+              <Text style={styles.toolButtonText}>
+                {showGhost ? "Góc cũ: Bật" : "Tắt"}
+              </Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Đổi chế độ flash"
+            style={styles.control}
+            onPress={() => setFlash(flash === "off" ? "on" : "off")}
+          >
+            <Flashlight
+              size={22}
+              color={flash === "on" ? colors.primary : colors.textMuted}
+            />
+          </Pressable>
+        </View>
       </View>
       {!permission?.granted ? (
         <View style={styles.permission}>
@@ -194,6 +222,18 @@ export function OfficerResolutionCamera({
                   setError("Camera không khả dụng. Hãy đóng và mở lại.");
                 }}
               />
+            ) : null}
+            {referenceImageUri && showGhost ? (
+              <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <Image
+                  source={{ uri: referenceImageUri }}
+                  style={[StyleSheet.absoluteFill, { opacity: ghostOpacity }]}
+                  resizeMode="cover"
+                />
+                <View style={styles.ghostBadge}>
+                  <Text style={styles.ghostBadgeText}>Khung căn góc sự cố ban đầu</Text>
+                </View>
+              </View>
             ) : null}
           </View>
         </View>
@@ -283,4 +323,37 @@ const styles = StyleSheet.create({
   },
   permissionButton: { padding: 16, borderRadius: 12 },
   buttonText: { color: "#07101F", fontWeight: "800" },
+  ghostBadge: {
+    position: "absolute",
+    top: 60,
+    alignSelf: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#22C55E",
+  },
+  ghostBadgeText: {
+    color: "#22C55E",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  toolButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  toolButtonActive: {
+    borderColor: "#22C55E",
+    borderWidth: 1,
+  },
+  toolButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+  },
 });

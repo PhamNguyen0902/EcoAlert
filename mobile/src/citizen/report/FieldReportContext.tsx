@@ -23,9 +23,9 @@ interface FieldReportContextValue {
   openSavedDrafts: () => void;
   savedDraftCount: number;
 }
-
+// nơi lưu tạm dữ liệu báo cáo để dùng chung qua các bước chụp ảnh và gửi bài
 const FieldReportContext = createContext<FieldReportContextValue | null>(null);
-// khởi tạo nhà cung cấp ngữ cảnh lưu trữ bản nháp báo cáo hiện trường
+// chia sẻ dữ liệu báo cáo đang tạo cho tất cả màn hình trong luồng báo cáo
 export const FieldReportProvider = ({ children }: { children: ReactNode }) => {
   const { data: profile } = useProfile();
   const fileUri = FileSystem.documentDirectory && profile?._id

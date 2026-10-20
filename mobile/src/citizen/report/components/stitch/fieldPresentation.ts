@@ -5,6 +5,7 @@ import type {
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../../types";
 
 export const FIELD_LOCATION_MAX_AGE_MS = 5 * 60_000;
+// kiểm tra vị trí gps có đủ chính xác và mới lấy gần đây hay không
 export function fieldLocationReady(
   location: FieldReportLocationDraft | undefined,
   now: number,
@@ -25,6 +26,7 @@ export function fieldLocationReady(
   );
 }
 
+// kiểm tra báo cáo đã có đủ ảnh chụp trực tiếp, vị trí gps và thời gian chụp chưa
 export function fieldIntegrity(
   capture?: FieldReportCaptureDraft,
   location?: FieldReportLocationDraft,
@@ -37,7 +39,7 @@ export function fieldIntegrity(
   };
 }
 
-/** API confidence is a unit interval; absent/malformed numbers are not promoted to certainty. */
+// chỉ nhận điểm độ tin cậy hợp lệ từ hệ thống, nếu dữ liệu trống hoặc lỗi thì bỏ qua
 export function fieldConfidence(value: unknown) {
   return typeof value === "number" &&
     Number.isFinite(value) &&

@@ -15,8 +15,6 @@ type Props = BottomTabScreenProps<CitizenTabParamList, "ReportTab">;
 export const ReportTabLauncherScreen: React.FC<Props> = ({ navigation }) => {
   const { colors } = useTheme();
   const launchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Tab navigation compatibility only: retain one deferred launch across rapid focuses.
   useEffect(
     () => () => {
       if (launchTimer.current !== null) clearTimeout(launchTimer.current);

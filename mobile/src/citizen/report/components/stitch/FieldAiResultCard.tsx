@@ -18,7 +18,7 @@ import { FieldEntrance, useFieldReducedMotion } from "./FieldUI";
 import { isReportCategory, massPresentation } from "../../semanticResult";
 import { aiStageLabels } from "../../reviewPolicy";
 
-/** All displayed conclusions come from the existing draft/API, never visual fixtures. */
+// chỉ hiển thị kết quả phân tích thật từ hệ thống, không dùng dữ liệu mẫu
 export function FieldAiResultCard({
   analysis,
   compact = false,

@@ -5,6 +5,7 @@ import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageF
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
 import { officerDate } from "../utils/officerPresentation";
 import { OfficerBadge, OfficerCard, officerStyles as s } from "./OfficerUI";
+// hiển thị khung đặt cạnh nhau so sánh ảnh trước và sau khi dọn sạch điểm rác
 export function OfficerEvidenceComparison({
   beforeUri,
   beforeFallback,

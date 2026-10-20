@@ -52,6 +52,7 @@ type Props = NativeStackScreenProps<
   OfficerStackParamList,
   "OfficerAlertDetail"
 >;
+// Xem hồ sơ & nhận nhiệm vụ
 export const OfficerAlertDetailScreen: React.FC<Props> = ({
   route,
   navigation,
@@ -69,6 +70,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
   const mapsLock = useRef(false);
   const alert = query.data;
   const mine = ownsOfficerTask(alert, profile);
+  // xác nhận cán bộ bắt đầu nhận và đi xử lý nhiệm vụ này
   const startTask = async () => {
     if (
       !alert ||
@@ -92,6 +94,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
       actionLock.current = false;
     }
   };
+  // mở google maps chỉ đường tới chỗ có sự cố
   const directions = async () => {
     const coordinates = mine
       ? getGeoJsonMapCoordinates(alert?.location?.coordinates)
@@ -115,6 +118,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
       setOpeningMaps(false);
     }
   };
+  // lưu lại ghi chú của cán bộ trong quá trình xử lý sự cố
   const saveNote = async () => {
     if (
       !alert ||
@@ -208,6 +212,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
             color={colors.cyan}
           />
         </View>
+        {/* ảnh hiện trường trước xử lý */}
         <View style={{ gap: 8 }}>
           <Text style={[s.technical, { color: colors.textMuted }]}>
             ẢNH HIỆN TRƯỜNG · TRƯỚC XỬ LÝ
@@ -252,6 +257,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
             </ScrollView>
           )}
         </View>
+        {/* thẻ hiển thị tiêu đề, mức độ khẩn cấp, địa chỉ và ngày giờ phân công */}
         <OfficerCard>
           <View style={[s.row, { flexWrap: "wrap" }]}>
             <OfficerBadge label={state.label} color={state.color} />
@@ -293,6 +299,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
             AI chỉ hỗ trợ; cán bộ xác nhận phương án xử lý thực tế.
           </Text>
         </View>
+        {/* thẻ bản đồ thu nhỏ và các nút mở bản đồ tác nghiệp hoặc google maps */}
         <OfficerCard>
           <Text style={[s.technical, { color: colors.cyan }]}>
             ĐỊNH VỊ & DI CHUYỂN
@@ -388,6 +395,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
             </>
           )}
         </OfficerCard>
+        {/* thẻ hiển thị ảnh sau khi dọn rác, phương pháp và vật tư đã dùng */}
         {alert.resolutionEvidence?.length ? (
           <OfficerCard>
             <Text style={[s.heading, { color: colors.primary }]}>

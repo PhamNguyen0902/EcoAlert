@@ -64,7 +64,7 @@ import { canReviewReport, aiStageLabels } from "../reviewPolicy";
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportConfirm">;
 const isBackendUrl = (value?: string): value is string =>
   Boolean(value && /^https?:\/\//i.test(value));
-// màn hình bước năm xác nhận thông tin, kiểm tra trùng lặp và gửi báo cáo
+// màn hình kiểm tra lại toàn bộ thông tin lần cuối trước khi gửi báo cáo
 export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
@@ -113,7 +113,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
     navigation
       .getParent<NativeStackNavigationProp<CitizenStackParamList>>()
       ?.navigate("AlertDetail", { id });
-  // xác nhận sự cố lân cận đã có sẵn thay vì tạo báo cáo mới
+  // bấm xác nhận điểm rác có sẵn gần đó thay vì tạo thêm báo cáo trùng
   const confirmExisting = async (id: string) => {
     try {
       await confirmAlert.mutateAsync(id);
@@ -122,7 +122,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
       setSubmitError("Không thể xác nhận báo cáo gần đó. Vui lòng thử lại.");
     }
   };
-  // gửi báo cáo lên máy chủ nếu có mạng hoặc lưu vào hàng đợi ngoại tuyến nếu mất mạng
+  // gửi báo cáo lên hệ thống, nếu mất mạng thì lưu tạm vào máy để gửi sau
   const submit = async () => {
     if (!canSubmit || !location || !capture || submittingRef.current) return;
     submittingRef.current = true;

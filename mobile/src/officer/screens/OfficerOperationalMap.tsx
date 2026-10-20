@@ -60,6 +60,7 @@ import type {
   OfficerTabParamList,
 } from "../../app/navigation/types";
 
+// hiển thị bản đồ các nhiệm vụ, vẽ đường đi bằng osrm và hỗ trợ lọc điểm rác
 export function OfficerOperationalMap() {
   const { colors, isDark } = useCivicTheme();
   const reducedMotion = useReducedMotion();
@@ -105,6 +106,7 @@ export function OfficerOperationalMap() {
   const destination = getGeoJsonMapCoordinates(selected?.location?.coordinates);
   const fresh =
     gps.position && now - Date.parse(gps.position.recordedAt) < 120_000;
+  // gọi dịch vụ vẽ tuyến đường ngắn nhất từ vị trí cán bộ đến điểm rác
   const route = useQuery({
     queryKey: [
       "officer-route",

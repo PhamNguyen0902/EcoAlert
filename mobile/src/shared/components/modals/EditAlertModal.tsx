@@ -22,6 +22,7 @@ interface EditAlertModalProps {
   onClose: () => void;
 }
 
+// hiển thị biểu mẫu cập nhật tiêu đề và mô tả sự cố
 export const EditAlertModal: React.FC<EditAlertModalProps> = ({
   visible,
   alert,
@@ -43,6 +44,7 @@ export const EditAlertModal: React.FC<EditAlertModalProps> = ({
 
   if (!alert) return null;
 
+  // lưu lại tiêu đề và mô tả mới khi người dân chỉnh sửa báo cáo
   const handleUpdate = async () => {
     if (!title.trim() || title.length < 5) {
       RNAlert.alert("Lỗi xác thực", "Tiêu đề phải dài ít nhất 5 ký tự.");

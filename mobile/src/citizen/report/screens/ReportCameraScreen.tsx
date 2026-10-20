@@ -77,7 +77,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [preparedPhoto, setPreparedPhoto] = useState<FieldReportCaptureDraft | null>(null);
   const [zoom, setZoom] = useState(0);
   const isActive = useForegroundScreen();
-  // Freshness UI needs a coarse clock; the HUD owns its one-second clock.
+  // kiểm tra định kỳ xem vị trí gps còn mới hay đã quá hạn
   const now = useScreenClock(15000, isActive);
   const activeRef = useRef(isActive);
   const mountedRef = useRef(true);
@@ -187,7 +187,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       setDraft((current) => ({ ...current, location: undefined }));
     navigation.navigate("ReportLocation");
   };
-  // chụp ảnh trực tiếp từ camera, chuẩn hóa kích thước và lưu trữ ảnh gốc vào bộ nhớ an toàn
+  // chụp ảnh từ camera, chỉnh lại kích thước và lưu ảnh vào máy
   const takePicture = async () => {
     setCaptureError(null);
     setCaptureErrorCode(null);
@@ -217,6 +217,40 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         if (failure.code === "CAMERA" || failure.code === "MISSING_URI") restartCamera();
         setCaptureErrorCode(failure.code);
         setCaptureError(failure.message);
+      if (!picture?.uri) throw new Error("Camera did not return an image");
+      const capturedAt = new Date().toISOString();
+      const normalized = await normalizeFieldCaptureImage(picture.uri);
+      const originalLocalUri = await persistOriginalFieldImage(
+        normalized.uri,
+        capturedAt,
+      );
+      // nếu người dùng đã thoát màn hình thì khi chụp ảnh xong cũng không tự chuyển trang nữa
+      if (
+        !activeRef.current ||
+        epoch !== activityEpoch.current ||
+        AppState.currentState !== "active"
+      ) return;
+      setDraft((current) => ({
+        ...current,
+        capture: {
+          originalLocalUri,
+          capturedAt,
+          width: normalized.width,
+          height: normalized.height,
+        },
+        imageValidation: { state: "IDLE", detectedObjects: [] },
+      }));
+      // chuyển sang màn hình xem lại và đóng dấu ảnh
+      navigation.navigate("ReportPhotoReview");
+    } catch {
+      if (
+        activeRef.current &&
+        epoch === activityEpoch.current &&
+        AppState.currentState === "active"
+      ) {
+        setCaptureError(
+          "Không thể chụp ảnh. Vui lòng kiểm tra Camera và thử lại.",
+        );
       }
     }
   };
@@ -301,7 +335,8 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.captureContent}
         showsVerticalScrollIndicator={false}
       >
-        <ReportProgress step={1} />
+        {/* bước 2: chụp ảnh hiện trường */}
+        <ReportProgress step={2} status="THẨM ĐỊNH THỰC ĐỊA" />
         <View style={styles.stageRow}>
           <Text style={styles.stageText}>CHỤP BAO QUÁT ĐIỂM RÁC</Text>
           <View style={styles.liveChip}>

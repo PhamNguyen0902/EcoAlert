@@ -5,13 +5,15 @@ import type { Alert } from "../../shared/types";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
 import { officerTimeline, officerDate } from "../utils/officerPresentation";
 import { OfficerCard, officerStyles as s } from "./OfficerUI";
+// hiển thị dòng thời gian các mốc xử lý sự cố từ lúc nhận việc đến khi hoàn thành
 export function OfficerTimeline({ task }: { task: Alert }) {
   const { colors } = useCivicTheme();
+  // danh sách các bước tiến trình và kiểm tra bước nào đã làm xong
   const steps = officerTimeline(task);
   return (
     <OfficerCard>
       <Text style={[s.technical, { color: colors.cyan }]}>
-        TIẾN TRÌNH TÁC NGHIỆP · {steps.filter((step) => step.done).length}/
+      TIẾN TRÌNH · {steps.filter((step) => step.done).length}/
         {steps.length}
       </Text>
       {steps.map((step, index) => (

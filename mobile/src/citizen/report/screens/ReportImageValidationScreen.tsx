@@ -156,6 +156,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
+      {/* màn hình ai phân tích hình ảnh */}
       <ReportHeader title="AI phân tích hình ảnh" onBack={navigation.goBack} />
       <ScrollView
         style={styles.scroll}
