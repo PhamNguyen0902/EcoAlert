@@ -3,6 +3,7 @@ import { s3Service } from "../services/s3.service";
 import { visionService } from "../services/vision.service";
 import { successResponse, BadRequestError } from "@ecoalert/shared";
 import axios from "axios";
+import { signMediaOwnership } from "@ecoalert/shared";
 
 export class UploadController {
   // tải ảnh minh chứng lên kho lưu trữ đám mây
@@ -10,14 +11,19 @@ export class UploadController {
     if (!req.file) {
       throw new BadRequestError("No image file provided");
     }
-
-    const imageUrl = await s3Service.uploadImage(req.file);
+    const idempotencyKey = typeof req.body?.idempotencyKey === 'string' ? req.body.idempotencyKey : undefined;
+    if (idempotencyKey && !/^[a-zA-Z0-9:_-]{8,160}$/.test(idempotencyKey))
+      throw new BadRequestError('Invalid media idempotency key');
+    const imageUrl = await s3Service.uploadImage(req.file, 'ecoalert/alerts', String(req.headers['x-user-id']), idempotencyKey);
+    const ownershipProof = (process.env.SERVICE_AUTH_SECRET || process.env.JWT_SECRET || '').length >= 16
+      ? signMediaOwnership(String(req.headers['x-user-id']), imageUrl) : undefined;
     const aiAnalysis = { status: 'skipped_not_applicable', detections: [], requiresManualReview: false };
 
     res.status(200).json(
       successResponse(
         {
           url: imageUrl,
+          ...(ownershipProof ? { ownershipProof } : {}),
           aiAnalysis,
         },
         "Image uploaded and analyzed successfully"

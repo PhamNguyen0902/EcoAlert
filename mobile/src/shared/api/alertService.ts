@@ -1,6 +1,14 @@
 import { api } from "./client";
 import { Alert, PaginatedResult, CreateAlertData, Category, ResolutionInput, PreSubmitSemanticResult, PreSubmitVisionResult } from "../types";
 
+const postMediaUpload = async (fileUri: string, fileName: string, fileType: string, idempotencyKey?: string): Promise<{ url?: string; ownershipProof?: string }> => {
+  const formData = new FormData();
+  formData.append("image", { uri: fileUri, name: fileName, type: fileType } as unknown as Blob);
+  if (idempotencyKey) formData.append("idempotencyKey", idempotencyKey);
+  const res = await api.post("/v1/media/upload", formData, { headers: { "Content-Type": "multipart/form-data" } });
+  return res.data?.data || res.data;
+};
+
 export const alertService = {
   // Paginate only when necessary: counts/map cover all authorized tasks.
   getAllOfficerTasks: async (): Promise<PaginatedResult<Alert>> => {
@@ -106,26 +114,30 @@ export const alertService = {
     return res.data?.data || res.data;
   },
 
-  uploadMedia: async (fileUri: string, fileName = "photo.jpg", fileType = "image/jpeg"): Promise<string> => {
-    const formData = new FormData();
-    formData.append("image", {
-      uri: fileUri,
-      name: fileName,
-      type: fileType,
-    } as unknown as Blob);
-
-    const res = await api.post("/v1/media/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return res.data?.data?.url || res.data?.url;
+  uploadFieldMedia: async (fileUri: string, fileName = "photo.jpg", fileType = "image/jpeg", idempotencyKey?: string): Promise<{ url: string; ownershipProof: string }> => {
+    const payload = await postMediaUpload(fileUri, fileName, fileType, idempotencyKey);
+    if (!payload?.url || !/^https?:\/\//i.test(payload.url)) throw new Error("INVALID_UPLOAD_RESPONSE");
+    if (!payload?.ownershipProof) throw new Error("MEDIA_OWNERSHIP_PROOF_MISSING");
+    return { url: payload.url, ownershipProof: payload.ownershipProof };
   },
 
+  uploadMedia: async (fileUri: string, fileName = "photo.jpg", fileType = "image/jpeg"): Promise<string> =>
+    (await postMediaUpload(fileUri, fileName, fileType)).url || "",
+
   analyzeUploadedImage: async (imageUrl: string): Promise<PreSubmitVisionResult> => {
-    const res = await api.post("/v1/media/analyze-url", { imageUrl });
+    const res = await api.post("/v1/media/analyze-url", { imageUrl }, { timeout: 60_000 });
     const payload = res.data?.data || res.data;
-    return { imageUrl: payload.imageUrl || imageUrl, ...payload.aiAnalysis };
+    const vision = payload?.aiAnalysis;
+    if (!vision || !["ok", "no_detection", "error"].includes(vision.status) || !Array.isArray(vision.detections)
+      || typeof vision.requiresManualReview !== "boolean"
+      || vision.detections.some((item: PreSubmitVisionResult["detections"][number]) =>
+        typeof item.materialClass !== "string" || !item.materialClass.trim()
+        || !Number.isFinite(item.confidence) || item.confidence < 0 || item.confidence > 1
+        || !Array.isArray(item.bbox) || item.bbox.length !== 4 || !item.bbox.every(Number.isFinite)
+        || item.bbox[2] < item.bbox[0] || item.bbox[3] < item.bbox[1])) throw new Error("INVALID_VISION_RESPONSE");
+    if (vision.status === "no_detection" && vision.detections.length) throw new Error("INVALID_VISION_RESPONSE");
+    if (vision.status === "error") throw Object.assign(new Error("VISION_UNAVAILABLE"), { code: vision.errorCode || "VISION_UNAVAILABLE" });
+    return { ...vision, imageUrl: payload.imageUrl || imageUrl };
   },
 
   validateImageSemantics: async (

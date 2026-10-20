@@ -161,11 +161,15 @@ services:
     environment:
       - PORT=3003
       - MONGO_URI=mongodb://mongodb:27017/ecoalert-media-db
+      - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET:-${JWT_SECRET}}
       - AWS_REGION=${AWS_REGION}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       - VISION_SERVICE_URL=${VISION_SERVICE_URL:-http://vision-service:8001}
+    volumes:
+      - ./backend/media-service/dist:/app/media-service/dist:ro
+      - ./backend/shared/dist:/app/shared/dist:ro
     depends_on:
       mongodb:
         condition: service_healthy

@@ -5,6 +5,7 @@ import {
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -49,6 +50,7 @@ import {
 } from "../../../shared/utils/aiAnalysis";
 import { useFieldReport } from "../FieldReportContext";
 import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
+import { normalizePhotoDraft, removePhoto, updatePhoto } from "../photoDraft";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { ZoomableImageViewer } from "../../../shared/components/media/ZoomableImageViewer";
@@ -56,6 +58,8 @@ import { FieldReportSummary } from "../components/stitch/FieldReportSummary";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
 import { fieldStyles } from "../components/stitch/fieldDesign";
 import { reportCategoryCodes, reportClassification } from "../semanticResult";
+import { fieldIntegrity } from "../components/stitch/fieldPresentation";
+import { canReviewReport, aiStageLabels } from "../reviewPolicy";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportConfirm">;
 const isBackendUrl = (value?: string): value is string =>
@@ -64,7 +68,7 @@ const isBackendUrl = (value?: string): value is string =>
 export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
-  const { draft, setDraft } = useFieldReport();
+  const { draft, setDraft, completeDraft } = useFieldReport();
   const { isOffline } = useOfflineSync();
   const createAlert = useCreateAlert();
   const confirmAlert = useConfirmAlert();
@@ -76,6 +80,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   const [viewerUri, setViewerUri] = useState<string | null>(null);
   const location = draft.location;
   const capture = draft.capture;
+  const photos = normalizePhotoDraft(draft).photos;
   // kiểm tra các sự cố môi trường đã tồn tại xung quanh vị trí hiện tại trong bán kính hai trăm mét
   const nearby = useCheckNearbyAlerts(
     location?.latitude,
@@ -90,7 +95,9 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
     location &&
       location.accuracyMeters <= MAX_FIELD_GPS_ACCURACY_METERS &&
       capture?.originalLocalUri &&
-      draft.imageValidation.state === "VALID" &&
+      photos.length > 0 && photos.length <= 5 &&
+      photos.every(photo => photo.originalLocalUri && fieldIntegrity(photo, photo.location || location).gps) &&
+      canReviewReport(draft, isOffline) &&
       validDescription &&
       draft.title.trim().length >= 5 &&
       acknowledged &&
@@ -98,11 +105,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   );
   // chụp lại ảnh nếu muốn thay đổi bằng chứng hiện trường
   const retake = () => {
-    setDraft((current) => ({
-      ...current,
-      capture: undefined,
-      imageValidation: { state: "IDLE", detectedObjects: [] },
-    }));
+    setDraft((current) => capture?.id ? removePhoto(current, capture.id) : current);
     navigation.navigate("ReportCamera");
   };
   // mở xem chi tiết sự cố lân cận đã tồn tại để tránh gửi trùng
@@ -130,6 +133,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
       method: "LIVE_CAMERA" as const,
       capturedAt: capture.capturedAt,
       gpsAccuracyMeters: location.accuracyMeters,
+      gpsCapturedAt: location.capturedAt,
       locationSource: "DEVICE_GPS" as const,
     };
     try {
@@ -142,7 +146,10 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             type: "Point",
             coordinates: [location.longitude, location.latitude],
           },
-          localMediaUris: [capture.originalLocalUri],
+          clientReportId: draft.id,
+          photos,
+          primaryPhotoId: draft.primaryPhotoId,
+          localMediaUris: photos.map(photo => photo.originalLocalUri),
           originalLocalUri: capture.originalLocalUri,
           displayLocalUri: capture.displayLocalUri,
           captureMetadata,
@@ -150,32 +157,39 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
           ...reportClassification(draft.imageValidation),
           isAnonymous: false,
         });
-        navigation.navigate("ReportSuccess", { queued: true });
+        await completeDraft(draft.id);
+        if (navigation.isFocused()) navigation.navigate("ReportSuccess", { queued: true });
         return;
       }
 
-      let originalUrl = capture.originalUploadedUrl;
-      if (!isBackendUrl(originalUrl))
-        originalUrl = await alertService.uploadMedia(
-          capture.originalLocalUri,
-          `field_original_${Date.now()}.jpg`,
-          "image/jpeg",
-        );
-      if (!isBackendUrl(originalUrl)) throw new Error("ORIGINAL_UPLOAD_FAILED");
-      // tải ảnh hiển thị có watermark lên máy chủ để phục vụ công tác giám sát trực quan
-      let displayUrl = capture.displayUploadedUrl;
-      if (capture.displayLocalUri && !isBackendUrl(displayUrl)) {
+      const uploaded = [];
+      for (const photo of photos) {
+        setDraft(current => updatePhoto(current, photo.id!, { uploadState: "UPLOADING" }));
+        let originalUrl = photo.originalUploadedUrl;
+        let originalOwnershipProof = photo.originalOwnershipProof;
         try {
-          displayUrl = await alertService.uploadMedia(
-            capture.displayLocalUri,
-            `field_display_${Date.now()}.jpg`,
-            "image/jpeg",
-          );
-        } catch {
-          displayUrl = undefined;
+          if (!isBackendUrl(originalUrl) || !originalOwnershipProof) {
+            const upload = await alertService.uploadFieldMedia(photo.originalLocalUri, `field_${photo.id}.jpg`, "image/jpeg", `${draft.id}:${photo.id}:original`);
+            originalUrl = upload.url; originalOwnershipProof = upload.ownershipProof;
+          }
+          if (!isBackendUrl(originalUrl)) throw new Error("ORIGINAL_UPLOAD_FAILED");
+          let displayUrl = photo.displayUploadedUrl;
+          let displayOwnershipProof = photo.displayOwnershipProof;
+          if (photo.displayLocalUri && (!isBackendUrl(displayUrl) || !displayOwnershipProof)) {
+            try { const upload = await alertService.uploadFieldMedia(photo.displayLocalUri, `field_display_${photo.id}.jpg`, "image/jpeg", `${draft.id}:${photo.id}:display`);
+              displayUrl = upload.url; displayOwnershipProof = upload.ownershipProof; }
+            catch { displayUrl = undefined; displayOwnershipProof = undefined; }
+          }
+          if (isBackendUrl(displayUrl) && !displayOwnershipProof) { displayUrl = undefined; }
+          setDraft(current => updatePhoto(current, photo.id!, { originalUploadedUrl: originalUrl, originalOwnershipProof, displayUploadedUrl: displayUrl, displayOwnershipProof, uploadState: "UPLOADED" }));
+          uploaded.push({ photo, originalUrl, originalOwnershipProof, displayUrl, displayOwnershipProof });
+        } catch (error) {
+          setDraft(current => updatePhoto(current, photo.id!, { uploadState: "FAILED" }));
+          throw error;
         }
       }
       const created = await createAlert.mutateAsync({
+        clientReportId: draft.id,
         title: draft.title.trim(),
         description: draft.description.trim(),
         address: location.address,
@@ -183,34 +197,24 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
           type: "Point",
           coordinates: [location.longitude, location.latitude],
         },
-        mediaUrls: [originalUrl],
-        fieldEvidence: [
-          {
-            originalUrl,
-            ...(isBackendUrl(displayUrl) ? { displayUrl } : {}),
-            capturedAt: capture.capturedAt,
-            gpsAccuracyMeters: location.accuracyMeters,
-          },
-        ],
+        mediaUrls: uploaded.map(item => item.originalUrl),
+        fieldEvidence: uploaded.map(({ photo, originalUrl, originalOwnershipProof, displayUrl, displayOwnershipProof }) => ({
+          photoId: photo.id, isPrimary: photo.id === draft.primaryPhotoId,
+          originalUrl, originalOwnershipProof, ...(isBackendUrl(displayUrl) ? { displayUrl, displayOwnershipProof } : {}),
+          capturedAt: photo.capturedAt,
+          gpsAccuracyMeters: photo.location?.accuracyMeters ?? location.accuracyMeters,
+          gpsCapturedAt: (photo.location || location)?.capturedAt,
+          latitude: (photo.location || location)?.latitude, longitude: (photo.location || location)?.longitude,
+          width: photo.width, height: photo.height,
+        })),
         captureMetadata,
         imageValidation: draft.imageValidation.backendValidation,
         ...reportClassification(draft.imageValidation),
         isAnonymous: false,
       });
-      setDraft((current) => ({
-        ...current,
-        capture: current.capture
-          ? {
-              ...current.capture,
-              originalUploadedUrl: originalUrl,
-              ...(isBackendUrl(displayUrl)
-                ? { displayUploadedUrl: displayUrl }
-                : {}),
-            }
-          : current.capture,
-        createdAlert: created,
-      }));
-      navigation.navigate("ReportSuccess", { alertId: created._id });
+      setDraft((current) => current.id === draft.id ? { ...current, createdAlert: created } : current);
+      await completeDraft(draft.id);
+      if (navigation.isFocused()) navigation.navigate("ReportSuccess", { alertId: created._id });
     } catch {
       setSubmitError(
         "Không thể gửi báo cáo. Dữ liệu của bạn vẫn được giữ lại để thử lại.",
@@ -221,7 +225,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  if (!location || !capture || draft.imageValidation.state !== "VALID")
+  if (!location || !capture)
     return (
       <View
         style={[
@@ -274,7 +278,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <ReportProgress step={4} />
+          <ReportProgress step={3} />
           <ReportScreenIntro
             eyebrow="HỒ SƠ HIỆN TRƯỜNG"
             title="Xác nhận báo cáo"
@@ -285,7 +289,25 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
             location={location}
             onPress={setViewerUri}
           />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
+            {photos.map((photo, index) => (
+              <TouchableOpacity key={photo.id} onPress={() => setViewerUri(photo.displayLocalUri || photo.originalLocalUri)}
+                accessibilityRole="button" accessibilityLabel={`Xem ảnh minh chứng ${index + 1}`} style={styles.photoThumb}>
+                <Image source={{ uri: photo.displayLocalUri || photo.originalLocalUri }} style={styles.photoThumbImage} />
+                <Text style={styles.photoThumbLabel}>Ảnh {index + 1}{photo.id === draft.primaryPhotoId ? " · chính" : ""}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
           <FieldAiResultCard analysis={draft.imageValidation} compact />
+          <Text style={[styles.inputError, { color: colors.textSecondary }]} accessibilityLiveRegion="polite">
+            Chưa gửi · {aiStageLabels(draft.imageValidation).review}. Việc gửi báo cáo không đồng nghĩa AI hay cán bộ đã xác nhận sự cố.
+          </Text>
+          {!canReviewReport(draft, isOffline) && !isOffline ? (
+            <TouchableOpacity onPress={() => navigation.navigate("ReportImageValidation")} accessibilityRole="button"
+              style={[styles.retakeButton, { borderColor: colors.accent }]}>
+              <Text style={{ color: colors.accent }}>Ảnh hoặc GPS chưa đủ điều kiện. Quay lại để hoàn tất kiểm tra bằng chứng.</Text>
+            </TouchableOpacity>
+          ) : null}
           {draft.imageValidation.semanticState !== "COMPLETE" ? (
             <TouchableOpacity onPress={() => navigation.navigate("ReportImageValidation")} accessibilityRole="button" style={[styles.retakeButton, { borderColor: colors.border }]}>
               <Text style={{ color: colors.primary }}>Thử lại phân loại AI (giữ nguyên ảnh)</Text>
@@ -333,7 +355,7 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
                       draft.imageValidation.suggestedCategory,
                       "vi",
                     )
-                  : "Chờ cán bộ xác nhận"}
+                  : "Chờ phân loại"}
               </Text>
               <Text style={[styles.categoryChip, { color: severityColor }]}>
                 {draft.imageValidation.severity
@@ -547,6 +569,10 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 const styles = StyleSheet.create({
+  photoStrip: { gap: 8 },
+  photoThumb: { width: 78, borderRadius: 9, overflow: "hidden", borderWidth: 1, borderColor: "#334155" },
+  photoThumbImage: { width: "100%", height: 65 },
+  photoThumbLabel: { color: "#CBD5E1", fontSize: 9, padding: 3, textAlign: "center" },
   container: { flex: 1 },
   scroll: { flex: 1, minHeight: 0 },
   content: fieldStyles.content,

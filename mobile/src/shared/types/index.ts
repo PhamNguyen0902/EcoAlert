@@ -174,15 +174,25 @@ export interface CaptureMetadata {
   method: "LIVE_CAMERA";
   capturedAt: string;
   gpsAccuracyMeters: number;
+  gpsCapturedAt?: string;
   locationSource: "DEVICE_GPS";
 }
 
 /** Links the AI source image to the citizen-facing watermarked rendition. */
 export interface FieldEvidence {
+  photoId?: string;
+  isPrimary?: boolean;
   originalUrl: string;
+  originalOwnershipProof?: string;
   displayUrl?: string;
+  displayOwnershipProof?: string;
   capturedAt: string;
   gpsAccuracyMeters: number;
+  gpsCapturedAt?: string;
+  latitude?: number;
+  longitude?: number;
+  width?: number;
+  height?: number;
 }
 
 /** Per-image result returned by the asynchronous YOLO Vision pipeline. */
@@ -282,6 +292,7 @@ export interface RegisterData {
 }
 
 export interface CreateAlertData {
+  clientReportId?: string;
   title: string;
   description: string;
   location: GeoLocation;

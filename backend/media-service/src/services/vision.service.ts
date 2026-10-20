@@ -22,6 +22,7 @@ export interface VisionPredictionResponse {
   requiresManualReview: boolean;
   degraded?: boolean;
   model_errors?: Record<string, string>;
+  errorCode?: string;
 }
 
 export class VisionService {
@@ -44,18 +45,23 @@ export class VisionService {
         formData,
         {
           headers: formData.getHeaders(),
-          timeout: 10000, // Timeout sau 10s
+          timeout: 40000,
         }
       );
 
+      if (!response.data || !['ok', 'no_detection', 'error'].includes(response.data.status)
+        || !Array.isArray(response.data.detections) || typeof response.data.requiresManualReview !== 'boolean') {
+        return { status: 'error', detections: [], requiresManualReview: true, errorCode: 'INVALID_VISION_RESPONSE' };
+      }
       return response.data;
     } catch (error: any) {
-      logger.error('Failed to call vision-service:', error.message);
+      logger.error('Failed to call vision-service', { code: error.code, status: error.response?.status });
       // Trả về fallback để không chặn luồng upload nếu vision-service gặp sự cố
       return {
         status: 'error',
         detections: [],
         requiresManualReview: true,
+        errorCode: error.code === 'ECONNABORTED' ? 'VISION_TIMEOUT' : 'VISION_UNAVAILABLE',
       };
     }
   }

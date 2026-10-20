@@ -6,22 +6,22 @@ export const ReportProgress = ({
   step,
   status,
 }: {
-  step: 1 | 2 | 3 | 4;
+  step: 1 | 2 | 3;
   status?: string;
 }) => (
   <View
     style={styles.container}
     accessible
     accessibilityRole="progressbar"
-    accessibilityLabel={`Tiến trình báo cáo, bước ${step} trên 4`}
-    accessibilityValue={{ min: 1, max: 4, now: step }}
+    accessibilityLabel={`Tiến trình báo cáo, bước ${step} trên 3: ${["Chụp ảnh", "Kiểm tra", "Gửi báo cáo"][step - 1]}`}
+    accessibilityValue={{ min: 1, max: 3, now: step }}
   >
     <View style={styles.heading}>
       <Text style={styles.label}>{status || "TIẾN TRÌNH BÁO CÁO"}</Text>
-      <Text style={styles.step}>BƯỚC 0{step} / 04</Text>
+      <Text style={styles.step}>{step}/3 — {["Chụp ảnh", "Kiểm tra", "Gửi báo cáo"][step - 1]}</Text>
     </View>
     <View style={styles.track}>
-      {[1, 2, 3, 4].map((value) => (
+      {[1, 2, 3].map((value) => (
         <View
           key={value}
           style={[

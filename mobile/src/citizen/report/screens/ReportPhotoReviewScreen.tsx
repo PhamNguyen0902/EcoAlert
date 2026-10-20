@@ -33,6 +33,8 @@ import {
   persistWatermarkedDisplayImage,
 } from "../../../shared/utils/watermark";
 import { useFieldReport } from "../FieldReportContext";
+import { MAX_FIELD_REPORT_PHOTOS } from "../types";
+import { normalizePhotoDraft, removePhoto, selectPrimaryPhoto, updatePhoto } from "../photoDraft";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
@@ -47,7 +49,8 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const { colors } = useReportTheme();
   const { draft, setDraft } = useFieldReport();
   const capture = draft.capture;
-  const location = draft.location;
+  const location = capture?.location || draft.location;
+  const photos = normalizePhotoDraft(draft).photos;
   const viewShotRef = useRef<ViewShotRef>(null);
   const generatedForRef = useRef<string | null>(
     capture?.displayLocalUri ? capture.originalLocalUri : null,
@@ -80,6 +83,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const renderDisplayImage = useCallback(async () => {
     if (
       !capture ||
+      capture.displayLocalUri ||
       !viewShotRef.current ||
       rendering ||
       generatedForRef.current === capture.originalLocalUri
@@ -98,11 +102,8 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
         temporaryUri,
         capture.capturedAt,
       );
-      setDraft((current) =>
-        current.capture?.originalLocalUri === capture.originalLocalUri
-          ? { ...current, capture: { ...current.capture, displayLocalUri } }
-          : current,
-      );
+      setDraft((current) => current.capture?.id === capture.id
+        ? updatePhoto(current, capture.id!, { displayLocalUri }) : current);
     } catch {
       generatedForRef.current = null;
       setWatermarkError(
@@ -114,11 +115,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   }, [capture, rendering, setDraft]);
   // xóa ảnh hiện tại trong bản nháp và quay lại camera để chụp lại
   const retake = () => {
-    setDraft((current) => ({
-      ...current,
-      capture: undefined,
-      imageValidation: { state: "IDLE", detectedObjects: [] },
-    }));
+    setDraft((current) => capture?.id ? removePhoto(current, capture.id) : current);
     navigation.navigate("ReportCamera");
   };
 
@@ -204,6 +201,25 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           title="Xem lại ảnh vừa chụp"
           description="Xem lại chất lượng hình ảnh hiện trường trước khi chuyển sang giai đoạn phân tích AI."
         />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
+          {photos.map((photo, index) => (
+            <TouchableOpacity key={photo.id} onPress={() => setDraft((current) => selectPrimaryPhoto(current, photo.id!))}
+              style={[styles.photoThumb, photo.id === capture.id && styles.photoThumbSelected]}
+              accessibilityRole="button" accessibilityLabel={`Ảnh ${index + 1}${photo.id === capture.id ? ", ảnh chính" : ", chọn làm ảnh chính"}`}>
+              <Image source={{ uri: photo.displayLocalUri || photo.originalLocalUri }} style={styles.thumbImage} />
+              <Text style={styles.thumbLabel}>{photo.id === capture.id ? "ẢNH CHÍNH" : `ẢNH ${index + 1}`}</Text>
+              <Text style={styles.thumbLabel}>{photo.visionState === "OK" ? "AI ✓" : photo.visionState === "FAILED" ? "AI lỗi" : "AI chờ"}</Text>
+            </TouchableOpacity>
+          ))}
+          {photos.length < MAX_FIELD_REPORT_PHOTOS ? (
+            <TouchableOpacity onPress={() => navigation.navigate("ReportCamera")} style={styles.addPhoto} accessibilityRole="button" accessibilityLabel="Chụp thêm ảnh">
+              <Camera size={20} color="#22C55E" /><Text style={styles.thumbLabel}>CHỤP THÊM</Text>
+            </TouchableOpacity>
+          ) : null}
+        </ScrollView>
+        <TouchableOpacity onPress={() => { setDraft((current) => removePhoto(current, capture.id!)); }} accessibilityRole="button" style={styles.deletePhoto}>
+          <Text style={styles.deleteText}>Xóa ảnh đang chọn</Text>
+        </TouchableOpacity>
         <EvidenceImageFrame
           imageUri={capture.displayLocalUri || capture.originalLocalUri}
           fallbackUri={capture.originalLocalUri}
@@ -370,6 +386,14 @@ const IntegrityRow = ({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: fieldStyles.content,
+  photoStrip: { gap: 8, paddingVertical: 4 },
+  photoThumb: { width: 88, borderWidth: 1, borderColor: "#334155", borderRadius: 10, overflow: "hidden", backgroundColor: "#101D31" },
+  photoThumbSelected: { borderColor: "#22C55E" },
+  thumbImage: { width: "100%", height: 70 },
+  thumbLabel: { color: "#CBD5E1", fontSize: 9, textAlign: "center", paddingVertical: 3 },
+  addPhoto: { width: 88, minHeight: 96, borderWidth: 1, borderColor: "#334155", borderRadius: 10, alignItems: "center", justifyContent: "center", gap: 4 },
+  deletePhoto: { alignSelf: "flex-end", minHeight: 40, justifyContent: "center" },
+  deleteText: { color: "#F87171", fontSize: 12, fontWeight: "700" },
   evidenceFrame: {
     width: "100%",
     maxWidth: 480,

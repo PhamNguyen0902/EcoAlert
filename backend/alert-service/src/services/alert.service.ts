@@ -31,6 +31,7 @@ import {
   IAiAnalysisCompletedData,
   NotFoundError,
   resolveOverallAiConfidence,
+  verifyMediaOwnership,
   Severity,
 } from "@ecoalert/shared";
 import { rabbitMQService } from "./rabbitmq.service";
@@ -147,6 +148,15 @@ export class AlertService {
   // citizen tạo báo cáo sự cố
   async createAlert(actor: WorkflowActor, data: CreateAlertDto) {
     this.checkRole(actor, ["CITIZEN"]);
+    if (data.clientReportId) {
+      const existing = await alertRepository.findOne({ citizenId: actor.id, clientReportId: data.clientReportId });
+      if (existing) return existing;
+      for (const evidence of data.fieldEvidence || []) {
+        if (!verifyMediaOwnership(actor.id, evidence.originalUrl, evidence.originalOwnershipProof || '') ||
+            (evidence.displayUrl && !verifyMediaOwnership(actor.id, evidence.displayUrl, evidence.displayOwnershipProof || '')))
+          throw new ForbiddenError('Ảnh minh chứng không thuộc về tài khoản hiện tại');
+      }
+    }
     const createdAt = new Date();
     const {
       classification: citizenClassification,
@@ -184,15 +194,29 @@ export class AlertService {
       : undefined;
     const storedCaptureMetadata = captureMetadata
       ? {
-          ...captureMetadata,
+          method: captureMetadata.method,
+          gpsAccuracyMeters: captureMetadata.gpsAccuracyMeters,
+          locationSource: captureMetadata.locationSource,
           capturedAt: new Date(captureMetadata.capturedAt),
+          ...(captureMetadata.gpsCapturedAt ? { gpsCapturedAt: new Date(captureMetadata.gpsCapturedAt) } : {}),
         }
       : undefined;
     const storedFieldEvidence = fieldEvidence?.map((item) => ({
-      ...item,
+      photoId: item.photoId,
+      isPrimary: item.isPrimary,
+      originalUrl: item.originalUrl,
+      displayUrl: item.displayUrl,
+      gpsAccuracyMeters: item.gpsAccuracyMeters,
+      latitude: item.latitude,
+      longitude: item.longitude,
+      width: item.width,
+      height: item.height,
       capturedAt: new Date(item.capturedAt),
+      ...(item.gpsCapturedAt ? { gpsCapturedAt: new Date(item.gpsCapturedAt) } : {}),
     }));
-    const alert = await alertRepository.create({
+    let alert;
+    try {
+      alert = await alertRepository.create({
       ...alertData,
       category,
       categories,
@@ -219,7 +243,14 @@ export class AlertService {
           { status: AlertStatus.PENDING },
         ),
       ],
-    });
+      });
+    } catch (error) {
+      if (data.clientReportId && (error as { code?: number }).code === 11000) {
+        const existing = await alertRepository.findOne({ citizenId: actor.id, clientReportId: data.clientReportId });
+        if (existing) return existing;
+      }
+      throw error;
+    }
 
     // worker ai nhận dữ liệu minh chứng đã lưu và thực hiện phân tích sự cố
     await rabbitMQService.publishEvent(EVENTS.ALERT_CREATED, alert);

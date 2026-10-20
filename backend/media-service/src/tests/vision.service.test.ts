@@ -18,3 +18,16 @@ test('media forwards merged legacy detections, sources and degradation unchanged
     assert.deepEqual(value, prediction);
   } finally { axios.post = original; }
 });
+
+test('malformed Vision response and timeout remain errors, not no_detection', async () => {
+  const original = axios.post;
+  const file = { buffer: Buffer.from('image'), originalname: 'test.jpg', mimetype: 'image/jpeg' } as Express.Multer.File;
+  try {
+    axios.post = (async () => ({ data: { detections: [] } })) as typeof axios.post;
+    assert.equal((await new VisionService().predict(file))?.errorCode, 'INVALID_VISION_RESPONSE');
+    axios.post = (async () => { throw Object.assign(new Error('timeout'), { code: 'ECONNABORTED' }); }) as typeof axios.post;
+    const result = await new VisionService().predict(file);
+    assert.equal(result?.status, 'error');
+    assert.equal(result?.errorCode, 'VISION_TIMEOUT');
+  } finally { axios.post = original; }
+});
