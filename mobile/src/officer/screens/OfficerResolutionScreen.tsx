@@ -358,6 +358,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
       >
         {cameraOpen && allowed ? (
           <OfficerResolutionCamera
+          referenceImageUri={beforeUri}
             onClose={() => setCameraOpen(false)}
             onCapture={(capture) => {
               setPhoto(capture);

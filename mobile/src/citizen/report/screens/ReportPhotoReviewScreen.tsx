@@ -335,7 +335,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             ]}
             accessibilityRole="button"
           >
-            <Text style={styles.primaryButtonText}>DÙNG ẢNH NÀY</Text>
+            <Text style={styles.primaryButtonText}>TIẾP TỤC</Text>
             <Text style={styles.arrow}>→</Text>
           </TouchableOpacity>
         </View>

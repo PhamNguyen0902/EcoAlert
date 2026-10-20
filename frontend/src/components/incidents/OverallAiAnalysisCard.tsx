@@ -46,7 +46,7 @@ export function OverallAiAnalysisCard({ alert }: { alert: Alert }) {
           likely: "Có khả năng là sự cố",
           insufficient: "Chưa đủ bằng chứng",
           score: "Chỉ số tin cậy của phân tích",
-          assessment: "Nhận định thuật toán",
+          assessment: "Đánh giá tự động",
           reason: "Cơ sở nhận định",
           disclaimer:
             "Kết quả AI chỉ mang tính hỗ trợ. Danh mục, mức độ và kết luận cuối cùng cần được cán bộ hoặc người có thẩm quyền xác nhận trước khi sử dụng để xử lý báo cáo.",
