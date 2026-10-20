@@ -1,8 +1,14 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { AppError, createLogger, HTTP_STATUS } from '@ecoalert/shared';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 const logger = createLogger('media-service');
+export const buildMediaObjectKey = (folder: string, extension: string, ownerId?: string, idempotencyKey?: string) => {
+  const stableName = ownerId && idempotencyKey
+    ? createHash('sha256').update(JSON.stringify([ownerId, idempotencyKey])).digest('hex')
+    : randomUUID();
+  return `${folder}/${stableName}.${extension}`;
+};
 // Dịch vụ S3 để quản lý việc tải lên hình ảnh sự cố môi trường lên Amazon S3.
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'ap-southeast-1',
@@ -14,7 +20,7 @@ const s3Client = new S3Client({
 
 export class S3Service {
   // tải tập tin hình ảnh lên kho lưu trữ và trả về liên kết công khai
-  async uploadImage(file: Express.Multer.File, folder = 'ecoalert/alerts') {
+  async uploadImage(file: Express.Multer.File, folder = 'ecoalert/alerts', ownerId?: string, idempotencyKey?: string) {
     const requiredSettings = [
       'AWS_REGION',
       'AWS_ACCESS_KEY_ID',
@@ -32,7 +38,7 @@ export class S3Service {
 
     try {
       const fileExtension = file.originalname.split('.').pop() || 'jpg';
-      const key = `${folder}/${randomUUID()}.${fileExtension}`;
+      const key = buildMediaObjectKey(folder, fileExtension, ownerId, idempotencyKey);
 
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,

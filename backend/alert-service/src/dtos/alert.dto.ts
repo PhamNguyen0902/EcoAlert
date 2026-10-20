@@ -24,14 +24,24 @@ const captureMetadataSchema = z.object({
   method: z.literal("LIVE_CAMERA"),
   capturedAt: z.string().datetime(),
   gpsAccuracyMeters: z.number().finite().nonnegative().max(10_000),
+  gpsCapturedAt: z.string().datetime().optional(),
   locationSource: z.literal("DEVICE_GPS"),
 });
 
 const fieldEvidenceSchema = z.object({
+  photoId: z.string().trim().min(1).max(100).optional(),
+  isPrimary: z.boolean().optional(),
   originalUrl: z.string().url(),
+  originalOwnershipProof: z.string().optional(),
   displayUrl: z.string().url().optional(),
+  displayOwnershipProof: z.string().optional(),
   capturedAt: z.string().datetime(),
   gpsAccuracyMeters: z.number().finite().nonnegative().max(10_000),
+  gpsCapturedAt: z.string().datetime().optional(),
+  latitude: z.number().finite().min(-90).max(90).optional(),
+  longitude: z.number().finite().min(-180).max(180).optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
 });
 
 //backend kiểm tra  payload ở đây
@@ -42,6 +52,7 @@ export const createAlertSchema = z.object({
   categories: z.array(categorySchema).max(12).optional(),
   severity: z.nativeEnum(Severity).or(z.string()).optional(),
   mediaUrls: z.array(z.string().url()).min(1).max(6),
+  clientReportId: z.string().trim().min(8).max(100).optional(),
   // This records client context only; it is not proof that the evidence is valid.
   captureMetadata: captureMetadataSchema.optional(),
   fieldEvidence: z.array(fieldEvidenceSchema).max(6).optional(),
@@ -56,6 +67,43 @@ export const createAlertSchema = z.object({
   imageValidation: imageValidationSchema.optional(),
   classification: citizenClassificationSchema,
 }).superRefine((value, context) => {
+  if (value.clientReportId && (value.fieldEvidence?.length || 0) > 5) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence'], message: 'Field report supports at most five images' });
+  }
+  if (value.clientReportId && (!value.fieldEvidence || value.fieldEvidence.length !== value.mediaUrls.length || value.fieldEvidence.filter(item => item.isPrimary).length !== 1)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence'], message: 'Field report requires one signed evidence record per image and exactly one primary image' });
+  }
+  if (value.clientReportId && value.fieldEvidence?.length && new Set(value.mediaUrls).size !== value.mediaUrls.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['mediaUrls'], message: 'Duplicate evidence image URL' });
+  }
+  if (value.clientReportId && value.fieldEvidence?.length &&
+      new Set(value.fieldEvidence.map(item => item.originalUrl)).size !== value.fieldEvidence.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence'], message: 'Each field image must reference a distinct original URL' });
+  }
+  const photoIds = value.fieldEvidence?.map(item => item.photoId).filter(Boolean) || [];
+  if (new Set(photoIds).size !== photoIds.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence'], message: 'Duplicate photo ID' });
+  }
+  if (value.clientReportId && value.fieldEvidence?.length && value.fieldEvidence.length !== value.mediaUrls.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence'], message: 'Every original media URL needs its own field evidence' });
+  }
+  if ((value.fieldEvidence?.filter(item => item.isPrimary).length || 0) > 1) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence'], message: 'Only one image can be primary' });
+  }
+  const primary = value.fieldEvidence?.find(item => item.isPrimary);
+  if (value.clientReportId) value.fieldEvidence?.forEach((item, index) => {
+    if (!item.photoId) context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence', index, 'photoId'], message: 'Each field image needs a stable photo ID' });
+    if (item.latitude === undefined || item.longitude === undefined || !item.gpsCapturedAt) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence', index], message: 'Each field image needs its own GPS coordinates and fix time' });
+    }
+    if (item.gpsAccuracyMeters > 50) context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence', index, 'gpsAccuracyMeters'], message: 'Field GPS accuracy exceeds 50m' });
+    if (item.gpsCapturedAt && Math.abs(Date.parse(item.capturedAt) - Date.parse(item.gpsCapturedAt)) > 5 * 60_000)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence', index, 'gpsCapturedAt'], message: 'Field GPS fix is stale' });
+  });
+  if (primary && ((primary.latitude !== undefined && primary.latitude !== value.location.coordinates[1]) ||
+      (primary.longitude !== undefined && primary.longitude !== value.location.coordinates[0]))) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['fieldEvidence'], message: 'Primary image GPS must match report location' });
+  }
   value.fieldEvidence?.forEach((evidence, index) => {
     if (!value.mediaUrls.includes(evidence.originalUrl)) {
       context.addIssue({

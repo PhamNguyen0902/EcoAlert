@@ -262,11 +262,11 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
             setOverlayHeight(event.nativeEvent.layout.height)
           }
         >
-          <CitizenSearch
+          {/* <CitizenSearch
             value={search}
             onChangeText={setSearch}
             placeholder="Tìm trong các báo cáo đã tải…"
-          />
+          /> */}
           <View
             style={[
               styles.heading,

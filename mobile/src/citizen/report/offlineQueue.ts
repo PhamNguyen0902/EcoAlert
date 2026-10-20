@@ -1,8 +1,15 @@
 import * as SecureStore from "expo-secure-store";
+import * as FileSystem from "expo-file-system/legacy";
 import type { AlertCategory, CaptureMetadata, ImageValidation, CreateAlertData } from "../../shared/types";
+import type { FieldReportCaptureDraft } from "./types";
+import { storage } from "../../shared/utils/storage";
 
 export interface OfflineReportDraft {
   id: string;
+  clientReportId?: string;
+  ownerId?: string;
+  photos?: FieldReportCaptureDraft[];
+  primaryPhotoId?: string;
   title: string;
   description: string;
   address?: string;
@@ -24,12 +31,19 @@ export interface OfflineReportDraft {
 }
 
 const OFFLINE_QUEUE_KEY = "ecoalert_offline_incident_drafts_v1";
+const queueFile = FileSystem.documentDirectory ? `${FileSystem.documentDirectory}field-offline-queue.json` : null;
+const writeQueue = async (drafts: OfflineReportDraft[]) => {
+  if (!queueFile) throw new Error("Persistent queue storage is unavailable");
+  await FileSystem.writeAsStringAsync(queueFile, JSON.stringify(drafts));
+};
 
 export const offlineQueue = {
   // lấy toàn bộ danh sách bản nháp báo cáo ngoại tuyến từ bộ nhớ bảo mật
   getOfflineDrafts: async (): Promise<OfflineReportDraft[]> => {
     try {
-      const data = await SecureStore.getItemAsync(OFFLINE_QUEUE_KEY);
+      const data = queueFile && await FileSystem.getInfoAsync(queueFile).then(info => info.exists)
+        ? await FileSystem.readAsStringAsync(queueFile)
+        : await SecureStore.getItemAsync(OFFLINE_QUEUE_KEY);
       if (!data) return [];
       return JSON.parse(data) as OfflineReportDraft[];
     } catch (e) {
@@ -43,27 +57,39 @@ export const offlineQueue = {
     draftInput: Omit<OfflineReportDraft, "id" | "createdAt">,
   ): Promise<OfflineReportDraft> => {
     const existing = await offlineQueue.getOfflineDrafts();
+    const ownerId = draftInput.ownerId || (await storage.getUser())?._id;
+    if (draftInput.clientReportId && !ownerId) throw new Error("Cannot queue a field report without an authenticated owner");
+    const prior = existing.find(item => draftInput.clientReportId && item.clientReportId === draftInput.clientReportId && item.ownerId === ownerId);
+    if (prior) return prior;
     const newDraft: OfflineReportDraft = {
       ...draftInput,
+      ownerId,
       id: `draft_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       createdAt: new Date().toISOString(),
     };
     const updated = [newDraft, ...existing];
-    await SecureStore.setItemAsync(OFFLINE_QUEUE_KEY, JSON.stringify(updated));
+    await writeQueue(updated);
     console.log("[OfflineQueue] Saved offline draft:", newDraft.id);
     return newDraft;
+  },
+
+  updateOfflineDraft: async (id: string, patch: Partial<OfflineReportDraft>): Promise<void> => {
+    const existing = await offlineQueue.getOfflineDrafts();
+    await writeQueue(existing.map(item =>
+      item.id === id ? { ...item, ...patch } : item));
   },
 
  // xóa một bản nháp cụ thể khỏi hàng đợi sau khi đã tải lên thành công
   removeOfflineDraft: async (id: string): Promise<void> => {
     const existing = await offlineQueue.getOfflineDrafts();
     const updated = existing.filter((item) => item.id !== id);
-    await SecureStore.setItemAsync(OFFLINE_QUEUE_KEY, JSON.stringify(updated));
+    await writeQueue(updated);
     console.log("[OfflineQueue] Removed draft:", id);
   },
 
   // xóa sạch toàn bộ bản nháp trong hàng đợi ngoại tuyến
   clearOfflineDrafts: async (): Promise<void> => {
+    await writeQueue([]);
     await SecureStore.deleteItemAsync(OFFLINE_QUEUE_KEY);
     console.log("[OfflineQueue] Cleared offline queue.");
   },

@@ -70,3 +70,34 @@ test('accepts optional citizen taxonomy correction without replacing AI provenan
   assert.throws(() => createAlertSchema.parse({ ...reportPayload, category: 'UNCLASSIFIED' }));
   assert.equal(createAlertSchema.parse(reportPayload).category, undefined);
 });
+
+test('accepts five separately geotagged field images and keeps primary location', () => {
+  const evidence = Array.from({ length: 5 }, (_, index) => ({
+    photoId: `photo-${index}`, isPrimary: index === 2,
+    originalUrl: `https://media.example.com/${index}.jpg`,
+    capturedAt: `2026-10-01T08:3${index}:00.000Z`, gpsAccuracyMeters: 10 + index,
+    gpsCapturedAt: `2026-10-01T08:3${index}:00.000Z`,
+    latitude: index === 2 ? 10.7769 : 10.7769 + index * 0.0001,
+    longitude: index === 2 ? 106.7009 : 106.7009 + index * 0.0001,
+    width: 1200, height: 1600,
+  }));
+  const parsed = createAlertSchema.parse({ ...reportPayload, clientReportId: 'field_123456789',
+    mediaUrls: evidence.map(item => item.originalUrl), fieldEvidence: evidence });
+  assert.equal(parsed.fieldEvidence?.length, 5);
+  assert.equal(parsed.fieldEvidence?.[2].isPrimary, true);
+  assert.equal(parsed.fieldEvidence?.[4].gpsAccuracyMeters, 14);
+  assert.throws(() => createAlertSchema.parse({ ...parsed,
+    fieldEvidence: evidence.map((item, index) => index === 1 ? { ...item, originalUrl: evidence[0].originalUrl } : item),
+  }));
+  assert.throws(() => createAlertSchema.parse({ ...parsed, fieldEvidence: [...evidence, { ...evidence[0], photoId: 'photo-5', originalUrl: 'https://media.example.com/5.jpg' }], mediaUrls: [...parsed.mediaUrls, 'https://media.example.com/5.jpg'] }));
+  assert.throws(() => createAlertSchema.parse({ ...parsed, fieldEvidence: evidence.map(item => item.isPrimary ? { ...item, latitude: 10 } : item) }));
+});
+
+test('legacy reports remain valid without per-image field metadata', () => {
+  const legacy = createAlertSchema.parse({ ...reportPayload, mediaUrls: [
+    'https://media.example.com/original.jpg', 'https://media.example.com/second.jpg',
+  ], fieldEvidence: [{ originalUrl: 'https://media.example.com/original.jpg',
+    capturedAt: '2026-10-01T08:30:00.000Z', gpsAccuracyMeters: 15 }] });
+  assert.equal(legacy.fieldEvidence?.length, 1);
+  assert.equal(legacy.clientReportId, undefined);
+});

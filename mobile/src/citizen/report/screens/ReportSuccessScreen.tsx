@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useState } from "react";
+import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   Check,
   ChevronRight,
@@ -55,15 +56,19 @@ export const ReportSuccessScreen: React.FC<Props> = ({ navigation, route }) => {
   );
   const rootNavigation =
     navigation.getParent<NativeStackNavigationProp<CitizenStackParamList>>();
-  const goHome = () => {
-    resetDraft();
+  const goHome = useCallback(() => {
     rootNavigation?.navigate("CitizenTabs", { screen: "DashboardTab" });
-  };
-  // xóa dữ liệu nháp và mở màn hình xem chi tiết báo cáo vừa gửi
+    void resetDraft().catch(error => { if (__DEV__) console.error("[FieldReport] reset after success failed", error); });
+  }, [rootNavigation, resetDraft]);
+  useFocusEffect(useCallback(() => {
+    const listener = BackHandler.addEventListener("hardwareBackPress", () => { goHome(); return true; });
+    return () => listener.remove();
+  }, [goHome]));
+  // dọn sạch bản nháp và điều hướng đến màn hình chi tiết sự cố vừa tạo
   const viewProgress = () => {
-    resetDraft();
     if (alertId) rootNavigation?.navigate("AlertDetail", { id: alertId });
     else rootNavigation?.navigate("CitizenTabs", { screen: "MyReportsTab" });
+    void resetDraft().catch(error => { if (__DEV__) console.error("[FieldReport] reset after success failed", error); });
   };
   const copyReference = async () => {
     if (!alertId) return;

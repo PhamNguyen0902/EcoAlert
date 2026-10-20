@@ -7,15 +7,22 @@ import { ReportImageValidationScreen } from "./screens/ReportImageValidationScre
 import { ReportConfirmScreen } from "./screens/ReportConfirmScreen";
 import { ReportSuccessScreen } from "./screens/ReportSuccessScreen";
 import type { ReportFlowParamList } from "../../app/navigation/types";
-import { FieldReportProvider } from "./FieldReportContext";
+import { FieldReportProvider, useFieldReport } from "./FieldReportContext";
 
 const Stack = createNativeStackNavigator<ReportFlowParamList>();
 
 // luồng điều hướng báo cáo toàn màn hình dành cho người dân
 export const ReportFlowNavigator = () => (
   <FieldReportProvider>
+    <ReportFlowScreens />
+  </FieldReportProvider>
+);
+const ReportFlowScreens = () => {
+  const { draft } = useFieldReport();
+  return (
     <Stack.Navigator
-      initialRouteName="ReportLocation"
+      key={draft.id}
+      initialRouteName={draft.photos.length ? "ReportPhotoReview" : "ReportCamera"}
       screenOptions={{
         headerShown: false,
         animation: "fade",
@@ -39,5 +46,5 @@ export const ReportFlowNavigator = () => (
         options={{ gestureEnabled: false }}
       />
     </Stack.Navigator>
-  </FieldReportProvider>
-);
+  );
+};

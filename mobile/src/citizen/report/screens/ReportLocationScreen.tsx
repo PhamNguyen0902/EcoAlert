@@ -36,7 +36,6 @@ import {
 } from "../../../shared/hooks/useForegroundScreen";
 import { useFieldReport } from "../FieldReportContext";
 import { ReportHeader } from "../components/ReportHeader";
-import { ReportProgress } from "../components/ReportProgress";
 import { FieldMapPreview } from "../components/stitch/FieldMapPreview";
 import { FieldNotice } from "../components/stitch/FieldUI";
 import { fieldStyles } from "../components/stitch/fieldDesign";
@@ -161,8 +160,7 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* bước 1 */}
-        <ReportProgress step={1} />
+        <Text style={{ color: colors.primary, fontSize: 11, fontWeight: "700" }}>HỖ TRỢ GPS · CHỤP ẢNH</Text>
         <ReportScreenIntro
           eyebrow="⌖ TỌA ĐỘ THỜI GIAN THỰC"
           title="Bạn đang ở đâu?"

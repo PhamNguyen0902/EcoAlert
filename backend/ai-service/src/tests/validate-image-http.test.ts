@@ -24,6 +24,13 @@ test('validate-image HTTP contract keeps category/mass and explicitly returns 50
     const failed = await request();
     assert.equal(failed.status, 503);
     assert.equal((await failed.json() as any).success, false);
+    provider.analyzeIncidentWithOpenRouter = async () => { throw Object.assign(new Error('sensitive provider message must not leak'), { status: 402 }); };
+    const billing = await request();
+    const billingBody = await billing.json() as any;
+    assert.equal(billing.status, 503);
+    assert.equal(billingBody.code, 'AI_PROVIDER_BILLING_REQUIRED');
+    assert.equal(billingBody.providerStatus, 402);
+    assert.doesNotMatch(JSON.stringify(billingBody), /sensitive provider/);
   } finally {
     provider.analyzeIncidentWithOpenRouter = original;
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));

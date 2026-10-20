@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import * as Location from "expo-location";
 import { GeoLocation } from "../types";
 import {
@@ -7,6 +7,22 @@ import {
 } from "../services/reverseGeocoder";
 
 export type LocationSource = "device" | "manual" | null;
+
+interface LocationFetchOptions {
+  timeoutMs?: number;
+  /** Camera capture needs the device fix immediately; address resolution can follow. */
+  deferAddress?: boolean;
+}
+
+async function withLocationTimeout<T>(operation: Promise<T>, timeoutMs?: number): Promise<T> {
+  if (!timeoutMs) return operation;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([operation, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("GPS_TIMEOUT")), timeoutMs);
+    })]);
+  } finally { if (timer) clearTimeout(timer); }
+}
 
 export interface LocationState {
   coords: GeoLocation | null;
@@ -23,6 +39,7 @@ export interface LocationState {
 export const useLocation = (
   reverseGeocoder: ReverseGeocoder = defaultReverseGeocoder,
 ) => {
+  const requestId = useRef(0);
   const [state, setState] = useState<LocationState>({
     coords: null,
     address: "",
@@ -35,10 +52,12 @@ export const useLocation = (
     addressResolved: false,
   });
 
-  const fetchLocation = useCallback(async () => {
+  const fetchLocation = useCallback(async (options: LocationFetchOptions = {}) => {
+    const currentRequest = ++requestId.current;
     setState((prev) => ({ ...prev, loading: true, error: null, errorCode: null }));
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await withLocationTimeout(Location.requestForegroundPermissionsAsync(), options.timeoutMs);
+      if (currentRequest !== requestId.current) return null;
       if (status !== "granted") {
         setState((prev) => ({
           ...prev,
@@ -50,9 +69,10 @@ export const useLocation = (
       }
 
       // Field reports favor the freshest and most accurate device fix available.
-      const location = await Location.getCurrentPositionAsync({
+      const location = await withLocationTimeout(Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Highest,
-      });
+      }), options.timeoutMs);
+      if (currentRequest !== requestId.current) return null;
 
       const coords: GeoLocation = {
         type: "Point",
@@ -67,6 +87,17 @@ export const useLocation = (
       // Reverse geocoding failures leave the already-available coordinates as the address.
       let addressStr = `${location.coords.latitude.toFixed(5)}, ${location.coords.longitude.toFixed(5)}`;
       let addressResolved = false;
+      const fix = { coords, address: addressStr, accuracyMeters, capturedAt, source: "device" as const, addressResolved };
+      if (options.deferAddress) {
+        setState({ ...fix, loading: false, error: null, errorCode: null });
+        void reverseGeocoder.reverseGeocode(location.coords.latitude, location.coords.longitude)
+          .then(address => {
+            if (address && currentRequest === requestId.current) {
+              setState(previous => ({ ...previous, address, addressResolved: true }));
+            }
+          }).catch(() => undefined);
+        return fix;
+      }
       try {
         const resolvedAddress = await reverseGeocoder.reverseGeocode(
           location.coords.latitude,
@@ -79,6 +110,8 @@ export const useLocation = (
       } catch {
         // Fallback to coordinates string.
       }
+
+      if (currentRequest !== requestId.current) return null;
 
       setState({
         coords,
@@ -101,6 +134,7 @@ export const useLocation = (
         addressResolved,
       };
     } catch (error: unknown) {
+      if (currentRequest !== requestId.current) return null;
       const message = error instanceof Error ? error.message : "Failed to retrieve location";
       setState((prev) => ({
         ...prev,
@@ -115,6 +149,7 @@ export const useLocation = (
   // Kept for screens that still support choosing a map coordinate. Field-capture
   // reporting can reject this source and require a fresh `device` location instead.
   const setManualLocation = useCallback((latitude: number, longitude: number, address?: string) => {
+    requestId.current += 1;
     const coords: GeoLocation = {
       type: "Point",
       coordinates: [longitude, latitude],

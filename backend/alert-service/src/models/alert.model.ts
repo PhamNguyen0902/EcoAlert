@@ -94,14 +94,22 @@ export interface ICaptureMetadata {
   method: 'LIVE_CAMERA';
   capturedAt: Date;
   gpsAccuracyMeters: number;
+  gpsCapturedAt?: Date;
   locationSource: 'DEVICE_GPS';
 }
 
 export interface IFieldEvidence {
+  photoId?: string;
+  isPrimary?: boolean;
   originalUrl: string;
   displayUrl?: string;
   capturedAt: Date;
   gpsAccuracyMeters: number;
+  gpsCapturedAt?: Date;
+  latitude?: number;
+  longitude?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface ITimelineEntry {
@@ -128,6 +136,7 @@ export interface IAlert extends BaseDocument {
   imageValidation?: IImageValidation;
   severity: Severity | null;
   mediaUrls: string[];
+  clientReportId?: string;
   // Device-provided capture context. Verification remains an officer/system concern.
   captureMetadata?: ICaptureMetadata;
   fieldEvidence?: IFieldEvidence[];
@@ -330,17 +339,26 @@ const alertSchema = new Schema<IAlert>({
     set: (value: unknown) => typeof value === 'string' ? value.toLowerCase() : value,
   },
   mediaUrls: [{ type: String }],
+  clientReportId: { type: String },
   captureMetadata: {
     method: { type: String, enum: ['LIVE_CAMERA'] },
     capturedAt: { type: Date },
     gpsAccuracyMeters: { type: Number, min: 0, max: 10000 },
+    gpsCapturedAt: { type: Date },
     locationSource: { type: String, enum: ['DEVICE_GPS'] },
   },
   fieldEvidence: [{
+    photoId: { type: String },
+    isPrimary: { type: Boolean },
     originalUrl: { type: String, required: true },
     displayUrl: { type: String },
     capturedAt: { type: Date, required: true },
     gpsAccuracyMeters: { type: Number, required: true, min: 0, max: 10000 },
+    gpsCapturedAt: { type: Date },
+    latitude: { type: Number, min: -90, max: 90 },
+    longitude: { type: Number, min: -180, max: 180 },
+    width: { type: Number, min: 1 },
+    height: { type: Number, min: 1 },
   }],
   visionEvidence: [{
     imageUrl: { type: String, required: true },
@@ -445,6 +463,7 @@ const alertSchema = new Schema<IAlert>({
 
 alertSchema.plugin(baseSchemaPlugin);
 alertSchema.index({ location: '2dsphere' });
+alertSchema.index({ citizenId: 1, clientReportId: 1 }, { unique: true, partialFilterExpression: { clientReportId: { $type: 'string' } } });
 alertSchema.index({ status: 1 });
 alertSchema.index({ assignedOfficerId: 1, status: 1, createdAt: -1 });
 alertSchema.index({ 'autoAssignmentJob.pending': 1, 'autoAssignmentJob.nextAttemptAt': 1 });

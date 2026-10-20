@@ -8,7 +8,11 @@ export const isReportCategory = (value: unknown): value is AlertCategory =>
 const probability = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;
 
 export function semanticErrorMessage(error: unknown): string {
-  const e = error as { code?: string; response?: { status?: number } };
+  const e = error as { code?: string; response?: { status?: number; data?: { code?: string; providerStatus?: number } } };
+  const providerStatus = e?.response?.data?.providerStatus;
+  if (providerStatus === 402) return "Dịch vụ đánh giá AI chưa khả dụng do hạn mức nhà cung cấp (402). YOLO vẫn được giữ lại.";
+  if (providerStatus === 401 || providerStatus === 403) return "Dịch vụ đánh giá AI chưa được nhà cung cấp cấp quyền.";
+  if (providerStatus === 429) return "Nhà cung cấp AI đang giới hạn lượt gọi. Vui lòng thử lại sau.";
   if (e?.code === "ECONNABORTED" || e?.code === "ETIMEDOUT") return "Phân loại AI hết thời gian chờ. Vui lòng thử lại.";
   if (e?.response?.status === 503) return "Dịch vụ phân loại AI tạm thời không khả dụng (503).";
   if (error instanceof Error && error.message === "INVALID_SEMANTIC_RESPONSE") return "Dữ liệu phân loại AI trả về không hợp lệ.";
@@ -57,5 +61,7 @@ export function massPresentation(analysis: FieldReportImageValidationDraft): { v
 export function reportClassification(analysis: FieldReportImageValidationDraft): Pick<CreateAlertData, "category" | "classification"> {
   const user = isReportCategory(analysis.userSelectedCategory) ? analysis.userSelectedCategory : undefined;
   const suggestion = isReportCategory(analysis.suggestedCategory) ? analysis.suggestedCategory : undefined;
-  return { category: user || suggestion, classification: user ? { selectedCategory: user, decision: user === suggestion ? "CONFIRM" : "CORRECT" } : undefined };
+  // An AI suggestion is provenance, not the citizen's decision. Without an
+  // explicit selection the existing backend creates UNCLASSIFIED for review.
+  return { category: user, classification: user ? { selectedCategory: user, decision: user === suggestion ? "CONFIRM" : "CORRECT" } : undefined };
 }

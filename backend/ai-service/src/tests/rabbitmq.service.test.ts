@@ -31,24 +31,26 @@ test('publishes the direct OpenRouter result before acknowledging the report eve
   assert.equal(published.alertId, 'alert-1');
 });
 
-test('routes flooding to semantic-only without calling waste detection', async () => {
+test('routes flooding to semantic-only while retaining independent photo detection', async () => {
   let detectionCalled = false;
   let published: any;
   const dependencies: AlertCreatedProcessorDependencies = {
     analyze: async () => ({ category: AlertCategory.FLOODING, severity: Severity.HIGH, confidence: 0.8, displayConfidenceSource: 'CATEGORY', summary: 'Ngập nước.', reasoningSummary: 'Nước ảnh hưởng giao thông.', analysisMode: 'IMAGE_AND_TEXT', provider: 'openrouter', model: 'openai/gpt-4o-mini', pipelineVersion: 'openrouter-multimodal-v1' }),
-    detectWaste: async () => { detectionCalled = true; throw new Error('must not run'); },
+    detectWaste: async (imageUrl) => { detectionCalled = true; return { imageUrl, status: 'no_detection', detections: [], requiresManualReview: false }; },
     publish: async (_routingKey, data) => { published = data; },
   };
   const result = await settleAlertCreatedMessage(message(), { ack: () => undefined, nack: () => assert.fail('must not nack') } as any, dependencies);
   assert.equal(result.acknowledged, true);
-  assert.equal(detectionCalled, false);
+  assert.equal(detectionCalled, true);
   assert.equal(published.analysisPipeline, 'SEMANTIC_ONLY');
+  assert.equal(published.visionEvidence?.[0]?.status, 'no_detection');
 });
 
 test('publishes FAILED instead of dropping a report when OpenRouter is unavailable', async () => {
   let published: any;
   const dependencies: AlertCreatedProcessorDependencies = {
     analyze: async () => { throw new Error('provider unavailable'); },
+    detectWaste: async (imageUrl) => ({ imageUrl, status: 'error', detections: [], requiresManualReview: true }),
     publish: async (_routingKey, data) => { published = data; },
   };
   const result = await settleAlertCreatedMessage(message(), { ack: () => undefined, nack: () => assert.fail('must not nack a provider outage') } as any, dependencies);
@@ -56,4 +58,24 @@ test('publishes FAILED instead of dropping a report when OpenRouter is unavailab
   assert.equal(published.analysisMode, 'FAILED');
   assert.equal(published.confidence, null);
   assert.match(published.failureReason, /OpenRouter/);
+});
+
+test('one failed photo does not discard another photo detection', async () => {
+  let published: any;
+  const event = JSON.parse(message().content.toString());
+  event.data.mediaUrls = ['https://example.com/one.jpg', 'https://example.com/two.jpg'];
+  const dependencies: AlertCreatedProcessorDependencies = {
+    analyze: async () => ({ category: AlertCategory.ILLEGAL_DUMPING, severity: Severity.HIGH, confidence: 0.8,
+      displayConfidenceSource: 'CATEGORY', summary: 'Điểm rác.', reasoningSummary: 'Có rác.', analysisMode: 'IMAGE_AND_TEXT',
+      provider: 'openrouter', model: 'test', pipelineVersion: 'openrouter-multimodal-v1' }),
+    detectWaste: async (url) => {
+      if (url.endsWith('one.jpg')) throw new Error('Vision timeout');
+      return { imageUrl: url, status: 'ok', detections: [], requiresManualReview: false };
+    },
+    publish: async (_key, data) => { published = data; },
+  };
+  const result = await settleAlertCreatedMessage({ content: Buffer.from(JSON.stringify(event)) } as any,
+    { ack: () => undefined, nack: () => assert.fail('one image must not nack report') } as any, dependencies);
+  assert.equal(result.acknowledged, true);
+  assert.deepEqual(published.visionEvidence.map((item: any) => item.status), ['error', 'ok']);
 });

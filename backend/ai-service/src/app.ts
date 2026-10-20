@@ -8,6 +8,11 @@ import {
 } from "./services/openrouter.service";
 
 const logger = createLogger("ai-service");
+const semanticFailure = (error: unknown) => {
+  const metadata = safeOpenRouterErrorMetadata(error);
+  return { success: false, code: metadata.status === 402 ? "AI_PROVIDER_BILLING_REQUIRED" : "AI_SEMANTIC_UNAVAILABLE",
+    providerStatus: metadata.status, message: "Chưa thể hoàn tất đánh giá tự động." };
+};
 
 const app = express();
 app.use(cors());
@@ -70,10 +75,7 @@ app.post("/analyze", async (req, res) => {
       "Direct AI analysis failed",
       safeOpenRouterErrorMetadata(error),
     );
-    res.status(503).json({
-      success: false,
-      message: "Dịch vụ phân tích AI tạm thời không khả dụng.",
-    });
+    res.status(503).json(semanticFailure(error));
   }
 });
 
@@ -94,10 +96,7 @@ app.post("/validate-image", async (req, res) => {
       "Vision semantic analysis failed",
       safeOpenRouterErrorMetadata(error),
     );
-    return res.status(503).json({
-      success: false,
-      message: "Không thể hoàn tất AI Vision semantic analysis.",
-    });
+    return res.status(503).json(semanticFailure(error));
   }
 });
 

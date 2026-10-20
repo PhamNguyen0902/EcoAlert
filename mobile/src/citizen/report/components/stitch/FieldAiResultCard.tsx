@@ -15,7 +15,8 @@ import { WasteDetectionChips } from "../WasteDetectionChips";
 import { fieldConfidence } from "./fieldPresentation";
 import { fieldColors as c, fieldStyles as s } from "./fieldDesign";
 import { FieldEntrance, useFieldReducedMotion } from "./FieldUI";
-import { massPresentation } from "../../semanticResult";
+import { isReportCategory, massPresentation } from "../../semanticResult";
+import { aiStageLabels } from "../../reviewPolicy";
 
 // chỉ hiển thị kết quả phân tích thật từ hệ thống, không dùng dữ liệu mẫu
 export function FieldAiResultCard({
@@ -25,13 +26,14 @@ export function FieldAiResultCard({
   analysis: FieldReportImageValidationDraft;
   compact?: boolean;
 }) {
-  const hasCategory = analysis.semanticState === "COMPLETE" && Boolean(analysis.suggestedCategory);
-  const confidence = fieldConfidence(hasCategory ? analysis.categoryConfidence : analysis.yoloConfidence);
+  const hasCategory = analysis.semanticState === "COMPLETE" && isReportCategory(analysis.suggestedCategory);
+  const confidence = fieldConfidence(hasCategory ? analysis.categoryConfidence : analysis.detectedObjects.length ? analysis.yoloConfidence : null);
+  const stages = aiStageLabels(analysis);
   const mass = massPresentation(analysis);
   const category =
-    analysis.suggestedCategory && analysis.suggestedCategory !== "UNCLASSIFIED"
+    hasCategory && analysis.suggestedCategory
       ? getCategoryLabel(analysis.suggestedCategory, "vi")
-      : "Chưa hoàn tất phân loại AI";
+      : "Chưa xác định được danh mục phù hợp";
   const manual = analysis.backendValidation?.decision === "UNCERTAIN";
   const severityColor =
     analysis.severity === "LOW"
@@ -46,12 +48,13 @@ export function FieldAiResultCard({
       <View style={s.row}>
         <Bot size={17} color={c.primary} />
         <Text style={[s.eyebrow, { color: c.text, flex: 1 }]}>
-          {compact ? "PHÂN TÍCH AI ĐỐI TƯỢNG" : "KẾT QUẢ NHẬN DIỆN TỔNG HỢP"}
+          Đánh giá tự động
         </Text>
       </View>
       <Text style={[s.eyebrow, { color: c.cyan }]}>
-        YOLO: PHÁT HIỆN VẬT THỂ · SEMANTIC: PHÂN LOẠI BỐI CẢNH
+        Nhận diện vật thể: {stages.vision}
       </Text>
+      <Text style={s.meta}>Phân loại AI: {stages.semantic}</Text>
       <View style={styles.classification}>
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={s.meta}>PHÂN LOẠI GỢI Ý</Text>
@@ -70,7 +73,7 @@ export function FieldAiResultCard({
             },
           ]}
         >
-          {hasCategory ? manual ? "GỢI Ý · CẦN XÁC NHẬN" : "ĐÃ CÓ GỢI Ý PHÂN LOẠI" : analysis.semanticState === "UNAVAILABLE" || analysis.semanticState === "TEXT_ONLY" ? "PHÂN TÍCH CHƯA KHẢ DỤNG" : "ĐÃ PHÁT HIỆN VẬT THỂ"}
+          {hasCategory ? manual ? "GỢI Ý · CẦN XÁC NHẬN" : "ĐÃ CÓ GỢI Ý PHÂN LOẠI" : analysis.state === "UNAVAILABLE" || analysis.semanticState === "UNAVAILABLE" || analysis.semanticState === "TEXT_ONLY" ? "PHÂN TÍCH CHƯA KHẢ DỤNG" : analysis.detectedObjects.length ? "ĐÃ PHÁT HIỆN VẬT THỂ" : "CHƯA NHẬN DIỆN ĐƯỢC VẬT THỂ"}
         </Text>
       </View>
       {analysis.detectedObjects.length ? (
@@ -122,10 +125,11 @@ export function FieldAiResultCard({
       </View>
       {!compact && analysis.summary ? (
         <View style={styles.context}>
-          <Text style={[s.eyebrow, { color: c.amber }]}>NHẬN ĐỊNH TỪ AI</Text>
+          <Text style={[s.eyebrow, { color: c.amber }]}>TÓM TẮT ĐÁNH GIÁ TỰ ĐỘNG</Text>
           <Text style={s.body}>{analysis.summary}</Text>
         </View>
       ) : null}
+      <Text style={s.meta}>Đây là đánh giá tự động để tham khảo, không phải kết luận cuối cùng của cán bộ.</Text>
       {!analysis.suggestedCategory ||
       analysis.suggestedCategory === "UNCLASSIFIED" ||
       !analysis.severity ? (

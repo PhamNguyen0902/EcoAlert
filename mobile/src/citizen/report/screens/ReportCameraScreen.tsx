@@ -2,7 +2,7 @@ import {
   civicSpace as space,
   civicRadius as radius,
 } from "../../../shared/theme/civicDesign";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
@@ -30,7 +30,10 @@ import { useReportTheme } from "../useReportTheme";
 import { persistOriginalFieldImage } from "../../../shared/utils/watermark";
 import { normalizeFieldCaptureImage } from "../../../shared/utils/fieldCaptureImage";
 import { useFieldReport } from "../FieldReportContext";
-import { MAX_FIELD_GPS_ACCURACY_METERS } from "../types";
+import { MAX_FIELD_GPS_ACCURACY_METERS, MAX_FIELD_REPORT_PHOTOS, type FieldReportCaptureDraft, type FieldReportLocationDraft } from "../types";
+import { addPhoto, normalizePhotoDraft } from "../photoDraft";
+import { captureFieldPhoto, captureGpsReady, FieldCaptureError, type CaptureErrorCode, type CaptureStage } from "../cameraCapture";
+import { useLocation } from "../../../shared/hooks/useLocation";
 import {
   useForegroundScreen,
   useScreenClock,
@@ -45,23 +48,39 @@ import { fieldLocationReady } from "../components/stitch/fieldPresentation";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportCamera">;
 const MAX_LOCATION_AGE_MS = 5 * 60_000;
-// hiển thị camera kèm thông tin tọa độ và ngày giờ trên màn hình chụp
+const captureStageLabels: Record<CaptureStage, string> = {
+  GPS: "Đang lấy GPS…", CAMERA: "Đang chụp ảnh…", NORMALIZE: "Đang xử lý ảnh…",
+  PERSIST: "Đang lưu ảnh…", DRAFT: "Đang lưu bản nháp…", NAVIGATION: "Đang mở ảnh vừa chụp…",
+};
+// Camera is step one; GPS runs as a supporting task.
 export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const previewWidth = Math.min(width - 32, 440);
   const { colors } = useReportTheme();
-  const { draft, setDraft } = useFieldReport();
+  const { draft, setDraft, saveDraftNow, openSavedDrafts, savedDraftCount } = useFieldReport();
+  const gps = useLocation();
+  const gpsRequested = useRef(false);
+  const gpsRequest = useRef<Promise<FieldReportLocationDraft | null> | null>(null);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
   const [permission, requestPermission] = useCameraPermissions();
+  const permissionRequest = useRef<Promise<void> | null>(null);
   const [flash, setFlash] = useState<FlashMode>("off");
   const [capturing, setCapturing] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const cameraReadyRef = useRef(false);
+  const [cameraSession, setCameraSession] = useState(0);
+  const cameraSessionRef = useRef(0);
+  const [captureStage, setCaptureStage] = useState<CaptureStage>("CAMERA");
+  const [captureErrorCode, setCaptureErrorCode] = useState<CaptureErrorCode | null>(null);
+  const [preparedPhoto, setPreparedPhoto] = useState<FieldReportCaptureDraft | null>(null);
   const [zoom, setZoom] = useState(0);
   const isActive = useForegroundScreen();
   // kiểm tra định kỳ xem vị trí gps còn mới hay đã quá hạn
   const now = useScreenClock(15000, isActive);
   const activeRef = useRef(isActive);
-  const activityEpoch = useRef(0);
+  const mountedRef = useRef(true);
   activeRef.current = isActive;
   const captureLock = useRef(false);
   const reducedMotion = useFieldReducedMotion();
@@ -76,27 +95,93 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       useNativeDriver: true,
     }).start();
   const location = draft.location;
+  const renderNow = Math.max(now, Date.now());
   const locationAge = location
-    ? now - Date.parse(location.capturedAt)
+    ? renderNow - Date.parse(location.capturedAt)
     : Number.POSITIVE_INFINITY;
-  const locationReady = fieldLocationReady(location, now);
+  const locationReady = fieldLocationReady(location, renderNow);
+  const gpsReadyForCapture = captureGpsReady(location, renderNow);
+  const refreshGps = useCallback((): Promise<FieldReportLocationDraft | null> => {
+    if (gpsRequest.current) return gpsRequest.current;
+    const request = (async () => {
+      const result = await gps.fetchLocation({ timeoutMs: 15_000, deferAddress: true });
+      if (!result?.coords || result.accuracyMeters === null || !mountedRef.current || !navigation.isFocused()) return null;
+      const updated: FieldReportLocationDraft = {
+        latitude: result.coords.coordinates[1], longitude: result.coords.coordinates[0],
+        accuracyMeters: result.accuracyMeters, address: result.address,
+        capturedAt: result.capturedAt, source: "DEVICE_GPS",
+      };
+      setDraft((current) => ({ ...current, location: updated }));
+      // Capture callbacks read the returned fix, never wait for a React render.
+      draftRef.current = { ...draftRef.current, location: updated };
+      return updated;
+    })().finally(() => { gpsRequest.current = null; });
+    gpsRequest.current = request;
+    return request;
+  }, [gps.fetchLocation, navigation, setDraft]);
   useEffect(() => {
-    activeRef.current = isActive;
+    if (!isActive) gpsRequested.current = false;
+    if (isActive && permission?.granted && !locationReady && !gpsRequested.current) {
+      gpsRequested.current = true;
+      void refreshGps();
+    }
+  }, [isActive, permission?.granted, locationReady, refreshGps]);
+  useEffect(() => {
+    if (!gps.addressResolved || !gps.capturedAt) return;
+    setDraft(current => {
+      const matches = (fix?: FieldReportLocationDraft) => fix?.capturedAt === gps.capturedAt && fix.address !== gps.address;
+      if (!matches(current.location) && !current.photos.some(photo => matches(photo.location))) return current;
+      const photos = current.photos.map(photo => matches(photo.location)
+        ? { ...photo, location: { ...photo.location!, address: gps.address } } : photo);
+      return { ...current, photos, capture: photos.find(photo => photo.id === current.primaryPhotoId),
+        location: matches(current.location) ? { ...current.location!, address: gps.address } : current.location };
+    });
+  }, [gps.addressResolved, gps.capturedAt, gps.address, setDraft]);
+  const restartCamera = useCallback(() => {
+    cameraReadyRef.current = false;
+    setCameraReady(false);
+    cameraSessionRef.current += 1;
+    setCameraSession(cameraSessionRef.current);
+  }, []);
+  useEffect(() => {
     if (!isActive) {
-      setCameraReady(false);
+      restartCamera();
       shutterScale.stopAnimation();
       shutterScale.setValue(1);
     }
     return () => {
-      activityEpoch.current += 1;
-      activeRef.current = false;
       shutterScale.stopAnimation();
     };
-  }, [isActive, shutterScale]);
+  }, [isActive, shutterScale, restartCamera]);
   useEffect(() => {
-    if (permission === null) void requestPermission();
-  }, [permission, requestPermission]);
-  // quay về màn hình lấy lại gps nếu để quá lâu chưa chụp ảnh
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+  const askCameraPermission = useCallback(() => {
+    if (permissionRequest.current) return permissionRequest.current;
+    const request = (async () => {
+      try { await requestPermission(); }
+      catch (error) {
+        if (__DEV__) console.error("[FieldCapture] camera permission failed", error);
+        setCaptureError("Không thể yêu cầu quyền Camera. Hãy thử lại hoặc mở Cài đặt.");
+      }
+    })().finally(() => { permissionRequest.current = null; });
+    permissionRequest.current = request;
+    return request;
+  }, [requestPermission]);
+  useEffect(() => {
+    if (permission === null && isActive) void askCameraPermission();
+  }, [permission, isActive, askCameraPermission]);
+  useEffect(() => {
+    if (!isActive || !permission?.granted || cameraReady) return;
+    const timer = setTimeout(() => {
+      setCaptureErrorCode("NOT_READY");
+      setCaptureError("Camera chưa khởi động xong. Nhấn khởi động lại Camera để thử lại.");
+      if (__DEV__) console.warn("[FieldCapture] camera readiness timeout");
+    }, 12_000);
+    return () => clearTimeout(timer);
+  }, [isActive, permission?.granted, cameraReady, cameraSession]);
+  // màn hình GPS riêng là phương án hỗ trợ khi camera không lấy được fix hợp lệ
   const returnToGps = () => {
     if (locationAge > MAX_LOCATION_AGE_MS)
       setDraft((current) => ({ ...current, location: undefined }));
@@ -104,29 +189,34 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   };
   // chụp ảnh từ camera, chỉnh lại kích thước và lưu ảnh vào máy
   const takePicture = async () => {
-    if (
-      !cameraRef.current ||
-      captureLock.current ||
-      capturing ||
-      !cameraReady ||
-      !locationReady ||
-      !activeRef.current ||
-      AppState.currentState !== "active"
-    )
-      return;
-    if (!fieldLocationReady(location, Date.now())) {
-      returnToGps();
-      return;
-    }
-    captureLock.current = true;
-    const epoch = activityEpoch.current;
-    setCapturing(true);
     setCaptureError(null);
+    setCaptureErrorCode(null);
     try {
-      const picture = await cameraRef.current.takePictureAsync({
-        quality: 0.9,
-        skipProcessing: false,
+      const result = await captureFieldPhoto({
+        lock: captureLock,
+        getSnapshot: () => ({
+          active: activeRef.current && AppState.currentState === "active",
+          focused: mountedRef.current && navigation.isFocused(), granted: permission?.granted === true,
+          ready: cameraReadyRef.current, camera: cameraRef.current,
+          location: draftRef.current.location, draft: draftRef.current,
+        }),
+        refreshLocation: refreshGps, normalizeImage: normalizeFieldCaptureImage,
+        persistImage: persistOriginalFieldImage,
+        savePhoto: async (photo, draftId) => saveDraftNow(current => {
+          if (current.id !== draftId) throw new FieldCaptureError("LEFT_FLOW", "Bản nháp đã thay đổi. Hãy mở lại camera.");
+          return normalizePhotoDraft(current).photos.some(item => item.id === photo.id) ? current : addPhoto(current, photo);
+        }),
+        navigateToReview: () => navigation.navigate("ReportPhotoReview"),
+        onBusy: setCapturing, onStage: setCaptureStage, onPreparedPhoto: setPreparedPhoto, preparedPhoto,
       });
+      if (result === "REVIEW") setPreparedPhoto(null);
+    } catch (error) {
+      const failure = error instanceof FieldCaptureError ? error : new FieldCaptureError("CAMERA", "Không thể chụp ảnh. Vui lòng thử lại.", error);
+      if (__DEV__) console.error(`[FieldCapture] ${failure.code}`, failure.originalError || failure);
+      if (mountedRef.current) {
+        if (failure.code === "CAMERA" || failure.code === "MISSING_URI") restartCamera();
+        setCaptureErrorCode(failure.code);
+        setCaptureError(failure.message);
       if (!picture?.uri) throw new Error("Camera did not return an image");
       const capturedAt = new Date().toISOString();
       const normalized = await normalizeFieldCaptureImage(picture.uri);
@@ -162,37 +252,8 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           "Không thể chụp ảnh. Vui lòng kiểm tra Camera và thử lại.",
         );
       }
-    } finally {
-      captureLock.current = false;
-      setCapturing(false);
     }
   };
-
-  if (!locationReady)
-    return (
-      <View
-        style={[
-          styles.permissionScreen,
-          { backgroundColor: colors.background, paddingTop: insets.top },
-        ]}
-      >
-        <ShieldAlert size={38} color={colors.accent} />
-        <Text style={[styles.permissionTitle, { color: colors.text }]}>
-          Cần làm mới vị trí GPS
-        </Text>
-        <Text style={[styles.permissionBody, { color: colors.textMuted }]}>
-          Vị trí phải chính xác trong ±{MAX_FIELD_GPS_ACCURACY_METERS}m và được
-          lấy trong vòng 5 phút trước khi chụp.
-        </Text>
-        <TouchableOpacity
-          onPress={returnToGps}
-          style={[styles.permissionButton, { backgroundColor: colors.primary }]}
-          accessibilityRole="button"
-        >
-          <Text style={styles.permissionButtonText}>QUAY LẠI LẤY GPS</Text>
-        </TouchableOpacity>
-      </View>
-    );
 
   if (!permission)
     return (
@@ -212,6 +273,12 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             Đang kiểm tra quyền truy cập…
           </Text>
         </View>
+        {captureError ? <>
+          <Text style={styles.captureError} accessibilityRole="alert">{captureError}</Text>
+          <TouchableOpacity onPress={() => void askCameraPermission()} style={[styles.permissionButton, { backgroundColor: colors.primary }]} accessibilityRole="button">
+            <Text style={styles.permissionButtonText}>THỬ LẠI</Text>
+          </TouchableOpacity>
+        </> : null}
       </View>
     );
   if (!permission.granted)
@@ -231,12 +298,13 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           được sử dụng trong luồng này.
         </Text>
         <TouchableOpacity
-          onPress={() => void requestPermission()}
+          onPress={() => void askCameraPermission()}
           style={[styles.permissionButton, { backgroundColor: colors.primary }]}
           accessibilityRole="button"
         >
           <Text style={styles.permissionButtonText}>THỬ LẠI</Text>
         </TouchableOpacity>
+        {captureError ? <Text style={styles.captureError} accessibilityRole="alert">{captureError}</Text> : null}
         {permission.canAskAgain === false ? (
           <TouchableOpacity
             onPress={() => void Linking.openSettings()}
@@ -283,10 +351,27 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
         </View>
+        <View style={styles.gpsRow}>
+          <Text style={styles.gpsText} accessibilityLiveRegion="polite">
+            {gps.loading ? "Đang lấy GPS…" : gpsReadyForCapture
+              ? `GPS sẵn sàng · ±${Math.round(location!.accuracyMeters)}m · ${normalizePhotoDraft(draft).photos.length}/${MAX_FIELD_REPORT_PHOTOS} ảnh`
+              : gps.errorCode === "PERMISSION_DENIED" ? "GPS bị từ chối quyền · bật quyền vị trí trong Cài đặt"
+              : location && location.accuracyMeters > MAX_FIELD_GPS_ACCURACY_METERS ? `GPS ±${Math.round(location.accuracyMeters)}m · cần chính xác hơn`
+              : gps.errorCode === "UNAVAILABLE" ? "Chưa lấy được GPS · hãy thử lại" : "GPS sẽ làm mới trước khi chụp"}
+          </Text>
+          {!gps.loading ? (
+            <TouchableOpacity onPress={() => void refreshGps()} accessibilityRole="button" accessibilityLabel="Lấy lại vị trí GPS"><Text style={styles.gpsAction}>LẤY LẠI GPS</Text></TouchableOpacity>
+          ) : null}
+          {gps.errorCode === "PERMISSION_DENIED" ? <TouchableOpacity onPress={() => void Linking.openSettings()} accessibilityRole="button"><Text style={styles.gpsAction}>CÀI ĐẶT</Text></TouchableOpacity> : null}
+          {!locationReady && !gps.loading ? (
+            <TouchableOpacity onPress={returnToGps} accessibilityRole="button"><Text style={styles.gpsAction}>HỖ TRỢ GPS</Text></TouchableOpacity>
+          ) : null}
+        </View>
         <View style={styles.previewArea}>
           <View style={[styles.previewFrame, { width: previewWidth }]}>
             {isActive && previewWidth > 0 ? (
               <CameraView
+                key={cameraSession}
                 ref={cameraRef}
                 style={StyleSheet.absoluteFill}
                 facing="back"
@@ -296,12 +381,22 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
                 mode="picture"
                 responsiveOrientationWhenOrientationLocked
                 onCameraReady={() => {
-                  if (activeRef.current) setCameraReady(true);
+                  if (cameraSessionRef.current !== cameraSession) return;
+                  if (activeRef.current && AppState.currentState === "active") {
+                    cameraReadyRef.current = true;
+                    setCameraReady(true);
+                    setCaptureErrorCode(current => current === "NOT_READY" ? null : current);
+                    setCaptureError(current => cameraReadyRef.current && captureErrorCode === "NOT_READY" ? null : current);
+                  }
                 }}
-                onMountError={() => {
+                onMountError={(error) => {
+                  if (cameraSessionRef.current !== cameraSession) return;
+                  if (__DEV__) console.error("[FieldCapture] camera mount failed", error);
                   if (!activeRef.current) return;
+                  cameraReadyRef.current = false;
                   setCameraReady(false);
-                  setCaptureError("Camera không khả dụng trên thiết bị này.");
+                  setCaptureErrorCode("NOT_READY");
+                  setCaptureError("Camera chưa khởi động được. Nhấn khởi động lại Camera để thử lại.");
                 }}
               />
             ) : null}
@@ -335,11 +430,6 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             ) : null}
           </View>
         </View>
-        {captureError ? (
-          <Text style={styles.captureError} accessibilityRole="alert">
-            {captureError}
-          </Text>
-        ) : null}
       </ScrollView>
       <View
         style={[
@@ -347,6 +437,27 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           { paddingBottom: Math.max(insets.bottom, 12) },
         ]}
       >
+        {draft.photos.length > 0 && !capturing ? <TouchableOpacity onPress={() => navigation.navigate("ReportPhotoReview")} accessibilityRole="button">
+          <Text style={styles.gpsAction}>XEM / XÓA {normalizePhotoDraft(draft).photos.length} ẢNH ĐANG GIỮ</Text>
+        </TouchableOpacity> : null}
+        {savedDraftCount > 0 && !capturing && !preparedPhoto ? <TouchableOpacity onPress={openSavedDrafts} accessibilityRole="button">
+          <Text style={styles.gpsAction}>BẢN NHÁP ĐÃ LƯU ({savedDraftCount})</Text>
+        </TouchableOpacity> : null}
+        {capturing ? <Text style={styles.gpsText} accessibilityLiveRegion="polite">{captureStageLabels[captureStage]}</Text> : null}
+        {captureError ? <Text style={styles.captureError} accessibilityRole="alert" accessibilityLiveRegion="assertive">{captureError}</Text> : null}
+        {!cameraReady && !capturing ? (
+          <View style={styles.gpsRow}>
+            <Text style={styles.gpsText} accessibilityLiveRegion="polite">Đang chuẩn bị Camera…</Text>
+            <TouchableOpacity onPress={() => { setCaptureError(null); restartCamera(); }} accessibilityRole="button">
+              <Text style={styles.gpsAction}>KHỞI ĐỘNG LẠI CAMERA</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        {preparedPhoto && !capturing ? <TouchableOpacity onPress={() => void takePicture()} accessibilityRole="button">
+          <Text style={styles.gpsAction}>{captureErrorCode === "DRAFT" ? "LƯU LẠI ẢNH" : "XEM ẢNH ĐÃ CHỤP"}</Text>
+        </TouchableOpacity> : null}
+        {(captureErrorCode === "GPS" || captureErrorCode === "GPS_INVALID") && !capturing ?
+          <TouchableOpacity onPress={() => void refreshGps()} accessibilityRole="button"><Text style={styles.gpsAction}>LẤY LẠI GPS</Text></TouchableOpacity> : null}
         <View style={styles.controlPanel}>
           <TouchableOpacity
             onPress={() =>
@@ -371,12 +482,12 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => void takePicture()}
               onPressIn={() => pressShutter(true)}
               onPressOut={() => pressShutter(false)}
-              disabled={capturing || !cameraReady}
+              disabled={capturing}
               style={[styles.shutterOuter, { opacity: cameraReady ? 1 : 0.5 }]}
               accessibilityRole="button"
               accessibilityLabel="Chụp ảnh hiện trường"
               accessibilityState={{
-                disabled: capturing || !cameraReady,
+                disabled: capturing,
                 busy: capturing,
               }}
             >
@@ -427,6 +538,9 @@ const styles = StyleSheet.create({
     gap: 8,
     flexWrap: "wrap",
   },
+  gpsRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, paddingHorizontal: 4 },
+  gpsText: { color: "#CBD5E1", fontSize: 11, flexShrink: 1 },
+  gpsAction: { color: "#38BDF8", fontSize: 11, fontWeight: "700" },
   stageText: {
     fontSize: 9,
     lineHeight: 14,
