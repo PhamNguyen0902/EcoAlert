@@ -28,12 +28,7 @@ interface AlertCreatedData {
   title?: string;
   description?: string;
   mediaUrls?: string[];
-  visionEvidence?: Array<{
-    imageUrl: string;
-    status: 'ok' | 'no_detection' | 'error' | 'skipped_not_applicable';
-    detections: Array<{ materialClass: string; confidence: number }>;
-    requiresManualReview: boolean;
-  }>;
+  visionEvidence?: IVisionEvidence[];
 }
 
 // tạo chuỗi tóm tắt thông tin các vùng nhận diện rác thải của báo cáo
@@ -94,7 +89,21 @@ export const processAlertCreatedEvent = async (
     // Every original evidence image gets an independent Vision result. Semantic routing
     // still decides whether those detections influence the final incident analysis.
     const urls = alert.mediaUrls?.filter((url) => typeof url === 'string' && url.length > 0).slice(0, 6) ?? [];
-    const visionEvidence = await Promise.all(urls.map(async (url): Promise<IVisionEvidence> => {
+    const existingVisionList = Array.isArray(alert.visionEvidence) ? alert.visionEvidence : [];
+    const visionEvidence = await Promise.all(urls.map(async (url, idx): Promise<IVisionEvidence> => {
+      const existingByUrl = existingVisionList.find(
+        (item) => item && item.imageUrl === url && item.status !== 'error',
+      );
+      if (existingByUrl) {
+        return existingByUrl;
+      }
+      const existingByIndex =
+        existingVisionList[idx] && existingVisionList[idx].status !== 'error'
+          ? existingVisionList[idx]
+          : undefined;
+      if (existingByIndex) {
+        return { ...existingByIndex, imageUrl: existingByIndex.imageUrl || url };
+      }
       try { return await (dependencies.detectWaste || detectWasteFromMedia)(url); }
       catch (error) {
         logger.warn('Vision failed for one evidence image', { alertId: alert._id, imageIndex: urls.indexOf(url), error: error instanceof Error ? error.message : 'unknown' });

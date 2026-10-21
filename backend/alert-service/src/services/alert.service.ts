@@ -214,6 +214,11 @@ export class AlertService {
       capturedAt: new Date(item.capturedAt),
       ...(item.gpsCapturedAt ? { gpsCapturedAt: new Date(item.gpsCapturedAt) } : {}),
     }));
+    const hasVisionDetections = Boolean(
+      data.visionEvidence?.some(
+        (item) => item.detections && item.detections.length > 0,
+      ),
+    );
     let alert;
     try {
       alert = await alertRepository.create({
@@ -226,6 +231,8 @@ export class AlertService {
         : {}),
       ...(storedCaptureMetadata ? { captureMetadata: storedCaptureMetadata } : {}),
       ...(storedFieldEvidence ? { fieldEvidence: storedFieldEvidence } : {}),
+      ...(data.visionEvidence?.length ? { visionEvidence: data.visionEvidence } : {}),
+      ...(hasVisionDetections ? { analysisPipeline: 'WASTE_DETECTION' as const } : {}),
       severity: (data.severity as Severity) || Severity.LOW,
       citizenId: actor.id,
       status: AlertStatus.PENDING,
@@ -787,6 +794,17 @@ export class AlertService {
       overallAnalysis: analysis.overallAnalysis,
     });
 
+    const existingHasDetections = Boolean(
+      alert.visionEvidence?.some((v) => v.detections && v.detections.length > 0),
+    );
+    const incomingHasDetections = Boolean(
+      analysis.visionEvidence?.some((v) => v.detections && v.detections.length > 0),
+    );
+    const resolvedVisionEvidence =
+      existingHasDetections && !incomingHasDetections
+        ? alert.visionEvidence
+        : analysis.visionEvidence;
+
     const updated = await alertRepository.findOneAndUpdate(
       { _id: id },
       {
@@ -800,8 +818,8 @@ export class AlertService {
             analysis.overallAnalysis?.shortReason ?? analysis.reasoningSummary,
           // lưu thông tin phân tích ai và dữ liệu nhận diện thị giác vào cơ sở dữ liệu
           aiAnalysisMode: analysis.analysisMode,
-          analysisPipeline: analysis.analysisPipeline,
-          ...(analysis.visionEvidence ? { visionEvidence: analysis.visionEvidence } : {}),
+          analysisPipeline: analysis.analysisPipeline || alert.analysisPipeline,
+          ...(resolvedVisionEvidence ? { visionEvidence: resolvedVisionEvidence } : {}),
           aiAnalysisStatus: analysis.analysisMode === 'FAILED' ? 'FAILED' : 'COMPLETED',
           aiAnalysisProvider: analysis.provider,
           aiAnalysisModel: analysis.model,

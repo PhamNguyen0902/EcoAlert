@@ -37,6 +37,8 @@ export interface FieldReportCaptureDraft {
 // cấu trúc dữ liệu đối tượng rác thải do mô hình ai phát hiện
 export interface WasteDetectionDraft extends VisionDetectionMetadata {
   label: string;
+  materialClass?: string;
+  suggestedCategory?: AlertCategory | null;
   count?: number;
   confidence?: number;
   bbox?: [number, number, number, number];
