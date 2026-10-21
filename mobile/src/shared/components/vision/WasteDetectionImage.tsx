@@ -17,7 +17,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import type { ImageLoadEvent } from "react-native";
-import { Expand } from "lucide-react-native";
+import { Maximize2 } from "lucide-react-native";
 import { ZoomableImageViewer } from "../media/ZoomableImageViewer";
 import {
   EVIDENCE_FRAME_MAX_WIDTH,
@@ -194,6 +194,24 @@ function DetectionImageSession({
           accessibilityLabel="Xem ảnh gốc toàn màn hình"
           accessibilityHint="Mở ảnh gốc không có khung nhận diện để phóng to"
         >
+          {/* Ambient Blur Backdrop (Chuẩn Apple iOS Photos) lấp khoảng trống 2 bên ảnh dọc */}
+          <Image
+            source={{ uri: imageUri }}
+            blurRadius={28}
+            resizeMode="cover"
+            accessible={false}
+            style={[
+              StyleSheet.absoluteFill,
+              { opacity: 0.42, transform: [{ scale: 1.12 }] },
+            ]}
+          />
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: "rgba(2, 6, 23, 0.35)" },
+            ]}
+          />
           <Image
             source={{ uri: imageUri }}
             resizeMode={resizeMode}
@@ -292,7 +310,7 @@ function DetectionImageSession({
             accessibilityLabel="Phóng to ảnh gốc"
           >
             <View style={styles.expandIcon}>
-              <Expand size={17} color="#F8FAFC" />
+              <Maximize2 size={16} color="#F8FAFC" />
             </View>
           </Pressable>
         ) : null}
@@ -382,13 +400,15 @@ const styles = StyleSheet.create({
   frame: {
     width: "100%",
     overflow: "hidden",
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     backgroundColor: "#050D17",
   },
   expandTarget: {
     position: "absolute",
-    top: 4,
-    right: 4,
+    top: 6,
+    right: 6,
     width: 44,
     height: 44,
     alignItems: "center",
@@ -400,7 +420,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(7,16,31,0.70)",
+    backgroundColor: "rgba(7,16,31,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
   },
   box: {
     position: "absolute",

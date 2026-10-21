@@ -103,17 +103,21 @@ export function FieldEvidenceMetaOverlay({
   live?: boolean;
   timestamp?: string;
 }) {
+  // Khi không phải khung ngắm trực tiếp (live === false), tuyệt đối không đè chữ lên vùng watermark góc dưới bên trái của ảnh đã chụp
+  if (!live) {
+    return null;
+  }
   const time = timestamp || capture?.capturedAt;
   return (
     <LinearGradient
       pointerEvents="none"
-      colors={["transparent", "rgba(7,16,31,0.95)"]}
+      colors={["transparent", "rgba(7,16,31,0.92)"]}
       style={styles.evidence}
     >
       <View style={s.row}>
         <ShieldCheck size={12} color={c.primary} />
         <Text style={[s.eyebrow, { color: c.primary }]}>
-          {live ? "ECOALERT FIELD CAPTURE" : "MINH CHỨNG HIỆN TRƯỜNG"}
+          ECOALERT FIELD CAPTURE
         </Text>
       </View>
       {location ? (
@@ -124,7 +128,14 @@ export function FieldEvidenceMetaOverlay({
             ±{Math.round(location.accuracyMeters)}m
           </Text>
         </View>
-      ) : null}
+      ) : (
+        <View style={s.row}>
+          <MapPin size={11} color={c.cyan} />
+          <Text style={styles.evidenceText}>
+            Đang đồng bộ tọa độ GPS ngầm…
+          </Text>
+        </View>
+      )}
       {time && Number.isFinite(Date.parse(time)) ? (
         <View style={s.row}>
           <Clock3 size={11} color={c.cyan} />

@@ -1,30 +1,40 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert as RNAlert,
   AppState,
   Linking,
-  Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   View,
-  Alert as RNAlert,
 } from "react-native";
 import { usePreventRemove } from "@react-navigation/native";
-import MapView, { Circle, Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { MapPin, ShieldCheck } from "lucide-react-native";
-import { useAlert, useConfirmArrival } from "../../shared/hooks/useAlerts";
+import { Camera, CheckCircle2, Flashlight, MapPin, ShieldAlert } from "lucide-react-native";
+import {
+  useAlert,
+  useConfirmArrival,
+  useStartHandling,
+} from "../../shared/hooks/useAlerts";
 import { useProfile } from "../../auth/hooks/useAuth";
 import { useOfficerPosition } from "../hooks/useOfficerPosition";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
 import {
-  OfficerHeader,
   OfficerBadge,
   OfficerCard,
+  OfficerHeader,
+  OfficerStepProgressBar,
   officerStyles as s,
 } from "../components/OfficerUI";
 import { Button } from "../../shared/components/ui/Button";
+import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
 import { getGeoJsonMapCoordinates } from "../../shared/utils/maps";
+import { normalizeFieldCaptureImage } from "../../shared/utils/fieldCaptureImage";
+import { persistOriginalFieldImage } from "../../shared/utils/watermark";
 import {
   officerDate,
   officerDistance,
@@ -33,70 +43,204 @@ import {
 import {
   isWasteOfficerTask,
   officerErrorMessage,
+  officerStatus,
 } from "../utils/officerWorkflow";
 import type { OfficerStackParamList } from "../../app/navigation/types";
-//điểm danh GPS hiện trường
+
+const MAX_CHECKIN_RADIUS_METERS = 100;
+const MAX_CHECKIN_ACCURACY_METERS = 50;
+
+// Bước 1: Check-in (Điểm danh tại hiện trường) bằng Camera trực tiếp + đối chiếu GPS tự động
 export function OfficerGpsCheckInScreen({
   route,
   navigation,
 }: NativeStackScreenProps<OfficerStackParamList, "OfficerGpsCheckIn">) {
-  const { colors, isDark } = useCivicTheme();
+  const { colors } = useCivicTheme();
   const insets = useSafeAreaInsets();
   const task = useAlert(route.params.id);
   const { data: profile } = useProfile();
   const gps = useOfficerPosition();
+  const startHandling = useStartHandling();
   const arrival = useConfirmArrival();
+  const [permission, requestPermission] = useCameraPermissions();
+  const camera = useRef<CameraView>(null);
   const lock = useRef(false);
+  const alive = useRef(true);
+
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [flash, setFlash] = useState<FlashMode>("off");
+  const [frameWidth, setFrameWidth] = useState(0);
+  const [foreground, setForeground] = useState(
+    AppState.currentState === "active",
+  );
+  const [capturedPhotoUri, setCapturedPhotoUri] = useState<string | null>(null);
+  const [capturedAt, setCapturedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  usePreventRemove(arrival.isPending, () =>
+  const [distanceErrorMeters, setDistanceErrorMeters] = useState<number | null>(
+    null,
+  );
+  const [checkInSuccess, setCheckInSuccess] = useState(false);
+
+  const isPending = busy || arrival.isPending || startHandling.isPending;
+
+  usePreventRemove(isPending, () =>
     RNAlert.alert(
-      "Đang xác nhận GPS",
-      "Vui lòng chờ server xác nhận hiện trường.",
+      "Đang xử lý Check-in",
+      "Vui lòng chờ hệ thống xác nhận vị trí và ảnh hiện trường.",
     ),
   );
-  const mine = ownsOfficerTask(task.data, profile);
+
+  useEffect(() => {
+    alive.current = true;
+    const sub = AppState.addEventListener("change", (nextState) => {
+      setForeground(nextState === "active");
+      setReady(false);
+    });
+    return () => {
+      alive.current = false;
+      sub.remove();
+    };
+  }, []);
+
+  // Tự động lấy tọa độ GPS ngầm ngay khi mở màn hình Check-in
+  useEffect(() => {
+    void gps.refresh();
+  }, []);
+
+  const alertData = task.data;
+  const mine = ownsOfficerTask(alertData, profile);
+  const status = alertData ? officerStatus(alertData) : "";
   const allowed = Boolean(
     mine &&
-    task.data &&
-    isWasteOfficerTask(task.data) &&
-    task.data.status.toUpperCase() === "IN_PROGRESS",
+      alertData &&
+      isWasteOfficerTask(alertData) &&
+      ["ASSIGNED", "IN_PROGRESS"].includes(status),
   );
-  const verified = allowed && task.data?.checkIn?.verified === true;
+  const verified = Boolean(
+    (allowed && alertData?.checkIn?.verified === true) || checkInSuccess,
+  );
+
   const destination = mine
-    ? getGeoJsonMapCoordinates(task.data?.location?.coordinates)
+    ? getGeoJsonMapCoordinates(alertData?.location?.coordinates)
     : null;
-  const distance =
+  const currentDistance =
     gps.position && destination
       ? officerDistance(gps.position, destination)
       : null;
-  // lấy vị trí gps hiện tại gửi lên hệ thống để xác nhận đã có mặt tại hiện trường
-  const confirm = async () => {
-    if (!allowed || verified || error || lock.current) return;
+
+  // Chụp ảnh trực tiếp từ camera + tự động lấy/đối chiếu GPS ngầm + gửi xác nhận Check-in
+  const handleCaptureAndCheckIn = async () => {
+    if (!allowed || verified || !camera.current || !ready || lock.current)
+      return;
     lock.current = true;
+    setBusy(true);
     setError(null);
+    setDistanceErrorMeters(null);
+
     try {
-      // luôn lấy lại vị trí gps mới ngay lúc bấm nút xác nhận chứ không dùng vị trí cũ trên màn hình
-      const fresh = await gps.refresh();
-      if (!fresh || AppState.currentState !== "active") return;
+      const nowIso = new Date().toISOString();
+      const picture = await camera.current.takePictureAsync({
+        quality: 0.9,
+        skipProcessing: false,
+      });
+      if (!picture?.uri) {
+        throw new Error("Camera chưa trả về ảnh. Vui lòng chụp lại.");
+      }
+
+      const normalized = await normalizeFieldCaptureImage(picture.uri);
+      const savedUri = await persistOriginalFieldImage(normalized.uri, nowIso);
+      if (alive.current) {
+        setCapturedPhotoUri(savedUri);
+        setCapturedAt(nowIso);
+      }
+
+      // Tự động lấy GPS nếu chưa có hoặc cần làm mới
+      const freshGps = gps.position || (await gps.refresh());
+      if (!freshGps) {
+        throw new Error(
+          gps.error ||
+            "Chưa xác định được tọa độ GPS hiện tại. Vui lòng bật định vị và đứng ở nơi thoáng.",
+        );
+      }
+
+      // Kiểm tra độ chính xác GPS
+      if (
+        !Number.isFinite(freshGps.accuracyMeters) ||
+        freshGps.accuracyMeters > MAX_CHECKIN_ACCURACY_METERS
+      ) {
+        throw new Error(
+          `Độ chính xác tín hiệu GPS hiện tại quá thấp (±${Math.round(freshGps.accuracyMeters)}m, yêu cầu ≤ ${MAX_CHECKIN_ACCURACY_METERS}m). Vui lòng ra nơi thoáng và thử lại.`,
+        );
+      }
+
+      // Đối chiếu khoảng cách tới tọa độ sự cố
+      if (destination) {
+        const dist = officerDistance(freshGps, destination);
+        if (dist > MAX_CHECKIN_RADIUS_METERS) {
+          if (alive.current) setDistanceErrorMeters(Math.round(dist));
+          throw new Error(
+            `Vị trí hiện tại cách điểm sự cố khoảng ${Math.round(dist)}m (vượt quá bán kính cho phép ${MAX_CHECKIN_RADIUS_METERS}m). Vui lòng di chuyển lại gần điểm sự cố và thử lại.`,
+          );
+        }
+      }
+
+      // Nếu nhiệm vụ đang ở trạng thái ASSIGNED, tự động chuyển sang IN_PROGRESS trước khi gọi arrival
+      if (alertData && officerStatus(alertData) === "ASSIGNED") {
+        await startHandling.mutateAsync(route.params.id);
+      }
+
       await arrival.mutateAsync({
         id: route.params.id,
         location: {
-          latitude: fresh.latitude,
-          longitude: fresh.longitude,
-          accuracyMeters: fresh.accuracyMeters,
+          latitude: freshGps.latitude,
+          longitude: freshGps.longitude,
+          accuracyMeters: freshGps.accuracyMeters,
         },
       });
-    } catch (failure) {
+
+      if (!alive.current) return;
+      setCheckInSuccess(true);
+
+      // Tự động chuyển về giao diện Bước 2 (Xử lý sự cố) sau khi hiển thị phản hồi thành công
+      setTimeout(() => {
+        if (!alive.current) return;
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.replace("OfficerAlertDetail", { id: route.params.id });
+        }
+      }, 900);
+    } catch (failure: unknown) {
+      if (!alive.current) return;
+      const customMessage =
+        failure instanceof Error &&
+        /^(Camera chưa|Chưa xác định|Độ chính xác|Vị trí hiện tại)/.test(
+          failure.message,
+        )
+          ? failure.message
+          : undefined;
       setError(
-        officerErrorMessage(
-          failure,
-          "Không thể xác nhận hiện trường. Kiểm tra GPS/kết nối rồi thử lại.",
-        ),
+        customMessage ||
+          officerErrorMessage(
+            failure,
+            "Không thể điểm danh tại hiện trường. Vui lòng kiểm tra vị trí GPS và thử lại.",
+          ),
       );
     } finally {
       lock.current = false;
+      if (alive.current) setBusy(false);
     }
   };
+
+  const handleRetry = async () => {
+    setError(null);
+    setDistanceErrorMeters(null);
+    setCapturedPhotoUri(null);
+    setCapturedAt(null);
+    await gps.refresh();
+  };
+
   return (
     <View
       style={[
@@ -105,162 +249,186 @@ export function OfficerGpsCheckInScreen({
       ]}
     >
       <OfficerHeader
-        title="Điểm danh GPS"
+        title="Check-in hiện trường"
         back={navigation.goBack}
-        disabled={arrival.isPending}
+        disabled={isPending}
       />
-      <ScrollView contentContainerStyle={s.content}>
-        <OfficerBadge
-          label="BƯỚC 03 / 06 · XÁC MINH HIỆN TRƯỜNG"
-          color={colors.cyan}
-        />
-        <Text style={[s.body, { color: colors.textSecondary }]}>
-          Xác minh vị trí thực tế của cán bộ trước khi thực hiện dọn dẹp và xử
-          lý rác thải.
-        </Text>
-        {destination ? (
-          <View style={{ borderRadius: 18, overflow: "hidden" }}>
-            <MapView
-              key={task.data?._id}
-              provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-              userInterfaceStyle={isDark ? "dark" : "light"}
-              style={{ height: 280, width: "100%" }}
-              initialRegion={{
-                ...destination,
-                latitudeDelta: 0.004,
-                longitudeDelta: 0.004,
-              }}
-            >
-              <Marker
-                coordinate={destination}
-                title="Vị trí sự cố"
-                pinColor="#F87171"
-              />
-              {gps.position && (
-                <>
-                  <Marker
-                    coordinate={gps.position}
-                    title="Vị trí GPS vừa lấy"
-                    pinColor="#22C55E"
-                  />
-                  <Circle
-                    center={gps.position}
-                    radius={gps.position.accuracyMeters}
-                    strokeColor="#38BDF8"
-                    fillColor="rgba(56,189,248,0.12)"
-                  />
-                </>
-              )}
-            </MapView>
-            <View
-              style={{ position: "absolute", bottom: 12, left: 12, right: 12 }}
-            >
-              <OfficerBadge
-                label={
-                  gps.position
-                    ? `SAI SỐ GPS ±${Math.round(gps.position.accuracyMeters)}m`
-                    : "CHƯA LẤY GPS THIẾT BỊ"
-                }
-                color={colors.cyan}
-              />
-            </View>
-          </View>
-        ) : (
-          <OfficerCard>
-            <Text style={{ color: colors.textMuted }}>
-              {task.isLoading
-                ? "Đang tải nhiệm vụ..."
-                : "Không có nhiệm vụ/vị trí được phân công hợp lệ."}
-            </Text>
-          </OfficerCard>
-        )}
+      <OfficerStepProgressBar
+        task={alertData}
+        step={verified ? 2 : 1}
+      />
+      <ScrollView
+        contentContainerStyle={[
+          s.content,
+          { paddingBottom: Math.max(24, insets.bottom + 16) },
+        ]}
+      >
         <OfficerCard accent={verified}>
           <View style={s.row}>
             {verified ? (
-              <ShieldCheck size={24} color={colors.primary} />
+              <CheckCircle2 size={22} color={colors.primary} />
             ) : (
-              <MapPin size={24} color={colors.cyan} />
+              <MapPin size={22} color={colors.cyan} />
             )}
+            <View style={s.grow}>
+              <Text
+                accessibilityLiveRegion="polite"
+                style={[
+                  s.heading,
+                  { color: verified ? colors.primary : colors.text },
+                ]}
+              >
+                {verified
+                  ? "Check-in thành công!"
+                  : "Chụp ảnh minh chứng có mặt tại hiện trường"}
+              </Text>
+              <Text style={[s.meta, { color: colors.textSecondary }]}>
+                {alertData?.address || "Đã ghi nhận tọa độ điểm sự cố"}
+              </Text>
+            </View>
+          </View>
+          <View style={[s.row, { flexWrap: "wrap" }]}>
+            <OfficerBadge
+              label={
+                gps.position
+                  ? `GPS ±${Math.round(gps.position.accuracyMeters)}m`
+                  : gps.pending
+                    ? "Đang tự động định vị GPS..."
+                    : "Đang chờ tín hiệu GPS"
+              }
+              color={colors.cyan}
+            />
+            {currentDistance !== null && (
+              <OfficerBadge
+                label={`Cách điểm sự cố: ${Math.round(currentDistance)}m`}
+                color={
+                  currentDistance <= MAX_CHECKIN_RADIUS_METERS
+                    ? colors.primary
+                    : colors.warning
+                }
+              />
+            )}
+          </View>
+        </OfficerCard>
+
+        {verified ? (
+          <OfficerCard accent>
+            <Text style={[s.heading, { color: colors.primary }]}>
+              Check-in thành công — Đang chuyển sang Bước 2 (Xử lý sự cố)
+            </Text>
+            {capturedPhotoUri ? (
+              <EvidenceImageFrame
+                imageUri={capturedPhotoUri}
+                style={{ width: "100%", aspectRatio: 3 / 4, borderRadius: 12 }}
+                accessibilityLabel="Ảnh minh chứng Check-in tại hiện trường"
+              />
+            ) : null}
+            <Text style={[s.meta, { color: colors.textSecondary }]}>
+              Thời gian xác nhận:{" "}
+              {officerDate(
+                alertData?.checkIn?.checkedInAt ||
+                  capturedAt ||
+                  new Date().toISOString(),
+              )}
+            </Text>
+          </OfficerCard>
+        ) : error ? (
+          <OfficerCard>
+            <View style={[s.row, { alignItems: "flex-start" }]}>
+              <ShieldAlert size={22} color={colors.danger} />
+              <View style={[s.grow, { gap: 6 }]}>
+                <Text style={[s.heading, { color: colors.danger }]}>
+                  Chưa thể xác nhận vị trí Check-in
+                </Text>
+                <Text
+                  accessibilityRole="alert"
+                  style={[s.body, { color: colors.text }]}
+                >
+                  {error}
+                </Text>
+                {distanceErrorMeters !== null && (
+                  <Text style={[s.meta, { color: colors.warning }]}>
+                    Khoảng cách lệch thực tế: {distanceErrorMeters}m (Bán kính
+                    hợp lệ tối đa: {MAX_CHECKIN_RADIUS_METERS}m)
+                  </Text>
+                )}
+              </View>
+            </View>
+            {capturedPhotoUri ? (
+              <EvidenceImageFrame
+                imageUri={capturedPhotoUri}
+                style={{ width: "100%", aspectRatio: 4 / 3, borderRadius: 12 }}
+                accessibilityLabel="Ảnh đã chụp cần thử lại"
+              />
+            ) : null}
+          </OfficerCard>
+        ) : !permission?.granted ? (
+          <OfficerCard>
+            <Text style={[s.heading, { color: colors.text }]}>
+              Cấp quyền Camera để chụp ảnh Check-in
+            </Text>
+            <Text style={[s.body, { color: colors.textSecondary }]}>
+              Quy trình bắt buộc chụp ảnh trực tiếp tại hiện trường (không chọn
+              ảnh từ thư viện) kèm đối chiếu tọa độ GPS tự động.
+            </Text>
+          </OfficerCard>
+        ) : (
+          <View style={{ gap: 10 }}>
+            <View
+              style={styles.cameraWrapper}
+              onLayout={({ nativeEvent: { layout } }) =>
+                setFrameWidth(Math.max(240, layout.width))
+              }
+            >
+              <View style={[styles.cameraFrame, { width: frameWidth || "100%" }]}>
+                {foreground ? (
+                  <CameraView
+                    ref={camera}
+                    style={StyleSheet.absoluteFill}
+                    facing="back"
+                    mode="picture"
+                    flash={flash}
+                    responsiveOrientationWhenOrientationLocked
+                    onCameraReady={() => setReady(true)}
+                    onMountError={() => {
+                      setReady(false);
+                      setError("Không thể khởi động Camera. Vui lòng thử lại.");
+                    }}
+                  />
+                ) : null}
+                <View style={styles.cameraTopOverlay}>
+                  <OfficerBadge
+                    label="CAMERA TRỰC TIẾP · KHÔNG DÙNG THƯ VIỆN"
+                    color={colors.primary}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Đổi chế độ đèn flash"
+                    onPress={() => setFlash(flash === "off" ? "on" : "off")}
+                    style={styles.flashButton}
+                  >
+                    <Flashlight
+                      size={18}
+                      color={flash === "on" ? colors.primary : "#FFFFFF"}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
             <Text
-              accessibilityLiveRegion="polite"
               style={[
-                s.heading,
-                s.grow,
-                { color: verified ? colors.primary : colors.text },
+                s.meta,
+                { color: colors.textMuted, textAlign: "center" },
               ]}
             >
-              {verified
-                ? "BẠN ĐÃ ĐẾN ĐÚNG HIỆN TRƯỜNG"
-                : gps.pending
-                  ? "Đang lấy GPS mới..."
-                  : "Xác minh vị trí hiện trường"}
+              Hệ thống tự động lấy tọa độ GPS và đối chiếu khoảng cách ngay khi
+              bạn bấm chụp ảnh.
             </Text>
           </View>
-          <Text style={[s.body, { color: colors.textSecondary }]}>
-            {mine
-              ? task.data?.address || "Đã ghi nhận vị trí sự cố"
-              : "Nhiệm vụ phải được phân công cho bạn."}
-          </Text>
-          {gps.position && (
-            <>
-              <Text style={[s.meta, { color: colors.cyan }]}>
-                {gps.position.latitude.toFixed(6)}° N,{" "}
-                {gps.position.longitude.toFixed(6)}° E
-              </Text>
-              <Text style={[s.body, { color: colors.text }]}>
-                Sai số GPS: ±{Math.round(gps.position.accuracyMeters)}m
-              </Text>
-              <Text style={[s.body, { color: colors.text }]}>
-                Khoảng cách thẳng đến sự cố:{" "}
-                {distance === null
-                  ? "Không khả dụng"
-                  : `${Math.round(distance)}m`}
-              </Text>
-              <Text style={[s.meta, { color: colors.textMuted }]}>
-                Lấy GPS: {officerDate(gps.position.recordedAt)}
-              </Text>
-            </>
-          )}
-          {verified && (
-            <Text style={[s.meta, { color: colors.primary }]}>
-              Server xác nhận: {officerDate(task.data?.checkIn?.checkedInAt)}
-            </Text>
-          )}
-          <Button
-            appearance="civic"
-            variant="outline"
-            title="LẤY LẠI GPS"
-            loading={gps.pending}
-            disabled={!allowed || arrival.isPending}
-            onPress={async () => {
-              if (await gps.refresh()) setError(null);
-            }}
-          />
-        </OfficerCard>
-        <OfficerCard>
-          <Text style={[s.body, { color: colors.textMuted }]}>
-            Đứng gần điểm rác, bật vị trí chính xác và giữ điện thoại ở nơi
-            thoáng. Server kiểm tra bán kính và độ chính xác theo cấu hình thực
-            tế. Vòng tròn trên map là sai số GPS, không phải phạm vi check-in.
-          </Text>
-        </OfficerCard>
-        {(error || gps.error) && (
-          <Text
-            accessibilityRole="alert"
-            style={[s.body, { color: colors.danger }]}
-          >
-            {error || gps.error}
-          </Text>
-        )}
-        {gps.error && (
-          <Button
-            appearance="civic"
-            variant="ghost"
-            title="MỞ CÀI ĐẶT VỊ TRÍ"
-            onPress={() => void Linking.openSettings()}
-          />
         )}
       </ScrollView>
+
+      {/* Duy nhất 1 nút hành động chính (Single Primary CTA) ở dưới cùng */}
       <View
         style={{
           padding: 16,
@@ -270,27 +438,81 @@ export function OfficerGpsCheckInScreen({
           backgroundColor: colors.surface,
         }}
       >
-        <Button
-          appearance="civic"
-          title={
-            verified
-              ? "TIẾP TỤC GHI NHẬN KẾT QUẢ"
-              : "XÁC NHẬN ĐÃ ĐẾN HIỆN TRƯỜNG"
-          }
-          disabled={
-            !allowed ||
-            gps.pending ||
-            arrival.isPending ||
-            Boolean(error && !verified)
-          }
-          loading={gps.pending || arrival.isPending}
-          onPress={() =>
-            verified
-              ? navigation.replace("OfficerResolution", { id: route.params.id })
-              : void confirm()
-          }
-        />
+        {verified ? (
+          <Button
+            appearance="civic"
+            title="TIẾP TỤC: BƯỚC 2 (XỬ LÝ SỰ CỐ)"
+            onPress={() =>
+              navigation.canGoBack()
+                ? navigation.goBack()
+                : navigation.replace("OfficerAlertDetail", {
+                    id: route.params.id,
+                  })
+            }
+          />
+        ) : error ? (
+          <Button
+            appearance="civic"
+            title="Thử lại"
+            loading={isPending || gps.pending}
+            onPress={() => void handleRetry()}
+          />
+        ) : !permission?.granted ? (
+          <Button
+            appearance="civic"
+            title={
+              permission?.canAskAgain === false
+                ? "Mở cài đặt cấp quyền Camera"
+                : "Cho phép Camera để Check-in"
+            }
+            onPress={() =>
+              permission?.canAskAgain === false
+                ? void Linking.openSettings()
+                : void requestPermission()
+            }
+          />
+        ) : (
+          <Button
+            appearance="civic"
+            title="Chụp ảnh & Check-in hiện trường"
+            icon={<Camera size={18} color="#07101F" />}
+            loading={isPending}
+            disabled={!allowed || !ready || isPending}
+            onPress={() => void handleCaptureAndCheckIn()}
+          />
+        )}
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  cameraWrapper: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cameraFrame: {
+    aspectRatio: 3 / 4,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#050D17",
+  },
+  cameraTopOverlay: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  flashButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(7,16,31,0.65)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

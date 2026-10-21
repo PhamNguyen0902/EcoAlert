@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   AppState,
   Animated,
+  Image,
   ScrollView,
   useWindowDimensions,
   Linking,
@@ -30,9 +31,20 @@ import { useReportTheme } from "../useReportTheme";
 import { persistOriginalFieldImage } from "../../../shared/utils/watermark";
 import { normalizeFieldCaptureImage } from "../../../shared/utils/fieldCaptureImage";
 import { useFieldReport } from "../FieldReportContext";
-import { MAX_FIELD_GPS_ACCURACY_METERS, MAX_FIELD_REPORT_PHOTOS, type FieldReportCaptureDraft, type FieldReportLocationDraft } from "../types";
-import { addPhoto, normalizePhotoDraft } from "../photoDraft";
-import { captureFieldPhoto, captureGpsReady, FieldCaptureError, type CaptureErrorCode, type CaptureStage } from "../cameraCapture";
+import {
+  MAX_FIELD_GPS_ACCURACY_METERS,
+  MAX_FIELD_REPORT_PHOTOS,
+  type FieldReportCaptureDraft,
+  type FieldReportLocationDraft,
+} from "../types";
+import { addPhoto, normalizePhotoDraft, updatePhoto } from "../photoDraft";
+import {
+  captureFieldPhoto,
+  captureGpsReady,
+  FieldCaptureError,
+  type CaptureErrorCode,
+  type CaptureStage,
+} from "../cameraCapture";
 import { useLocation } from "../../../shared/hooks/useLocation";
 import {
   useForegroundScreen,
@@ -49,19 +61,27 @@ import { fieldLocationReady } from "../components/stitch/fieldPresentation";
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportCamera">;
 const MAX_LOCATION_AGE_MS = 5 * 60_000;
 const captureStageLabels: Record<CaptureStage, string> = {
-  GPS: "Đang lấy GPS…", CAMERA: "Đang chụp ảnh…", NORMALIZE: "Đang xử lý ảnh…",
-  PERSIST: "Đang lưu ảnh…", DRAFT: "Đang lưu bản nháp…", NAVIGATION: "Đang mở ảnh vừa chụp…",
+  GPS: "Đang đồng bộ GPS ngầm…",
+  CAMERA: "Đang chụp ảnh…",
+  NORMALIZE: "Đang xử lý ảnh…",
+  PERSIST: "Đang lưu ảnh…",
+  DRAFT: "Đang lưu bản nháp…",
+  NAVIGATION: "Đang mở ảnh vừa chụp…",
 };
-// Camera is step one; GPS runs as a supporting task.
+
+// Camera là màn hình chụp ảnh hiện trường; GPS chạy ngầm song song (Instant Shutter & Background GPS).
 export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const previewWidth = Math.min(width - 32, 440);
   const { colors } = useReportTheme();
-  const { draft, setDraft, saveDraftNow, openSavedDrafts, savedDraftCount } = useFieldReport();
+  const { draft, setDraft, saveDraftNow, openSavedDrafts, savedDraftCount } =
+    useFieldReport();
   const gps = useLocation();
   const gpsRequested = useRef(false);
-  const gpsRequest = useRef<Promise<FieldReportLocationDraft | null> | null>(null);
+  const gpsRequest = useRef<Promise<FieldReportLocationDraft | null> | null>(
+    null,
+  );
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const [permission, requestPermission] = useCameraPermissions();
@@ -73,8 +93,10 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [cameraSession, setCameraSession] = useState(0);
   const cameraSessionRef = useRef(0);
   const [captureStage, setCaptureStage] = useState<CaptureStage>("CAMERA");
-  const [captureErrorCode, setCaptureErrorCode] = useState<CaptureErrorCode | null>(null);
-  const [preparedPhoto, setPreparedPhoto] = useState<FieldReportCaptureDraft | null>(null);
+  const [captureErrorCode, setCaptureErrorCode] =
+    useState<CaptureErrorCode | null>(null);
+  const [preparedPhoto, setPreparedPhoto] =
+    useState<FieldReportCaptureDraft | null>(null);
   const [zoom, setZoom] = useState(0);
   const isActive = useForegroundScreen();
   // kiểm tra định kỳ xem vị trí gps còn mới hay đã quá hạn
@@ -87,6 +109,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [captureError, setCaptureError] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const shutterScale = useRef(new Animated.Value(1)).current;
+
   // hiệu ứng hoạt họa thu nhỏ nút chụp khi người dùng bấm
   const pressShutter = (pressed: boolean) =>
     Animated.timing(shutterScale, {
@@ -94,6 +117,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       duration: reducedMotion ? 0 : 120,
       useNativeDriver: true,
     }).start();
+
   const location = draft.location;
   const renderNow = Math.max(now, Date.now());
   const locationAge = location
@@ -101,48 +125,107 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
     : Number.POSITIVE_INFINITY;
   const locationReady = fieldLocationReady(location, renderNow);
   const gpsReadyForCapture = captureGpsReady(location, renderNow);
+  const activePhotos = normalizePhotoDraft(draft).photos;
+  const ambientBackdropUri =
+    preparedPhoto?.originalLocalUri ||
+    draft.capture?.displayLocalUri ||
+    draft.capture?.originalLocalUri ||
+    activePhotos[activePhotos.length - 1]?.originalLocalUri;
+
   const refreshGps = useCallback((): Promise<FieldReportLocationDraft | null> => {
     if (gpsRequest.current) return gpsRequest.current;
     const request = (async () => {
-      const result = await gps.fetchLocation({ timeoutMs: 15_000, deferAddress: true });
-      if (!result?.coords || result.accuracyMeters === null || !mountedRef.current || !navigation.isFocused()) return null;
+      const result = await gps.fetchLocation({
+        timeoutMs: 15_000,
+        deferAddress: true,
+      });
+      if (!result?.coords || result.accuracyMeters === null || !mountedRef.current)
+        return null;
       const updated: FieldReportLocationDraft = {
-        latitude: result.coords.coordinates[1], longitude: result.coords.coordinates[0],
-        accuracyMeters: result.accuracyMeters, address: result.address,
-        capturedAt: result.capturedAt, source: "DEVICE_GPS",
+        latitude: result.coords.coordinates[1],
+        longitude: result.coords.coordinates[0],
+        accuracyMeters: result.accuracyMeters,
+        address: result.address,
+        capturedAt: result.capturedAt,
+        source: "DEVICE_GPS",
       };
       setDraft((current) => ({ ...current, location: updated }));
       // Capture callbacks read the returned fix, never wait for a React render.
       draftRef.current = { ...draftRef.current, location: updated };
       return updated;
-    })().finally(() => { gpsRequest.current = null; });
+    })().finally(() => {
+      gpsRequest.current = null;
+    });
     gpsRequest.current = request;
     return request;
-  }, [gps.fetchLocation, navigation, setDraft]);
+  }, [gps.fetchLocation, setDraft]);
+
+  // Tiến trình ngầm (Background Location Sync) tinh chỉnh tọa độ cho ảnh vừa chụp tức thì
+  const syncLocationInBackground = useCallback(
+    (photoId: string, targetDraftId: string) => {
+      void refreshGps()
+        .then((freshFix) => {
+          if (!freshFix) return;
+          setDraft((current) => {
+            if (current.id !== targetDraftId) return current;
+            const updatedDraft = updatePhoto(current, photoId, {
+              location: freshFix,
+              displayLocalUri: undefined,
+            });
+            return { ...updatedDraft, location: freshFix };
+          });
+        })
+        .catch(() => undefined);
+    },
+    [refreshGps, setDraft],
+  );
+
   useEffect(() => {
     if (!isActive) gpsRequested.current = false;
-    if (isActive && permission?.granted && !locationReady && !gpsRequested.current) {
+    if (
+      isActive &&
+      permission?.granted &&
+      !locationReady &&
+      !gpsRequested.current
+    ) {
       gpsRequested.current = true;
       void refreshGps();
     }
   }, [isActive, permission?.granted, locationReady, refreshGps]);
+
   useEffect(() => {
     if (!gps.addressResolved || !gps.capturedAt) return;
-    setDraft(current => {
-      const matches = (fix?: FieldReportLocationDraft) => fix?.capturedAt === gps.capturedAt && fix.address !== gps.address;
-      if (!matches(current.location) && !current.photos.some(photo => matches(photo.location))) return current;
-      const photos = current.photos.map(photo => matches(photo.location)
-        ? { ...photo, location: { ...photo.location!, address: gps.address } } : photo);
-      return { ...current, photos, capture: photos.find(photo => photo.id === current.primaryPhotoId),
-        location: matches(current.location) ? { ...current.location!, address: gps.address } : current.location };
+    setDraft((current) => {
+      const matches = (fix?: FieldReportLocationDraft) =>
+        fix?.capturedAt === gps.capturedAt && fix.address !== gps.address;
+      if (
+        !matches(current.location) &&
+        !current.photos.some((photo) => matches(photo.location))
+      )
+        return current;
+      const photos = current.photos.map((photo) =>
+        matches(photo.location)
+          ? { ...photo, location: { ...photo.location!, address: gps.address } }
+          : photo,
+      );
+      return {
+        ...current,
+        photos,
+        capture: photos.find((photo) => photo.id === current.primaryPhotoId),
+        location: matches(current.location)
+          ? { ...current.location!, address: gps.address }
+          : current.location,
+      };
     });
   }, [gps.addressResolved, gps.capturedAt, gps.address, setDraft]);
+
   const restartCamera = useCallback(() => {
     cameraReadyRef.current = false;
     setCameraReady(false);
     cameraSessionRef.current += 1;
     setCameraSession(cameraSessionRef.current);
   }, []);
+
   useEffect(() => {
     if (!isActive) {
       restartCamera();
@@ -153,41 +236,57 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       shutterScale.stopAnimation();
     };
   }, [isActive, shutterScale, restartCamera]);
+
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
+
   const askCameraPermission = useCallback(() => {
     if (permissionRequest.current) return permissionRequest.current;
     const request = (async () => {
-      try { await requestPermission(); }
-      catch (error) {
-        if (__DEV__) console.error("[FieldCapture] camera permission failed", error);
-        setCaptureError("Không thể yêu cầu quyền Camera. Hãy thử lại hoặc mở Cài đặt.");
+      try {
+        await requestPermission();
+      } catch (error) {
+        if (__DEV__)
+          console.error("[FieldCapture] camera permission failed", error);
+        setCaptureError(
+          "Không thể yêu cầu quyền Camera. Hãy thử lại hoặc mở Cài đặt.",
+        );
       }
-    })().finally(() => { permissionRequest.current = null; });
+    })().finally(() => {
+      permissionRequest.current = null;
+    });
     permissionRequest.current = request;
     return request;
   }, [requestPermission]);
+
   useEffect(() => {
     if (permission === null && isActive) void askCameraPermission();
   }, [permission, isActive, askCameraPermission]);
+
   useEffect(() => {
     if (!isActive || !permission?.granted || cameraReady) return;
     const timer = setTimeout(() => {
       setCaptureErrorCode("NOT_READY");
-      setCaptureError("Camera chưa khởi động xong. Nhấn khởi động lại Camera để thử lại.");
+      setCaptureError(
+        "Camera chưa khởi động xong. Nhấn khởi động lại Camera để thử lại.",
+      );
       if (__DEV__) console.warn("[FieldCapture] camera readiness timeout");
     }, 12_000);
     return () => clearTimeout(timer);
   }, [isActive, permission?.granted, cameraReady, cameraSession]);
+
   // màn hình GPS riêng là phương án hỗ trợ khi camera không lấy được fix hợp lệ
   const returnToGps = () => {
     if (locationAge > MAX_LOCATION_AGE_MS)
       setDraft((current) => ({ ...current, location: undefined }));
     navigation.navigate("ReportLocation");
   };
-  // chụp ảnh từ camera, chỉnh lại kích thước và lưu ảnh vào máy
+
+  // Chụp ảnh tức thì (Instant Shutter) và đồng bộ GPS ngầm không chặn nút bấm
   const takePicture = async () => {
     setCaptureError(null);
     setCaptureErrorCode(null);
@@ -196,61 +295,57 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         lock: captureLock,
         getSnapshot: () => ({
           active: activeRef.current && AppState.currentState === "active",
-          focused: mountedRef.current && navigation.isFocused(), granted: permission?.granted === true,
-          ready: cameraReadyRef.current, camera: cameraRef.current,
-          location: draftRef.current.location, draft: draftRef.current,
+          focused: mountedRef.current && navigation.isFocused(),
+          granted: permission?.granted === true,
+          ready: cameraReadyRef.current || Boolean(cameraRef.current),
+          camera: cameraRef.current,
+          location: draftRef.current.location,
+          draft: draftRef.current,
         }),
-        refreshLocation: refreshGps, normalizeImage: normalizeFieldCaptureImage,
+        refreshLocation: refreshGps,
+        allowCachedLocationOnShutter: true,
+        onBackgroundGpsSync: syncLocationInBackground,
+        normalizeImage: normalizeFieldCaptureImage,
         persistImage: persistOriginalFieldImage,
-        savePhoto: async (photo, draftId) => saveDraftNow(current => {
-          if (current.id !== draftId) throw new FieldCaptureError("LEFT_FLOW", "Bản nháp đã thay đổi. Hãy mở lại camera.");
-          return normalizePhotoDraft(current).photos.some(item => item.id === photo.id) ? current : addPhoto(current, photo);
-        }),
+        savePhoto: async (photo, draftId) =>
+          saveDraftNow((current) => {
+            if (current.id !== draftId)
+              throw new FieldCaptureError(
+                "LEFT_FLOW",
+                "Bản nháp đã thay đổi. Hãy mở lại camera.",
+              );
+            return normalizePhotoDraft(current).photos.some(
+              (item) => item.id === photo.id,
+            )
+              ? current
+              : addPhoto(current, photo);
+          }),
         navigateToReview: () => navigation.navigate("ReportPhotoReview"),
-        onBusy: setCapturing, onStage: setCaptureStage, onPreparedPhoto: setPreparedPhoto, preparedPhoto,
+        onBusy: setCapturing,
+        onStage: setCaptureStage,
+        onPreparedPhoto: setPreparedPhoto,
+        preparedPhoto,
       });
       if (result === "REVIEW") setPreparedPhoto(null);
     } catch (error) {
-      const failure = error instanceof FieldCaptureError ? error : new FieldCaptureError("CAMERA", "Không thể chụp ảnh. Vui lòng thử lại.", error);
-      if (__DEV__) console.error(`[FieldCapture] ${failure.code}`, failure.originalError || failure);
+      const failure =
+        error instanceof FieldCaptureError
+          ? error
+          : new FieldCaptureError(
+              "CAMERA",
+              "Không thể chụp ảnh. Vui lòng thử lại.",
+              error,
+            );
+      if (__DEV__)
+        console.error(
+          `[FieldCapture] ${failure.code}`,
+          failure.originalError || failure,
+        );
       if (mountedRef.current) {
-        if (failure.code === "CAMERA" || failure.code === "MISSING_URI") restartCamera();
+        if (failure.code === "CAMERA" || failure.code === "MISSING_URI")
+          restartCamera();
         setCaptureErrorCode(failure.code);
         setCaptureError(failure.message);
-      if (!picture?.uri) throw new Error("Camera did not return an image");
-      const capturedAt = new Date().toISOString();
-      const normalized = await normalizeFieldCaptureImage(picture.uri);
-      const originalLocalUri = await persistOriginalFieldImage(
-        normalized.uri,
-        capturedAt,
-      );
-      // nếu người dùng đã thoát màn hình thì khi chụp ảnh xong cũng không tự chuyển trang nữa
-      if (
-        !activeRef.current ||
-        epoch !== activityEpoch.current ||
-        AppState.currentState !== "active"
-      ) return;
-      setDraft((current) => ({
-        ...current,
-        capture: {
-          originalLocalUri,
-          capturedAt,
-          width: normalized.width,
-          height: normalized.height,
-        },
-        imageValidation: { state: "IDLE", detectedObjects: [] },
-      }));
-      // chuyển sang màn hình xem lại và đóng dấu ảnh
-      navigation.navigate("ReportPhotoReview");
-    } catch {
-      if (
-        activeRef.current &&
-        epoch === activityEpoch.current &&
-        AppState.currentState === "active"
-      ) {
-        setCaptureError(
-          "Không thể chụp ảnh. Vui lòng kiểm tra Camera và thử lại.",
-        );
       }
     }
   };
@@ -273,14 +368,26 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             Đang kiểm tra quyền truy cập…
           </Text>
         </View>
-        {captureError ? <>
-          <Text style={styles.captureError} accessibilityRole="alert">{captureError}</Text>
-          <TouchableOpacity onPress={() => void askCameraPermission()} style={[styles.permissionButton, { backgroundColor: colors.primary }]} accessibilityRole="button">
-            <Text style={styles.permissionButtonText}>THỬ LẠI</Text>
-          </TouchableOpacity>
-        </> : null}
+        {captureError ? (
+          <>
+            <Text style={styles.captureError} accessibilityRole="alert">
+              {captureError}
+            </Text>
+            <TouchableOpacity
+              onPress={() => void askCameraPermission()}
+              style={[
+                styles.permissionButton,
+                { backgroundColor: colors.primary },
+              ]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.permissionButtonText}>THỬ LẠI</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
       </View>
     );
+
   if (!permission.granted)
     return (
       <View
@@ -304,7 +411,11 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Text style={styles.permissionButtonText}>THỬ LẠI</Text>
         </TouchableOpacity>
-        {captureError ? <Text style={styles.captureError} accessibilityRole="alert">{captureError}</Text> : null}
+        {captureError ? (
+          <Text style={styles.captureError} accessibilityRole="alert">
+            {captureError}
+          </Text>
+        ) : null}
         {permission.canAskAgain === false ? (
           <TouchableOpacity
             onPress={() => void Linking.openSettings()}
@@ -335,40 +446,97 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.captureContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* bước 2: chụp ảnh hiện trường */}
-        <ReportProgress step={2} status="THẨM ĐỊNH THỰC ĐỊA" />
+        {/* Bước chụp ảnh hiện trường với nhãn chuẩn "THẨM ĐỊNH THỰC ĐỊA · CHỤP ẢNH" */}
+        <ReportProgress step={1} status="THẨM ĐỊNH THỰC ĐỊA · CHỤP ẢNH" />
+
         <View style={styles.stageRow}>
           <Text style={styles.stageText}>CHỤP BAO QUÁT ĐIỂM RÁC</Text>
           <View style={styles.liveChip}>
             <View
               style={[
                 styles.liveDot,
-                !cameraReady && { backgroundColor: "#94A3B8" },
+                !cameraReady && { backgroundColor: "#38BDF8" },
               ]}
             />
             <Text style={styles.liveText}>
-              {cameraReady ? "LIVE SENSOR" : "ĐANG CHUẨN BỊ"}
+              {cameraReady ? "LIVE SENSOR" : "SẴN SÀNG CHỤP"}
             </Text>
           </View>
         </View>
+
         <View style={styles.gpsRow}>
           <Text style={styles.gpsText} accessibilityLiveRegion="polite">
-            {gps.loading ? "Đang lấy GPS…" : gpsReadyForCapture
-              ? `GPS sẵn sàng · ±${Math.round(location!.accuracyMeters)}m · ${normalizePhotoDraft(draft).photos.length}/${MAX_FIELD_REPORT_PHOTOS} ảnh`
-              : gps.errorCode === "PERMISSION_DENIED" ? "GPS bị từ chối quyền · bật quyền vị trí trong Cài đặt"
-              : location && location.accuracyMeters > MAX_FIELD_GPS_ACCURACY_METERS ? `GPS ±${Math.round(location.accuracyMeters)}m · cần chính xác hơn`
-              : gps.errorCode === "UNAVAILABLE" ? "Chưa lấy được GPS · hãy thử lại" : "GPS sẽ làm mới trước khi chụp"}
+            {gps.loading
+              ? "Đang đồng bộ GPS ngầm… (Bạn có thể chụp ngay)"
+              : gpsReadyForCapture
+                ? `GPS sẵn sàng · ±${Math.round(location!.accuracyMeters)}m · ${activePhotos.length}/${MAX_FIELD_REPORT_PHOTOS} ảnh`
+                : gps.errorCode === "PERMISSION_DENIED"
+                  ? "GPS bị từ chối quyền · bật quyền vị trí trong Cài đặt"
+                  : location &&
+                      location.accuracyMeters > MAX_FIELD_GPS_ACCURACY_METERS
+                    ? `GPS tạm thời ±${Math.round(location.accuracyMeters)}m · tự động tinh chỉnh ngầm`
+                    : gps.errorCode === "UNAVAILABLE"
+                      ? "Đang dò tín hiệu GPS · vẫn có thể chụp ngay"
+                      : "Chụp tức thì · GPS tự động đồng bộ ngầm"}
           </Text>
           {!gps.loading ? (
-            <TouchableOpacity onPress={() => void refreshGps()} accessibilityRole="button" accessibilityLabel="Lấy lại vị trí GPS"><Text style={styles.gpsAction}>LẤY LẠI GPS</Text></TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => void refreshGps()}
+              accessibilityRole="button"
+              accessibilityLabel="Lấy lại vị trí GPS"
+            >
+              <Text style={styles.gpsAction}>LÀM MỚI GPS</Text>
+            </TouchableOpacity>
           ) : null}
-          {gps.errorCode === "PERMISSION_DENIED" ? <TouchableOpacity onPress={() => void Linking.openSettings()} accessibilityRole="button"><Text style={styles.gpsAction}>CÀI ĐẶT</Text></TouchableOpacity> : null}
+          {gps.errorCode === "PERMISSION_DENIED" ? (
+            <TouchableOpacity
+              onPress={() => void Linking.openSettings()}
+              accessibilityRole="button"
+            >
+              <Text style={styles.gpsAction}>CÀI ĐẶT</Text>
+            </TouchableOpacity>
+          ) : null}
           {!locationReady && !gps.loading ? (
-            <TouchableOpacity onPress={returnToGps} accessibilityRole="button"><Text style={styles.gpsAction}>HỖ TRỢ GPS</Text></TouchableOpacity>
+            <TouchableOpacity onPress={returnToGps} accessibilityRole="button">
+              <Text style={styles.gpsAction}>HỖ TRỢ GPS</Text>
+            </TouchableOpacity>
           ) : null}
         </View>
+
         <View style={styles.previewArea}>
+          {/* Ambient Blur Backdrop chuẩn Apple HIG cho khung ngắm dọc (Portrait Viewfinder) */}
+          {ambientBackdropUri ? (
+            <Image
+              source={{ uri: ambientBackdropUri }}
+              blurRadius={28}
+              resizeMode="cover"
+              accessible={false}
+              style={[
+                StyleSheet.absoluteFill,
+                { opacity: 0.38, transform: [{ scale: 1.1 }] },
+              ]}
+            />
+          ) : (
+            <View
+              pointerEvents="none"
+              style={styles.ambientGlowBackdrop}
+            />
+          )}
+
           <View style={[styles.previewFrame, { width: previewWidth }]}>
+            {ambientBackdropUri ? (
+              <Image
+                source={{ uri: ambientBackdropUri }}
+                blurRadius={28}
+                resizeMode="cover"
+                accessible={false}
+                style={[
+                  StyleSheet.absoluteFill,
+                  { opacity: 0.38, transform: [{ scale: 1.1 }] },
+                ]}
+              />
+            ) : null}
+
             {isActive && previewWidth > 0 ? (
               <CameraView
                 key={cameraSession}
@@ -385,21 +553,31 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
                   if (activeRef.current && AppState.currentState === "active") {
                     cameraReadyRef.current = true;
                     setCameraReady(true);
-                    setCaptureErrorCode(current => current === "NOT_READY" ? null : current);
-                    setCaptureError(current => cameraReadyRef.current && captureErrorCode === "NOT_READY" ? null : current);
+                    setCaptureErrorCode((current) =>
+                      current === "NOT_READY" ? null : current,
+                    );
+                    setCaptureError((current) =>
+                      cameraReadyRef.current && captureErrorCode === "NOT_READY"
+                        ? null
+                        : current,
+                    );
                   }
                 }}
                 onMountError={(error) => {
                   if (cameraSessionRef.current !== cameraSession) return;
-                  if (__DEV__) console.error("[FieldCapture] camera mount failed", error);
+                  if (__DEV__)
+                    console.error("[FieldCapture] camera mount failed", error);
                   if (!activeRef.current) return;
                   cameraReadyRef.current = false;
                   setCameraReady(false);
                   setCaptureErrorCode("NOT_READY");
-                  setCaptureError("Camera chưa khởi động được. Nhấn khởi động lại Camera để thử lại.");
+                  setCaptureError(
+                    "Camera chưa khởi động được. Nhấn khởi động lại Camera để thử lại.",
+                  );
                 }}
               />
             ) : null}
+
             <View pointerEvents="none" style={styles.guide}>
               <View style={[styles.thirdVertical, { left: "33.33%" }]} />
               <View style={[styles.thirdVertical, { left: "66.66%" }]} />
@@ -415,10 +593,12 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               </View>
             </View>
+
             <FieldLiveEvidenceMetaOverlay
               location={location}
               active={isActive}
             />
+
             {capturing ? (
               <View
                 pointerEvents="none"
@@ -431,33 +611,85 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </ScrollView>
+
       <View
         style={[
           styles.bottomOverlay,
           { paddingBottom: Math.max(insets.bottom, 12) },
         ]}
       >
-        {draft.photos.length > 0 && !capturing ? <TouchableOpacity onPress={() => navigation.navigate("ReportPhotoReview")} accessibilityRole="button">
-          <Text style={styles.gpsAction}>XEM / XÓA {normalizePhotoDraft(draft).photos.length} ẢNH ĐANG GIỮ</Text>
-        </TouchableOpacity> : null}
-        {savedDraftCount > 0 && !capturing && !preparedPhoto ? <TouchableOpacity onPress={openSavedDrafts} accessibilityRole="button">
-          <Text style={styles.gpsAction}>BẢN NHÁP ĐÃ LƯU ({savedDraftCount})</Text>
-        </TouchableOpacity> : null}
-        {capturing ? <Text style={styles.gpsText} accessibilityLiveRegion="polite">{captureStageLabels[captureStage]}</Text> : null}
-        {captureError ? <Text style={styles.captureError} accessibilityRole="alert" accessibilityLiveRegion="assertive">{captureError}</Text> : null}
+        {draft.photos.length > 0 && !capturing ? (
+          <TouchableOpacity
+            onPress={() => navigation.navigate("ReportPhotoReview")}
+            accessibilityRole="button"
+          >
+            <Text style={styles.gpsAction}>
+              XEM / XÓA {activePhotos.length} ẢNH ĐANG GIỮ
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+        {savedDraftCount > 0 && !capturing && !preparedPhoto ? (
+          <TouchableOpacity
+            onPress={openSavedDrafts}
+            accessibilityRole="button"
+          >
+            <Text style={styles.gpsAction}>
+              BẢN NHÁP ĐÃ LƯU ({savedDraftCount})
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+        {capturing ? (
+          <Text style={styles.gpsText} accessibilityLiveRegion="polite">
+            {captureStageLabels[captureStage]}
+          </Text>
+        ) : null}
+        {captureError ? (
+          <Text
+            style={styles.captureError}
+            accessibilityRole="alert"
+            accessibilityLiveRegion="assertive"
+          >
+            {captureError}
+          </Text>
+        ) : null}
         {!cameraReady && !capturing ? (
           <View style={styles.gpsRow}>
-            <Text style={styles.gpsText} accessibilityLiveRegion="polite">Đang chuẩn bị Camera…</Text>
-            <TouchableOpacity onPress={() => { setCaptureError(null); restartCamera(); }} accessibilityRole="button">
+            <Text style={styles.gpsText} accessibilityLiveRegion="polite">
+              Ống kính đang sẵn sàng…
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setCaptureError(null);
+                restartCamera();
+              }}
+              accessibilityRole="button"
+            >
               <Text style={styles.gpsAction}>KHỞI ĐỘNG LẠI CAMERA</Text>
             </TouchableOpacity>
           </View>
         ) : null}
-        {preparedPhoto && !capturing ? <TouchableOpacity onPress={() => void takePicture()} accessibilityRole="button">
-          <Text style={styles.gpsAction}>{captureErrorCode === "DRAFT" ? "LƯU LẠI ẢNH" : "XEM ẢNH ĐÃ CHỤP"}</Text>
-        </TouchableOpacity> : null}
-        {(captureErrorCode === "GPS" || captureErrorCode === "GPS_INVALID") && !capturing ?
-          <TouchableOpacity onPress={() => void refreshGps()} accessibilityRole="button"><Text style={styles.gpsAction}>LẤY LẠI GPS</Text></TouchableOpacity> : null}
+        {preparedPhoto && !capturing ? (
+          <TouchableOpacity
+            onPress={() => void takePicture()}
+            accessibilityRole="button"
+          >
+            <Text style={styles.gpsAction}>
+              {captureErrorCode === "DRAFT"
+                ? "LƯU LẠI ẢNH"
+                : "XEM ẢNH ĐÃ CHỤP"}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+        {(captureErrorCode === "GPS" || captureErrorCode === "GPS_INVALID") &&
+        !capturing ? (
+          <TouchableOpacity
+            onPress={() => void refreshGps()}
+            accessibilityRole="button"
+          >
+            <Text style={styles.gpsAction}>LẤY LẠI GPS</Text>
+          </TouchableOpacity>
+        ) : null}
+
         <View style={styles.controlPanel}>
           <TouchableOpacity
             onPress={() =>
@@ -477,15 +709,17 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             )}
             <Text style={styles.controlText}>{flash.toUpperCase()}</Text>
           </TouchableOpacity>
+
+          {/* Nút chụp tức thì (Instant Shutter) luôn sẵn sàng 100%, không bị khóa bởi GPS */}
           <Animated.View style={{ transform: [{ scale: shutterScale }] }}>
             <TouchableOpacity
               onPress={() => void takePicture()}
               onPressIn={() => pressShutter(true)}
               onPressOut={() => pressShutter(false)}
               disabled={capturing}
-              style={[styles.shutterOuter, { opacity: cameraReady ? 1 : 0.5 }]}
+              style={styles.shutterOuter}
               accessibilityRole="button"
-              accessibilityLabel="Chụp ảnh hiện trường"
+              accessibilityLabel="Chụp ảnh hiện trường tức thì"
               accessibilityState={{
                 disabled: capturing,
                 busy: capturing,
@@ -493,7 +727,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             >
               <View style={styles.shutterMiddle}>
                 <View style={styles.shutterInner}>
-                  {capturing || !cameraReady ? (
+                  {capturing ? (
                     <ActivityIndicator color="#07101F" />
                   ) : (
                     <Camera size={27} color="#07101F" />
@@ -502,6 +736,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </TouchableOpacity>
           </Animated.View>
+
           <TouchableOpacity
             onPress={() =>
               setZoom((current) => (current >= 0.2 ? 0 : current + 0.1))
@@ -517,10 +752,11 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
         </View>
+
         <View style={styles.requirement}>
           <ShieldAlert size={13} color="#F59E0B" />
           <Text style={styles.requirementText}>
-            Chụp trực tiếp từ camera • Không chấp nhận ảnh từ thư viện
+            Chụp trực tiếp từ camera • Tọa độ GPS đồng bộ ngầm tự động
           </Text>
         </View>
       </View>
@@ -538,7 +774,13 @@ const styles = StyleSheet.create({
     gap: 8,
     flexWrap: "wrap",
   },
-  gpsRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, paddingHorizontal: 4 },
+  gpsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 4,
+  },
   gpsText: { color: "#CBD5E1", fontSize: 11, flexShrink: 1 },
   gpsAction: { color: "#38BDF8", fontSize: 11, fontWeight: "700" },
   stageText: {
@@ -653,12 +895,20 @@ const styles = StyleSheet.create({
   },
   previewArea: {
     minHeight: 0,
+    borderRadius: 20,
+    overflow: "hidden",
+    paddingVertical: 4,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.72)",
+  },
+  ambientGlowBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(14, 165, 233, 0.08)",
   },
   previewFrame: {
     aspectRatio: 3 / 4,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
     backgroundColor: "#050D17",
     borderWidth: 1,

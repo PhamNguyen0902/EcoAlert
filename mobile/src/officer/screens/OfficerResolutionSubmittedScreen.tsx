@@ -10,6 +10,7 @@ import {
   OfficerHeader,
   OfficerCard,
   OfficerBadge,
+  OfficerStepProgressBar,
   officerStyles as s,
 } from "../components/OfficerUI";
 import { OfficerEvidenceComparison } from "../components/OfficerEvidenceComparison";
@@ -53,10 +54,14 @@ export function OfficerResolutionSubmittedScreen({
           navigation.navigate("OfficerTabs", { screen: "OfficerTasksTab" })
         }
       />
+      <OfficerStepProgressBar
+        task={task || { status: "RESOLVED" }}
+        step={3}
+      />
       <ScrollView
         contentContainerStyle={[
           s.content,
-          { paddingBottom: insets.bottom + 24 },
+          { paddingBottom: 24 },
         ]}
       >
         {!confirmed || !task ? (
@@ -65,14 +70,9 @@ export function OfficerResolutionSubmittedScreen({
               <ActivityIndicator color={colors.primary} />
             ) : (
               <Text style={[s.body, { color: colors.textMuted }]}>
-                Chưa có kết quả xử lý được server xác nhận cho nhiệm vụ này.
+                Chưa có kết quả xử lý được hệ thống xác nhận cho nhiệm vụ này.
               </Text>
             )}
-            <Button
-              appearance="civic"
-              title="THỬ LẠI"
-              onPress={() => void query.refetch()}
-            />
           </OfficerCard>
         ) : (
           <>
@@ -109,7 +109,7 @@ export function OfficerResolutionSubmittedScreen({
                   accessibilityRole="header"
                   style={[s.title, { color: colors.text, textAlign: "center" }]}
                 >
-                  Đã gửi kết quả xử lý thành công!
+                  Hoàn tất cả 3 bước xử lý!
                 </Text>
                 <Text
                   style={[
@@ -117,8 +117,8 @@ export function OfficerResolutionSubmittedScreen({
                     { color: colors.textMuted, textAlign: "center" },
                   ]}
                 >
-                  Minh chứng hiện trường đã được gửi đến Quản trị viên để kiểm
-                  tra và nghiệm thu.
+                  Báo cáo kết quả và minh chứng hiện trường đã được gửi đến Quản
+                  trị viên để kiểm tra và nghiệm thu.
                 </Text>
               </View>
             </OfficerEntrance>
@@ -128,7 +128,7 @@ export function OfficerResolutionSubmittedScreen({
                   HỒ SƠ ĐIỆN TỬ
                 </Text>
                 <OfficerBadge
-                  label={closed ? "ADMIN ĐÃ ĐÓNG" : "CHỜ NGHIỆM THU"}
+                  label={closed ? "ĐÃ NGHIỆM THU" : "CHỜ NGHIỆM THU"}
                   color={closed ? colors.primary : colors.cyan}
                 />
               </View>
@@ -142,7 +142,7 @@ export function OfficerResolutionSubmittedScreen({
                 Gửi kết quả: {officerDate(task.resolvedAt)}
               </Text>
               <Text style={[s.body, { color: colors.textSecondary }]}>
-                {task.address || "Đã ghi nhận vị trí GPS"}
+                {task.address || "Đã ghi nhận vị trí định vị"}
               </Text>
               <Text style={[s.meta, { color: colors.cyan }]}>
                 Cán bộ:{" "}
@@ -158,16 +158,16 @@ export function OfficerResolutionSubmittedScreen({
             />
             <OfficerCard>
               <Text style={[s.heading, { color: colors.cyan }]}>
-                Quy trình tiếp theo
+                Quy trình nghiệm thu tiếp theo
               </Text>
               {[
                 {
-                  label: "Đã gửi hồ sơ minh chứng",
+                  label: "Đã gửi hồ sơ minh chứng hiện trường",
                   done: true,
                   hint: officerDate(task.resolvedAt),
                 },
                 {
-                  label: "Quản trị viên kiểm tra",
+                  label: "Quản trị viên kiểm tra kết quả",
                   done: Boolean(closed && task.closedAt),
                   hint: closed
                     ? officerDate(task.closedAt)
@@ -178,7 +178,7 @@ export function OfficerResolutionSubmittedScreen({
                   done: Boolean(closed && task.closedAt),
                   hint: closed
                     ? officerDate(task.closedAt)
-                    : "Chỉ Admin có thể xác nhận đóng báo cáo",
+                    : "Quản trị viên xác nhận đóng báo cáo",
                 },
               ].map((step, index) => (
                 <View
@@ -211,9 +211,19 @@ export function OfficerResolutionSubmittedScreen({
             </OfficerCard>
           </>
         )}
+      </ScrollView>
+      <View
+        style={{
+          padding: 12,
+          paddingBottom: Math.max(12, insets.bottom),
+          backgroundColor: colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      >
         <Button
           appearance="civic"
-          title="VỀ DANH SÁCH NHIỆM VỤ"
+          title="Về danh sách nhiệm vụ"
           onPress={() =>
             navigation.reset({
               index: 1,
@@ -221,15 +231,7 @@ export function OfficerResolutionSubmittedScreen({
             })
           }
         />
-        <Button
-          appearance="civic"
-          variant="outline"
-          title="XEM CHI TIẾT HỒ SƠ"
-          onPress={() =>
-            navigation.replace("OfficerAlertDetail", { id: route.params.id })
-          }
-        />
-      </ScrollView>
+      </View>
     </View>
   );
 }

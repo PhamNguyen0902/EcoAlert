@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
+  Animated,
   Image,
   Pressable,
   StyleSheet,
@@ -19,12 +20,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { Alert } from "../../shared/types";
 import type { OfficerStackParamList } from "../../app/navigation/types";
 import { useProfile } from "../../auth/hooks/useAuth";
 import { useUnreadNotificationCount } from "../../shared/hooks/useNotifications";
+import { useReducedMotion } from "../../shared/hooks/useReducedMotion";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
 import { civicType } from "../../shared/theme/civicDesign";
 import { unreadBadgeLabel } from "../../shared/utils/notificationNavigation";
+import {
+  getOfficerWorkflowStep,
+  type OfficerWorkflowStepNumber,
+} from "../utils/officerWorkflow";
 
 export const officerStyles = StyleSheet.create({
   screen: { flex: 1 },
@@ -256,6 +263,191 @@ export function OfficerContours() {
     </View>
   );
 }
+
+function ActiveStepHaloRing() {
+  const reducedMotion = useReducedMotion();
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (reducedMotion) {
+      pulseAnim.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 1100,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim, reducedMotion]);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.activeHaloRing,
+        {
+          opacity: reducedMotion
+            ? 0.35
+            : pulseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.55, 0.14],
+              }),
+          transform: [
+            {
+              scale: reducedMotion
+                ? 1.18
+                : pulseAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1.05, 1.38],
+                  }),
+            },
+          ],
+        },
+      ]}
+    />
+  );
+}
+
+export function OfficerStepProgressBar({
+  task,
+  step,
+}: {
+  task?: Pick<Alert, "status" | "checkIn"> | null;
+  step?: OfficerWorkflowStepNumber;
+}) {
+  const { colors } = useCivicTheme();
+  const progress = getOfficerWorkflowStep(task, step);
+  const currentStepItem =
+    progress.steps.find((item) => item.step === progress.currentStep) ||
+    progress.steps[0];
+
+  const fillFraction = progress.allCompleted
+    ? 1
+    : progress.currentStep === 3
+      ? 1
+      : progress.currentStep === 2
+        ? 0.5
+        : 0;
+
+  return (
+    <View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={
+        progress.allCompleted
+          ? "Tiến trình xử lý hiện trường: Đã hoàn thành cả 3 bước"
+          : `Tiến trình xử lý hiện trường, bước ${progress.currentStep} trên 3: ${currentStepItem.label}`
+      }
+      accessibilityValue={{
+        min: 1,
+        max: 3,
+        now: progress.currentStep,
+      }}
+      style={styles.stepperGlassCard}
+    >
+      <View style={styles.stepperHeader}>
+        <Text style={[officerStyles.technical, { color: colors.cyan }]}>
+          QUY TRÌNH XỬ LÝ 3 BƯỚC
+        </Text>
+        <Text style={[officerStyles.technical, { color: colors.primary }]}>
+          {progress.allCompleted
+            ? "HOÀN THÀNH 3/3 BƯỚC"
+            : `BƯỚC ${progress.currentStep}/3 · ${currentStepItem.label.toUpperCase()}`}
+        </Text>
+      </View>
+
+      <View style={styles.stepperTrack}>
+        {/* Đường nối liên tục xuyên suốt từ tâm Bước 1 -> Bước 2 -> Bước 3 */}
+        <View style={styles.continuousRailWrap} pointerEvents="none">
+          <View
+            style={[
+              styles.continuousRailFill,
+              {
+                width: `${fillFraction * 100}%`,
+                backgroundColor: progress.allCompleted
+                  ? "#10B981"
+                  : "#38BDF8",
+              },
+            ]}
+          />
+        </View>
+
+        {progress.steps.map((item) => {
+          const isCompleted = item.done;
+          const isActive = item.active;
+          const circleBg = isCompleted
+            ? "#10B981"
+            : isActive
+              ? "#0EA5E9"
+              : "#0F172A";
+          const circleBorder = isCompleted
+            ? "#10B981"
+            : isActive
+              ? "#38BDF8"
+              : "#334155";
+          const textColor = isCompleted
+            ? "#10B981"
+            : isActive
+              ? colors.text
+              : "#64748B";
+
+          return (
+            <View key={item.step} style={styles.stepNode}>
+              <View style={styles.stepCircleWrap}>
+                {isActive && <ActiveStepHaloRing />}
+                <View
+                  style={[
+                    styles.stepCircle,
+                    {
+                      backgroundColor: circleBg,
+                      borderColor: circleBorder,
+                    },
+                  ]}
+                >
+                  {isCompleted ? (
+                    <Text style={styles.stepCheckText}>✓</Text>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.stepNumberText,
+                        { color: isActive ? "#07101F" : "#64748B" },
+                      ]}
+                    >
+                      {item.step}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <Text
+                numberOfLines={2}
+                style={[
+                  styles.stepLabel,
+                  {
+                    color: textColor,
+                    fontWeight: isActive || isCompleted ? "800" : "600",
+                  },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 12,
@@ -315,4 +507,85 @@ const styles = StyleSheet.create({
   metric: { flex: 1, minWidth: 0, padding: 10, gap: 4, borderRadius: 10 },
   metricLine: { width: 18, height: 2, borderRadius: 1 },
   metricValue: { fontSize: 24, fontWeight: "800", lineHeight: 30 },
+  stepperGlassCard: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
+    borderRadius: 16,
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    borderWidth: 1,
+    borderColor: "rgba(56, 189, 248, 0.16)",
+    padding: 14,
+    gap: 12,
+  },
+  stepperHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  stepperTrack: {
+    position: "relative",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  continuousRailWrap: {
+    position: "absolute",
+    top: 13.5,
+    left: "16.66%",
+    right: "16.66%",
+    height: 3,
+    borderRadius: 999,
+    backgroundColor: "#1E293B",
+    overflow: "hidden",
+  },
+  continuousRailFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  stepNode: {
+    flex: 1,
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 2,
+    zIndex: 2,
+  },
+  stepCircleWrap: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeHaloRing: {
+    position: "absolute",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: "#38BDF8",
+    backgroundColor: "rgba(14, 165, 233, 0.22)",
+  },
+  stepCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepCheckText: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: "#FFFFFF",
+  },
+  stepNumberText: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  stepLabel: {
+    fontSize: 10,
+    lineHeight: 14,
+    textAlign: "center",
+  },
 });

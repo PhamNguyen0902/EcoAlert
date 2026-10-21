@@ -105,7 +105,7 @@ export function OfficerTaskCard({
       {!compact && (
         <View style={[styles.cta, { backgroundColor: colors.greenSoft }]}>
           <Text style={[s.technical, { color: colors.primary }]}>
-            {state.action === "RESOLVE" || state.action === "ARRIVE"
+            {state.action === "RESOLVE" || state.action === "CHECK_IN"
               ? "TIẾP TỤC XỬ LÝ ›"
               : "XEM CHI TIẾT NHIỆM VỤ ›"}
           </Text>

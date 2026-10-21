@@ -48,6 +48,11 @@ export const OfficerTasksScreen = () => {
   const now = useScreenClock(60_000, active);
   const [filter, setFilter] = useState<OfficerTaskFilter>("ALL");
   const tasks = filterOfficerTasks(query.data?.items || [], "ALL");
+  const actionableTasks = tasks.filter((t) =>
+    ["ASSIGNED", "IN_PROGRESS"].includes(t.status.toUpperCase()),
+  );
+  const displayedTasks =
+    filter === "ALL" ? actionableTasks : filterOfficerTasks(tasks, filter);
   const hour = new Date(now).getHours();
   const greeting =
     hour < 12
@@ -55,20 +60,18 @@ export const OfficerTasksScreen = () => {
       : hour < 18
         ? "Chào buổi chiều"
         : "Chào buổi tối";
-  const priority = tasks
-    .filter((t) => ["ASSIGNED", "IN_PROGRESS"].includes(t.status.toUpperCase()))
-    .sort((a, b) => {
-      const weight: Record<string, number> = {
-        critical: 4,
-        high: 3,
-        medium: 2,
-        low: 1,
-      };
-      return (
-        (weight[b.severity?.toLowerCase() || ""] || 0) -
-        (weight[a.severity?.toLowerCase() || ""] || 0)
-      );
-    })[0];
+  const priority = actionableTasks.sort((a, b) => {
+    const weight: Record<string, number> = {
+      critical: 4,
+      high: 3,
+      medium: 2,
+      low: 1,
+    };
+    return (
+      (weight[b.severity?.toLowerCase() || ""] || 0) -
+      (weight[a.severity?.toLowerCase() || ""] || 0)
+    );
+  })[0];
   const activity = tasks
     .flatMap((task) =>
       officerTimeline(task)
@@ -201,27 +204,33 @@ export const OfficerTasksScreen = () => {
           </Text>
         )}
         <OfficerSection
-          title="Danh sách nhiệm vụ"
+          title="Nhiệm vụ đang xử lý"
           action="Tất cả"
           onPress={() => navigation.navigate("OfficerTaskList")}
         />
         <OfficerTaskFilters tasks={tasks} value={filter} onChange={setFilter} />
-        {filterOfficerTasks(tasks, filter)
-          .slice(0, 3)
-          .map((task) => (
-            <OfficerTaskCard
-              key={task._id}
-              task={task}
-              onPress={() => detail(task._id)}
-              compact
-            />
-          ))}
-        {!filterOfficerTasks(tasks, filter).length && query.data && (
+        {displayedTasks.slice(0, 3).map((task) => (
+          <OfficerTaskCard
+            key={task._id}
+            task={task}
+            onPress={() => detail(task._id)}
+            compact
+          />
+        ))}
+        {!displayedTasks.length && query.data && (
           <Text style={[s.body, { color: colors.textMuted }]}>
             Không có nhiệm vụ trong nhóm này.
           </Text>
         )}
-        <OfficerSection title="Hoạt động gần đây" />
+        <OfficerSection
+          title="Hoạt động gần đây"
+          action="Xem lịch sử"
+          onPress={() =>
+            navigation.navigate("OfficerTabs", {
+              screen: "OfficerHistoryTab",
+            })
+          }
+        />
         <OfficerCard>
           {activity.map((event, index) => (
             <View

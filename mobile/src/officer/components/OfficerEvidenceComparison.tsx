@@ -5,7 +5,8 @@ import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageF
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
 import { officerDate } from "../utils/officerPresentation";
 import { OfficerBadge, OfficerCard, officerStyles as s } from "./OfficerUI";
-// hiển thị khung đặt cạnh nhau so sánh ảnh trước và sau khi dọn sạch điểm rác
+
+// Hiển thị trực quan 2 ảnh đặt cạnh nhau: "Ảnh sự cố ban đầu (Trước)" và "Ảnh kết quả dọn dẹp (Sau)"
 export function OfficerEvidenceComparison({
   beforeUri,
   beforeFallback,
@@ -23,23 +24,25 @@ export function OfficerEvidenceComparison({
   return (
     <OfficerCard>
       <Text style={[s.heading, { color: colors.text }]}>
-        Đối chiếu hiện trường
+        Đối chiếu ảnh Trước & Sau xử lý
       </Text>
       <View style={[s.row, { alignItems: "flex-start" }]}>
         {[
           {
-            label: "TRƯỚC XỬ LÝ",
+            label: "Ảnh sự cố ban đầu (Trước)",
             uri: beforeUri,
             fallback: beforeFallback,
             tone: colors.danger,
             at: beforeAt,
+            emptyText: "Không có ảnh sự cố ban đầu",
           },
           {
-            label: "SAU XỬ LÝ",
+            label: "Ảnh kết quả dọn dẹp (Sau)",
             uri: afterUri,
             fallback: undefined,
             tone: colors.primary,
             at: afterAt,
+            emptyText: "Chưa chụp ảnh kết quả dọn dẹp",
           },
         ].map((image) => (
           <View key={image.label} style={[s.grow, { gap: 8 }]}>
@@ -49,7 +52,7 @@ export function OfficerEvidenceComparison({
                 imageUri={image.uri}
                 fallbackUri={image.fallback}
                 style={{ width: "100%", aspectRatio: 3 / 4, borderRadius: 10 }}
-                accessibilityLabel={`Minh chứng ${image.label.toLowerCase()}`}
+                accessibilityLabel={image.label}
               />
             ) : (
               <View
@@ -70,9 +73,7 @@ export function OfficerEvidenceComparison({
                     { color: colors.textMuted, textAlign: "center" },
                   ]}
                 >
-                  {image.label === "SAU XỬ LÝ"
-                    ? "Chưa chụp minh chứng"
-                    : "Không có ảnh trước xử lý"}
+                  {image.emptyText}
                 </Text>
               </View>
             )}
@@ -85,7 +86,7 @@ export function OfficerEvidenceComparison({
         ))}
       </View>
       <Text style={[s.meta, { color: colors.textMuted }]}>
-        Chạm ảnh để xem lớn. Ảnh đối chiếu lấy từ hồ sơ thực tế.
+        Chạm vào ảnh để phóng to kiểm tra góc chụp và cảnh quan hiện trường.
       </Text>
     </OfficerCard>
   );

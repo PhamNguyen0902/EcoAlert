@@ -18,7 +18,8 @@ import {
 } from "lucide-react-native";
 import { formatDistanceToNow, isValid } from "date-fns";
 import { vi } from "date-fns/locale";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useInfiniteNotifications,
@@ -38,9 +39,11 @@ import { getNotificationAlertId } from "../../shared/utils/notificationNavigatio
 import type { NotificationItem } from "../../shared/types/notification";
 import type { OfficerStackParamList } from "../../app/navigation/types";
 // màn hình danh sách thông báo công vụ gửi đến cán bộ
-export function OfficerNotificationsScreen({
-  navigation,
-}: NativeStackScreenProps<OfficerStackParamList, "OfficerNotifications">) {
+export function OfficerNotificationsScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<OfficerStackParamList>>();
+  const route = useRoute();
+  const isStackScreen = route.name === "OfficerNotifications";
   const { colors } = useCivicTheme();
   const insets = useSafeAreaInsets();
   const query = useInfiniteNotifications();
@@ -81,7 +84,14 @@ export function OfficerNotificationsScreen({
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <OfficerHeader title="Thông báo" back={navigation.goBack} />
+      <OfficerHeader
+        title="Thông báo"
+        back={
+          isStackScreen && navigation.canGoBack()
+            ? navigation.goBack
+            : undefined
+        }
+      />
       <FlatList
         data={visible}
         keyExtractor={(item) => item._id}

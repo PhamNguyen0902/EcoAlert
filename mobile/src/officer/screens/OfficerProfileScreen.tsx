@@ -34,8 +34,8 @@ export const OfficerProfileScreen: React.FC = () => {
   const copy =
     language === "vi"
       ? {
-          title: "Thông tin cán bộ",
-          subtitle: "Quản lý tài khoản và phiên đăng nhập EcoAlert.",
+          title: "Ca trực & Hồ sơ Cán bộ",
+          subtitle: "Quản lý ca trực, địa bàn phụ trách, chẩn đoán GPS và tài khoản EcoAlert.",
           account: "Tài khoản đang đăng nhập",
           roleLabel: "Vai trò",
           role: "Cán bộ",
@@ -47,8 +47,8 @@ export const OfficerProfileScreen: React.FC = () => {
           error: "Không thể đăng xuất. Vui lòng thử lại.",
         }
       : {
-          title: "Officer profile",
-          subtitle: "Manage your EcoAlert account and sign-in session.",
+          title: "Shift & Officer profile",
+          subtitle: "Manage your shift, service areas, GPS diagnostics, and EcoAlert account.",
           account: "Signed-in account",
           roleLabel: "Role",
           role: "Officer",
@@ -116,7 +116,7 @@ export const OfficerProfileScreen: React.FC = () => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      <OfficerHeader title="Cá nhân" />
+      <OfficerHeader title={language === "vi" ? "Ca trực" : "Shift"} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

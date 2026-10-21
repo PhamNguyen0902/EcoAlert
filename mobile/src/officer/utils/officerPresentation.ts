@@ -77,3 +77,14 @@ export function taskDistance(task: Alert, position: MapCoordinates | null) {
     ? officerDistance(position, destination)
     : null;
 }
+
+export function officerElapsedTime(fromIso?: string, nowMs = Date.now()) {
+  if (!fromIso || !Number.isFinite(Date.parse(fromIso))) return null;
+  const diffSec = Math.max(0, Math.floor((nowMs - Date.parse(fromIso)) / 1000));
+  const hours = Math.floor(diffSec / 3600);
+  const mins = Math.floor((diffSec % 3600) / 60);
+  if (hours > 0) return `${hours} giờ ${mins} phút`;
+  if (mins > 0) return `${mins} phút`;
+  return "Vừa xong";
+}
+
