@@ -1,3 +1,4 @@
+import urllib.request
 from typing import Annotated
 import asyncio
 from io import BytesIO
@@ -8,8 +9,21 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, 
 from PIL import Image, UnidentifiedImageError
 import logging
 
-from schemas.detection import BoundingBox, DetectionResponse, DetectionResult, ImageMetadata
-from services.detector import DetectionBatch, DetectorBusyError, DetectorUnavailableError, WasteDetector
+from schemas.detection import (
+    BoundingBox,
+    DetectionResponse,
+    DetectionResult,
+    ImageMetadata,
+    VerifyResolutionResponse,
+    VerifyResolutionUrlRequest,
+)
+from services.detector import (
+    DetectionBatch,
+    DetectorBusyError,
+    DetectorUnavailableError,
+    WasteDetector,
+    is_clean_scene,
+)
 
 router = APIRouter(tags=["detection"])
 logger = logging.getLogger(__name__)
@@ -206,3 +220,93 @@ async def predict_legacy(
         "requiresManualReview": batch.degraded or any(d.needs_review for d in batch.detections) or low_confidence,
         **metadata,
     }
+
+
+# Tự động kiểm định nghiệm thu sau xử lý qua tập tin ảnh tải lên
+@router.post("/verify-resolution", response_model=VerifyResolutionResponse)
+async def verify_resolution_file(
+    request: Request,
+    file: Annotated[UploadFile, File(description="Ảnh kết quả sau xử lý")],
+    confidence: Annotated[float, Query(gt=0, le=1)] = 0.5,
+) -> VerifyResolutionResponse:
+    detector = get_detector(request)
+    batch = await infer(file, confidence, detector)
+    is_clean, wastes = is_clean_scene(batch, confidence_threshold=confidence)
+    serialized = serialize_detection_response(batch)
+    waste_serialized = [d for d in serialized.detections if d.confidence > confidence]
+    if is_clean:
+        return VerifyResolutionResponse(
+            is_clean=True,
+            status="clean",
+            remaining_waste_count=0,
+            detections=[],
+            message="Hiện trường đã được dọn sạch thành công.",
+        )
+    return VerifyResolutionResponse(
+        is_clean=False,
+        status="waste_detected",
+        remaining_waste_count=len(waste_serialized),
+        detections=waste_serialized,
+        message="AI vẫn phát hiện rác thải tại vị trí này. Vui lòng kiểm tra lại hiện trường.",
+    )
+
+
+# Tự động kiểm định nghiệm thu sau xử lý qua đường dẫn ảnh (URL)
+@router.post("/verify-resolution-url", response_model=VerifyResolutionResponse)
+async def verify_resolution_url(
+    request: Request,
+    payload: VerifyResolutionUrlRequest,
+) -> VerifyResolutionResponse:
+    detector = get_detector(request)
+    if not detector.is_ready():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Vision model is not ready")
+
+    if not detector.admission.acquire(blocking=False):
+        raise HTTPException(status_code=503, detail="Vision inference is busy; retry later", headers={"Retry-After": "1"})
+
+    future = None
+    try:
+        req = urllib.request.Request(
+            payload.imageUrl,
+            headers={"User-Agent": "EcoAlert-Vision/1.0"}
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=detector.settings.inference_timeout) as resp:
+                image_bytes = resp.read()
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Could not download image from URL: {exc}")
+
+        def work():
+            image = decode_image(image_bytes, detector.settings.max_image_pixels)
+            return detector.detect_image(image, payload.confidence)
+
+        future = asyncio.get_running_loop().run_in_executor(None, work)
+        def finished(done):
+            detector.admission.release()
+            if not done.cancelled():
+                done.exception()
+        future.add_done_callback(finished)
+        batch = await asyncio.wait_for(asyncio.shield(future), detector.settings.inference_timeout)
+
+        is_clean, wastes = is_clean_scene(batch, confidence_threshold=payload.confidence)
+        serialized = serialize_detection_response(batch)
+        waste_serialized = [d for d in serialized.detections if d.confidence > payload.confidence]
+        if is_clean:
+            return VerifyResolutionResponse(
+                is_clean=True,
+                status="clean",
+                remaining_waste_count=0,
+                detections=[],
+                message="Hiện trường đã được dọn sạch thành công.",
+            )
+        return VerifyResolutionResponse(
+            is_clean=False,
+            status="waste_detected",
+            remaining_waste_count=len(waste_serialized),
+            detections=waste_serialized,
+            message="AI vẫn phát hiện rác thải tại vị trí này. Vui lòng kiểm tra lại hiện trường.",
+        )
+    finally:
+        if future is None:
+            detector.admission.release()
+

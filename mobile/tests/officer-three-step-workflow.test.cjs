@@ -425,19 +425,14 @@ test("Officer workflow screens embed OfficerStepProgressBar, Ghost Overlay, Evid
   );
   assert.ok(detailSource.includes("Đang xử lý tại hiện trường"));
 
-  // Step 3 Camera Ghost Overlay & Thumbnail instruction
+  // Step 3 Camera Clean Live View
   const cameraSource = fs.readFileSync(
     path.join(screensDir, "OfficerResolutionCamera.tsx"),
     "utf8",
   );
-  assert.ok(cameraSource.includes("Soi góc chụp gốc"));
-  assert.ok(cameraSource.includes("0.35"));
-  assert.ok(cameraSource.includes('pointerEvents="none"'));
-  assert.ok(
-    cameraSource.includes(
-      "Căn chỉnh góc chụp tương đồng với ảnh sự cố ban đầu",
-    ),
-  );
+  assert.ok(cameraSource.includes("CameraView"));
+  assert.ok(cameraSource.includes("CHỤP ẢNH KẾT QUẢ (SAU XỬ LÝ)"));
+  assert.ok(!cameraSource.includes("showGhost"));
 
   // Step 3 Evidence Comparison labels
   const comparisonSource = fs.readFileSync(

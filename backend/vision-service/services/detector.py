@@ -254,4 +254,28 @@ class MultiModelDetector:
             self._lock.release()
 
 
+WASTE_CLASSES = {
+    "plastic_bottle", "plastic_bag", "plastic_cup", "metal_can",
+    "cardboard", "glass_bottle", "animal_waste", "construction_waste",
+    "garbage_bag", "glass", "metal", "organic_waste", "paper",
+    "plastic", "waste", "bulky_waste"
+}
+
+
+def is_clean_scene(batch: DetectionBatch, confidence_threshold: float = 0.5) -> tuple[bool, list[Detection]]:
+    """Kiểm tra hiện trường có sạch rác sau xử lý hay không.
+    Trả về (is_clean, remaining_wastes).
+    Nếu không phát hiện rác hoặc độ tin cậy <= confidence_threshold (mặc định 0.5), trả về (True, []).
+    Nếu phát hiện rác có độ tin cậy > confidence_threshold, trả về (False, danh_sách_rác_tồn_đọng).
+    """
+    waste_detections = [
+        d for d in batch.detections
+        if d.confidence > confidence_threshold and (
+            d.class_name in WASTE_CLASSES or
+            any(k in d.class_name.lower() for k in ("waste", "bag", "plastic", "garbage", "trash", "rubbish"))
+        )
+    ]
+    return (len(waste_detections) == 0, waste_detections)
+
+
 WasteDetector = MultiModelDetector

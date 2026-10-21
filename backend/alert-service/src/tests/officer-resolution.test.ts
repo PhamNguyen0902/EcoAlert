@@ -198,7 +198,27 @@ test("resolution requires verified own arrival and field evidence; stores real m
         assert.equal(events, 2);
       },
     );
+    await t.test(
+      "resolution rejected when AI Vision detects remaining waste with confidence > 0.5",
+      async () => {
+        task.status = AlertStatus.IN_PROGRESS;
+        const originalVerify = alertService.verifyResolutionCleanScene;
+        try {
+          alertService.verifyResolutionCleanScene = async () => ({
+            isClean: false,
+            reason: "AI vẫn phát hiện rác thải tại vị trí này. Vui lòng kiểm tra lại hiện trường.",
+          });
+          await assert.rejects(
+            alertService.resolveIncident(id, actor, valid),
+            /AI vẫn phát hiện rác thải/,
+          );
+        } finally {
+          alertService.verifyResolutionCleanScene = originalVerify;
+        }
+      },
+    );
     await t.test("RESOLVED cannot resolve twice", async () => {
+      task.status = AlertStatus.RESOLVED;
       await assert.rejects(
         alertService.resolveIncident(id, actor, valid),
         /đang xử lý/,

@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
-  Image,
   Linking,
   Pressable,
   StyleSheet,
@@ -12,7 +11,7 @@ import {
 import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Camera, Eye, EyeOff, Flashlight, X } from "lucide-react-native";
+import { Camera, Flashlight, X } from "lucide-react-native";
 import { normalizeFieldCaptureImage } from "../../shared/utils/fieldCaptureImage";
 import { persistOriginalFieldImage } from "../../shared/utils/watermark";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
@@ -23,21 +22,16 @@ import {
   type OfficerPhoto,
 } from "../utils/officerResolution";
 
-// Màn hình Camera chụp ảnh kết quả sau xử lý kèm hỗ trợ căn chuẩn góc chụp (Ghost Overlay / Thumbnail tham chiếu)
+// Màn hình Camera chụp ảnh kết quả sau xử lý (Giao diện chụp trực tiếp rõ ràng, sạch sẽ)
 export function OfficerResolutionCamera({
   onCapture,
   onClose,
-  beforeImageUri,
-  referenceImageUri,
 }: {
   onCapture: (photo: OfficerPhoto) => void;
   onClose: () => void;
   beforeImageUri?: string;
   referenceImageUri?: string;
 }) {
-  const initialReferenceUri = beforeImageUri || referenceImageUri;
-  const [showGhost, setShowGhost] = useState(Boolean(initialReferenceUri));
-  const ghostOpacity = 0.35; // Độ trong suốt chuẩn 0.35 giúp soi góc chụp gốc
   const insets = useSafeAreaInsets();
   const { colors } = useCivicTheme();
   const [permission, requestPermission] = useCameraPermissions();
@@ -106,7 +100,6 @@ export function OfficerResolutionCamera({
           location: gps,
           width: normalized.width,
           height: normalized.height,
-          usedGhostOverlay: Boolean(initialReferenceUri && showGhost),
         });
     } catch (failure: unknown) {
       const localMessage =
@@ -152,36 +145,17 @@ export function OfficerResolutionCamera({
         <Text style={[styles.title, { color: colors.primary }]}>
           CHỤP ẢNH KẾT QUẢ (SAU XỬ LÝ)
         </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {initialReferenceUri ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Soi góc chụp gốc"
-              style={[styles.toolButton, showGhost && styles.toolButtonActive]}
-              onPress={() => setShowGhost((prev) => !prev)}
-            >
-              {showGhost ? (
-                <Eye size={17} color="#22C55E" />
-              ) : (
-                <EyeOff size={17} color="#94A3B8" />
-              )}
-              <Text style={styles.toolButtonText}>
-                {showGhost ? "Soi góc chụp gốc: Bật" : "Soi góc chụp gốc: Tắt"}
-              </Text>
-            </Pressable>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Đổi chế độ flash"
-            style={styles.control}
-            onPress={() => setFlash(flash === "off" ? "on" : "off")}
-          >
-            <Flashlight
-              size={22}
-              color={flash === "on" ? colors.primary : colors.textMuted}
-            />
-          </Pressable>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Đổi chế độ flash"
+          style={styles.control}
+          onPress={() => setFlash(flash === "off" ? "on" : "off")}
+        >
+          <Flashlight
+            size={22}
+            color={flash === "on" ? colors.primary : colors.textMuted}
+          />
+        </Pressable>
       </View>
       <OfficerStepProgressBar step={3} />
       {!permission?.granted ? (
@@ -220,6 +194,7 @@ export function OfficerResolutionCamera({
             )
           }
         >
+          {/* Giao diện xem trực tiếp toàn khung hình rõ ràng không vướng lớp mờ */}
           <View style={[styles.frame, { width: frameWidth }]}>
             {foreground && frameWidth > 0 ? (
               <CameraView
@@ -236,45 +211,12 @@ export function OfficerResolutionCamera({
                 }}
               />
             ) : null}
-
-            {/* Khi bật Soi góc chụp gốc (Ghost Overlay): phủ ảnh ban đầu với opacity: 0.35 và pointerEvents="none" */}
-            {initialReferenceUri && showGhost ? (
-              <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <Image
-                  source={{ uri: initialReferenceUri }}
-                  style={[StyleSheet.absoluteFill, { opacity: ghostOpacity }]}
-                  resizeMode="cover"
-                />
-                <View style={styles.ghostBadge}>
-                  <Text style={styles.ghostBadgeText}>
-                    Soi góc chụp gốc (Căn khớp vị trí & góc nhìn ban đầu)
-                  </Text>
-                </View>
-              </View>
-            ) : null}
-
-            {/* Khi tắt Ghost Overlay: hiển thị ảnh gốc dạng khung nhỏ (Thumbnail) ở góc trên màn hình kèm chỉ dẫn */}
-            {initialReferenceUri && !showGhost ? (
-              <View style={styles.thumbnailGuideOverlay} pointerEvents="none">
-                <Image
-                  source={{ uri: initialReferenceUri }}
-                  style={styles.referenceThumbnail}
-                  resizeMode="cover"
-                />
-                <View style={styles.thumbnailTextWrap}>
-                  <Text style={styles.thumbnailTitle}>Ảnh sự cố ban đầu</Text>
-                  <Text style={styles.thumbnailInstruction}>
-                    Căn chỉnh góc chụp tương đồng với ảnh sự cố ban đầu
-                  </Text>
-                </View>
-              </View>
-            ) : null}
           </View>
         </View>
       )}
       <View style={styles.footer}>
         <Text style={[styles.message, { color: colors.text }]}>
-          Căn chỉnh góc chụp tương đồng với ảnh sự cố ban đầu
+          Chụp ảnh kết quả sau xử lý tại hiện trường
         </Text>
         <Text style={[styles.hint, { color: colors.textMuted }]}>
           Ảnh chụp trực tiếp từ Camera · Tự động đính kèm tọa độ GPS hiện tại
@@ -358,74 +300,4 @@ const styles = StyleSheet.create({
   },
   permissionButton: { padding: 16, borderRadius: 12 },
   buttonText: { color: "#07101F", fontWeight: "800" },
-  ghostBadge: {
-    position: "absolute",
-    top: 16,
-    alignSelf: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.72)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#22C55E",
-  },
-  ghostBadgeText: {
-    color: "#22C55E",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  thumbnailGuideOverlay: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    right: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "rgba(7, 16, 31, 0.85)",
-    padding: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#38BDF8",
-  },
-  referenceThumbnail: {
-    width: 58,
-    height: 76,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#22C55E",
-  },
-  thumbnailTextWrap: {
-    flex: 1,
-    gap: 3,
-  },
-  thumbnailTitle: {
-    color: "#38BDF8",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  thumbnailInstruction: {
-    color: "#F8FAFC",
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: "600",
-  },
-  toolButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-  },
-  toolButtonActive: {
-    borderColor: "#22C55E",
-    borderWidth: 1,
-  },
-  toolButtonText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
-  },
 });
