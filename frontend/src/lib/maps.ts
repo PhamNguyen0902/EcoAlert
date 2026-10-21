@@ -15,7 +15,7 @@ export const googleMapsUrl = (latitude: number, longitude: number): string =>
   `https://www.google.com/maps?q=${latitude},${longitude}`;
 
 export const googleMapsDirectionsUrl = (latitude: number, longitude: number): string =>
-  `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+  `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=two-wheeler&dirflg=m`;
 
 type GoogleMapsAction = 'location' | 'navigation';
 type ValidCoordinates = readonly [latitude: number, longitude: number];

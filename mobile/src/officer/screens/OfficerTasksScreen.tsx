@@ -25,6 +25,7 @@ import {
   OfficerSection,
   officerStyles as s,
 } from "../components/OfficerUI";
+import { OfficerShiftCard } from "../components/OfficerShiftCard";
 import { OfficerTaskCard } from "../components/OfficerTaskCard";
 import { OfficerTaskFilters } from "../components/OfficerTaskFilters";
 import { OfficerEntrance } from "../components/OfficerEntrance";
@@ -101,6 +102,7 @@ export const OfficerTasksScreen = () => {
           />
         }
       >
+        <OfficerShiftCard />
         <View style={[s.row, { flexWrap: "wrap" }]}>
           <OfficerBadge label="CÁN BỘ · ECOALERT" />
           <OfficerBadge
