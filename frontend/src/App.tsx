@@ -38,8 +38,20 @@ const ReportManagement = lazy(
   () => import("./features/admin/pages/ReportManagement"),
 );
 const AdminGisMap = lazy(() => import("./features/admin/pages/AdminGisMap"));
-const ServiceAreas = lazy(() => import("./features/admin/pages/ServiceAreas"));
-
+const AdminDispatch = lazy(
+  () => import("./features/admin/pages/AdminDispatch"),
+);
+const AdminServiceAreas = lazy(
+  () => import("./features/admin/pages/AdminServiceAreas"),
+);
+const AdminAiVision = lazy(
+  () => import("./features/admin/pages/AdminAiVision"),
+);
+const AdminUsers = lazy(() => import("./features/admin/pages/AdminUsers"));
+const AdminSettings = lazy(
+  () => import("./features/admin/pages/AdminSettings"),
+);
+const AdminHelp = lazy(() => import("./features/admin/pages/AdminHelp"));
 const ProtectedRoute = lazy(() =>
   import("./components/auth/ProtectedRoute").then((m) => ({
     default: m.ProtectedRoute,
@@ -109,13 +121,28 @@ function App() {
           {/* Admin Routes */}
           <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
             <Route element={<AdminLayout />}>
-              {/* trang Dashboard thống kê & phân quyền */}
+              {/* trang Dashboard thống kê & giám sát */}
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               {/* admin quản lý report */}
               <Route path="/admin/reports" element={<ReportManagement />} />
               {/* bản đồ để xem mật độ ô nhiễm các điểm nóng(citizen hay báo cáo) */}
+              <Route path="/admin/map" element={<AdminGisMap />} />
               <Route path="/admin/gis" element={<AdminGisMap />} />
-              <Route path="/admin/service-areas" element={<ServiceAreas />} />
+              {/* điều phối & ca trực */}
+              <Route path="/admin/dispatch" element={<AdminDispatch />} />
+              {/* khu vực phục vụ (Service Areas) */}
+              <Route
+                path="/admin/service-areas"
+                element={<AdminServiceAreas />}
+              />
+              {/* kiểm định AI Vision */}
+              <Route path="/admin/ai-vision" element={<AdminAiVision />} />
+              {/* quản lý thành viên & phân quyền */}
+              <Route path="/admin/users" element={<AdminUsers />} />
+              {/* cài đặt hệ thống */}
+              <Route path="/admin/settings" element={<AdminSettings />} />
+              {/* trợ giúp & sổ tay vận hành */}
+              <Route path="/admin/help" element={<AdminHelp />} />
               {/* chi tiết báo cáo */}
               <Route
                 path="/admin/reports/:id"

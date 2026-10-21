@@ -16,6 +16,8 @@ import {
   Eye,
   X,
   ExternalLink,
+  MoreHorizontal,
+  Check,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -31,6 +33,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import toast from "react-hot-toast";
 import { Alert, User } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -42,6 +52,7 @@ import {
 
 // các loại mục tương ứng với các thẻ
 type MetricType = "valid" | "in_progress" | "pending" | "resolved";
+type DashboardViewTab = "operations" | "members";
 
 interface MetricConfig {
   key: MetricType;
@@ -83,12 +94,15 @@ const METRIC_CONFIGS: Record<MetricType, MetricConfig> = {
 
 export default function AdminDashboard() {
   const { language } = useLanguage();
+  const [activeView, setActiveView] = useState<DashboardViewTab>("operations");
   const [userPage, setUserPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
 
-  // state lưu mục đang được chọn khi click vào thẻ thống kê
-  const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
+  // mặc định chọn sẵn mục "pending" - Chờ tiếp nhận để Admin thấy ngay việc cần làm
+  const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(
+    "pending",
+  );
 
   // lấy dữ liệu thống kê sự cố
   const {
@@ -137,9 +151,9 @@ export default function AdminDashboard() {
   // hàm click vào thẻ để mở hoặc đóng bộ lọc
   const handleCardClick = (metric: MetricType) => {
     if (selectedMetric === metric) {
-      setSelectedMetric(null); // click lại thẻ đang mở thì đóng lại
+      setSelectedMetric(null);
     } else {
-      setSelectedMetric(metric); // mở danh sách mục tương ứng
+      setSelectedMetric(metric);
     }
   };
 
@@ -175,522 +189,620 @@ export default function AdminDashboard() {
   }, [selectedMetric, stats?.allItems]);
 
   return (
-    <div className="space-y-8 pb-10">
-      {/* phần đầu trang và tiêu đề */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5">
+    <div className="space-y-6 pb-10">
+      {/* phần đầu trang và tiêu đề tinh gọn kèm Top-level View Switcher */}
+      <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Bảng Điều Khiển Quản Trị
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Bảng Điều Khiển Quản Trị
+            </h1>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Đồng bộ thời gian thực</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => refetchStats()}
+                disabled={isStatsRefetching}
+                className="ml-0.5 h-5 w-5 rounded-full p-0 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+                title="Làm mới số liệu"
+                aria-label="Làm mới số liệu"
+              >
+                <RefreshCw
+                  className={`h-3 w-3 ${isStatsRefetching ? "animate-spin" : ""}`}
+                />
+              </Button>
+            </div>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
             Theo dõi tổng quan số liệu sự cố môi trường và quản lý phân quyền
             thành viên hệ thống EcoAlert.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetchStats()}
-          disabled={isStatsRefetching}
-          className="self-start sm:self-auto gap-2"
+
+        {/* Top-level View Switcher / Tabs gọn nhẹ */}
+        <div
+          role="tablist"
+          aria-label="Chế độ xem Bảng điều khiển"
+          className="inline-flex self-start rounded-lg border bg-muted/40 p-1 lg:self-auto"
         >
-          <RefreshCw
-            className={`h-4 w-4 ${isStatsRefetching ? "animate-spin" : ""}`}
-          />
-          Làm mới số liệu
-        </Button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "operations"}
+            onClick={() => setActiveView("operations")}
+            className={`inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all sm:text-sm ${
+              activeView === "operations"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
+            <span>Giám sát Sự cố & Vận hành</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "members"}
+            onClick={() => setActiveView("members")}
+            className={`inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 text-xs font-semibold transition-all sm:text-sm ${
+              activeView === "members"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            <span>Phân quyền Thành viên ({userData?.total ?? 0})</span>
+          </button>
+        </div>
       </div>
 
-      {/* khối thống kê sự cố môi trường */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-emerald-500" />
-            Số liệu thống kê sự cố
-          </h2>
-          <span className="text-xs text-muted-foreground">
-            Nhấp vào từng thẻ để xem danh sách chi tiết
-          </span>
-        </div>
-
-        {isStatsLoading ? (
-          <div className="h-36 flex items-center justify-center">
-            <LoadingSpinner size="md" label="Đang tổng hợp số liệu..." />
+      {/* TAB 1: GIÁM SÁT SỰ CỐ & VẬN HÀNH */}
+      {activeView === "operations" ? (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+              Số liệu thống kê sự cố
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              Nhấp vào từng thẻ KPI để lọc danh sách bên dưới
+            </span>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* thẻ sự cố hợp lệ */}
-            <div
-              onClick={() => handleCardClick("valid")}
-              className={`cursor-pointer transition-all duration-200 rounded-xl ${
-                selectedMetric === "valid"
-                  ? "ring-3 ring-emerald-500 shadow-lg shadow-emerald-500/10 scale-[1.02]"
-                  : "hover:scale-[1.01]"
-              }`}
-            >
-              <StatCard
-                title="SỰ CỐ HỢP LỆ"
-                value={stats?.validIncidents ?? 0}
-                icon={FileCheck2}
-                description={`Chiếm ${stats?.total ? Math.round((stats.validIncidents / stats.total) * 100) : 0}% tổng số tin báo`}
-                gradient="bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400"
-              />
-            </div>
 
-            {/* thẻ sự cố đang xử lý */}
-            <div
-              onClick={() => handleCardClick("in_progress")}
-              className={`cursor-pointer transition-all duration-200 rounded-xl ${
-                selectedMetric === "in_progress"
-                  ? "ring-3 ring-amber-500 shadow-lg shadow-amber-500/10 scale-[1.02]"
-                  : "hover:scale-[1.01]"
-              }`}
-            >
-              <StatCard
-                title="ĐANG XỬ LÝ"
-                value={stats?.inProgressIncidents ?? 0}
-                icon={Clock}
-                description="Cán bộ đã nhận việc hoặc đang tại hiện trường"
-                gradient="bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-amber-600 dark:text-amber-400"
-              />
+          {isStatsLoading ? (
+            <div className="h-36 flex items-center justify-center">
+              <LoadingSpinner size="md" label="Đang tổng hợp số liệu..." />
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* thẻ sự cố chờ tiếp nhận */}
+              <div
+                onClick={() => handleCardClick("pending")}
+                className={`cursor-pointer transition-all duration-200 rounded-xl ${
+                  selectedMetric === "pending"
+                    ? "ring-3 ring-blue-500 shadow-lg shadow-blue-500/10 scale-[1.02]"
+                    : "hover:scale-[1.01]"
+                }`}
+              >
+                <StatCard
+                  title="CHỜ TIẾP NHẬN"
+                  value={stats?.pendingIncidents ?? 0}
+                  icon={AlertTriangle}
+                  description="Báo cáo mới đang chờ phân công hoặc xác minh"
+                  gradient="bg-gradient-to-br from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400"
+                />
+              </div>
 
-            {/* thẻ sự cố chờ tiếp nhận */}
-            <div
-              onClick={() => handleCardClick("pending")}
-              className={`cursor-pointer transition-all duration-200 rounded-xl ${
-                selectedMetric === "pending"
-                  ? "ring-3 ring-blue-500 shadow-lg shadow-blue-500/10 scale-[1.02]"
-                  : "hover:scale-[1.01]"
-              }`}
-            >
-              <StatCard
-                title="CHỜ TIẾP NHẬN"
-                value={stats?.pendingIncidents ?? 0}
-                icon={AlertTriangle}
-                description="Báo cáo mới đang chờ phân công hoặc xác minh"
-                gradient="bg-gradient-to-br from-blue-500/20 to-cyan-500/10 text-blue-600 dark:text-blue-400"
-              />
+              {/* thẻ sự cố đang xử lý */}
+              <div
+                onClick={() => handleCardClick("in_progress")}
+                className={`cursor-pointer transition-all duration-200 rounded-xl ${
+                  selectedMetric === "in_progress"
+                    ? "ring-3 ring-amber-500 shadow-lg shadow-amber-500/10 scale-[1.02]"
+                    : "hover:scale-[1.01]"
+                }`}
+              >
+                <StatCard
+                  title="ĐANG XỬ LÝ"
+                  value={stats?.inProgressIncidents ?? 0}
+                  icon={Clock}
+                  description="Cán bộ đã nhận việc hoặc đang tại hiện trường"
+                  gradient="bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-amber-600 dark:text-amber-400"
+                />
+              </div>
+
+              {/* thẻ sự cố đã giải quyết */}
+              <div
+                onClick={() => handleCardClick("resolved")}
+                className={`cursor-pointer transition-all duration-200 rounded-xl ${
+                  selectedMetric === "resolved"
+                    ? "ring-3 ring-purple-500 shadow-lg shadow-purple-500/10 scale-[1.02]"
+                    : "hover:scale-[1.01]"
+                }`}
+              >
+                <StatCard
+                  title="ĐÃ GIẢI QUYẾT"
+                  value={stats?.resolvedIncidents ?? 0}
+                  icon={CheckCircle2}
+                  description={`Tỷ lệ hoàn tất xử lý: ${stats?.resolutionRate ?? 0}%`}
+                  gradient="bg-gradient-to-br from-purple-500/20 to-indigo-500/10 text-purple-600 dark:text-purple-400"
+                />
+              </div>
+
+              {/* thẻ sự cố hợp lệ */}
+              <div
+                onClick={() => handleCardClick("valid")}
+                className={`cursor-pointer transition-all duration-200 rounded-xl ${
+                  selectedMetric === "valid"
+                    ? "ring-3 ring-emerald-500 shadow-lg shadow-emerald-500/10 scale-[1.02]"
+                    : "hover:scale-[1.01]"
+                }`}
+              >
+                <StatCard
+                  title="SỰ CỐ HỢP LỆ"
+                  value={stats?.validIncidents ?? 0}
+                  icon={FileCheck2}
+                  description={`Chiếm ${stats?.total ? Math.round((stats.validIncidents / stats.total) * 100) : 0}% tổng số tin báo`}
+                  gradient="bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400"
+                />
+              </div>
             </div>
+          )}
 
-            {/* thẻ sự cố đã giải quyết */}
-            <div
-              onClick={() => handleCardClick("resolved")}
-              className={`cursor-pointer transition-all duration-200 rounded-xl ${
-                selectedMetric === "resolved"
-                  ? "ring-3 ring-purple-500 shadow-lg shadow-purple-500/10 scale-[1.02]"
-                  : "hover:scale-[1.01]"
-              }`}
-            >
-              <StatCard
-                title="ĐÃ GIẢI QUYẾT"
-                value={stats?.resolvedIncidents ?? 0}
-                icon={CheckCircle2}
-                description={`Tỷ lệ hoàn tất xử lý: ${stats?.resolutionRate ?? 0}%`}
-                gradient="bg-gradient-to-br from-purple-500/20 to-indigo-500/10 text-purple-600 dark:text-purple-400"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* bảng danh sách chi tiết hiển thị khi bấm vào thẻ */}
-        <AnimatePresence>
-          {selectedMetric && (
-            <motion.div
-              initial={{ opacity: 0, y: -15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className="border border-primary/20 shadow-md">
-                <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-2">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={`font-semibold ${METRIC_CONFIGS[selectedMetric].badgeColor}`}
-                      >
-                        {METRIC_CONFIGS[selectedMetric].title}
-                      </Badge>
-                      <span className="text-sm font-semibold text-foreground">
-                        ({filteredAlerts.length} sự cố)
-                      </span>
+          {/* bảng danh sách chi tiết hiển thị theo thẻ KPI đang chọn */}
+          <AnimatePresence>
+            {selectedMetric && (
+              <motion.div
+                initial={{ opacity: 0, y: -15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="border border-primary/20 shadow-md">
+                  <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 gap-2">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`font-semibold ${METRIC_CONFIGS[selectedMetric].badgeColor}`}
+                        >
+                          {METRIC_CONFIGS[selectedMetric].title}
+                        </Badge>
+                        <span className="text-sm font-semibold text-foreground">
+                          ({filteredAlerts.length} sự cố)
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {METRIC_CONFIGS[selectedMetric].description}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {METRIC_CONFIGS[selectedMetric].description}
-                    </p>
-                  </div>
 
-                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="text-xs gap-1.5"
+                      >
+                        <Link to="/admin/reports">
+                          Xem tất cả tại Quản lý báo cáo
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedMetric(null)}
+                        className="h-8 w-8 p-0"
+                        title="Đóng bảng"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
+                            <th className="p-3 font-medium">Tiêu đề sự cố</th>
+                            <th className="p-3 font-medium">Danh mục</th>
+                            <th className="p-3 font-medium">Mức độ</th>
+                            <th className="p-3 font-medium">Trạng thái</th>
+                            <th className="p-3 font-medium">Thời gian</th>
+                            <th className="p-3 font-medium text-right">
+                              Chi tiết
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredAlerts.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={6}
+                                className="p-6 text-center text-muted-foreground"
+                              >
+                                Không có sự cố nào thuộc mục này.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredAlerts.map((alert: Alert) => (
+                              <tr
+                                key={alert._id}
+                                className="border-b last:border-0 hover:bg-muted/40 transition-colors"
+                              >
+                                <td className="p-3 font-medium">
+                                  <div
+                                    className="max-w-[280px] truncate"
+                                    title={alert.title}
+                                  >
+                                    {alert.title}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground max-w-[280px] truncate">
+                                    {alert.address || "Chưa có địa chỉ cụ thể"}
+                                  </div>
+                                </td>
+
+                                <td className="p-3 text-xs">
+                                  {getIncidentCategoryLabel(
+                                    alert.category,
+                                    language,
+                                  )}
+                                </td>
+
+                                <td className="p-3">
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      alert.severity === "critical"
+                                        ? "border-red-600 text-red-600 bg-red-500/10"
+                                        : alert.severity === "high"
+                                          ? "border-red-500 text-red-500"
+                                          : alert.severity === "medium"
+                                            ? "border-orange-500 text-orange-500"
+                                            : "border-blue-500 text-blue-500"
+                                    }
+                                  >
+                                    {getIncidentSeverityLabel(
+                                      alert.severity,
+                                      language,
+                                    )}
+                                  </Badge>
+                                </td>
+
+                                <td className="p-3 text-xs">
+                                  <Badge
+                                    variant="secondary"
+                                    className="font-normal"
+                                  >
+                                    {getIncidentStatusLabel(
+                                      alert.status,
+                                      language,
+                                    )}
+                                  </Badge>
+                                </td>
+
+                                <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
+                                  {alert.createdAt
+                                    ? format(
+                                        new Date(alert.createdAt),
+                                        "dd/MM/yyyy HH:mm",
+                                      )
+                                    : "---"}
+                                </td>
+
+                                <td className="p-3 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    asChild
+                                    className="h-8 px-2 text-xs"
+                                  >
+                                    <Link to={`/admin/reports/${alert._id}`}>
+                                      <Eye className="h-3.5 w-3.5 mr-1" />
+                                      Xem
+                                    </Link>
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+      ) : (
+        /* TAB 2: PHÂN QUYỀN THÀNH VIÊN */
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Quản lý & Phân quyền thành viên
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              Quyền hạn: Admin, Cán bộ (Officer), Người dân (Citizen)
+            </span>
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
+              <CardTitle className="text-base font-medium flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Danh sách tài khoản ({userData?.total ?? 0})
+              </CardTitle>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Tìm email, họ tên..."
+                    className="pl-8 h-9 w-[200px] sm:w-[240px]"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setUserPage(1);
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 bg-muted p-1 rounded-md text-xs">
+                  <Filter className="h-3 w-3 text-muted-foreground ml-1" />
+                  {(["ALL", "ADMIN", "OFFICER", "CITIZEN"] as const).map(
+                    (r) => (
+                      <button
+                        key={r}
+                        onClick={() => {
+                          setRoleFilter(r);
+                          setUserPage(1);
+                        }}
+                        className={`px-2 py-1 rounded transition-colors ${
+                          roleFilter === r
+                            ? "bg-background text-foreground font-semibold shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {r === "ALL" ? "Tất cả" : r}
+                      </button>
+                    ),
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              {isUsersLoading ? (
+                <div className="py-12 flex justify-center">
+                  <LoadingSpinner
+                    size="md"
+                    label="Đang tải danh sách người dùng..."
+                  />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground uppercase">
+                        <th className="py-3 px-4 font-semibold">Thành viên</th>
+                        <th className="py-3 px-4 font-semibold">Email</th>
+                        <th className="py-3 px-4 font-semibold">
+                          Vai trò hiện tại
+                        </th>
+                        <th className="py-3 px-4 font-semibold">Trạng thái</th>
+                        <th className="py-3 px-4 font-semibold text-right">
+                          Thao tác phân quyền
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {!userData?.items || userData.items.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="py-8 text-center text-muted-foreground"
+                          >
+                            Không tìm thấy người dùng phù hợp.
+                          </td>
+                        </tr>
+                      ) : (
+                        userData.items.map((user: User) => (
+                          <tr
+                            key={user._id}
+                            className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="py-3 px-4">
+                              <div className="font-medium text-foreground">
+                                {user.fullName || "Chưa đặt tên"}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {user.phone || "Không có SĐT"}
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-4 font-mono text-xs">
+                              {user.email}
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  user.role === "ADMIN"
+                                    ? "border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-500/10 font-bold"
+                                    : user.role === "OFFICER"
+                                      ? "border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-500/10 font-bold"
+                                      : "border-slate-400 text-slate-600 dark:text-slate-400 bg-slate-500/10"
+                                }
+                              >
+                                {user.role}
+                              </Badge>
+                            </td>
+
+                            <td className="py-3 px-4">
+                              <span
+                                className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
+                                  user.isActive
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                                }`}
+                              >
+                                <span
+                                  className={`h-1.5 w-1.5 rounded-full ${
+                                    user.isActive
+                                      ? "bg-emerald-500"
+                                      : "bg-rose-500"
+                                  }`}
+                                />
+                                {user.isActive ? "Hoạt động" : "Bị khóa"}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-4 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                    disabled={
+                                      updateRoleMutation.isPending ||
+                                      toggleStatusMutation.isPending
+                                    }
+                                    aria-label={`Thiết lập quyền cho ${user.fullName || user.email}`}
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-56"
+                                >
+                                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                                    Đổi vai trò hệ thống
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    disabled={user.role === "OFFICER"}
+                                    onSelect={() =>
+                                      void handleRoleChange(user._id, "OFFICER")
+                                    }
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 ${
+                                        user.role === "OFFICER"
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      }`}
+                                    />
+                                    Chuyển thành Cán bộ (OFFICER)
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    disabled={user.role === "CITIZEN"}
+                                    onSelect={() =>
+                                      void handleRoleChange(user._id, "CITIZEN")
+                                    }
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 ${
+                                        user.role === "CITIZEN"
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      }`}
+                                    />
+                                    Chuyển thành Người dân (CITIZEN)
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    disabled={user.role === "ADMIN"}
+                                    onSelect={() =>
+                                      void handleRoleChange(user._id, "ADMIN")
+                                    }
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 ${
+                                        user.role === "ADMIN"
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      }`}
+                                    />
+                                    Chuyển thành Quản trị (ADMIN)
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className={
+                                      user.isActive
+                                        ? "text-rose-600 focus:text-rose-600"
+                                        : "text-emerald-600 focus:text-emerald-600"
+                                    }
+                                    onSelect={() =>
+                                      void handleStatusToggle(
+                                        user._id,
+                                        user.isActive,
+                                      )
+                                    }
+                                  >
+                                    {user.isActive ? (
+                                      <>
+                                        <Ban className="mr-2 h-4 w-4" />
+                                        Khóa tài khoản
+                                      </>
+                                    ) : (
+                                      <>
+                                        <UserCheck className="mr-2 h-4 w-4" />
+                                        Mở khóa tài khoản
+                                      </>
+                                    )}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {userData && userData.totalPages > 1 && (
+                <div className="flex items-center justify-between p-4 border-t text-xs text-muted-foreground">
+                  <span>
+                    Trang {userData.page} / {userData.totalPages} (Tổng cộng{" "}
+                    {userData.total} tài khoản)
+                  </span>
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      asChild
-                      className="text-xs gap-1.5"
+                      disabled={userPage <= 1}
+                      onClick={() =>
+                        setUserPage((prev) => Math.max(1, prev - 1))
+                      }
                     >
-                      <Link to="/admin/reports">
-                        Xem tất cả tại Quản lý báo cáo
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
+                      Trước
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => setSelectedMetric(null)}
-                      className="h-8 w-8 p-0"
-                      title="Đóng bảng"
+                      disabled={userPage >= userData.totalPages}
+                      onClick={() => setUserPage((prev) => prev + 1)}
                     >
-                      <X className="h-4 w-4" />
+                      Sau
                     </Button>
                   </div>
-                </CardHeader>
-
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
-                          <th className="p-3 font-medium">Tiêu đề sự cố</th>
-                          <th className="p-3 font-medium">Danh mục</th>
-                          <th className="p-3 font-medium">Mức độ</th>
-                          <th className="p-3 font-medium">Trạng thái</th>
-                          <th className="p-3 font-medium">Thời gian</th>
-                          <th className="p-3 font-medium text-right">
-                            Chi tiết
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredAlerts.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={6}
-                              className="p-6 text-center text-muted-foreground"
-                            >
-                              Không có sự cố nào thuộc mục này.
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredAlerts.map((alert: Alert) => (
-                            <tr
-                              key={alert._id}
-                              className="border-b last:border-0 hover:bg-muted/40 transition-colors"
-                            >
-                              <td className="p-3 font-medium">
-                                <div
-                                  className="max-w-[280px] truncate"
-                                  title={alert.title}
-                                >
-                                  {alert.title}
-                                </div>
-                                <div className="text-xs text-muted-foreground max-w-[280px] truncate">
-                                  {alert.address || "Chưa có địa chỉ cụ thể"}
-                                </div>
-                              </td>
-
-                              <td className="p-3 text-xs">
-                                {getIncidentCategoryLabel(
-                                  alert.category,
-                                  language,
-                                )}
-                              </td>
-
-                              <td className="p-3">
-                                <Badge
-                                  variant="outline"
-                                  className={
-                                    alert.severity === "critical"
-                                      ? "border-red-600 text-red-600 bg-red-500/10"
-                                      : alert.severity === "high"
-                                        ? "border-red-500 text-red-500"
-                                        : alert.severity === "medium"
-                                          ? "border-orange-500 text-orange-500"
-                                          : "border-blue-500 text-blue-500"
-                                  }
-                                >
-                                  {getIncidentSeverityLabel(
-                                    alert.severity,
-                                    language,
-                                  )}
-                                </Badge>
-                              </td>
-
-                              <td className="p-3 text-xs">
-                                <Badge
-                                  variant="secondary"
-                                  className="font-normal"
-                                >
-                                  {getIncidentStatusLabel(
-                                    alert.status,
-                                    language,
-                                  )}
-                                </Badge>
-                              </td>
-
-                              <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
-                                {alert.createdAt
-                                  ? format(
-                                      new Date(alert.createdAt),
-                                      "dd/MM/yyyy HH:mm",
-                                    )
-                                  : "---"}
-                              </td>
-
-                              <td className="p-3 text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  asChild
-                                  className="h-8 px-2 text-xs"
-                                >
-                                  <Link to={`/admin/reports/${alert._id}`}>
-                                    <Eye className="h-3.5 w-3.5 mr-1" />
-                                    Xem
-                                  </Link>
-                                </Button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
-
-      {/* khối quản lý và phân quyền người dùng */}
-      <section className="space-y-4 pt-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            Quản lý & Phân quyền thành viên
-          </h2>
-          <span className="text-xs text-muted-foreground">
-            Quyền hạn: Admin, Cán bộ (Officer), Người dân (Citizen)
-          </span>
-        </div>
-
-        <Card>
-          <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Danh sách tài khoản ({userData?.total ?? 0})
-            </CardTitle>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Tìm email, họ tên..."
-                  className="pl-8 h-9 w-[200px] sm:w-[240px]"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setUserPage(1);
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center gap-1 bg-muted p-1 rounded-md text-xs">
-                <Filter className="h-3 w-3 text-muted-foreground ml-1" />
-                {(["ALL", "ADMIN", "OFFICER", "CITIZEN"] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => {
-                      setRoleFilter(r);
-                      setUserPage(1);
-                    }}
-                    className={`px-2 py-1 rounded transition-colors ${
-                      roleFilter === r
-                        ? "bg-background text-foreground font-semibold shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {r === "ALL" ? "Tất cả" : r}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-0">
-            {isUsersLoading ? (
-              <div className="py-12 flex justify-center">
-                <LoadingSpinner
-                  size="md"
-                  label="Đang tải danh sách người dùng..."
-                />
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground uppercase">
-                      <th className="py-3 px-4 font-semibold">Thành viên</th>
-                      <th className="py-3 px-4 font-semibold">Email</th>
-                      <th className="py-3 px-4 font-semibold">
-                        Vai trò hiện tại
-                      </th>
-                      <th className="py-3 px-4 font-semibold">Trạng thái</th>
-                      <th className="py-3 px-4 font-semibold text-right">
-                        Thao tác phân quyền
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!userData?.items || userData.items.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="py-8 text-center text-muted-foreground"
-                        >
-                          Không tìm thấy người dùng phù hợp.
-                        </td>
-                      </tr>
-                    ) : (
-                      userData.items.map((user: User) => (
-                        <tr
-                          key={user._id}
-                          className="border-b last:border-0 hover:bg-muted/30 transition-colors"
-                        >
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-foreground">
-                              {user.fullName || "Chưa đặt tên"}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {user.phone || "Không có SĐT"}
-                            </div>
-                          </td>
-
-                          <td className="py-3 px-4 font-mono text-xs">
-                            {user.email}
-                          </td>
-
-                          <td className="py-3 px-4">
-                            <Badge
-                              variant="outline"
-                              className={
-                                user.role === "ADMIN"
-                                  ? "border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-500/10 font-bold"
-                                  : user.role === "OFFICER"
-                                    ? "border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-500/10 font-bold"
-                                    : "border-slate-400 text-slate-600 dark:text-slate-400 bg-slate-500/10"
-                              }
-                            >
-                              {user.role}
-                            </Badge>
-                          </td>
-
-                          <td className="py-3 px-4">
-                            <span
-                              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
-                                user.isActive
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                              }`}
-                            >
-                              <span
-                                className={`h-1.5 w-1.5 rounded-full ${
-                                  user.isActive
-                                    ? "bg-emerald-500"
-                                    : "bg-rose-500"
-                                }`}
-                              />
-                              {user.isActive ? "Hoạt động" : "Bị khóa"}
-                            </span>
-                          </td>
-
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <select
-                                value={user.role}
-                                onChange={(e) =>
-                                  handleRoleChange(user._id, e.target.value)
-                                }
-                                disabled={updateRoleMutation.isPending}
-                                className="h-8 rounded-md border border-input bg-background px-2 text-xs font-medium shadow-xs focus:ring-1 focus:ring-primary cursor-pointer"
-                              >
-                                <option value="CITIZEN">Dân (CITIZEN)</option>
-                                <option value="OFFICER">
-                                  Cán bộ (OFFICER)
-                                </option>
-                                <option value="ADMIN">Quản trị (ADMIN)</option>
-                              </select>
-
-                              <Button
-                                size="sm"
-                                variant={user.isActive ? "outline" : "default"}
-                                className={`h-8 px-2 text-xs gap-1 ${
-                                  user.isActive
-                                    ? "text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                }`}
-                                onClick={() =>
-                                  handleStatusToggle(user._id, user.isActive)
-                                }
-                                disabled={toggleStatusMutation.isPending}
-                                title={
-                                  user.isActive
-                                    ? "Khóa tài khoản này"
-                                    : "Kích hoạt lại tài khoản"
-                                }
-                              >
-                                {user.isActive ? (
-                                  <>
-                                    <Ban className="h-3.5 w-3.5" />
-                                    Khóa
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserCheck className="h-3.5 w-3.5" />
-                                    Mở
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {userData && userData.totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t text-xs text-muted-foreground">
-                <span>
-                  Trang {userData.page} / {userData.totalPages} (Tổng cộng{" "}
-                  {userData.total} tài khoản)
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={userPage <= 1}
-                    onClick={() => setUserPage((prev) => Math.max(1, prev - 1))}
-                  >
-                    Trước
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={userPage >= userData.totalPages}
-                    onClick={() => setUserPage((prev) => prev + 1)}
-                  >
-                    Sau
-                  </Button>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </section>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+      )}
     </div>
   );
 }
+

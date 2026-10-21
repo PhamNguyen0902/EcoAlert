@@ -1,24 +1,34 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert as RNAlert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-  Alert as RNAlert,
-  Pressable,
-  ActivityIndicator,
+  Text,
+  View,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { usePreventRemove } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  AlertTriangle,
+  Camera,
+  CheckCircle2,
+  Clock3,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react-native";
 import { useProfile } from "../../auth/hooks/useAuth";
 import { ownsOfficerTask } from "../utils/officerPresentation";
 import {
-  OfficerHeader,
   OfficerBadge,
+  OfficerHeader,
+  OfficerStepProgressBar,
+  officerStyles as s,
 } from "../components/OfficerUI";
 import { OfficerEvidenceComparison } from "../components/OfficerEvidenceComparison";
 import {
@@ -26,6 +36,8 @@ import {
   useResolveIncident,
   useUploadMedia,
 } from "../../shared/hooks/useAlerts";
+import { alertService } from "../../shared/api/alertService";
+import { getGeoJsonMapCoordinates } from "../../shared/utils/maps";
 import { Card } from "../../shared/components/ui/Card";
 import { Input } from "../../shared/components/ui/Input";
 import { Button } from "../../shared/components/ui/Button";
@@ -33,20 +45,24 @@ import { useCivicTheme } from "../../shared/theme/useCivicTheme";
 import { civicStyles, civicType } from "../../shared/theme/civicDesign";
 import { OfficerResolutionCamera } from "./OfficerResolutionCamera";
 import {
-  WASTE_TREATMENTS,
   WASTE_MATERIALS,
+  WASTE_TREATMENTS,
   createOfficerResolutionSubmitter,
+  evaluateResolutionVerification,
   validateOfficerResolution,
   type OfficerPhoto,
+  type VerificationStatus,
 } from "../utils/officerResolution";
 import {
-  officerErrorMessage,
   isWasteOfficerTask,
+  officerErrorMessage,
 } from "../utils/officerWorkflow";
+import type { PreSubmitVisionResult } from "../../shared/types";
 import type { OfficerStackParamList } from "../../app/navigation/types";
 
 type Props = NativeStackScreenProps<OfficerStackParamList, "OfficerResolution">;
-// hiển thị ảnh so sánh trước và sau, chọn cách xử lý, dụng cụ đã dùng và gửi kết quả
+
+// Bước 3: Check-out (Hoàn thành) - Căn chỉnh góc chụp, Bảng kiểm tra nghiệm thu tự động 3 tiêu chí & Gửi kết quả
 export const OfficerResolutionScreen: React.FC<Props> = ({
   route,
   navigation,
@@ -57,28 +73,40 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
   const { data: profile } = useProfile();
   const upload = useUploadMedia();
   const resolve = useResolveIncident();
-  const [cameraOpen, setCameraOpen] = useState(false);
+
+  // Mở Camera chụp ảnh kết quả khi vào Bước 3
+  const [cameraOpen, setCameraOpen] = useState(true);
   const [photo, setPhoto] = useState<OfficerPhoto>();
-  const [photoConfirmed, setPhotoConfirmed] = useState(false);
+  const [angleConfirmed, setAngleConfirmed] = useState(true);
+  const [visionStatus, setVisionStatus] = useState<
+    "IDLE" | "ANALYZING" | "VERIFIED" | "UNAVAILABLE"
+  >("IDLE");
+  const [visionResult, setVisionResult] =
+    useState<PreSubmitVisionResult | null>(null);
+
   const [summary, setSummary] = useState("");
-  const [treatment, setTreatment] = useState("");
+  const [treatment, setTreatment] = useState<string>(WASTE_TREATMENTS[0]);
   const [materials, setMaterials] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+
   usePreventRemove(submitting, () =>
     RNAlert.alert(
-      "Đang gửi minh chứng",
-      "Vui lòng chờ hoàn tất gửi kết quả trước khi rời trang.",
+      "Đang gửi báo cáo hoàn thành",
+      "Vui lòng chờ hệ thống lưu kết quả xử lý trước khi rời trang.",
     ),
   );
+
   const submittingRef = useRef(false);
+  const analysisVersionRef = useRef(0);
+
   useEffect(() => {
-    // tắt cảnh báo thoát trang trước khi chuyển sang màn hình gửi thành công
     if (submitted && !submitting)
       navigation.replace("OfficerResolutionSubmitted", { id: route.params.id });
   }, [submitted, submitting, navigation, route.params.id]);
+
   const submitter = useRef(
     createOfficerResolutionSubmitter({
       upload: (uri) =>
@@ -90,14 +118,70 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
       resolve: (data) => resolve.mutateAsync({ id: route.params.id, data }),
     }),
   ).current;
+
   const task = query.data;
   const allowed = Boolean(
     task &&
-    ownsOfficerTask(task, profile) &&
-    isWasteOfficerTask(task) &&
-    task.status.toUpperCase() === "IN_PROGRESS" &&
-    task.checkIn?.verified === true,
+      ownsOfficerTask(task, profile) &&
+      isWasteOfficerTask(task) &&
+      task.status.toUpperCase() === "IN_PROGRESS" &&
+      task.checkIn?.verified === true,
   );
+
+  const incidentCoords = getGeoJsonMapCoordinates(task?.location?.coordinates);
+  const before = task?.fieldEvidence?.[0];
+  const beforeUri =
+    before?.displayUrl || before?.originalUrl || task?.mediaUrls?.[0];
+
+  // Khi cán bộ vừa chụp xong ảnh Sau xử lý: tự động tải lên & chạy kiểm tra AI/Vision để đánh giá hiện trường sạch sẽ
+  const handleCapturedPhoto = async (captured: OfficerPhoto) => {
+    const currentVersion = ++analysisVersionRef.current;
+    setPhoto(captured);
+    setAngleConfirmed(true);
+    setCameraOpen(false);
+    setError(null);
+    setVisionResult(null);
+    setVisionStatus("ANALYZING");
+
+    try {
+      const uploadedUrl = await upload.mutateAsync({
+        fileUri: captured.originalLocalUri,
+        fileName: `officer_after_${Date.now()}.jpg`,
+        fileType: "image/jpeg",
+      });
+      if (analysisVersionRef.current !== currentVersion) return;
+
+      if (uploadedUrl && /^https?:\/\//i.test(uploadedUrl)) {
+        setPhoto((prev) =>
+          prev?.originalLocalUri === captured.originalLocalUri
+            ? { ...prev, uploadedUrl }
+            : prev,
+        );
+        const vision = await alertService.analyzeUploadedImage(uploadedUrl);
+        if (analysisVersionRef.current !== currentVersion) return;
+        setVisionResult(vision);
+        setVisionStatus("VERIFIED");
+      } else {
+        setVisionStatus("UNAVAILABLE");
+      }
+    } catch {
+      if (analysisVersionRef.current !== currentVersion) return;
+      setVisionStatus("UNAVAILABLE");
+    }
+  };
+
+  // Đánh giá 3 tiêu chí nghiệm thu tự động (Verification Checklist)
+  const checklist = evaluateResolutionVerification({
+    photo,
+    incidentLocation: incidentCoords,
+    beforeDimensions: before
+      ? { width: before.width, height: before.height }
+      : null,
+    angleConfirmed,
+    visionStatus,
+    visionResult,
+  });
+
   const draft = {
     photo,
     verifiedArrival: allowed,
@@ -106,12 +190,19 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
     materialsUsed: materials.join(", "),
     additionalNotes: notes,
   };
-  // tải ảnh kết quả lên hệ thống và gửi báo cáo hoàn thành công việc
+
+  // Gửi kết quả nghiệm thu hoàn thành công việc
   const send = async () => {
     if (submittingRef.current) return;
+    if (!checklist.isAcceptable) {
+      setError(
+        "Ảnh kết quả chưa đạt đủ tiêu chí đối chiếu vị trí hoặc góc chụp. Vui lòng kiểm tra bảng nghiệm thu và chụp lại.",
+      );
+      return;
+    }
     const validation = validateOfficerResolution(draft);
-    if (validation || !photoConfirmed) {
-      setError(validation || "Vui lòng xác nhận sử dụng ảnh này.");
+    if (validation) {
+      setError(validation);
       return;
     }
     submittingRef.current = true;
@@ -125,7 +216,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
       setError(
         officerErrorMessage(
           failure,
-          "Không thể tải ảnh hoặc gửi kết quả. Vui lòng kiểm tra mạng rồi thử lại.",
+          "Không thể tải ảnh hoặc gửi báo cáo hoàn thành. Vui lòng kiểm tra kết nối mạng rồi thử lại.",
         ),
       );
     } finally {
@@ -133,9 +224,24 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
       setSubmitting(false);
     }
   };
-  const before = task?.fieldEvidence?.[0];
-  const beforeUri =
-    before?.displayUrl || before?.originalUrl || task?.mediaUrls?.[0];
+
+  const renderStatusIcon = (status: VerificationStatus) => {
+    if (status === "PASSED")
+      return <CheckCircle2 size={20} color={colors.primary} />;
+    if (status === "WARNING")
+      return <AlertTriangle size={20} color={colors.warning} />;
+    if (status === "FAILED")
+      return <XCircle size={20} color={colors.danger} />;
+    return <Clock3 size={20} color={colors.cyan} />;
+  };
+
+  const getStatusColor = (status: VerificationStatus) => {
+    if (status === "PASSED") return colors.primary;
+    if (status === "WARNING") return colors.warning;
+    if (status === "FAILED") return colors.danger;
+    return colors.cyan;
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -145,9 +251,15 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
       ]}
     >
       <OfficerHeader
-        title="Thu thập chứng cứ"
+        title="Check-out (Hoàn thành)"
         back={navigation.goBack}
         disabled={submitting}
+      />
+      <OfficerStepProgressBar
+        task={
+          submitted ? { status: "RESOLVED", checkIn: task?.checkIn } : task
+        }
+        step={3}
       />
       <ScrollView
         contentContainerStyle={[
@@ -165,13 +277,11 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
           >
             {query.isError
               ? "Không thể tải nhiệm vụ. Vui lòng quay lại và thử lại."
-              : "Nhiệm vụ phải đang xử lý và đã xác nhận hiện trường trước khi gửi kết quả."}
+              : "Nhiệm vụ phải đang xử lý và đã điểm danh hiện trường trước khi hoàn thành."}
           </Text>
         ) : null}
-        <OfficerBadge
-          label="BƯỚC 04 / 06 · GHI NHẬN KẾT QUẢ THỰC TẾ"
-          color={colors.cyan}
-        />
+
+        {/* Khung đối chiếu trực quan 2 ảnh đặt cạnh nhau: Trước & Sau */}
         <OfficerEvidenceComparison
           beforeUri={ownsOfficerTask(task, profile) ? beforeUri : undefined}
           beforeFallback={before?.originalUrl}
@@ -179,67 +289,163 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
           beforeAt={before?.capturedAt}
           afterAt={photo?.capturedAt}
         />
+
+        {/* Bảng Danh sách kiểm tra nghiệm thu tự động (Verification Checklist) gồm 3 tiêu chí */}
         <Card appearance="civic" style={styles.card}>
-          <Text style={[civicType.section, { color: colors.primary }]}>
-            SAU XỬ LÝ
-          </Text>
+          <View style={s.row}>
+            <ShieldCheck size={20} color={colors.primary} />
+            <Text
+              style={[
+                civicType.section,
+                s.grow,
+                { color: colors.text },
+              ]}
+            >
+              Danh sách kiểm tra nghiệm thu tự động
+            </Text>
+          </View>
+
+          {[
+            checklist.gpsMatch,
+            checklist.angleConsistency,
+            checklist.resolutionClean,
+          ].map((item, idx) => {
+            const tone = getStatusColor(item.status);
+            return (
+              <View
+                key={item.key}
+                style={[
+                  styles.checklistItem,
+                  {
+                    backgroundColor: colors.elevated,
+                    borderColor:
+                      item.status === "PASSED"
+                        ? colors.primary + "40"
+                        : item.status === "FAILED"
+                          ? colors.danger
+                          : colors.border,
+                  },
+                ]}
+              >
+                <View style={[s.row, { alignItems: "flex-start" }]}>
+                  {renderStatusIcon(item.status)}
+                  <View style={[s.grow, { gap: 4 }]}>
+                    <View
+                      style={[
+                        s.row,
+                        { justifyContent: "space-between", flexWrap: "wrap" },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.body,
+                          { color: colors.text, fontWeight: "700" },
+                        ]}
+                      >
+                        {idx + 1}. {item.title}
+                      </Text>
+                      <OfficerBadge label={item.badgeLabel} color={tone} />
+                    </View>
+                    <Text style={[s.meta, { color: colors.textSecondary }]}>
+                      {item.detail}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Cho phép cán bộ xác nhận hoặc báo lệch góc chụp ở tiêu chí số 2 */}
+                {item.key === "ANGLE_CONSISTENCY" && photo ? (
+                  <View style={[s.row, { marginTop: 6, flexWrap: "wrap" }]}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Xác nhận góc chụp hợp lệ"
+                      onPress={() => setAngleConfirmed(true)}
+                      style={[
+                        styles.angleToggleBtn,
+                        {
+                          backgroundColor: angleConfirmed
+                            ? colors.greenSoft
+                            : colors.surface,
+                          borderColor: angleConfirmed
+                            ? colors.primary
+                            : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.meta,
+                          {
+                            color: angleConfirmed
+                              ? colors.primary
+                              : colors.textSecondary,
+                            fontWeight: "700",
+                          },
+                        ]}
+                      >
+                        ✓ Góc chụp hợp lệ
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Báo ảnh lệch góc hoặc bị mờ"
+                      onPress={() => setAngleConfirmed(false)}
+                      style={[
+                        styles.angleToggleBtn,
+                        {
+                          backgroundColor: !angleConfirmed
+                            ? colors.surface
+                            : colors.surface,
+                          borderColor: !angleConfirmed
+                            ? colors.warning
+                            : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.meta,
+                          {
+                            color: !angleConfirmed
+                              ? colors.warning
+                              : colors.textMuted,
+                            fontWeight: "700",
+                          },
+                        ]}
+                      >
+                        ⚠ Lệch góc / Ảnh mờ
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
+
+          {/* Nút phụ "Chụp lại ảnh kết quả" để quay lại camera nếu ảnh bị lệch góc hoặc chưa đạt */}
           {photo ? (
-            <>
-              <Text style={[civicType.meta, { color: colors.cyan }]}>
-                GPS ±{Math.round(photo.location.accuracyMeters)}m ·{" "}
-                {new Date(photo.capturedAt).toLocaleString("vi-VN")}
-              </Text>
-              <Text style={[civicType.meta, { color: colors.textMuted }]}>
-                {photo.location.latitude.toFixed(6)},{" "}
-                {photo.location.longitude.toFixed(6)}
-              </Text>
-              <Button
-                appearance="civic"
-                variant="outline"
-                title="CHỤP LẠI"
-                disabled={!allowed || submitting}
-                onPress={() => {
-                  setPhotoConfirmed(false);
-                  setCameraOpen(true);
-                }}
-              />
-              {!photoConfirmed ? (
-                <Button
-                  appearance="civic"
-                  title="SỬ DỤNG ẢNH NÀY"
-                  disabled={!allowed || submitting}
-                  onPress={() => setPhotoConfirmed(true)}
-                />
-              ) : (
-                <Text style={{ color: colors.primary }}>
-                  ✓ Đã chọn ảnh sau xử lý
-                </Text>
-              )}
-            </>
-          ) : (
             <Button
               appearance="civic"
-              title="CHỤP ẢNH SAU XỬ LÝ"
-              disabled={!allowed}
+              variant="outline"
+              title="Chụp lại ảnh kết quả"
+              icon={<Camera size={16} color={colors.primary} />}
+              disabled={!allowed || submitting}
               onPress={() => setCameraOpen(true)}
             />
-          )}
-          <Text style={[civicType.meta, { color: colors.textMuted }]}>
-            Chỉ chụp trực tiếp tại hiện trường. Không dùng ảnh thư viện.
-          </Text>
+          ) : null}
         </Card>
+
         <Card appearance="civic" style={styles.card}>
           <Text style={[civicType.section, { color: colors.cyan }]}>
             Thông tin xử lý hiện trường
           </Text>
           <Input
-            label="Tóm tắt xử lý *"
+            label="Ghi chú tóm tắt kết quả xử lý *"
             multiline
             value={summary}
             maxLength={4000}
             editable={!submitting && allowed}
             onChangeText={setSummary}
-            placeholder="Ghi rõ công việc đã hoàn thành tại điểm rác"
+            placeholder="Mô tả kết quả dọn dẹp sạch sẽ tại điểm sự cố..."
           />
           <Text style={[civicType.section, { color: colors.text }]}>
             Phương pháp xử lý *
@@ -271,14 +477,14 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
             ))}
           </View>
           <Input
-            label="Phương pháp đã chọn / nhập phương pháp khác"
+            label="Phương pháp thực hiện chi tiết"
             value={treatment}
             maxLength={4000}
             editable={!submitting && allowed}
             onChangeText={setTreatment}
           />
           <Text style={[civicType.section, { color: colors.text }]}>
-            Vật tư / thiết bị
+            Vật tư & thiết bị đã sử dụng
           </Text>
           <View style={styles.options}>
             {WASTE_MATERIALS.map((value) => (
@@ -312,7 +518,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
             ))}
           </View>
           <Input
-            label="Ghi chú kết quả (không bắt buộc)"
+            label="Ghi chú bổ sung (không bắt buộc)"
             multiline
             maxLength={4000}
             editable={!submitting && allowed}
@@ -320,6 +526,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
             onChangeText={setNotes}
           />
         </Card>
+
         {error ? (
           <Text
             accessibilityRole="alert"
@@ -328,11 +535,9 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
             {error}
           </Text>
         ) : null}
-        <Text style={[civicType.meta, { color: colors.textMuted }]}>
-          Ảnh xử lý được ghi nhận cùng thời gian và vị trí thực tế để phục vụ
-          nghiệm thu. Gửi kết quả không tự động đóng báo cáo.
-        </Text>
       </ScrollView>
+
+      {/* Duy nhất 1 Nút Hành Động Chính (Single Primary CTA) ở dưới cùng */}
       <View
         style={{
           padding: 12,
@@ -342,29 +547,37 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
           borderTopColor: colors.border,
         }}
       >
-        <Button
-          appearance="civic"
-          title="GỬI KẾT QUẢ ĐỂ NGHIỆM THU"
-          onPress={() => void send()}
-          loading={submitting}
-          disabled={!allowed || !photoConfirmed || submitted}
-        />
+        {!photo ? (
+          <Button
+            appearance="civic"
+            title="Chụp ảnh kết quả (Sau xử lý)"
+            disabled={!allowed || submitting}
+            onPress={() => setCameraOpen(true)}
+          />
+        ) : (
+          <Button
+            appearance="civic"
+            title="Xác nhận Check-out (Hoàn thành)"
+            onPress={() => void send()}
+            loading={submitting}
+            disabled={!allowed || !checklist.isAcceptable || submitted}
+          />
+        )}
       </View>
+
       <Modal
-        visible={cameraOpen}
+        visible={cameraOpen && allowed}
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={() => setCameraOpen(false)}
       >
         {cameraOpen && allowed ? (
           <OfficerResolutionCamera
-          referenceImageUri={beforeUri}
+            beforeImageUri={beforeUri}
+            referenceImageUri={beforeUri}
             onClose={() => setCameraOpen(false)}
             onCapture={(capture) => {
-              setPhoto(capture);
-              setPhotoConfirmed(false);
-              setCameraOpen(false);
-              setError(null);
+              void handleCapturedPhoto(capture);
             }}
           />
         ) : null}
@@ -372,15 +585,22 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
     </KeyboardAvoidingView>
   );
 };
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
+  card: { gap: 12 },
+  checklistItem: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
     gap: 8,
   },
-  card: { gap: 12 },
+  angleToggleBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
   options: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   option: {
     padding: 10,

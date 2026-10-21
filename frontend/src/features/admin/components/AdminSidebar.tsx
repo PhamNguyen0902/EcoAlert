@@ -1,98 +1,311 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   FileText,
   Map,
+  Route,
+  Hexagon,
+  ScanEye,
+  Users,
+  SlidersHorizontal,
+  HelpCircle,
   ChevronLeft,
   ChevronRight,
   Leaf,
+  type LucideIcon,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAlerts } from "@/hooks/hooks";
+import { useAdminUsers } from "@/hooks/useAdminDashboard";
 
-const NAV_ITEMS = [
-  { to: "/admin/dashboard", key: "nav.dashboard", icon: LayoutDashboard },
-  { to: "/admin/reports", key: "nav.reports", icon: FileText, showBadge: true },
-  { to: "/admin/gis", key: "nav.gis", icon: Map },
-  // { to: "/admin/service-areas", key: "nav.service_areas", icon: Map },
+interface SidebarNavItem {
+  to: string;
+  aliases?: string[];
+  labelVi: string;
+  labelEn: string;
+  icon: LucideIcon;
+  badgeType?: "pending_alerts" | "total_users";
+}
+
+interface SidebarNavSection {
+  id: string;
+  titleVi: string;
+  titleEn: string;
+  items: SidebarNavItem[];
+}
+
+const MAIN_NAV_SECTIONS: SidebarNavSection[] = [
+  {
+    id: "operations",
+    titleVi: "ĐIỀU HÀNH",
+    titleEn: "OPERATIONS",
+    items: [
+      {
+        to: "/admin/dashboard",
+        labelVi: "Tổng quan",
+        labelEn: "Dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        to: "/admin/reports",
+        labelVi: "Quản lý báo cáo",
+        labelEn: "Report Management",
+        icon: FileText,
+        badgeType: "pending_alerts",
+      },
+      {
+        to: "/admin/map",
+        aliases: ["/admin/gis"],
+        labelVi: "Bản đồ GIS",
+        labelEn: "GIS Map",
+        icon: Map,
+      },
+      {
+        to: "/admin/service-areas",
+        labelVi: "Khu vực phục vụ",
+        labelEn: "Service Areas",
+        icon: Hexagon,
+      },
+    ],
+  },
+  {
+    id: "territory_ai",
+    titleVi: "ĐIỀU PHỐI & AI",
+    titleEn: "DISPATCH & AI",
+    items: [
+      {
+        to: "/admin/dispatch",
+        labelVi: "Điều phối & Ca trực",
+        labelEn: "Dispatch & Shifts",
+        icon: Route,
+      },
+      {
+        to: "/admin/ai-vision",
+        labelVi: "Kiểm định AI Vision",
+        labelEn: "AI Vision Inspector",
+        icon: ScanEye,
+      },
+    ],
+  },
+  {
+    id: "governance",
+    titleVi: "QUẢN TRỊ",
+    titleEn: "GOVERNANCE",
+    items: [
+      {
+        to: "/admin/users",
+        labelVi: "Thành viên & Phân quyền",
+        labelEn: "Members & Roles",
+        icon: Users,
+        badgeType: "total_users",
+      },
+    ],
+  },
 ];
-// thanh điều hướng (quản lý báo cáo, bản đồ gis)
+
+const PINNED_BOTTOM_ITEMS: SidebarNavItem[] = [
+  {
+    to: "/admin/settings",
+    labelVi: "Cài đặt hệ thống",
+    labelEn: "System Settings",
+    icon: SlidersHorizontal,
+  },
+  {
+    to: "/admin/help",
+    labelVi: "Trợ giúp & Tài liệu",
+    labelEn: "Help & Documentation",
+    icon: HelpCircle,
+  },
+];
+
+// Thanh điều hướng quản trị EcoAlert Operations HQ: 3 nhóm nghiệp vụ chính + 2 mục tiện ích ghim sát đáy
 export default function AdminSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+  const location = useLocation();
+
   const { data: pendingData } = useAlerts(1, 100, {
     status: "pending,ai_analyzing",
   });
+  const { data: usersData } = useAdminUsers({ page: 1, limit: 1 });
+
   const pendingCount = pendingData?.total ?? pendingData?.items?.length ?? 0;
+  const totalUsersCount = usersData?.total ?? 0;
+
+  const getBadgeValue = (badgeType?: SidebarNavItem["badgeType"]) => {
+    if (badgeType === "pending_alerts" && pendingCount > 0) {
+      return pendingCount > 99 ? "99+" : String(pendingCount);
+    }
+    if (badgeType === "total_users" && totalUsersCount > 0) {
+      return totalUsersCount > 999 ? "999+" : String(totalUsersCount);
+    }
+    return null;
+  };
+
+  const renderNavItem = (item: SidebarNavItem) => {
+    const label = language === "vi" ? item.labelVi : item.labelEn;
+    const badgeValue = getBadgeValue(item.badgeType);
+    const isAlertBadge = item.badgeType === "pending_alerts";
+    const isAliasMatch =
+      item.aliases?.some((alias) => location.pathname.startsWith(alias)) ??
+      false;
+
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        title={isCollapsed ? label : undefined}
+        className={({ isActive }) => {
+          const active = isActive || isAliasMatch;
+          return cn(
+            "group relative flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
+            active
+              ? "bg-[#065F46] text-white shadow-sm dark:bg-[#047857] dark:text-white"
+              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100",
+            isCollapsed && "justify-center px-2 py-2.5",
+          );
+        }}
+      >
+        {({ isActive }) => {
+          const active = isActive || isAliasMatch;
+          return (
+            <>
+              <item.icon
+                className={cn(
+                  "h-[18px] w-[18px] shrink-0 transition-colors duration-150",
+                  active
+                    ? "text-white"
+                    : "text-slate-500 group-hover:text-slate-800 dark:text-slate-400 dark:group-hover:text-slate-200",
+                  !isCollapsed && "mr-3",
+                )}
+              />
+              {!isCollapsed && (
+                <span className="truncate whitespace-nowrap">{label}</span>
+              )}
+              {badgeValue && (
+                <span
+                  className={cn(
+                    "flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none",
+                    isAlertBadge
+                      ? "bg-red-500 text-white shadow-xs"
+                      : active
+                        ? "bg-white/20 text-white"
+                        : "bg-slate-200/80 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+                    isCollapsed
+                      ? "absolute top-1 right-1 h-4 min-w-[16px] px-1 text-[9px]"
+                      : "ml-auto",
+                  )}
+                >
+                  {badgeValue}
+                </span>
+              )}
+              {/* Tooltip hiển thị khi Sidebar thu gọn */}
+              {isCollapsed && (
+                <span
+                  role="tooltip"
+                  className="pointer-events-none invisible absolute left-full z-50 ml-2.5 whitespace-nowrap rounded-md border bg-popover px-2.5 py-1 text-xs font-medium text-popover-foreground opacity-0 shadow-md transition-all duration-150 group-hover:visible group-hover:opacity-100"
+                >
+                  {label}
+                  {badgeValue ? ` (${badgeValue})` : ""}
+                </span>
+              )}
+            </>
+          );
+        }}
+      </NavLink>
+    );
+  };
 
   return (
-    <div
+    <aside
+      aria-label="Thanh điều hướng Quản trị"
       className={cn(
-        "flex flex-col bg-card text-foreground border-r border-border dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 transition-all duration-300",
-        isCollapsed ? "w-20" : "w-64",
+        "flex h-full flex-col justify-between border-r border-slate-200/90 bg-white text-slate-800 transition-all duration-200 dark:border-slate-800/90 dark:bg-slate-950 dark:text-slate-200",
+        isCollapsed ? "w-[72px]" : "w-60",
       )}
     >
-      <div className="flex h-16 items-center justify-center border-b border-border dark:border-slate-800 px-4">
-        <Leaf className="h-8 w-8 text-green-500 shrink-0" />
+      {/* Header thương hiệu: EcoAlert + Operations HQ + badge TP.HCM */}
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 px-4 dark:border-slate-800/90">
+        <div
+          className={cn(
+            "flex items-center gap-2.5 min-w-0",
+            isCollapsed && "w-full justify-center",
+          )}
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#047857] text-white shadow-xs">
+            <Leaf className="h-5 w-5" />
+          </div>
+          {!isCollapsed && (
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-[17px] font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
+                  EcoAlert
+                </span>
+              </div>
+              <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                Operations HQ
+              </p>
+            </div>
+          )}
+        </div>
         {!isCollapsed && (
-          <span className="ml-3 text-lg font-bold text-foreground dark:text-white whitespace-nowrap">
-            EcoAlert Admin
+          <span className="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+            TP.HCM
           </span>
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            title={isCollapsed ? t(item.key) : undefined}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors relative group",
-                isActive
-                  ? "bg-primary text-primary-foreground dark:bg-white/10 dark:text-white"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-white/5 dark:hover:text-white",
-                isCollapsed && "justify-center",
-              )
-            }
-          >
-            <item.icon
-              className={cn("h-5 w-5 shrink-0", isCollapsed ? "mr-0" : "mr-3")}
-            />
-            {!isCollapsed && (
-              <span className="whitespace-nowrap">{t(item.key)}</span>
+      {/* PHẦN A: Danh sách Menu Chính ở trên */}
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+        {MAIN_NAV_SECTIONS.map((section) => (
+          <div key={section.id} className="space-y-1">
+            {!isCollapsed ? (
+              <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                {language === "vi" ? section.titleVi : section.titleEn}
+              </p>
+            ) : (
+              <div className="mx-auto my-1.5 h-px w-6 bg-slate-200 dark:bg-slate-800" />
             )}
-            {item.showBadge && pendingCount > 0 && (
-              <span
-                className={cn(
-                  "flex items-center justify-center bg-destructive text-destructive-foreground text-xs font-bold rounded-full px-1.5 py-0.5",
-                  isCollapsed
-                    ? "absolute top-1 right-1 h-4 min-w-[16px]"
-                    : "ml-auto",
-                )}
-              >
-                {pendingCount > 99 ? "99+" : pendingCount}
-              </span>
-            )}
-          </NavLink>
+            <div className="space-y-1">
+              {section.items.map((item) => renderNavItem(item))}
+            </div>
+          </div>
         ))}
       </nav>
 
-      <div className="border-t border-border dark:border-slate-800 p-3">
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="flex w-full items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-white/5 dark:hover:text-white"
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <ChevronLeft className="h-5 w-5" />
+      {/* PHẦN B: Cụm 2 Mục Ghim Cố Định Sát Đáy + Dòng phiên bản v2.4.0 */}
+      <div className="mt-auto border-t border-slate-200/80 p-3 dark:border-slate-800/90">
+        <div className="space-y-1">
+          {PINNED_BOTTOM_ITEMS.map((item) => renderNavItem(item))}
+        </div>
+
+        <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2.5 px-2 text-[11px] text-slate-400 dark:border-slate-800/70 dark:text-slate-500">
+          {!isCollapsed && (
+            <div className="flex w-full items-center justify-between pr-1">
+              <span>Hệ thống EcoAlert</span>
+              <span className="font-mono font-medium">v2.4.0</span>
+            </div>
           )}
-        </button>
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            aria-label={isCollapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
+            title={isCollapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}
+            className={cn(
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+              isCollapsed && "mx-auto",
+            )}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronLeft className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
       </div>
-    </div>
+    </aside>
   );
 }

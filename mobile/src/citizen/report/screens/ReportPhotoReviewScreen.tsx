@@ -3,7 +3,7 @@ import {
   civicRadius as radius,
   civicType,
 } from "../../../shared/theme/civicDesign";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -18,6 +18,8 @@ import ViewShot, { captureRef, type ViewShotRef } from "react-native-view-shot";
 import {
   Camera,
   CheckCircle2,
+  Clock3,
+  MapPin,
   RefreshCw,
   ShieldCheck,
   TriangleAlert,
@@ -32,9 +34,18 @@ import {
   formatWatermarkData,
   persistWatermarkedDisplayImage,
 } from "../../../shared/utils/watermark";
+import { useLocation } from "../../../shared/hooks/useLocation";
 import { useFieldReport } from "../FieldReportContext";
-import { MAX_FIELD_REPORT_PHOTOS } from "../types";
-import { normalizePhotoDraft, removePhoto, selectPrimaryPhoto, updatePhoto } from "../photoDraft";
+import {
+  MAX_FIELD_REPORT_PHOTOS,
+  type FieldReportLocationDraft,
+} from "../types";
+import {
+  normalizePhotoDraft,
+  removePhoto,
+  selectPrimaryPhoto,
+  updatePhoto,
+} from "../photoDraft";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { EvidenceImageFrame } from "../../../shared/components/media/EvidenceImageFrame";
@@ -43,11 +54,14 @@ import { fieldStyles } from "../components/stitch/fieldDesign";
 import { fieldIntegrity } from "../components/stitch/fieldPresentation";
 
 type Props = NativeStackScreenProps<ReportFlowParamList, "ReportPhotoReview">;
-// hiển thị ảnh vừa chụp để người dân kiểm tra lại trước khi phân tích ai
+
+// Hiển thị ảnh vừa chụp để người dân kiểm tra lại trước khi phân tích AI (hỗ trợ Background GPS Sync & Ambient Blur Backdrop)
 export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
   const { draft, setDraft } = useFieldReport();
+  const gps = useLocation();
+  const bgSyncTriggeredRef = useRef(false);
   const capture = draft.capture;
   const location = capture?.location || draft.location;
   const photos = normalizePhotoDraft(draft).photos;
@@ -57,7 +71,37 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   );
   const [rendering, setRendering] = useState(false);
   const [watermarkError, setWatermarkError] = useState<string | null>(null);
-  // định dạng thông tin watermark gồm tọa độ, địa chỉ, thời gian và nhãn tác nghiệp
+
+  // Tiến trình ngầm (Background Location Sync): Nếu bấm chụp tức thì khi GPS chưa kịp fix, tự động lấy/làm mới GPS ngầm tại màn hình Review
+  useEffect(() => {
+    if (!capture || location || bgSyncTriggeredRef.current) return;
+    bgSyncTriggeredRef.current = true;
+    void gps
+      .fetchLocation({ timeoutMs: 12_000, deferAddress: true })
+      .then((result) => {
+        if (!result?.coords || result.accuracyMeters === null) return;
+        const freshFix: FieldReportLocationDraft = {
+          latitude: result.coords.coordinates[1],
+          longitude: result.coords.coordinates[0],
+          accuracyMeters: result.accuracyMeters,
+          address: result.address,
+          capturedAt: result.capturedAt,
+          source: "DEVICE_GPS",
+        };
+        setDraft((current) => {
+          const next = capture.id
+            ? updatePhoto(current, capture.id, {
+                location: freshFix,
+                displayLocalUri: undefined,
+              })
+            : current;
+          return { ...next, location: freshFix };
+        });
+      })
+      .catch(() => undefined);
+  }, [capture, location, gps, setDraft]);
+
+  // Định dạng thông tin watermark gồm tọa độ, địa chỉ, thời gian và nhãn tác nghiệp
   const watermark = useMemo(
     () =>
       formatWatermarkData(
@@ -80,7 +124,8 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const integrity = fieldIntegrity(capture, location);
   const integrityCount =
     Number(integrity.camera) + Number(integrity.gps) + Number(integrity.time);
-  // tạo ra bức ảnh có in kèm ngày giờ và tọa độ gps ở góc dưới
+
+  // Tạo ra bức ảnh có in kèm ngày giờ và tọa độ GPS ở góc dưới (kèm Ambient Blur Backdrop cho ảnh dọc)
   const renderDisplayImage = useCallback(async () => {
     if (
       !capture ||
@@ -103,8 +148,11 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
         temporaryUri,
         capture.capturedAt,
       );
-      setDraft((current) => current.capture?.id === capture.id
-        ? updatePhoto(current, capture.id!, { displayLocalUri }) : current);
+      setDraft((current) =>
+        current.capture?.id === capture.id
+          ? updatePhoto(current, capture.id!, { displayLocalUri })
+          : current,
+      );
     } catch {
       generatedForRef.current = null;
       setWatermarkError(
@@ -114,13 +162,16 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
       setRendering(false);
     }
   }, [capture, rendering, setDraft]);
-  // xóa bức ảnh hiện tại và quay lại camera để chụp tấm khác
+
+  // Xóa bức ảnh hiện tại và quay lại camera để chụp tấm khác
   const retake = () => {
-    setDraft((current) => capture?.id ? removePhoto(current, capture.id) : current);
+    setDraft((current) =>
+      capture?.id ? removePhoto(current, capture.id) : current,
+    );
     navigation.navigate("ReportCamera");
   };
 
-  if (!capture || !location)
+  if (!capture)
     return (
       <View
         style={[
@@ -152,7 +203,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}
     >
-      {/* giữ kích thước hiển thị đóng dấu watermark độc lập với khung giao diện */}
+      {/* Giữ kích thước hiển thị đóng dấu watermark độc lập với khung giao diện */}
       <View
         style={[
           styles.captureSource,
@@ -167,6 +218,16 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           options={{ format: "jpg", quality: 0.95, result: "tmpfile" }}
           style={styles.viewShot}
         >
+          {/* Ambient Blur Backdrop chuẩn Apple HIG trong ViewShot để 2 bên ảnh dọc không bị đen cứng nhắc */}
+          <Image
+            source={{ uri: capture.originalLocalUri }}
+            blurRadius={28}
+            resizeMode="cover"
+            style={[
+              StyleSheet.absoluteFill,
+              { opacity: 0.38, transform: [{ scale: 1.1 }] },
+            ]}
+          />
           <Image
             source={{ uri: capture.originalLocalUri }}
             style={[styles.image, { height: evidenceHeight }]}
@@ -190,38 +251,81 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </ViewShot>
       </View>
+
       <ReportHeader title="Xem lại ảnh" onBack={navigation.goBack} />
       <ScrollView
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* bước 2 */}
+        {/* Bước 2: Xem lại ảnh hiện trường */}
         <ReportProgress step={2} />
         <ReportScreenIntro
           eyebrow="ẢNH HIỆN TRƯỜNG"
           title="Xem lại ảnh vừa chụp"
           description="Xem lại chất lượng hình ảnh hiện trường trước khi chuyển sang giai đoạn phân tích AI."
         />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoStrip}>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.photoStrip}
+        >
           {photos.map((photo, index) => (
-            <TouchableOpacity key={photo.id} onPress={() => setDraft((current) => selectPrimaryPhoto(current, photo.id!))}
-              style={[styles.photoThumb, photo.id === capture.id && styles.photoThumbSelected]}
-              accessibilityRole="button" accessibilityLabel={`Ảnh ${index + 1}${photo.id === capture.id ? ", ảnh chính" : ", chọn làm ảnh chính"}`}>
-              <Image source={{ uri: photo.displayLocalUri || photo.originalLocalUri }} style={styles.thumbImage} />
-              <Text style={styles.thumbLabel}>{photo.id === capture.id ? "ẢNH CHÍNH" : `ẢNH ${index + 1}`}</Text>
-              <Text style={styles.thumbLabel}>{photo.visionState === "OK" ? "AI ✓" : photo.visionState === "FAILED" ? "AI lỗi" : "AI chờ"}</Text>
+            <TouchableOpacity
+              key={photo.id}
+              onPress={() =>
+                setDraft((current) => selectPrimaryPhoto(current, photo.id!))
+              }
+              style={[
+                styles.photoThumb,
+                photo.id === capture.id && styles.photoThumbSelected,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Ảnh ${index + 1}${photo.id === capture.id ? ", ảnh chính" : ", chọn làm ảnh chính"}`}
+            >
+              <Image
+                source={{
+                  uri: photo.displayLocalUri || photo.originalLocalUri,
+                }}
+                style={styles.thumbImage}
+              />
+              <Text style={styles.thumbLabel}>
+                {photo.id === capture.id ? "ẢNH CHÍNH" : `ẢNH ${index + 1}`}
+              </Text>
+              <Text style={styles.thumbLabel}>
+                {photo.visionState === "OK"
+                  ? "AI ✓"
+                  : photo.visionState === "FAILED"
+                    ? "AI lỗi"
+                    : "AI chờ"}
+              </Text>
             </TouchableOpacity>
           ))}
           {photos.length < MAX_FIELD_REPORT_PHOTOS ? (
-            <TouchableOpacity onPress={() => navigation.navigate("ReportCamera")} style={styles.addPhoto} accessibilityRole="button" accessibilityLabel="Chụp thêm ảnh">
-              <Camera size={20} color="#22C55E" /><Text style={styles.thumbLabel}>CHỤP THÊM</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("ReportCamera")}
+              style={styles.addPhoto}
+              accessibilityRole="button"
+              accessibilityLabel="Chụp thêm ảnh"
+            >
+              <Camera size={20} color="#22C55E" />
+              <Text style={styles.thumbLabel}>CHỤP THÊM</Text>
             </TouchableOpacity>
           ) : null}
         </ScrollView>
-        <TouchableOpacity onPress={() => { setDraft((current) => removePhoto(current, capture.id!)); }} accessibilityRole="button" style={styles.deletePhoto}>
+
+        <TouchableOpacity
+          onPress={() => {
+            setDraft((current) => removePhoto(current, capture.id!));
+          }}
+          accessibilityRole="button"
+          style={styles.deletePhoto}
+        >
           <Text style={styles.deleteText}>Xóa ảnh đang chọn</Text>
         </TouchableOpacity>
+
+        {/* Khung ảnh với Ambient Blur Backdrop & không đè chữ lên vùng Watermark góc dưới trái */}
         <EvidenceImageFrame
           imageUri={capture.displayLocalUri || capture.originalLocalUri}
           fallbackUri={capture.originalLocalUri}
@@ -231,22 +335,6 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           overlay={
             <>
               <Text style={styles.photoBadge}>ẢNH HIỆN TRƯỜNG</Text>
-              {!capture.displayLocalUri ? (
-                <View style={[styles.watermark, styles.previewWatermark]}>
-                  <Text style={styles.watermarkBrandText}>
-                    {watermark.brandStr}
-                  </Text>
-                  <Text style={styles.watermarkAddress} numberOfLines={2}>
-                    {watermark.addressStr}
-                  </Text>
-                  <Text style={styles.watermarkLine} numberOfLines={1}>
-                    {watermark.locationStr}
-                  </Text>
-                  <Text style={styles.watermarkLine} numberOfLines={1}>
-                    {watermark.dateTimeStr.replace("Captured:", "")}
-                  </Text>
-                </View>
-              ) : null}
               {rendering ? (
                 <View style={styles.renderingBadge}>
                   <ActivityIndicator size="small" color="#22C55E" />
@@ -258,9 +346,30 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             </>
           }
         />
-        <Text style={[styles.viewerHint, { color: colors.textMuted }]}>
-          Chạm để xem ảnh
-        </Text>
+
+        {/* Thanh thông tin Metadata tách biệt hoàn toàn bên dưới mép ảnh để không đè lên Watermark trên ảnh */}
+        <View style={styles.cleanMetaFooterBar}>
+          <View style={styles.metaFooterLeft}>
+            <View style={styles.metaFooterRow}>
+              <MapPin size={12} color="#38BDF8" />
+              <Text style={styles.metaFooterText} numberOfLines={1}>
+                {location
+                  ? `${location.latitude.toFixed(5)}°, ${location.longitude.toFixed(5)}° · ±${Math.round(location.accuracyMeters)}m`
+                  : "Đang đồng bộ tọa độ GPS ngầm…"}
+              </Text>
+            </View>
+            <View style={styles.metaFooterRow}>
+              <Clock3 size={12} color="#22C55E" />
+              <Text style={styles.metaFooterText} numberOfLines={1}>
+                {watermark.dateTimeStr.replace("Captured:", "Chụp lúc:")}
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.viewerHint, { color: colors.textMuted }]}>
+            Chạm ảnh để phóng to
+          </Text>
+        </View>
+
         {watermarkError ? (
           <View
             style={[styles.errorCard, { borderColor: "rgba(245,158,11,0.3)" }]}
@@ -283,6 +392,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
         ) : null}
+
         <View style={styles.integrityCard}>
           <IntegrityRow
             title="Camera trực tiếp"
@@ -293,9 +403,11 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           <IntegrityRow
             title="GPS thiết bị"
             body={
-              integrity.gps
+              integrity.gps && location
                 ? `±${Math.round(location.accuracyMeters)}m`
-                : "Cần kiểm tra"
+                : gps.loading
+                  ? "Đang đồng bộ…"
+                  : "Cần kiểm tra"
             }
             valid={integrity.gps}
             colors={colors}
@@ -307,6 +419,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             colors={colors}
           />
         </View>
+
         <FieldEntrance>
           <FieldNotice title="Ảnh đã rõ nội dung cần phản ánh chưa?">
             Hãy đảm bảo khu vực rác được nhìn thấy rõ, không bị quá tối hoặc che
@@ -314,6 +427,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
           </FieldNotice>
         </FieldEntrance>
       </ScrollView>
+
       <ReportBottomActions>
         <View style={styles.actions}>
           <TouchableOpacity
@@ -330,7 +444,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-          // xác nhận sử dụng ảnh này và chuyển sang bước kiểm tra nhận diện ai
+            // Xác nhận sử dụng ảnh này và chuyển sang bước kiểm tra nhận diện AI
             onPress={() => navigation.navigate("ReportImageValidation")}
             disabled={
               integrityCount !== 3 ||
@@ -359,7 +473,8 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 };
-// hiển thị từng dòng kiểm tra tính toàn vẹn của dữ liệu hiện trường
+
+// Hiển thị từng dòng kiểm tra tính toàn vẹn của dữ liệu hiện trường
 const IntegrityRow = ({
   title,
   body,
@@ -385,16 +500,42 @@ const IntegrityRow = ({
     </View>
   </View>
 );
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: fieldStyles.content,
   photoStrip: { gap: 8, paddingVertical: 4 },
-  photoThumb: { width: 88, borderWidth: 1, borderColor: "#334155", borderRadius: 10, overflow: "hidden", backgroundColor: "#101D31" },
+  photoThumb: {
+    width: 88,
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: "#101D31",
+  },
   photoThumbSelected: { borderColor: "#22C55E" },
   thumbImage: { width: "100%", height: 70 },
-  thumbLabel: { color: "#CBD5E1", fontSize: 9, textAlign: "center", paddingVertical: 3 },
-  addPhoto: { width: 88, minHeight: 96, borderWidth: 1, borderColor: "#334155", borderRadius: 10, alignItems: "center", justifyContent: "center", gap: 4 },
-  deletePhoto: { alignSelf: "flex-end", minHeight: 40, justifyContent: "center" },
+  thumbLabel: {
+    color: "#CBD5E1",
+    fontSize: 9,
+    textAlign: "center",
+    paddingVertical: 3,
+  },
+  addPhoto: {
+    width: 88,
+    minHeight: 96,
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  deletePhoto: {
+    alignSelf: "flex-end",
+    minHeight: 40,
+    justifyContent: "center",
+  },
   deleteText: { color: "#F87171", fontSize: 12, fontWeight: "700" },
   evidenceFrame: {
     width: "100%",
@@ -416,15 +557,41 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 6,
   },
-  // giữ ảnh chụp gắn liền trong khung nền phía sau thanh tiêu đề và danh sách cuộn
-  // ngoài danh sách cuộn thì cơ chế cắt giao diện trên android không làm mất nguồn ảnh này
   captureSource: { position: "absolute", left: 16 },
-  previewWatermark: { maxHeight: "30%", overflow: "hidden", padding: space.sm },
-  viewerHint: {
-    marginTop: -space.md,
+  cleanMetaFooterBar: {
+    marginTop: -6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "rgba(15, 23, 42, 0.76)",
+    borderWidth: 1,
+    borderColor: "rgba(56, 189, 248, 0.16)",
+  },
+  metaFooterLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  metaFooterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  metaFooterText: {
+    color: "#CBD5E1",
     fontSize: 11,
-    lineHeight: 17,
-    textAlign: "center",
+    lineHeight: 15,
+    fontVariant: ["tabular-nums"],
+    flexShrink: 1,
+  },
+  viewerHint: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: "600",
+    textAlign: "right",
   },
   viewShot: { backgroundColor: "#081522" },
   image: { width: "100%" },

@@ -1,40 +1,43 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  AppState,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
   ActivityIndicator,
-  Linking,
+  AppState,
   Image,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Camera, X, Flashlight, Eye, EyeOff } from "lucide-react-native";
+import { Camera, Eye, EyeOff, Flashlight, X } from "lucide-react-native";
 import { normalizeFieldCaptureImage } from "../../shared/utils/fieldCaptureImage";
 import { persistOriginalFieldImage } from "../../shared/utils/watermark";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
+import { OfficerStepProgressBar } from "../components/OfficerUI";
 import { officerErrorMessage } from "../utils/officerWorkflow";
 import {
   acquireOfficerGps,
   type OfficerPhoto,
 } from "../utils/officerResolution";
 
-// chụp ảnh sau khi dọn xong
+// Màn hình Camera chụp ảnh kết quả sau xử lý kèm hỗ trợ căn chuẩn góc chụp (Ghost Overlay / Thumbnail tham chiếu)
 export function OfficerResolutionCamera({
   onCapture,
   onClose,
+  beforeImageUri,
   referenceImageUri,
 }: {
   onCapture: (photo: OfficerPhoto) => void;
   onClose: () => void;
+  beforeImageUri?: string;
   referenceImageUri?: string;
 }) {
-  // Thêm state bật/tắt lớp ảnh mờ (mặc định bật nếu có ảnh ban đầu)
-  const [showGhost, setShowGhost] = useState(Boolean(referenceImageUri));
-  const [ghostOpacity, setGhostOpacity] = useState(0.35); // 35% độ mờ
+  const initialReferenceUri = beforeImageUri || referenceImageUri;
+  const [showGhost, setShowGhost] = useState(Boolean(initialReferenceUri));
+  const ghostOpacity = 0.35; // Độ trong suốt chuẩn 0.35 giúp soi góc chụp gốc
   const insets = useSafeAreaInsets();
   const { colors } = useCivicTheme();
   const [permission, requestPermission] = useCameraPermissions();
@@ -49,6 +52,7 @@ export function OfficerResolutionCamera({
   const [foreground, setForeground] = useState(
     AppState.currentState === "active",
   );
+
   useEffect(() => {
     alive.current = true;
     const listener = AppState.addEventListener("change", (state) => {
@@ -60,7 +64,8 @@ export function OfficerResolutionCamera({
       listener.remove();
     };
   }, []);
-  // lấy tọa độ gps, chụp ảnh sau khi dọn xong và lưu ảnh vào máy
+
+  // Tự động lấy tọa độ GPS hiện tại ngay khi bấm chụp và gắn vào ảnh kết quả (After photo)
   const capture = async () => {
     if (!camera.current || !ready || captureLock.current) return;
     captureLock.current = true;
@@ -95,7 +100,14 @@ export function OfficerResolutionCamera({
         capturedAt,
       );
       if (alive.current)
-        onCapture({ originalLocalUri, capturedAt, location: gps });
+        onCapture({
+          originalLocalUri,
+          capturedAt,
+          location: gps,
+          width: normalized.width,
+          height: normalized.height,
+          usedGhostOverlay: Boolean(initialReferenceUri && showGhost),
+        });
     } catch (failure: unknown) {
       const localMessage =
         failure instanceof Error &&
@@ -107,7 +119,7 @@ export function OfficerResolutionCamera({
           localMessage ||
             officerErrorMessage(
               failure,
-              "Không thể chụp ảnh hoặc lấy GPS. Vui lòng thử lại.",
+              "Không thể chụp ảnh hoặc lấy vị trí GPS. Vui lòng thử lại.",
             ),
         );
     } finally {
@@ -115,6 +127,7 @@ export function OfficerResolutionCamera({
       if (alive.current) setBusy(false);
     }
   };
+
   return (
     <View
       style={[
@@ -137,24 +150,23 @@ export function OfficerResolutionCamera({
           <X size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.primary }]}>
-          LIVE CAM · SAU XỬ LÝ
+          CHỤP ẢNH KẾT QUẢ (SAU XỬ LÝ)
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {/* 👇 THÊM NÚT BẬT/TẮT CON MẮT ĐỐI CHIẾU Ở ĐÂY */}
-          {referenceImageUri ? (
+          {initialReferenceUri ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Bật tắt đối chiếu ảnh"
+              accessibilityLabel="Soi góc chụp gốc"
               style={[styles.toolButton, showGhost && styles.toolButtonActive]}
               onPress={() => setShowGhost((prev) => !prev)}
             >
               {showGhost ? (
-                <Eye size={18} color="#22C55E" />
+                <Eye size={17} color="#22C55E" />
               ) : (
-                <EyeOff size={18} color="#94A3B8" />
+                <EyeOff size={17} color="#94A3B8" />
               )}
               <Text style={styles.toolButtonText}>
-                {showGhost ? "Góc cũ: Bật" : "Tắt"}
+                {showGhost ? "Soi góc chụp gốc: Bật" : "Soi góc chụp gốc: Tắt"}
               </Text>
             </Pressable>
           ) : null}
@@ -171,10 +183,11 @@ export function OfficerResolutionCamera({
           </Pressable>
         </View>
       </View>
+      <OfficerStepProgressBar step={3} />
       {!permission?.granted ? (
         <View style={styles.permission}>
           <Text style={[styles.message, { color: colors.text }]}>
-            Cần quyền Camera để chụp ảnh sau xử lý.
+            Cần cấp quyền Camera để chụp ảnh kết quả sau xử lý.
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -223,15 +236,36 @@ export function OfficerResolutionCamera({
                 }}
               />
             ) : null}
-            {referenceImageUri && showGhost ? (
+
+            {/* Khi bật Soi góc chụp gốc (Ghost Overlay): phủ ảnh ban đầu với opacity: 0.35 và pointerEvents="none" */}
+            {initialReferenceUri && showGhost ? (
               <View style={StyleSheet.absoluteFill} pointerEvents="none">
                 <Image
-                  source={{ uri: referenceImageUri }}
+                  source={{ uri: initialReferenceUri }}
                   style={[StyleSheet.absoluteFill, { opacity: ghostOpacity }]}
                   resizeMode="cover"
                 />
                 <View style={styles.ghostBadge}>
-                  <Text style={styles.ghostBadgeText}>Khung căn góc sự cố ban đầu</Text>
+                  <Text style={styles.ghostBadgeText}>
+                    Soi góc chụp gốc (Căn khớp vị trí & góc nhìn ban đầu)
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Khi tắt Ghost Overlay: hiển thị ảnh gốc dạng khung nhỏ (Thumbnail) ở góc trên màn hình kèm chỉ dẫn */}
+            {initialReferenceUri && !showGhost ? (
+              <View style={styles.thumbnailGuideOverlay} pointerEvents="none">
+                <Image
+                  source={{ uri: initialReferenceUri }}
+                  style={styles.referenceThumbnail}
+                  resizeMode="cover"
+                />
+                <View style={styles.thumbnailTextWrap}>
+                  <Text style={styles.thumbnailTitle}>Ảnh sự cố ban đầu</Text>
+                  <Text style={styles.thumbnailInstruction}>
+                    Căn chỉnh góc chụp tương đồng với ảnh sự cố ban đầu
+                  </Text>
                 </View>
               </View>
             ) : null}
@@ -240,10 +274,10 @@ export function OfficerResolutionCamera({
       )}
       <View style={styles.footer}>
         <Text style={[styles.message, { color: colors.text }]}>
-          Chụp rõ khu vực sau xử lý
+          Căn chỉnh góc chụp tương đồng với ảnh sự cố ban đầu
         </Text>
         <Text style={[styles.hint, { color: colors.textMuted }]}>
-          Ảnh chụp trực tiếp · GPS mới tại thời điểm chụp
+          Ảnh chụp trực tiếp từ Camera · Tự động đính kèm tọa độ GPS hiện tại
         </Text>
         {error ? (
           <Text
@@ -258,7 +292,7 @@ export function OfficerResolutionCamera({
             accessibilityLiveRegion="polite"
             style={[styles.hint, { color: colors.cyan }]}
           >
-            Đang lấy GPS và chụp ảnh...
+            Đang lấy tọa độ GPS và chụp ảnh kết quả...
           </Text>
         ) : null}
         <Pressable
@@ -281,6 +315,7 @@ export function OfficerResolutionCamera({
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: {
@@ -325,9 +360,9 @@ const styles = StyleSheet.create({
   buttonText: { color: "#07101F", fontWeight: "800" },
   ghostBadge: {
     position: "absolute",
-    top: 60,
+    top: 16,
     alignSelf: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    backgroundColor: "rgba(0, 0, 0, 0.72)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -336,7 +371,43 @@ const styles = StyleSheet.create({
   },
   ghostBadgeText: {
     color: "#22C55E",
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  thumbnailGuideOverlay: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "rgba(7, 16, 31, 0.85)",
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#38BDF8",
+  },
+  referenceThumbnail: {
+    width: 58,
+    height: 76,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#22C55E",
+  },
+  thumbnailTextWrap: {
+    flex: 1,
+    gap: 3,
+  },
+  thumbnailTitle: {
+    color: "#38BDF8",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  thumbnailInstruction: {
+    color: "#F8FAFC",
+    fontSize: 11,
+    lineHeight: 16,
     fontWeight: "600",
   },
   toolButton: {
@@ -354,6 +425,7 @@ const styles = StyleSheet.create({
   },
   toolButtonText: {
     color: "#FFFFFF",
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: "700",
   },
 });

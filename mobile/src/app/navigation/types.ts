@@ -31,6 +31,8 @@ export type CitizenStackParamList = {
 export type OfficerTabParamList = {
   OfficerTasksTab: undefined;
   OfficerMapTab: { selectedId?: string } | undefined;
+  OfficerHistoryTab: undefined;
+  OfficerNotificationsTab: undefined;
   OfficerProfileTab: undefined;
 };
 export type OfficerStackParamList = {
