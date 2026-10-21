@@ -23,6 +23,7 @@ import {
 import { useAlert } from "../../shared/hooks/useAlerts";
 import { useProfile } from "../../auth/hooks/useAuth";
 import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
+import { WasteDetectionImage } from "../../shared/components/vision/WasteDetectionImage";
 import { Button } from "../../shared/components/ui/Button";
 import { OverallAiAnalysisCard } from "../../shared/components/ai/OverallAiAnalysisCard";
 import {
@@ -119,15 +120,39 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
 
   const before = alert.fieldEvidence?.length
     ? alert.fieldEvidence.map((e) => ({
+        displayUrl: e.displayUrl,
+        originalUrl: e.originalUrl,
         uri: e.displayUrl || e.originalUrl,
         fallback: e.originalUrl,
         at: e.capturedAt,
       }))
     : (alert.mediaUrls || []).map((uri) => ({
+        displayUrl: undefined,
+        originalUrl: uri,
         uri,
         fallback: uri,
         at: undefined,
       }));
+
+  const primaryVisionEvidence =
+    alert.visionEvidence?.find(
+      (v) =>
+        (before[0] &&
+          (v.imageUrl === before[0].originalUrl ||
+            v.imageUrl === before[0].fallback ||
+            v.imageUrl === before[0].uri ||
+            (v.imageUrl &&
+              before[0].originalUrl &&
+              (v.imageUrl.includes(before[0].originalUrl) ||
+                before[0].originalUrl.includes(v.imageUrl))))) ||
+        false,
+    ) || alert.visionEvidence?.[0];
+
+  const primaryDetections =
+    primaryVisionEvidence?.detections &&
+    primaryVisionEvidence.detections.length > 0
+      ? primaryVisionEvidence.detections
+      : undefined;
 
   const checkedInAt = alert.checkIn?.checkedInAt || alert.arrivedAt;
   const elapsedSinceCheckIn = officerElapsedTime(checkedInAt, nowMs);
@@ -234,11 +259,28 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
           </Text>
           {before[0] ? (
             <View style={{ gap: 6 }}>
-              <EvidenceImageFrame
-                imageUri={before[0].uri}
-                fallbackUri={before[0].fallback}
-                style={{ width: "100%", aspectRatio: 4 / 3 }}
-              />
+              {before[0].displayUrl ? (
+                <EvidenceImageFrame
+                  imageUri={before[0].displayUrl}
+                  fallbackUri={before[0].originalUrl}
+                  style={{ width: "100%", aspectRatio: 4 / 3 }}
+                  accessibilityLabel="Ảnh trước xử lý 1"
+                />
+              ) : primaryDetections ? (
+                <WasteDetectionImage
+                  imageUri={before[0].originalUrl || before[0].uri}
+                  detections={primaryDetections}
+                  aspectRatio={4 / 3}
+                  showHints={false}
+                />
+              ) : (
+                <EvidenceImageFrame
+                  imageUri={before[0].uri}
+                  fallbackUri={before[0].fallback}
+                  style={{ width: "100%", aspectRatio: 4 / 3 }}
+                  accessibilityLabel="Ảnh trước xử lý 1"
+                />
+              )}
               {/* Thanh Footer Bar tách biệt hoàn toàn bên dưới mép ảnh để không đè lên chữ Watermark */}
               <View style={detailStyles.imageFooterBar}>
                 <View style={[s.row, { gap: 6 }]}>
@@ -264,8 +306,8 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
               {before.slice(1).map((image, i) => (
                 <EvidenceImageFrame
                   key={`${i}-${image.uri}`}
-                  imageUri={image.uri}
-                  fallbackUri={image.fallback}
+                  imageUri={image.displayUrl || image.uri}
+                  fallbackUri={image.originalUrl || image.fallback}
                   style={{ width: 90, aspectRatio: 3 / 4 }}
                   accessibilityLabel={`Ảnh trước xử lý ${i + 2}`}
                 />

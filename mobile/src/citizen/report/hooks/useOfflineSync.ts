@@ -97,6 +97,42 @@ export function useOfflineSync() {
             latitude: photo.location?.latitude, longitude: photo.location?.longitude,
             width: photo.width, height: photo.height,
           })) : undefined,
+          visionEvidence: uploaded.some(
+            ({ photo }) =>
+              photo.visionState === "OK" ||
+              photo.visionState === "NO_DETECTION" ||
+              (photo.detections && photo.detections.length > 0),
+          )
+            ? uploaded.map(({ photo, originalUploadedUrl }) => ({
+                imageUrl: originalUploadedUrl,
+                status:
+                  photo.visionState === "OK"
+                    ? "ok"
+                    : photo.visionState === "NO_DETECTION"
+                      ? "no_detection"
+                      : "error",
+                detections: (photo.detections || []).map((d) => ({
+                  materialClass: d.materialClass || d.label || "waste",
+                  ...(d.suggestedCategory
+                    ? { suggestedCategory: d.suggestedCategory as any }
+                    : {}),
+                  confidence: d.confidence ?? 0,
+                  bbox: d.bbox,
+                  ...(d.model_id ? { model_id: d.model_id } : {}),
+                  ...(d.original_class_name
+                    ? { original_class_name: d.original_class_name }
+                    : {}),
+                  ...(typeof d.original_class_id === "number"
+                    ? { original_class_id: d.original_class_id }
+                    : {}),
+                  ...(typeof d.needs_review === "boolean"
+                    ? { needs_review: d.needs_review }
+                    : {}),
+                  ...(d.sources ? { sources: d.sources } : {}),
+                })),
+                requiresManualReview: Boolean(photo.visionRequiresManualReview),
+              }))
+            : undefined,
           isAnonymous: draft.isAnonymous,
         });
 

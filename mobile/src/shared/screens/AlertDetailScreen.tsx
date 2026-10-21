@@ -44,7 +44,7 @@ import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { OverallAiAnalysisCard } from "../components/ai/OverallAiAnalysisCard";
-import { WasteDetectionEvidence } from "../components/vision/WasteDetectionEvidence";
+import { WasteDetectionImage } from "../components/vision/WasteDetectionImage";
 import { matchVisionEvidence } from "../utils/visionBoundingBox";
 import { useCivicTheme } from "../theme/useCivicTheme";
 import { useLanguage } from "../context/LanguageContext";
@@ -197,10 +197,6 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
   const originalEvidenceUrls = alert?.fieldEvidence?.length
     ? alert.fieldEvidence.map((item) => item.originalUrl)
     : alert?.mediaUrls || [];
-  const matchedVisionEvidence =
-    alert?.analysisPipeline === "WASTE_DETECTION"
-      ? matchVisionEvidence(originalEvidenceUrls, alert.visionEvidence ?? [])
-      : [];
 
   const officerDisplayName =
     alert?.assignedOfficerName ||
@@ -669,20 +665,61 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
               {pageCopy.photos}
             </Text>
             <View style={styles.photoScroll}>
-              {evidencePhotoUrls.map((url, idx) => (
-                <EvidenceImageFrame
-                  key={idx}
-                  imageUri={url}
-                  accessibilityLabel={`${pageCopy.photos} ${idx + 1}`}
-                />
-              ))}
+              {evidencePhotoUrls.map((url, idx) => {
+                const fieldEvidenceItem = alert?.fieldEvidence?.[idx];
+                const originalUrl = originalEvidenceUrls[idx] || url;
+                const hasBakedDisplayUrl = Boolean(fieldEvidenceItem?.displayUrl);
+
+                // Nếu ảnh đã có displayUrl (đã bake sẵn Bounding Box + Watermark), hiển thị trực tiếp bằng EvidenceImageFrame
+                if (hasBakedDisplayUrl && fieldEvidenceItem?.displayUrl) {
+                  return (
+                    <EvidenceImageFrame
+                      key={idx}
+                      imageUri={fieldEvidenceItem.displayUrl}
+                      fallbackUri={originalUrl}
+                      accessibilityLabel={`${pageCopy.photos} ${idx + 1}`}
+                    />
+                  );
+                }
+
+                const matchedVision =
+                  alert?.visionEvidence?.find(
+                    (v) =>
+                      v.imageUrl === originalUrl ||
+                      (v.imageUrl && originalUrl && (v.imageUrl.includes(originalUrl) || originalUrl.includes(v.imageUrl))),
+                  ) ||
+                  (alert?.visionEvidence?.length === 1 &&
+                  evidencePhotoUrls.length === 1
+                    ? alert.visionEvidence[0]
+                    : alert?.visionEvidence?.[idx]);
+
+                const hasDetections = Boolean(
+                  matchedVision?.detections && matchedVision.detections.length > 0,
+                );
+
+                if (hasDetections && matchedVision) {
+                  return (
+                    <WasteDetectionImage
+                      key={idx}
+                      imageUri={originalUrl}
+                      detections={matchedVision.detections}
+                      aspectRatio={3 / 4}
+                      showHints={false}
+                    />
+                  );
+                }
+
+                return (
+                  <EvidenceImageFrame
+                    key={idx}
+                    imageUri={url}
+                    accessibilityLabel={`${pageCopy.photos} ${idx + 1}`}
+                  />
+                );
+              })}
             </View>
           </View>
         ) : null}
-
-        {matchedVisionEvidence.map((evidence) => (
-          <WasteDetectionEvidence key={evidence.imageUrl} evidence={evidence} />
-        ))}
 
         {/* bản đồ vị trí gắn thẻ sự cố */}
         <View style={styles.sectionBox}>
@@ -944,7 +981,7 @@ const styles = StyleSheet.create({
   assignmentDescription: { marginTop: space.xs, fontSize: 12, lineHeight: 17 },
   assignmentButton: { marginTop: space.lg },
   sectionBox: { marginBottom: space.xl },
-  photoScroll: { marginTop: space.xs },
+  photoScroll: { marginTop: space.xs, gap: space.md },
   mapCard: { padding: 0, overflow: "hidden", marginTop: space.xs },
   map: { width: "100%", height: 180 },
   addressBox: {

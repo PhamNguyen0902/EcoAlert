@@ -41,6 +41,8 @@ import { normalizePhotoDraft, removePhoto, updatePhoto } from "../photoDraft";
 import { ReportHeader } from "../components/ReportHeader";
 import { ReportProgress } from "../components/ReportProgress";
 import { WasteDetectionImage } from "../../../shared/components/vision/WasteDetectionImage";
+import ViewShot, { captureRef, type ViewShotRef } from "react-native-view-shot";
+import { persistWatermarkedDisplayImage } from "../../../shared/utils/watermark";
 import { FieldAiResultCard } from "../components/stitch/FieldAiResultCard";
 import {
   FieldEvidenceMetaOverlay,
@@ -64,6 +66,9 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
   const { isOffline } = useOfflineSync();
   const [guideVisible, setGuideVisible] = useState(false);
   const runningRef = useRef(false);
+  const yoloViewShotRef = useRef<ViewShotRef | null>(null);
+  const bakingRef = useRef(false);
+  const lastBakedPhotoIdRef = useRef<string | null>(null);
   const capture = draft.capture;
   const photos = normalizePhotoDraft(draft).photos;
   const [previewPhotoId, setPreviewPhotoId] = useState<string | undefined>(capture?.id);
@@ -76,6 +81,62 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
   const imageDetections = useMemo(() => previewPhoto?.visionState === "OK"
     ? (previewPhoto.detections || []).map(item => ({ ...item, materialClass: item.label, confidence: item.confidence ?? NaN }))
     : [], [previewPhoto?.visionState, previewPhoto?.detections]);
+
+  const bakeCurrentYoloImage = useCallback(async () => {
+    if (!previewPhoto || previewPhoto.visionState !== "OK" || !previewPhoto.detections?.length) {
+      return;
+    }
+    if (bakingRef.current) return;
+    bakingRef.current = true;
+    try {
+      if (yoloViewShotRef.current) {
+        const tmpUri = await captureRef(yoloViewShotRef.current, {
+          format: "jpg",
+          quality: 0.95,
+          result: "tmpfile",
+        });
+        if (tmpUri) {
+          const persistedUri = await persistWatermarkedDisplayImage(
+            tmpUri,
+            previewPhoto.capturedAt || new Date().toISOString()
+          );
+          const finalUri = persistedUri || tmpUri;
+          setDraft(current =>
+            updatePhoto(current, previewPhoto.id!, {
+              displayLocalUri: finalUri,
+              displayUploadedUrl: undefined,
+            })
+          );
+          lastBakedPhotoIdRef.current = previewPhoto.id!;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to bake YOLO display image:", e);
+    } finally {
+      bakingRef.current = false;
+    }
+  }, [previewPhoto, setDraft]);
+
+  useEffect(() => {
+    if (
+      previewPhoto?.visionState === "OK" &&
+      previewPhoto?.detections &&
+      previewPhoto.detections.length > 0 &&
+      lastBakedPhotoIdRef.current !== previewPhoto.id
+    ) {
+      const timer = setTimeout(() => {
+        void bakeCurrentYoloImage();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [previewPhoto?.id, previewPhoto?.visionState, previewPhoto?.detections, bakeCurrentYoloImage]);
+
+  const handleContinue = async () => {
+    if (previewPhoto?.visionState === "OK" && previewPhoto.detections?.length) {
+      await bakeCurrentYoloImage();
+    }
+    navigation.navigate("ReportConfirm");
+  };
   const analyze = useCallback(async (onlyPhotoId?: string, retrySemantic = false) => {
     if (!isFocused || !capture || runningRef.current) return;
     if (isOffline) {
@@ -169,27 +230,33 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
           xuất phân loại.
         </FieldNotice>
         <View style={styles.previewFrame}>
-          <WasteDetectionImage
-            imageUri={previewPhoto?.originalLocalUri || capture.originalLocalUri}
-            detections={imageDetections}
-            aspectRatio={3 / 4}
-            frameStyle={{
-              width: "100%",
-              maxWidth: 480,
-              borderWidth: 1,
-              borderColor: "rgba(56,189,248,0.22)",
-            }}
-            showHints={false}
-            frameOverlay={
-              <>
-                <FieldEvidenceMetaOverlay
-                  location={previewPhoto?.location || draft.location}
-                  capture={previewPhoto || capture}
-                />
-                {state === "PROCESSING" ? <FieldScanLine /> : null}
-              </>
-            }
-          />
+          <ViewShot
+            ref={yoloViewShotRef}
+            options={{ format: "jpg", quality: 0.95, result: "tmpfile" }}
+            style={{ width: "100%", maxWidth: 480, alignItems: "center" }}
+          >
+            <WasteDetectionImage
+              imageUri={previewPhoto?.originalLocalUri || capture.originalLocalUri}
+              detections={imageDetections}
+              aspectRatio={3 / 4}
+              frameStyle={{
+                width: "100%",
+                maxWidth: 480,
+                borderWidth: 1,
+                borderColor: "rgba(56,189,248,0.22)",
+              }}
+              showHints={false}
+              frameOverlay={
+                <>
+                  <FieldEvidenceMetaOverlay
+                    location={previewPhoto?.location || draft.location}
+                    capture={previewPhoto || capture}
+                  />
+                  {state === "PROCESSING" ? <FieldScanLine /> : null}
+                </>
+              }
+            />
+          </ViewShot>
           <Text
             style={[
               styles.previewBadge,
@@ -346,7 +413,7 @@ export const ReportImageValidationScreen: React.FC<Props> = ({
         <ReportBottomActions>
           <TouchableOpacity
             // xác nhận kết quả kiểm tra ảnh hợp lệ và chuyển sang bước xác nhận thông tin báo cáo
-            onPress={() => navigation.navigate("ReportConfirm")}
+            onPress={() => void handleContinue()}
             style={[styles.continueButton, { backgroundColor: colors.cta }]}
             accessibilityRole="button"
           >

@@ -17,6 +17,7 @@ import {
   getPresentationCopy,
   getSeverityLabel,
 } from "../../utils/incidentPresentation";
+import { getWasteDetectionLabel } from "../../utils/visionBoundingBox";
 
 const percentage = (value: number | null | undefined, unavailable: string) =>
   value === null || value === undefined
@@ -39,7 +40,11 @@ export const OverallAiAnalysisCard: React.FC<{
   const visionDetections =
     alert.visionEvidence?.flatMap((item) => item.detections ?? []) ?? [];
   const detectedMaterials = [
-    ...new Set(visionDetections.map((item) => item.materialClass)),
+    ...new Set(
+      visionDetections.map((item) =>
+        getWasteDetectionLabel(item.materialClass)
+      )
+    ),
   ].slice(0, 3);
   const text =
     language === "vi"

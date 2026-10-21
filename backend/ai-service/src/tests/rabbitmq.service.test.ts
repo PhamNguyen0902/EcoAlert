@@ -79,3 +79,36 @@ test('one failed photo does not discard another photo detection', async () => {
   assert.equal(result.acknowledged, true);
   assert.deepEqual(published.visionEvidence.map((item: any) => item.status), ['error', 'ok']);
 });
+
+test('reuses precomputed visionEvidence from mobile capture without re-running YOLO detection', async () => {
+  let detectCalls = 0;
+  let published: any;
+  const event = JSON.parse(message().content.toString());
+  const frozenEvidence = [{
+    imageUrl: 'https://example.com/evidence.jpg',
+    status: 'ok' as const,
+    detections: [{ materialClass: 'plastic_bag', confidence: 0.94, bbox: [10, 20, 120, 180] as [number, number, number, number] }],
+    requiresManualReview: false,
+  }];
+  event.data.visionEvidence = frozenEvidence;
+  const dependencies: AlertCreatedProcessorDependencies = {
+    analyze: async () => ({
+      category: AlertCategory.ILLEGAL_DUMPING, severity: Severity.HIGH, confidence: 0.85,
+      displayConfidenceSource: 'CATEGORY', summary: 'Túi rác nhựa ven đường.', reasoningSummary: 'Ảnh khớp hiện trường.',
+      analysisMode: 'IMAGE_AND_TEXT', provider: 'openrouter', model: 'openai/gpt-4o-mini', pipelineVersion: 'openrouter-multimodal-v1',
+    }),
+    detectWaste: async () => {
+      detectCalls++;
+      throw new Error('detectWaste must not be called when visionEvidence is already provided');
+    },
+    publish: async (_key, data) => { published = data; },
+  };
+  const result = await settleAlertCreatedMessage(
+    { content: Buffer.from(JSON.stringify(event)) } as any,
+    { ack: () => undefined, nack: () => assert.fail('must not nack') } as any,
+    dependencies,
+  );
+  assert.equal(result.acknowledged, true);
+  assert.equal(detectCalls, 0);
+  assert.deepEqual(published.visionEvidence, frozenEvidence);
+});

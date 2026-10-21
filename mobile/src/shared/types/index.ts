@@ -223,7 +223,7 @@ export interface PreSubmitVisionResult {
   status: "ok" | "no_detection" | "error";
   detections: Array<VisionDetectionMetadata & {
     materialClass: string;
-    suggestedCategory?: string;
+    suggestedCategory?: AlertCategory | null;
     confidence: number;
     bbox?: [number, number, number, number];
   }>;
@@ -300,6 +300,7 @@ export interface CreateAlertData {
   mediaUrls?: string[];
   captureMetadata?: CaptureMetadata;
   fieldEvidence?: FieldEvidence[];
+  visionEvidence?: VisionEvidence[];
   isAnonymous?: boolean;
   voiceNoteUrl?: string;
   category?: AlertCategory;
