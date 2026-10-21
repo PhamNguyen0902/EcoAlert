@@ -318,6 +318,17 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
               HIỆU CHỈNH THÔNG TIN PHẢN ÁNH
             </Text>
             <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
+              DANH MỤC DO BẠN XÁC NHẬN (TÙY CHỌN)
+            </Text>
+            <View style={styles.classificationChips}>
+              {reportCategoryCodes.map(code => (
+                <TouchableOpacity key={code} accessibilityRole="radio" accessibilityState={{ checked: draft.imageValidation.userSelectedCategory === code }}
+                  onPress={() => setDraft(current => ({ ...current, imageValidation: { ...current.imageValidation, userSelectedCategory: current.imageValidation.userSelectedCategory === code ? undefined : code } }))}>
+                  <Text style={[styles.categoryChip, { color: draft.imageValidation.userSelectedCategory === code ? colors.primary : colors.textSecondary }]}>{draft.imageValidation.userSelectedCategory === code ? "✓ " : ""}{getCategoryLabel(code, "vi")}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
               TIÊU ĐỀ SỰ CỐ
             </Text>
             <TextInput
@@ -345,33 +356,6 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
                 Tiêu đề cần ít nhất 5 ký tự.
               </Text>
             ) : null}
-            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>
-              PHÂN LOẠI DO AI GỢI Ý
-            </Text>
-            <View style={styles.classificationChips}>
-              <Text style={styles.categoryChip}>
-                {categoryReady && draft.imageValidation.suggestedCategory
-                  ? getCategoryLabel(
-                      draft.imageValidation.suggestedCategory,
-                      "vi",
-                    )
-                  : "Chờ phân loại"}
-              </Text>
-              <Text style={[styles.categoryChip, { color: severityColor }]}>
-                {draft.imageValidation.severity
-                  ? getSeverityLabel(draft.imageValidation.severity, "vi")
-                  : "Chưa có đánh giá mức độ"}
-              </Text>
-            </View>
-            <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>DANH MỤC DO BẠN XÁC NHẬN (TÙY CHỌN)</Text>
-            <View style={styles.classificationChips}>
-              {reportCategoryCodes.map(code => (
-                <TouchableOpacity key={code} accessibilityRole="radio" accessibilityState={{ checked: draft.imageValidation.userSelectedCategory === code }}
-                  onPress={() => setDraft(current => ({ ...current, imageValidation: { ...current.imageValidation, userSelectedCategory: current.imageValidation.userSelectedCategory === code ? undefined : code } }))}>
-                  <Text style={[styles.categoryChip, { color: draft.imageValidation.userSelectedCategory === code ? colors.primary : colors.textSecondary }]}>{draft.imageValidation.userSelectedCategory === code ? "✓ " : ""}{getCategoryLabel(code, "vi")}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
           </View>
           <View style={styles.descriptionSection}>
             <Text style={[styles.technicalLabel, { color: colors.textMuted }]}>

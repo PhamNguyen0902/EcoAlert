@@ -23,6 +23,7 @@ import {
 import { useAlert } from "../../shared/hooks/useAlerts";
 import { useProfile } from "../../auth/hooks/useAuth";
 import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
+import { WasteDetectionImage } from "../../shared/components/vision/WasteDetectionImage";
 import { Button } from "../../shared/components/ui/Button";
 import { OverallAiAnalysisCard } from "../../shared/components/ai/OverallAiAnalysisCard";
 import {
@@ -129,6 +130,24 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
         at: undefined,
       }));
 
+  const primaryVisionEvidence =
+    alert.visionEvidence?.find(
+      (v) =>
+        (before[0] &&
+          (v.imageUrl === before[0].uri ||
+            v.imageUrl === before[0].fallback ||
+            (v.imageUrl &&
+              (v.imageUrl.includes(before[0].uri) ||
+                before[0].uri.includes(v.imageUrl))))) ||
+        false,
+    ) || alert.visionEvidence?.[0];
+
+  const primaryDetections =
+    primaryVisionEvidence?.detections &&
+    primaryVisionEvidence.detections.length > 0
+      ? primaryVisionEvidence.detections
+      : undefined;
+
   const checkedInAt = alert.checkIn?.checkedInAt || alert.arrivedAt;
   const elapsedSinceCheckIn = officerElapsedTime(checkedInAt, nowMs);
 
@@ -234,11 +253,20 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
           </Text>
           {before[0] ? (
             <View style={{ gap: 6 }}>
-              <EvidenceImageFrame
-                imageUri={before[0].uri}
-                fallbackUri={before[0].fallback}
-                style={{ width: "100%", aspectRatio: 4 / 3 }}
-              />
+              {primaryDetections ? (
+                <WasteDetectionImage
+                  imageUri={before[0].uri}
+                  detections={primaryDetections}
+                  aspectRatio={4 / 3}
+                  showHints={false}
+                />
+              ) : (
+                <EvidenceImageFrame
+                  imageUri={before[0].uri}
+                  fallbackUri={before[0].fallback}
+                  style={{ width: "100%", aspectRatio: 4 / 3 }}
+                />
+              )}
               {/* Thanh Footer Bar tách biệt hoàn toàn bên dưới mép ảnh để không đè lên chữ Watermark */}
               <View style={detailStyles.imageFooterBar}>
                 <View style={[s.row, { gap: 6 }]}>
