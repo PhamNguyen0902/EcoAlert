@@ -47,13 +47,18 @@ export const buildGoogleMapsUrl = (
   latitude: unknown,
   longitude: unknown,
   action: GoogleMapsAction = "navigate",
+  origin?: MapCoordinates | null,
 ): string | null => {
   if (!isValidMapCoordinates(latitude, longitude)) return null;
 
   const destination = `${latitude},${longitude}`;
+  const originParam =
+    origin && isValidMapCoordinates(origin.latitude, origin.longitude)
+      ? `&origin=${origin.latitude},${origin.longitude}`
+      : "";
   return action === "view"
     ? `https://www.google.com/maps/search/?api=1&query=${destination}`
-    : `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two-wheeler&dirflg=m`;
+    : `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two-wheeler&dirflg=m${originParam}`;
 };
 
 export const getNativeGoogleMapsUrl = (
@@ -80,12 +85,13 @@ export const openGoogleMaps = async (
   latitude: unknown,
   longitude: unknown,
   action: GoogleMapsAction = "navigate",
+  origin?: MapCoordinates | null,
 ): Promise<OpenGoogleMapsResult> => {
   if (!isValidMapCoordinates(latitude, longitude)) {
     return { success: false, reason: "invalid_coordinates" };
   }
 
-  const webUrl = buildGoogleMapsUrl(latitude, longitude, action);
+  const webUrl = buildGoogleMapsUrl(latitude, longitude, action, origin);
   if (!webUrl) return { success: false, reason: "invalid_coordinates" };
 
   const nativeUrl = getNativeGoogleMapsUrl(latitude, longitude, action);

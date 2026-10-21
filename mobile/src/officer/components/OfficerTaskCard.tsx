@@ -14,6 +14,8 @@ import {
   officerReference,
 } from "../utils/officerPresentation";
 import { OfficerBadge, officerStyles as s } from "./OfficerUI";
+import { useOfficerShiftGuard } from "../hooks/useOfficerShiftGuard";
+
 // thẻ hiển thị tóm tắt một nhiệm vụ gồm ảnh, trạng thái, địa chỉ và mã hồ sơ
 export function OfficerTaskCard({
   task,
@@ -25,9 +27,23 @@ export function OfficerTaskCard({
   compact?: boolean;
 }) {
   const { colors } = useCivicTheme();
+  const { isOnShift, assertOnShiftWithAlert } = useOfficerShiftGuard();
+
   // lấy màu sắc và nhãn trạng thái tiến độ của nhiệm vụ
   const state = getOfficerTaskState(task);
   const image = officerImage(task);
+
+  const isFieldAction =
+    state.action === "RESOLVE" || state.action === "CHECK_IN";
+
+  const handleCtaPress = () => {
+    if (isFieldAction && !isOnShift) {
+      assertOnShiftWithAlert(onPress);
+    } else {
+      onPress();
+    }
+  };
+
   return (
     <Pressable
       onPress={onPress}
@@ -103,17 +119,29 @@ export function OfficerTaskCard({
         </Text>
       </View>
       {!compact && (
-        <View style={[styles.cta, { backgroundColor: colors.greenSoft }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            isFieldAction ? "Tiếp tục xử lý sự cố" : "Xem chi tiết nhiệm vụ"
+          }
+          onPress={handleCtaPress}
+          style={({ pressed }) => [
+            styles.cta,
+            {
+              backgroundColor: colors.greenSoft,
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
+        >
           <Text style={[s.technical, { color: colors.primary }]}>
-            {state.action === "RESOLVE" || state.action === "CHECK_IN"
-              ? "TIẾP TỤC XỬ LÝ ›"
-              : "XEM CHI TIẾT NHIỆM VỤ ›"}
+            {isFieldAction ? "TIẾP TỤC XỬ LÝ ›" : "XEM CHI TIẾT NHIỆM VỤ ›"}
           </Text>
-        </View>
+        </Pressable>
       )}
     </Pressable>
   );
 }
+
 const styles = StyleSheet.create({
   card: { borderRadius: 16, borderWidth: 1, padding: 12, gap: 10 },
   image: { width: 92, height: 102, borderRadius: 10 },

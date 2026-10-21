@@ -19,6 +19,8 @@ import {
   MapPin,
   Navigation,
   Sparkles,
+  Lock,
+  Play,
 } from "lucide-react-native";
 import { useAlert } from "../../shared/hooks/useAlerts";
 import { useProfile } from "../../auth/hooks/useAuth";
@@ -43,6 +45,7 @@ import {
   getGeoJsonMapCoordinates,
   openGoogleMaps,
 } from "../../shared/utils/maps";
+import { useOfficerShiftGuard } from "../hooks/useOfficerShiftGuard";
 import { getAlertDisplaySeverity } from "../../shared/utils/aiAnalysis";
 import {
   getCategoryLabel,
@@ -157,13 +160,40 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
   const checkedInAt = alert.checkIn?.checkedInAt || alert.arrivedAt;
   const elapsedSinceCheckIn = officerElapsedTime(checkedInAt, nowMs);
 
+  const {
+    isOnShift,
+    isOperating: isShiftOperating,
+    startShiftDirectly,
+  } = useOfficerShiftGuard();
+
   // Nút hành động chính duy nhất (Single Primary CTA) theo đúng bước hiện tại
-  const primaryActionLabel =
+  const standardActionLabel =
     progress.currentStep === 1
       ? "Check-in hiện trường"
       : "Tiếp tục: Chụp ảnh kết quả (Check-out)";
 
-  const handlePrimaryAction = () => {
+  const shiftRequiredLabel =
+    progress.currentStep === 1
+      ? "▶ Bắt đầu ca trực để Check-in"
+      : "▶ Bắt đầu ca trực để tiếp tục xử lý";
+
+  const primaryActionLabel = isOnShift
+    ? standardActionLabel
+    : shiftRequiredLabel;
+
+  const handlePrimaryAction = async () => {
+    if (!isOnShift) {
+      const started = await startShiftDirectly();
+      if (started) {
+        if (progress.currentStep === 1) {
+          navigation.navigate("OfficerGpsCheckIn", { id: alert._id });
+        } else if (progress.currentStep === 2) {
+          navigation.navigate("OfficerResolution", { id: alert._id });
+        }
+      }
+      return;
+    }
+
     if (progress.currentStep === 1) {
       navigation.navigate("OfficerGpsCheckIn", { id: alert._id });
     } else if (progress.currentStep === 2) {
@@ -364,7 +394,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
               <Pressable
                 onPress={handleQuickNavigate}
                 accessibilityRole="button"
-                accessibilityLabel="Chỉ đường xe máy tới hiện trường"
+                accessibilityLabel="Chỉ đường (Xe máy) tới hiện trường"
                 style={detailStyles.quickRouteButton}
               >
                 <Navigation size={13} color={colors.cyan} />
@@ -374,7 +404,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
                     { color: colors.cyan, fontWeight: "700" },
                   ]}
                 >
-                  Chỉ đường xe máy
+                  Chỉ đường (Xe máy)
                 </Text>
               </Pressable>
             )}
@@ -550,12 +580,28 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
             },
           ]}
         >
+          {!isOnShift && (
+            <View style={detailStyles.shiftWarningBanner}>
+              <Lock size={13} color="#F59E0B" />
+              <Text style={detailStyles.shiftWarningText}>
+                🔒 Yêu cầu đang trong ca trực để thao tác hiện trường
+              </Text>
+            </View>
+          )}
           <Button
             appearance="civic"
             title={primaryActionLabel}
             onPress={handlePrimaryAction}
+            loading={isShiftOperating}
             icon={
-              progress.currentStep === 1 ? (
+              !isOnShift ? (
+                <Play
+                  size={16}
+                  color="#FFFFFF"
+                  fill="#FFFFFF"
+                  style={{ marginRight: 8 }}
+                />
+              ) : progress.currentStep === 1 ? (
                 <MapPin
                   size={18}
                   color="#07101F"
@@ -569,7 +615,15 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
                 />
               )
             }
-            style={detailStyles.primaryCtaButton}
+            style={[
+              detailStyles.primaryCtaButton,
+              !isOnShift && { backgroundColor: "#10B981" },
+            ]}
+            textStyle={
+              !isOnShift
+                ? { color: "#FFFFFF", fontWeight: "800" }
+                : undefined
+            }
           />
         </View>
       )}
@@ -628,6 +682,24 @@ const detailStyles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 12,
     borderTopWidth: 1,
+  },
+  shiftWarningBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "rgba(245, 158, 11, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(245, 158, 11, 0.3)",
+    marginBottom: 8,
+  },
+  shiftWarningText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#F59E0B",
   },
   primaryCtaButton: {
     height: 54,

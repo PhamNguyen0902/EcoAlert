@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import {
+  AlertTriangle,
   Clock,
   MapPin,
   Play,
@@ -15,17 +16,10 @@ import {
   RotateCw,
   Shield,
 } from "lucide-react-native";
-import {
-  useCurrentShift,
-  useEndShift,
-  useStartShift,
-} from "../../shared/hooks/useAlerts";
 import { useProfile } from "../../auth/hooks/useAuth";
-import { useOfficerPosition } from "../hooks/useOfficerPosition";
 import { useAssignedServiceAreas } from "../hooks/useServiceAreas";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
-import { officerErrorMessage } from "../utils/officerWorkflow";
-import { officerDate } from "../utils/officerPresentation";
+import { useOfficerShiftGuard } from "../hooks/useOfficerShiftGuard";
 
 const formatShiftTime = (isoString?: string) => {
   if (!isoString || !Number.isFinite(Date.parse(isoString))) {
@@ -45,17 +39,19 @@ const formatShiftTime = (isoString?: string) => {
 
 export function OfficerShiftCard() {
   const { colors, isDark } = useCivicTheme();
-  const shift = useCurrentShift();
-  const start = useStartShift();
-  const end = useEndShift();
-  const gps = useOfficerPosition();
+  const {
+    shift,
+    isOnShift,
+    isOperating,
+    gps,
+    start,
+    end,
+    startShiftDirectly,
+    endShiftDirectly,
+  } = useOfficerShiftGuard();
+
   const { data: profile } = useProfile();
   const areas = useAssignedServiceAreas(profile?._id);
-
-  const lock = useRef(false);
-
-  const isShiftActive = shift.data?.status === "ACTIVE";
-  const isOperating = gps.pending || start.isPending || end.isPending;
 
   const assignedAreaText =
     areas.data?.pages
@@ -63,60 +59,6 @@ export function OfficerShiftCard() {
       .slice(0, 2)
       .map((item) => item.name)
       .join(" · ") || "";
-
-  const handleStartShift = async () => {
-    if (lock.current || isOperating || shift.isLoading) return;
-    lock.current = true;
-    try {
-      const fresh = await gps.refresh();
-      if (!fresh) {
-        Alert.alert(
-          "Không thể xác định vị trí GPS",
-          "Vui lòng bật định vị GPS trên thiết bị và cấp quyền truy cập để bắt đầu ca trực.",
-        );
-        return;
-      }
-      await start.mutateAsync({
-        latitude: fresh.latitude,
-        longitude: fresh.longitude,
-        accuracyMeters: fresh.accuracyMeters,
-      });
-    } catch (error) {
-      Alert.alert(
-        "Chưa bắt đầu được ca trực",
-        officerErrorMessage(error, "Vui lòng kiểm tra kết nối GPS và thử lại."),
-      );
-    } finally {
-      lock.current = false;
-    }
-  };
-
-  const handleEndShift = async () => {
-    if (lock.current || isOperating || shift.isLoading) return;
-    lock.current = true;
-    try {
-      const fresh = await gps.refresh();
-      if (!fresh) {
-        Alert.alert(
-          "Không thể xác định vị trí GPS",
-          "Vui lòng bật định vị GPS trên thiết bị để ghi nhận vị trí kết thúc ca.",
-        );
-        return;
-      }
-      await end.mutateAsync({
-        latitude: fresh.latitude,
-        longitude: fresh.longitude,
-        accuracyMeters: fresh.accuracyMeters,
-      });
-    } catch (error) {
-      Alert.alert(
-        "Chưa kết thúc được ca trực",
-        officerErrorMessage(error, "Vui lòng thử lại."),
-      );
-    } finally {
-      lock.current = false;
-    }
-  };
 
   const confirmEndShift = () => {
     Alert.alert(
@@ -127,7 +69,7 @@ export function OfficerShiftCard() {
         {
           text: "Kết thúc ca",
           style: "destructive",
-          onPress: () => void handleEndShift(),
+          onPress: () => void endShiftDirectly(),
         },
       ],
     );
@@ -174,7 +116,7 @@ export function OfficerShiftCard() {
   }
 
   // TRẠNG THÁI 1: ĐANG TRONG CA TRỰC (ACTIVE SHIFT)
-  if (isShiftActive) {
+  if (isOnShift) {
     return (
       <View
         style={[
@@ -285,33 +227,26 @@ export function OfficerShiftCard() {
     );
   }
 
-  // TRẠNG THÁI 2: CHƯA VÀO CA TRỰC (INACTIVE SHIFT)
+  // TRẠNG THÁI 2: CHƯA VÀO CA TRỰC (INACTIVE SHIFT - SHIFT GUARD PROMPT)
   return (
     <View
       style={[
         styles.container,
+        styles.inactiveContainer,
         {
           backgroundColor: isDark
-            ? "rgba(15, 23, 42, 0.75)"
+            ? "rgba(15, 23, 42, 0.8)"
             : "rgba(255, 255, 255, 0.95)",
           borderColor: isDark
-            ? "rgba(255, 255, 255, 0.08)"
-            : "rgba(0, 0, 0, 0.08)",
+            ? "rgba(245, 158, 11, 0.35)"
+            : "rgba(245, 158, 11, 0.3)",
         },
       ]}
     >
       <View style={styles.headerRow}>
         <View style={styles.labelWithIcon}>
-          <Shield
-            size={15}
-            color={isDark ? colors.textMuted : colors.textSecondary}
-          />
-          <Text
-            style={[
-              styles.statusTitle,
-              { color: isDark ? colors.textMuted : colors.textSecondary },
-            ]}
-          >
+          <AlertTriangle size={15} color="#F59E0B" />
+          <Text style={[styles.statusTitle, { color: "#F59E0B" }]}>
             TRẠNG THÁI CA TRỰC
           </Text>
         </View>
@@ -320,17 +255,12 @@ export function OfficerShiftCard() {
             styles.inactiveBadge,
             {
               backgroundColor: isDark
-                ? "rgba(148, 163, 184, 0.12)"
-                : "rgba(148, 163, 184, 0.15)",
+                ? "rgba(245, 158, 11, 0.15)"
+                : "rgba(245, 158, 11, 0.12)",
             },
           ]}
         >
-          <Text
-            style={[
-              styles.inactiveBadgeText,
-              { color: isDark ? "#94A3B8" : "#64748B" },
-            ]}
-          >
+          <Text style={[styles.inactiveBadgeText, { color: "#F59E0B" }]}>
             CHƯA VÀO CA
           </Text>
         </View>
@@ -342,14 +272,15 @@ export function OfficerShiftCard() {
           { color: isDark ? colors.textSecondary : colors.text },
         ]}
       >
-        Bạn chưa bắt đầu ca trực. Hãy bật ca trực để nhận nhiệm vụ hiện trường.
+        Bạn đang ngoài ca trực. Bắt đầu ca trực để mở khóa thao tác Check-in và
+        xử lý sự cố hiện trường.
       </Text>
 
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Bắt đầu ca trực ngay"
         disabled={isOperating || shift.isLoading}
-        onPress={() => void handleStartShift()}
+        onPress={() => void startShiftDirectly()}
         style={({ pressed }) => [
           styles.startCtaButton,
           {
@@ -396,6 +327,10 @@ const styles = StyleSheet.create({
   activeContainer: {
     borderLeftWidth: 3,
     borderLeftColor: "#10B981",
+  },
+  inactiveContainer: {
+    borderLeftWidth: 3,
+    borderLeftColor: "#F59E0B",
   },
   headerRow: {
     flexDirection: "row",

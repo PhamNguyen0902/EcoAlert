@@ -19,6 +19,8 @@ import {
   Camera,
   CheckCircle2,
   Clock3,
+  Lock,
+  Play,
   ShieldCheck,
   XCircle,
 } from "lucide-react-native";
@@ -57,6 +59,7 @@ import {
   isWasteOfficerTask,
   officerErrorMessage,
 } from "../utils/officerWorkflow";
+import { useOfficerShiftGuard } from "../hooks/useOfficerShiftGuard";
 import type { PreSubmitVisionResult } from "../../shared/types";
 import type { OfficerStackParamList } from "../../app/navigation/types";
 
@@ -71,6 +74,12 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
   const { colors } = useCivicTheme();
   const query = useAlert(route.params.id);
   const { data: profile } = useProfile();
+  const {
+    isOnShift,
+    isOperating: isShiftOperating,
+    startShiftDirectly,
+    assertOnShiftWithAlert,
+  } = useOfficerShiftGuard();
   const upload = useUploadMedia();
   const resolve = useResolveIncident();
 
@@ -193,6 +202,12 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
 
   // Gửi kết quả nghiệm thu hoàn thành công việc
   const send = async () => {
+    if (!isOnShift) {
+      assertOnShiftWithAlert(() => {
+        void send();
+      });
+      return;
+    }
     if (submittingRef.current) return;
     if (!checklist.isAcceptable) {
       setError(
@@ -213,6 +228,14 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
         setSubmitted(true);
       }
     } catch (failure: unknown) {
+      if (
+        failure instanceof Error &&
+        (failure.message.includes("NO_ACTIVE_SHIFT") ||
+          failure.message.toLowerCase().includes("ca trực"))
+      ) {
+        assertOnShiftWithAlert();
+        return;
+      }
       setError(
         officerErrorMessage(
           failure,
@@ -268,6 +291,37 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
         ]}
         keyboardShouldPersistTaps="handled"
       >
+        {!isOnShift && (
+          <View style={styles.shiftGuardWarningCard}>
+            <View style={styles.shiftGuardWarningHeader}>
+              <Lock size={15} color="#F59E0B" />
+              <Text style={styles.shiftGuardWarningTitle}>
+                YÊU CẦU BẮT ĐẦU CA TRỰC
+              </Text>
+            </View>
+            <Text style={styles.shiftGuardWarningText}>
+              Bạn cần bắt đầu ca trực để chụp ảnh nghiệm thu và hoàn thành sự cố tại hiện trường.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Bắt đầu ca trực ngay"
+              disabled={isShiftOperating}
+              onPress={() => void startShiftDirectly()}
+              style={styles.shiftGuardButton}
+            >
+              {isShiftOperating ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <View style={styles.shiftGuardBtnRow}>
+                  <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
+                  <Text style={styles.shiftGuardBtnText}>
+                    BẮT ĐẦU CA TRỰC NGAY
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        )}
         {query.isLoading ? (
           <ActivityIndicator color={colors.cyan} />
         ) : !allowed ? (
@@ -588,6 +642,50 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  shiftGuardWarningCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderLeftColor: "#F59E0B",
+    borderColor: "rgba(245, 158, 11, 0.35)",
+    backgroundColor: "rgba(245, 158, 11, 0.08)",
+    padding: 12,
+    gap: 8,
+  },
+  shiftGuardWarningHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  shiftGuardWarningTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#F59E0B",
+    letterSpacing: 0.5,
+  },
+  shiftGuardWarningText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#D97706",
+  },
+  shiftGuardButton: {
+    backgroundColor: "#10B981",
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shiftGuardBtnRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  shiftGuardBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
   card: { gap: 12 },
   checklistItem: {
     padding: 12,

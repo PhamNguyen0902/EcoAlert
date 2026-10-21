@@ -14,7 +14,7 @@ import { usePreventRemove } from "@react-navigation/native";
 import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Camera, CheckCircle2, Flashlight, MapPin, ShieldAlert } from "lucide-react-native";
+import { Camera, CheckCircle2, Flashlight, Lock, MapPin, Play, ShieldAlert } from "lucide-react-native";
 import {
   useAlert,
   useConfirmArrival,
@@ -22,6 +22,7 @@ import {
 } from "../../shared/hooks/useAlerts";
 import { useProfile } from "../../auth/hooks/useAuth";
 import { useOfficerPosition } from "../hooks/useOfficerPosition";
+import { useOfficerShiftGuard } from "../hooks/useOfficerShiftGuard";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
 import {
   OfficerBadge,
@@ -60,6 +61,12 @@ export function OfficerGpsCheckInScreen({
   const task = useAlert(route.params.id);
   const { data: profile } = useProfile();
   const gps = useOfficerPosition();
+  const {
+    isOnShift,
+    isOperating: isShiftOperating,
+    startShiftDirectly,
+    assertOnShiftWithAlert,
+  } = useOfficerShiftGuard();
   const startHandling = useStartHandling();
   const arrival = useConfirmArrival();
   const [permission, requestPermission] = useCameraPermissions();
@@ -133,6 +140,14 @@ export function OfficerGpsCheckInScreen({
   const handleCaptureAndCheckIn = async () => {
     if (!allowed || verified || !camera.current || !ready || lock.current)
       return;
+
+    if (!isOnShift) {
+      assertOnShiftWithAlert(() => {
+        void handleCaptureAndCheckIn();
+      });
+      return;
+    }
+
     lock.current = true;
     setBusy(true);
     setError(null);
@@ -213,6 +228,14 @@ export function OfficerGpsCheckInScreen({
       }, 900);
     } catch (failure: unknown) {
       if (!alive.current) return;
+      if (
+        failure instanceof Error &&
+        (failure.message.includes("NO_ACTIVE_SHIFT") ||
+          failure.message.toLowerCase().includes("ca trực"))
+      ) {
+        assertOnShiftWithAlert();
+        return;
+      }
       const customMessage =
         failure instanceof Error &&
         /^(Camera chưa|Chưa xác định|Độ chính xác|Vị trí hiện tại)/.test(
@@ -263,6 +286,37 @@ export function OfficerGpsCheckInScreen({
           { paddingBottom: Math.max(24, insets.bottom + 16) },
         ]}
       >
+        {!isOnShift && (
+          <View style={styles.shiftGuardWarningCard}>
+            <View style={styles.shiftGuardWarningHeader}>
+              <Lock size={15} color="#F59E0B" />
+              <Text style={styles.shiftGuardWarningTitle}>
+                YÊU CẦU BẮT ĐẦU CA TRỰC
+              </Text>
+            </View>
+            <Text style={styles.shiftGuardWarningText}>
+              Bạn cần bắt đầu ca trực để mở khóa thao tác Check-in và xác nhận vị trí tại hiện trường.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Bắt đầu ca trực ngay"
+              disabled={isShiftOperating}
+              onPress={() => void startShiftDirectly()}
+              style={styles.shiftGuardButton}
+            >
+              {isShiftOperating ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <View style={styles.shiftGuardBtnRow}>
+                  <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
+                  <Text style={styles.shiftGuardBtnText}>
+                    BẮT ĐẦU CA TRỰC NGAY
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        )}
         <OfficerCard accent={verified}>
           <View style={s.row}>
             {verified ? (
@@ -487,6 +541,50 @@ export function OfficerGpsCheckInScreen({
 }
 
 const styles = StyleSheet.create({
+  shiftGuardWarningCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    borderLeftColor: "#F59E0B",
+    borderColor: "rgba(245, 158, 11, 0.35)",
+    backgroundColor: "rgba(245, 158, 11, 0.08)",
+    padding: 12,
+    gap: 8,
+  },
+  shiftGuardWarningHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  shiftGuardWarningTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#F59E0B",
+    letterSpacing: 0.5,
+  },
+  shiftGuardWarningText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#D97706",
+  },
+  shiftGuardButton: {
+    backgroundColor: "#10B981",
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shiftGuardBtnRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  shiftGuardBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
   cameraWrapper: {
     width: "100%",
     alignItems: "center",
