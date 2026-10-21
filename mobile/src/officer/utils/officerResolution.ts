@@ -255,9 +255,7 @@ export function evaluateResolutionVerification(input: {
       title: "Tương đồng góc chụp",
       status: "PASSED",
       badgeLabel: "Góc chụp hợp lệ",
-      detail: photo.usedGhostOverlay
-        ? "Đã căn khớp khung hình trực tiếp qua lớp soi góc chụp gốc (Ghost Overlay)."
-        : "Tỷ lệ khung hình 3:4 và hướng chụp tương đồng với ảnh sự cố ban đầu.",
+      detail: "Tỷ lệ khung hình và hướng chụp tương đồng với hiện trường sự cố ban đầu.",
     };
   }
 

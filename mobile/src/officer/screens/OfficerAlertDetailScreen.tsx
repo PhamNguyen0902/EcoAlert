@@ -364,7 +364,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
               <Pressable
                 onPress={handleQuickNavigate}
                 accessibilityRole="button"
-                accessibilityLabel="Chỉ đường nhanh tới hiện trường"
+                accessibilityLabel="Chỉ đường xe máy tới hiện trường"
                 style={detailStyles.quickRouteButton}
               >
                 <Navigation size={13} color={colors.cyan} />
@@ -374,7 +374,7 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
                     { color: colors.cyan, fontWeight: "700" },
                   ]}
                 >
-                  Chỉ đường
+                  Chỉ đường xe máy
                 </Text>
               </Pressable>
             )}

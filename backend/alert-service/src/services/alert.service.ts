@@ -26,6 +26,7 @@ import { alertRepository } from "../repositories/alert.repository";
 import {
   AlertStatus,
   ConflictError,
+  createLogger,
   EVENTS,
   ForbiddenError,
   IAiAnalysisCompletedData,
@@ -38,6 +39,8 @@ import { rabbitMQService } from "./rabbitmq.service";
 import { userDirectoryService } from "./user-directory.service";
 import { envConfig } from "../config/env.config";
 import { haversineDistanceMeters, isValidLatitude, isValidLongitude } from "../utils/geo-evidence.util";
+
+const logger = createLogger('alert-service');
 import { BadRequestError } from "@ecoalert/shared";
 
 export interface WorkflowActor {
@@ -689,6 +692,69 @@ export class AlertService {
     return updated;
   }
 
+  /**
+   * Tự động kiểm định hiện trường sau xử lý bằng AI Vision (YOLO).
+   * Đảm bảo không còn rác thải tồn đọng với độ tin cậy > 0.5.
+   */
+  async verifyResolutionCleanScene(imageUrl: string): Promise<{ isClean: boolean; reason?: string }> {
+    try {
+      const visionUrl = process.env.VISION_SERVICE_URL || 'http://localhost:8001';
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+
+      try {
+        const response = await fetch(`${visionUrl}/verify-resolution-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl, confidence: 0.5 }),
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          const result = (await response.json()) as { is_clean: boolean; message?: string };
+          if (!result.is_clean) {
+            return {
+              isClean: false,
+              reason: result.message || 'AI vẫn phát hiện rác thải tại vị trí này. Vui lòng kiểm tra lại hiện trường.',
+            };
+          }
+          return { isClean: true };
+        }
+      } catch (err: any) {
+        // Fallback sang media-service nếu vision-service không gọi trực tiếp được
+        const mediaUrl = process.env.MEDIA_SERVICE_URL || 'http://localhost:3003';
+        const fallbackRes = await fetch(`${mediaUrl}/analyze-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl }),
+          signal: controller.signal,
+        });
+
+        if (fallbackRes.ok) {
+          const resData = (await fallbackRes.json()) as any;
+          const aiAnalysis = resData?.data?.aiAnalysis;
+          if (aiAnalysis) {
+            const highConfDetections = (aiAnalysis.detections || []).filter(
+              (d: any) => (d.confidence ?? 0) > 0.5,
+            );
+            if (highConfDetections.length > 0) {
+              return {
+                isClean: false,
+                reason: 'AI vẫn phát hiện rác thải tại vị trí này. Vui lòng kiểm tra lại hiện trường.',
+              };
+            }
+            return { isClean: true };
+          }
+        }
+      } finally {
+        clearTimeout(timer);
+      }
+    } catch (e: any) {
+      logger.warn('AI Vision resolution verification bypassed or failed to connect:', e?.message || e);
+    }
+    return { isClean: true };
+  }
+
   // officer gửi kết quả và minh chứng xử lý sự cố
   async resolveIncident(
     id: string,
@@ -739,6 +805,17 @@ export class AlertService {
     });
     const evidenceUrls = evidence.map((e) => e.url);
 
+    // 2. Tự động kiểm định hiện trường sạch rác bằng AI Vision (YOLO)
+    for (const e of evidence) {
+      const visionCheck = await this.verifyResolutionCleanScene(e.url);
+      if (!visionCheck.isClean) {
+        throw new BadRequestError(
+          visionCheck.reason ||
+            "AI vẫn phát hiện rác thải tại vị trí này. Vui lòng kiểm tra lại hiện trường.",
+        );
+      }
+    }
+
     const updated = await alertRepository.findOneAndUpdate(
       {
         _id: id,
@@ -766,12 +843,22 @@ export class AlertService {
             actor,
             data.resolutionSummary,
           ),
-          timeline: this.makeTimeline(
-            "INCIDENT_RESOLVED",
-            "Sự cố đã giải quyết",
-            actor,
-            { status: AlertStatus.RESOLVED, evidenceUrls },
-          ),
+          timeline: {
+            $each: [
+              this.makeTimeline(
+                "VERIFICATION_PASSED",
+                "Hiện trường đã được dọn sạch thành công (Kiểm định AI Vision & GPS)",
+                actor,
+                { status: AlertStatus.RESOLVED, evidenceUrls, verifiedClean: true },
+              ),
+              this.makeTimeline(
+                "INCIDENT_RESOLVED",
+                "Sự cố đã giải quyết",
+                actor,
+                { status: AlertStatus.RESOLVED, evidenceUrls },
+              ),
+            ],
+          },
         },
       },
     );

@@ -34,3 +34,16 @@ class DetectionResponse(BaseModel):
     model_errors: dict[str, str] = Field(default_factory=dict)
     model_timings_ms: dict[str, float] = Field(default_factory=dict)
     inference_ms: float = 0
+
+
+class VerifyResolutionResponse(BaseModel):
+    is_clean: bool
+    status: str  # "clean" | "waste_detected"
+    remaining_waste_count: int
+    detections: list[DetectionResult]
+    message: str
+
+
+class VerifyResolutionUrlRequest(BaseModel):
+    imageUrl: str
+    confidence: float = 0.5

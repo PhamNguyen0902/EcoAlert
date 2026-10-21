@@ -576,7 +576,7 @@ export function OfficerOperationalMap() {
                   appearance="civic"
                   size="sm"
                   variant="outline"
-                  title="MỞ GOOGLE MAPS"
+                  title="CHỈ ĐƯỜNG XE MÁY (MAPS)"
                   textStyle={{ fontSize: 11 }}
                   loading={opening}
                   disabled={!destination}
@@ -585,10 +585,7 @@ export function OfficerOperationalMap() {
               </View>
             </View>
             <Text style={[s.meta, { color: colors.textMuted }]}>
-              OSRM nội bộ · TP.HCM và vùng đệm 10 km. Tuyến ô tô, không có giao
-              thông trực tiếp hoặc điều hướng giọng nói. Chưa hỗ trợ đầy đủ hạn
-              chế riêng của xe máy. Google Maps chỉ mở khi bạn chủ động chọn nút
-              riêng.
+              OSRM nội bộ · TP.HCM và vùng đệm 10 km. Google Maps chỉ đường xe máy trực tiếp khi bạn chọn nút trên.
             </Text>
           </>
         )}

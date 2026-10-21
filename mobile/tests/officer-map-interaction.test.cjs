@@ -568,7 +568,7 @@ for (const platform of ["ios", "android"])
     all
       .find(
         (node) =>
-          node.type === "Button" && node.props.title === "MỞ GOOGLE MAPS",
+          node.type === "Button" && (node.props.title === "CHỈ ĐƯỜNG XE MÁY (MAPS)" || node.props.title === "MỞ GOOGLE MAPS"),
       )
       .props.onPress();
     await tick();
