@@ -82,6 +82,11 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
   const { data: profile } = useProfile();
   const foreground = useForegroundScreen();
   const nowMs = useScreenClock(30_000, foreground);
+  const {
+    isOnShift,
+    isOperating: isShiftOperating,
+    startShiftDirectly,
+  } = useOfficerShiftGuard();
 
   const alert = query.data;
   const mine = ownsOfficerTask(alert, profile);
@@ -159,12 +164,6 @@ export const OfficerAlertDetailScreen: React.FC<Props> = ({
 
   const checkedInAt = alert.checkIn?.checkedInAt || alert.arrivedAt;
   const elapsedSinceCheckIn = officerElapsedTime(checkedInAt, nowMs);
-
-  const {
-    isOnShift,
-    isOperating: isShiftOperating,
-    startShiftDirectly,
-  } = useOfficerShiftGuard();
 
   // Nút hành động chính duy nhất (Single Primary CTA) theo đúng bước hiện tại
   const standardActionLabel =
