@@ -794,17 +794,6 @@ export class AlertService {
       overallAnalysis: analysis.overallAnalysis,
     });
 
-    const existingHasDetections = Boolean(
-      alert.visionEvidence?.some((v) => v.detections && v.detections.length > 0),
-    );
-    const incomingHasDetections = Boolean(
-      analysis.visionEvidence?.some((v) => v.detections && v.detections.length > 0),
-    );
-    const resolvedVisionEvidence =
-      existingHasDetections && !incomingHasDetections
-        ? alert.visionEvidence
-        : analysis.visionEvidence;
-
     const updated = await alertRepository.findOneAndUpdate(
       { _id: id },
       {
@@ -819,7 +808,9 @@ export class AlertService {
           // lưu thông tin phân tích ai và dữ liệu nhận diện thị giác vào cơ sở dữ liệu
           aiAnalysisMode: analysis.analysisMode,
           analysisPipeline: analysis.analysisPipeline || alert.analysisPipeline,
-          ...(resolvedVisionEvidence ? { visionEvidence: resolvedVisionEvidence } : {}),
+          ...((!alert.visionEvidence || alert.visionEvidence.length === 0) && analysis.visionEvidence
+            ? { visionEvidence: analysis.visionEvidence }
+            : {}),
           aiAnalysisStatus: analysis.analysisMode === 'FAILED' ? 'FAILED' : 'COMPLETED',
           aiAnalysisProvider: analysis.provider,
           aiAnalysisModel: analysis.model,

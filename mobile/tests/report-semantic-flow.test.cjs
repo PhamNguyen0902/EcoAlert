@@ -10,7 +10,7 @@ function load(file, imports = {}) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src', file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React },
-  }).outputText, { exports, Error, Date, Number, console, require(id) { assert.ok(id in imports, id); return imports[id]; } });
+  }).outputText, { exports, Error, Date, Number, console, setTimeout, clearTimeout, require(id) { assert.ok(id in imports, id); return imports[id]; } });
   return exports;
 }
 const utils = load('citizen/report/semanticResult.ts');
@@ -202,6 +202,8 @@ function harness(semantic = async () => result(), vision = { status: 'ok', requi
     '../semanticResult': utils,
     '../types': { MAX_FIELD_GPS_ACCURACY_METERS: 50 },
     '../components/stitch/fieldDesign': { fieldStyles: {} },
+    'react-native-view-shot': { default: 'ViewShot', captureRef: async () => 'file://baked-yolo.jpg' },
+    '../../../shared/utils/watermark': { persistWatermarkedDisplayImage: async uri => uri },
   };
   for (const [id, names] of Object.entries({
     '../components/ReportBottomActions': ['ReportBottomActions'], '../components/ReportHeader': ['ReportHeader'],

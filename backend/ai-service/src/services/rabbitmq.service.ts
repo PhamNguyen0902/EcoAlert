@@ -89,27 +89,19 @@ export const processAlertCreatedEvent = async (
     // Every original evidence image gets an independent Vision result. Semantic routing
     // still decides whether those detections influence the final incident analysis.
     const urls = alert.mediaUrls?.filter((url) => typeof url === 'string' && url.length > 0).slice(0, 6) ?? [];
-    const existingVisionList = Array.isArray(alert.visionEvidence) ? alert.visionEvidence : [];
-    const visionEvidence = await Promise.all(urls.map(async (url, idx): Promise<IVisionEvidence> => {
-      const existingByUrl = existingVisionList.find(
-        (item) => item && item.imageUrl === url && item.status !== 'error',
-      );
-      if (existingByUrl) {
-        return existingByUrl;
-      }
-      const existingByIndex =
-        existingVisionList[idx] && existingVisionList[idx].status !== 'error'
-          ? existingVisionList[idx]
-          : undefined;
-      if (existingByIndex) {
-        return { ...existingByIndex, imageUrl: existingByIndex.imageUrl || url };
-      }
-      try { return await (dependencies.detectWaste || detectWasteFromMedia)(url); }
-      catch (error) {
-        logger.warn('Vision failed for one evidence image', { alertId: alert._id, imageIndex: urls.indexOf(url), error: error instanceof Error ? error.message : 'unknown' });
-        return { imageUrl: url, status: 'error', detections: [], requiresManualReview: true };
-      }
-    }));
+    let visionEvidence: IVisionEvidence[];
+
+    if (alert.visionEvidence && alert.visionEvidence.length > 0) {
+      visionEvidence = alert.visionEvidence;
+    } else {
+      visionEvidence = await Promise.all(urls.map(async (url): Promise<IVisionEvidence> => {
+        try { return await (dependencies.detectWaste || detectWasteFromMedia)(url); }
+        catch (error) {
+          logger.warn('Vision failed for one evidence image', { alertId: alert._id, imageIndex: urls.indexOf(url), error: error instanceof Error ? error.message : 'unknown' });
+          return { imageUrl: url, status: 'error', detections: [], requiresManualReview: true };
+        }
+      }));
+    }
     preservedVisionEvidence = visionEvidence;
     analysis = await dependencies.analyze({
       alertId: alert._id,

@@ -666,15 +666,27 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
             </Text>
             <View style={styles.photoScroll}>
               {evidencePhotoUrls.map((url, idx) => {
+                const fieldEvidenceItem = alert?.fieldEvidence?.[idx];
+                const originalUrl = originalEvidenceUrls[idx] || url;
+                const hasBakedDisplayUrl = Boolean(fieldEvidenceItem?.displayUrl);
+
+                // Nếu ảnh đã có displayUrl (đã bake sẵn Bounding Box + Watermark), hiển thị trực tiếp bằng EvidenceImageFrame
+                if (hasBakedDisplayUrl && fieldEvidenceItem?.displayUrl) {
+                  return (
+                    <EvidenceImageFrame
+                      key={idx}
+                      imageUri={fieldEvidenceItem.displayUrl}
+                      fallbackUri={originalUrl}
+                      accessibilityLabel={`${pageCopy.photos} ${idx + 1}`}
+                    />
+                  );
+                }
+
                 const matchedVision =
                   alert?.visionEvidence?.find(
                     (v) =>
-                      v.imageUrl === url ||
-                      (originalEvidenceUrls[idx] &&
-                        v.imageUrl === originalEvidenceUrls[idx]) ||
-                      (v.imageUrl &&
-                        url &&
-                        (v.imageUrl.includes(url) || url.includes(v.imageUrl))),
+                      v.imageUrl === originalUrl ||
+                      (v.imageUrl && originalUrl && (v.imageUrl.includes(originalUrl) || originalUrl.includes(v.imageUrl))),
                   ) ||
                   (alert?.visionEvidence?.length === 1 &&
                   evidencePhotoUrls.length === 1
@@ -689,7 +701,7 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
                   return (
                     <WasteDetectionImage
                       key={idx}
-                      imageUri={url}
+                      imageUri={originalUrl}
                       detections={matchedVision.detections}
                       aspectRatio={3 / 4}
                       showHints={false}
