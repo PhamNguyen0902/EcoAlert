@@ -101,7 +101,7 @@ export const openGoogleMaps = async (
         };
       }
     } catch {
-      // Continue to universal HTTPS URL fallback
+      // chuyển tiếp sang đường dẫn dự phòng https phổ quát
     }
   }
 
@@ -109,7 +109,7 @@ export const openGoogleMaps = async (
   try {
     canOpenDirectly = await Linking.canOpenURL(webUrl);
   } catch {
-    // Continue with the HTTPS URL so the operating system can use its browser fallback.
+    // tiếp tục dùng đường dẫn https để hệ điều hành tự mở bằng trình duyệt dự phòng
   }
 
   try {

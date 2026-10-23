@@ -10,7 +10,9 @@ export function useOfficerPosition() {
   const [position, setPosition] = useState<OfficerPosition | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const busy = useRef(false);
+  // const busy = useRef(false);
+  const inflightRef = useRef<Promise<OfficerPosition | null> | null>(null);
+  const positionRef = useRef<OfficerPosition | null>(null);
   const alive = useRef(true);
   const active = useForegroundScreen();
   const activeRef = useRef(active);
@@ -21,12 +23,14 @@ export function useOfficerPosition() {
       alive.current = false;
     };
   }, []);
-  const refresh = async () => {
-    if (busy.current || !activeRef.current) return null;
-    busy.current = true;
+  const refresh = async (): Promise<OfficerPosition | null> => {
+  if (!activeRef.current) return positionRef.current;
+  // nếu đang có tiến trình lấy gps chạy ngầm thì đợi luôn kết quả của tiến trình đó
+  if (inflightRef.current) return inflightRef.current;
+
+  const task = (async (): Promise<OfficerPosition | null> => {
     setPending(true);
     setError(null);
-    setPosition(null);
     try {
       let recordedAt = "";
       let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -77,6 +81,7 @@ export function useOfficerPosition() {
       )
         return null;
       const next = { ...gps, recordedAt };
+      positionRef.current = next;
       setPosition(next);
       return next;
     } catch (failure) {
@@ -87,11 +92,15 @@ export function useOfficerPosition() {
             ? "Chưa cấp quyền vị trí. Mở cài đặt để cho phép GPS khi dùng ứng dụng."
             : "Chưa lấy được GPS mới. Kiểm tra quyền vị trí, ra nơi thoáng rồi thử lại.",
         );
-      return null;
+      return positionRef.current;
     } finally {
-      busy.current = false;
+      inflightRef.current = null;
       if (alive.current) setPending(false);
     }
-  };
+  })();
+
+  inflightRef.current = task;
+  return task;
+};
   return { position, pending, error, refresh };
 }

@@ -425,7 +425,7 @@ test("Officer workflow screens embed OfficerStepProgressBar, Ghost Overlay, Evid
   );
   assert.ok(detailSource.includes("Đang xử lý tại hiện trường"));
 
-  // Step 3 Camera Clean Live View
+  // giao diện xem trực tiếp camera rõ nét khi chụp kết quả
   const cameraSource = fs.readFileSync(
     path.join(screensDir, "OfficerResolutionCamera.tsx"),
     "utf8",
@@ -434,7 +434,7 @@ test("Officer workflow screens embed OfficerStepProgressBar, Ghost Overlay, Evid
   assert.ok(cameraSource.includes("CHỤP ẢNH KẾT QUẢ (SAU XỬ LÝ)"));
   assert.ok(!cameraSource.includes("showGhost"));
 
-  // Step 3 Evidence Comparison labels
+  // nhãn so sánh ảnh bằng chứng trước và sau xử lý
   const comparisonSource = fs.readFileSync(
     path.join(componentsDir, "OfficerEvidenceComparison.tsx"),
     "utf8",

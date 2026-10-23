@@ -191,7 +191,7 @@ export function OfficerShiftCard() {
         ]}
       >
         <View style={styles.headerRow}>
-          {/* Glowing indicator pill */}
+          {/* nhãn chỉ báo trạng thái phát sáng */}
           <View style={styles.activePill}>
             <View style={styles.pulseContainer}>
               <View style={styles.pulseRing} />
