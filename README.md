@@ -1,112 +1,143 @@
-# EcoAlert — OSRM riêng cho TP.HCM, chỉ đường trong app
+# EcoAlert — Hệ thống Báo cáo, Thẩm định Thị giác Máy tính (AI Vision) và Điều phối Xử lý Sự cố Rác thải Đô thị theo Thời gian thực
 
-## Luồng định tuyến
+**EcoAlert** là nền tảng thông minh hỗ trợ quản lý và điều phối xử lý sự cố rác thải đô thị tại TP.HCM theo thời gian thực. Trọng tâm cốt lõi của hệ thống là **Pipeline Thị giác Máy tính Đa mô hình (Multi-Model YOLO)** kết hợp **Phân tích Ngữ nghĩa Đa phương thức (Multimodal LLM)** để tự động nhận diện vật thể rác thải, ước tính khối lượng, chống báo cáo giả và tự động kiểm định kết quả dọn dẹp tại hiện trường.
 
-Officer mobile MapView (hoặc web Leaflet) → API Gateway `/api/v1/gis/route` → GIS `/route` → `http://osrm:5000` → GeoJSON LineString.
+---
 
-Contract không đổi: `success/data`, `distanceMeters`, `durationSeconds`, `geometry.type = "LineString"`, `geometry.coordinates = [[longitude, latitude], ...]`. Mobile đổi từng điểm thành object `latitude/longitude`; web đổi thành `[latitude, longitude]`. Không vẽ đường thẳng thay tuyến thật, không fallback OSRM công cộng và không tự chuyển sang Google Maps khi lỗi.
+## 1. Trọng tâm Công nghệ: AI Vision & Thẩm định Rác thải Tự động
 
-OSRM chỉ mở 5000 trong Docker network; không publish ra LAN. GIS internal route được gateway bảo vệ bằng cơ chế xác thực hiện có. Nút Google Maps riêng chỉ chạy khi người dùng chủ động chọn.
+Hệ thống giải quyết bài toán kiểm duyệt bằng chứng hình ảnh thực địa thông qua kiến trúc AI 3 tầng hoạt động chặt chẽ giữa Mobile, `media-service`, `vision-service` và `ai-service`:
 
-## Nguyên nhân và phạm vi sửa
+### 1.1. Kiến trúc Đa mô hình YOLO (Multi-Model Vision Service)
+Thay vì phụ thuộc vào một tệp trọng số đơn lẻ, `backend/vision-service` (Python / FastAPI / Ultralytics YOLO) vận hành kiến trúc **Multi-Model Detector** quản lý qua `config/models.json`:
+- **Chạy song song đa mô hình chuyên biệt**:
+  - `ecoalert_general` (`BEST_ECOALERT_YOLO11N.pt`): Nhận diện chi tiết các vật thể rác phổ biến (`plastic_bottle`, `plastic_bag`, `plastic_cup`, `metal_can`, `cardboard`, `glass_bottle`).
+  - `asian_waste` (`BEST_ASIAN_WASTE_YOLO11S.pt`): Nhận diện các nhóm chất thải đặc thù đô thị (`garbage_bag`, `construction_waste`, `organic_waste`, `animal_waste`, `plastic`, `metal`, `paper`, `glass`, `waste`).
+- **Thuật toán Hợp nhất Khung bao Liên mô hình (`merge_detections` & IoU)**: Tự động đối chiếu độ giao thoa (IoU) giữa các mô hình để loại bỏ khung trùng lặp cùng nhãn nhưng vẫn giữ lại đầy đủ dấu vết nguồn gốc nhận diện (**Vision Provenance** — ghi rõ từng bounding box `[x1, y1, x2, y2]` do mô hình nào phát hiện với độ tin cậy bao nhiêu).
+- **Cơ chế Cờ Kiểm duyệt (`review_classes` & `requiresManualReview`)**: Tự động gắn cờ yêu cầu rà soát đối với các nhãn tổng quát hoặc khi mô hình có độ tin cậy ở ngưỡng biên.
 
-- Provider công cộng từng timeout `ETIMEDOUT`, làm GIS trả 502.
-- Extract toàn Việt Nam đã OOM tại 4/5/6 GiB; chỉ có sidecar dở dang, chưa có graph MLD ready. Runtime cũ tìm graph chưa hoàn chỉnh nên unhealthy/restart loop.
-- Bây giờ cắt polygon TP.HCM, chuẩn bị graph riêng và kiểm tra đủ sidecar + thử mở graph trước khi publish pointer.
-- Mobile chờ MapView ready và có kích thước trước khi fit tuyến; giữ loading, hiển thị lỗi GIS cụ thể và không tự mở Google.
-- API URL local mobile đã được đổi từ IP LAN cũ không kết nối được sang IP Wi-Fi workstation tại thời điểm kiểm thử. Địa chỉ LAN có thể thay đổi; xem phần Expo Go.
+### 1.2. Phân tích Đa phương thức & Ước lượng Khối lượng (`ai-service`)
+- **Tổng hợp Đặc trưng Thị giác (`buildVisionDetectionSummary`)**: Gom nhóm số lượng vùng vật thể phát hiện được, lớp vật liệu chiếm ưu thế (`dominantClass`) và độ tin cậy trung bình.
+- **Đánh giá Ngữ nghĩa & Khối lượng (`Multimodal Analysis`)**: Kết hợp kết quả từ YOLO với mô hình ngôn ngữ thị giác (qua OpenRouter) để:
+  - Đánh giá mức độ nghiêm trọng (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
+  - Ước tính khối lượng rác thực tế tại hiện trường (`VisualMassEstimate`: khoảng cân nặng `minKg` – `maxKg`, quy mô `VERY_SMALL` đến `VERY_LARGE`).
+  - Sinh bản tóm tắt hiện trường (`overallSummary`) và căn cứ nhận định (`shortReason`) bằng tiếng Việt hỗ trợ Admin điều phối phương tiện thu gom phù hợp (nhân sự thường hoặc xe tải/xe ép rác chuyên dụng cho xà bần, rác cồng kềnh).
 
-Các service user/AI/vision/media/notification và dữ liệu hiện có không bị xóa hoặc khởi động lại trong đợt triển khai này.
+### 1.3. Chống Gian lận Báo cáo & Tự động Nghiệm thu Hiện trường
+- **Xác thực Ảnh chụp Thực địa (Citizen App)**:
+  - Khóa hoàn toàn tính năng chọn ảnh có sẵn từ thư viện; bắt buộc chụp trực tiếp qua **Live Camera** kèm tọa độ GPS phần cứng và dấu thời gian thực (`captureMetadata`).
+  - Tự động đóng dấu **Watermark** (Tọa độ GPS, Địa chỉ Reverse Geocoding, Thời gian chụp) và **giữ nguyên kết quả khung nhận diện YOLO** từ lúc người dân chụp cho đến trang chi tiết của Cán bộ và Admin mà không phải chạy nhận diện lại.
+- **Tự động Kiểm định Nghiệm thu Sau Xử lý (`is_clean_scene` / Officer Resolution)**:
+  - Khi Cán bộ hiện trường hoàn tất dọn dẹp và chụp ảnh nghiệm thu (After), hệ thống kiểm tra chéo khoảng cách GPS Haversine tại điểm rác và đẩy ảnh qua `vision-service` để kiểm tra trạng thái sạch rác (`is_clean_scene`), kết hợp giao diện đối chiếu **Trước & Sau (Before / After)** phục vụ Admin đóng hồ sơ.
 
-## Nguồn bản đồ và vùng phục vụ
+---
 
-Dùng lại `data/osrm/vietnam-latest.osm.pbf` đã tải từ [Geofabrik Vietnam](https://download.geofabrik.de/asia/vietnam.html), không tải lại toàn Việt Nam trong lần triển khai. OSM timestamp: `2026-10-11T20:21:06Z`; source SHA256 `d954e09b891079520bf13799377a9cf783cb1d9fe2745ef11864cb8d2a5b2048`.
+## 2. Kiến trúc Hệ thống & Các Phân hệ (Microservices)
 
-Polygon gốc từ [geoBoundaries gbOpen VNM ADM1](https://www.geoboundaries.org/api/current/gbOpen/VNM/ADM1/), pin commit `9469f09` và SHA256 trong `scripts/osrm/hcm-region.json`. Chọn `shapeISO=VN-SG` (Ho Chi Minh), boundary year represented **2008**, Public Domain. Đây là phạm vi đô thị/địa giới TP.HCM lịch sử, gồm cả Củ Chi/Cần Giờ, **không phải toàn bộ TP.HCM sau sáp nhập năm 2025**; không dùng polygon này để quyết định thẩm quyền hành chính.
+Hệ thống được thiết kế theo kiến trúc **Microservices kết hợp Event-Driven (RabbitMQ)** và giao tiếp thời gian thực qua **Socket.IO**:
 
-Buffer **10 km**, tính trong hệ mét UTM 48N (`EPSG:32648`), sau đó đổi về WGS84. Có thể cấu hình buffer 5–10 km/nguồn polygon trong `hcm-region.json`, nhưng phải pin lại checksum, ghi rõ phạm vi và chạy prepare/restart trong maintenance window.
+| Dịch vụ / Phân hệ | Công nghệ chính | Vai trò cốt lõi |
+| :--- | :--- | :--- |
+| **`vision-service`** | Python, FastAPI, PyTorch, Ultralytics YOLO11, OpenCV | Suy luận thị giác máy tính đa mô hình, trả về tọa độ Bounding Box, nhãn vật liệu rác, Vision Provenance và kiểm định ảnh sạch rác sau xử lý. |
+| **`ai-service`** | Node.js, TypeScript, RabbitMQ, OpenRouter LLM | Xử lý bất đồng bộ sự kiện `alert.created`, kết hợp kết quả YOLO Vision với LLM đa phương thức để ước tính khối lượng rác, đánh giá mức độ nghiêm trọng và tóm tắt hiện trường. |
+| **`media-service`** | Node.js, Express, S3/Cloudinary, HMAC Ownership | Lưu trữ hình ảnh minh chứng có chữ ký xác thực quyền sở hữu (`ownershipProof`), chống trùng lặp (`idempotencyKey`) và cầu nối phân tích ảnh từ xa với `vision-service`. |
+| **`alert-service`** | Node.js, Express, MongoDB, RabbitMQ | Trái tim nghiệp vụ quản lý vòng đời sự cố (`pending` → `verified` → `assigned` → `in_progress` → `resolved` → `closed`), kiểm chứng GPS hiện trường, quản lý ca trực và khóa phân công (`AssignmentLock`). |
+| **`gis-service`** | Node.js, Express, MongoDB 2dsphere, OSRM | Quản lý ranh giới vùng phục vụ (`ServiceArea` GeoJSON Polygon), bản đồ nhiệt mật độ sự cố (Heatmap) và tính toán lộ trình di chuyển thực tế qua OSRM TP.HCM. |
+| **`user-service`** | Node.js, Express, MongoDB, Redis, JWT | Quản lý định danh, xác thực JWT/Refresh Token, phân quyền 3 vai trò (`CITIZEN`, `OFFICER`, `ADMIN`), danh bạ cán bộ và nhật ký kiểm toán (`AuditLog`). |
+| **`notification-service`** | Node.js, Socket.IO, RabbitMQ, Expo Push | Đồng bộ trạng thái sự cố thời gian thực trên Web/Mobile và gửi thông báo đẩy tiếng Việt theo ngữ cảnh từng vai trò. |
+| **`api-gateway`** | Node.js, Express Proxy, JWT Auth | Cổng giao tiếp tập trung, điều hướng request, kiểm soát truy cập và rate-limiting. |
+| **`frontend` (Web Portal)** | React, TypeScript, Vite, TailwindCSS, Framer Motion, Leaflet | Cổng điều hành dành cho Admin (Dashboard KPI, Điều phối 4 bước với ảnh YOLO Bounding Box, Quản lý Vùng phục vụ, Kiểm định AI Vision) và giao diện Web cho Officer/Citizen. |
+| **`mobile` (Mobile App)** | React Native, Expo, TypeScript, ViewShot, React Native Maps | Ứng dụng thực địa cho **Người dân** (Chụp ảnh Live Camera, nhận diện YOLO tức thì, lưu nháp & đồng bộ Offline) và **Cán bộ** (Quản lý ca trực, Bản đồ tác chiến, Quy trình 3 bước Check-in GPS → Xử lý → Chụp nghiệm thu). |
 
-- Coverage polygon + buffer: khoảng **5.357,46 km²**.
-- Envelope dùng để mô tả, không phải bbox cắt tùy tiện: longitude 106.317776–107.122280; latitude 10.240454–11.224564.
-- Osmium `smart` với `types=restriction` giữ complete ways và turn restrictions để giảm đứt đường ở biên. Vì complete ways, bounds PBF có thể rộng hơn polygon; GIS vẫn kiểm tra cả hai endpoint nằm trong polygon được hỗ trợ.
-- Endpoint ngoài polygon trả **422**; không snap từ Hà Nội về TP.HCM.
-- Snap endpoint tối đa 1.000m; không có đường phù hợp trả lỗi thay vì tuyến giả.
+---
 
-Dữ liệu © OpenStreetMap contributors, [ODbL](https://www.openstreetmap.org/copyright); giữ attribution OSM trên map.
+## 3. Luồng Nghiệp vụ 3 Vai trò (End-to-End Workflow)
 
-## Image, profile và tài nguyên
+1. **Người dân (Citizen Mobile App)**:
+   - Mở Camera trực tiếp tại điểm phát sinh rác $\rightarrow$ Hệ thống tự động khóa tọa độ GPS nền, dịch ngược địa chỉ và đóng dấu Watermark.
+   - Hình ảnh được gửi lên `media-service` & `vision-service` để **YOLO khoanh vùng các vật thể rác** ngay trên màn hình kèm đánh giá tự động.
+   - Hỗ trợ chụp nhiều góc độ, tự động lưu bản nháp (`draftStorage`) và đẩy vào hàng đợi ngoại tuyến (`offlineQueue`) nếu mất kết nối mạng.
+2. **Hệ thống AI & Điều phối Tự động (`alert-service` + `ai-service` + `gis-service`)**:
+   - Giữ nguyên kết quả `visionEvidence` đã nhận diện từ bước chụp và phân tích sâu ngữ nghĩa đa phương thức qua RabbitMQ.
+   - Xác định báo cáo nằm trong đa giác `ServiceArea` nào, tìm danh sách cán bộ đang trong ca trực (`ON_SHIFT`), tính khoảng cách di chuyển thực tế qua OSRM và cân bằng tải công việc để gợi ý/giao việc tự động.
+3. **Cán bộ Hiện trường (Officer Mobile App)**:
+   - Nhận nhiệm vụ trong ca trực, xem ảnh hiện trường đã khoanh vùng YOLO và lộ trình di chuyển trên bản đồ tác chiến (`OfficerOperationalMap`).
+   - Thực hiện quy trình 3 bước: **Bước 1: Check-in GPS** tại hiện trường (bán kính $\le 100\text{m}$, sai số $\le 50\text{m}$) $\rightarrow$ **Bước 2: Thu gom, xử lý rác** $\rightarrow$ **Bước 3: Chụp ảnh sau xử lý (After)** kèm ghi nhận phương pháp và vật tư sử dụng.
+4. **Quản trị viên (Admin Web Portal)**:
+   - Thẩm định hồ sơ trên giao diện Bento Grid trực quan: đối chiếu vị trí GPS, kiểm tra ảnh hiện trường có khung Bounding Box YOLO, theo dõi tiến độ ca trực, so sánh ảnh Trước/Sau và phê duyệt nghiệm thu đóng hồ sơ.
 
-Dùng image chính thức **`ghcr.io/project-osrm/osrm-backend:v5.27.1`** cho cả prepare/runtime. [Project OSRM Docker recipes](https://github.com/Project-OSRM/osrm-backend/wiki/Docker-Recipes) hướng dẫn GHCR; tag Docker Hub `osrm/osrm-backend:v5.27.1` không có manifest khi kiểm tra, nên không dùng tag đó.
+---
 
-Pipeline MLD: `osrm-extract -p /opt/car.lua` → `osrm-partition` → `osrm-customize` → `osrm-routed --algorithm mld --mmap`. Extract dùng `--disable-location-cache` vì không có `--location-dependent-data`; phải xem lại tùy chọn nếu bổ sung luật theo vùng.
+## 4. Khởi chạy Hệ thống & Kiểm thử Tự động (Automated Testing)
 
-**Chỉ profile ô tô, không cam kết định tuyến xe máy đúng mọi hạn chế** (cao tốc, làn riêng, giờ cấm...). Chỉ chấp nhận `driving`; không đổi tên profile thành motorcycle để giả hỗ trợ. ETA không có traffic live/ngập lụt/giọng nói.
+### 4.1. Khởi chạy Hạ tầng & Dịch vụ bằng Docker Compose
+```powershell
+# 1. Khởi chạy các dịch vụ cơ sở dữ liệu & message broker (MongoDB, Redis, RabbitMQ)
+docker compose -f docker-compose.infrastructure.yml up -d
 
-Prepare chạy tuần tự, mặc định 2 CPU:
-- Osmium: limit 4g, peak cgroup đo **4.021.956.608 bytes** (~3,75 GiB).
-- OSRM HCM: limit 3g, peak cgroup lần Force **568.336.384 bytes** (~542 MiB).
-- Runtime OSRM: limit 2g, mmap. Đây là giới hạn, không phải RAM luôn sử dụng.
-- HCM PBF **23.291.814 bytes**; graph active gồm 31 file **309.512.695 bytes** (bao gồm bản copy PBF).
-- Nên chừa vài GB disk để giữ graph cũ, build lỗi và candidate mới. Dữ liệu cũ/graph lỗi chưa bị xóa nên tổng thư mục thực tế lớn hơn graph active.
+# 2. Khởi chạy toàn bộ cụm Microservices (bao gồm vision-service, ai-service, alert-service...)
+docker compose up -d --build
+```
 
-Không tự tăng RAM Docker Desktop hoặc dừng service khác. Peak cgroup có thể gồm page cache, không đồng nhất với RSS tiến trình.
+### 4.2. Chạy Bộ Kiểm thử Tự động (Unit & Integration Tests)
+Dự án được trang bị bộ kiểm thử tự động bao phủ cả 4 tầng:
+- **Vision Service (Python Multi-Model & Smoke Test)**:
+  ```powershell
+  cd backend/vision-service
+  pytest tests/test_multimodel.py
+  python scripts/smoke_api.py
+  python scripts/benchmark.py
+  ```
+- **Backend Microservices (`alert-service`, `ai-service`, `gis-service`, `media-service`)**:
+  ```powershell
+  cd backend/alert-service && npm test
+  cd ../ai-service && npm test
+  cd ../gis-service && npm test
+  cd ../media-service && npm test
+  ```
+- **Mobile App (72+ kịch bản Camera, GPS, AI Pipeline, Offline Queue, 3-Step Workflow)**:
+  ```powershell
+  cd mobile
+  npx tsc --noEmit
+  node --test tests/*.test.cjs
+  ```
+- **Web Frontend**:
+  ```powershell
+  cd frontend
+  npx tsc --noEmit
+  npm run build
+  npm run test:routing
+  ```
 
-## Chuẩn bị lần đầu — Windows PowerShell
+---
 
-Từ root repository, giữ nguyên các `.env` hiện có. **Không copy đè file mẫu lên credentials đang dùng**.
+## 5. Phân hệ Phụ trợ: Hạ tầng Định tuyến OSRM Riêng cho TP.HCM
 
+Để đảm bảo tính năng dẫn đường và tính khoảng cách điều phối cán bộ trong `gis-service` hoạt động ổn định, không bị phụ thuộc hay lỗi `ETIMEDOUT` từ máy chủ OSRM công cộng, hệ thống sử dụng container OSRM nội bộ được cắt và dựng đồ thị MLD riêng cho khu vực TP.HCM.
+
+### 5.1. Luồng Định tuyến Nội bộ
+`Officer Mobile MapView (hoặc Web Leaflet)` $\rightarrow$ `API Gateway (/api/v1/gis/route)` $\rightarrow$ `gis-service (/route)` $\rightarrow$ `http://osrm:5000` $\rightarrow$ `GeoJSON LineString`.
+
+- **Contract dữ liệu**: Trả về `distanceMeters`, `durationSeconds`, `geometry.type = "LineString"`, `geometry.coordinates = [[longitude, latitude], ...]`.
+- **An toàn & Chính xác**: Không vẽ đường thẳng giả lập khi lỗi, không tự động fallback sang OSRM công cộng. Cổng `5000` của OSRM chỉ mở trong mạng nội bộ Docker.
+
+### 5.2. Nguồn Dữ liệu Bản đồ & Phạm vi Phục vụ
+- **Nguồn PBF**: Sử dụng `data/osrm/vietnam-latest.osm.pbf` từ Geofabrik Vietnam (`SHA256: d954e09b891079520bf13799377a9cf783cb1d9fe2745ef11864cb8d2a5b2048`).
+- **Đa giác cắt vùng (`scripts/osrm/hcm-region.json`)**: Từ `geoBoundaries gbOpen VNM ADM1` (`shapeISO=VN-SG`) kèm vùng đệm (buffer) **10 km** tính trong hệ tọa độ mét UTM 48N (`EPSG:32648`), tổng diện tích bao phủ khoảng **5.357,46 km²** (`lng: 106.317776–107.122280`, `lat: 10.240454–11.224564`).
+- **Kiểm tra biên**: Endpoint nằm ngoài vùng phục vụ trả mã lỗi **422**; bán kính snap tối đa `1.000m`.
+- **Image & Profile**: Sử dụng `ghcr.io/project-osrm/osrm-backend:v5.27.1` với pipeline MLD (`osrm-extract -p /opt/car.lua` $\rightarrow$ `osrm-partition` $\rightarrow$ `osrm-customize` $\rightarrow$ `osrm-routed --algorithm mld --mmap`).
+
+### 5.3. Chuẩn bị Đồ thị OSRM TP.HCM (Windows PowerShell)
+Từ thư mục gốc của repository:
 ```powershell
 .\scripts\osrm\prepare-hcm.ps1
 if ($LASTEXITCODE -ne 0) { throw 'HCMC preparation failed' }
 ```
+- Nếu cần tải mới file PBF Việt Nam: `.\scripts\osrm\prepare-hcm.ps1 -DownloadVietnam`
+- Nếu cần ép dựng lại đồ thị mới: `.\scripts\osrm\prepare-hcm.ps1 -Force`
+- Mỗi lần chạy thành công sẽ tạo thư mục graph bất biến trong `data/osrm/hcm/graphs/<id>/` và chỉ cập nhật con trỏ `active.txt` sau khi kiểm tra đủ tệp sidecar và mở thử `osrm-routed --trial=on` thành công.
 
-Script tự xác định root dù chạy từ thư mục khác, dùng file lock để tránh chạy đồng thời, kiểm tra exit code từng lệnh Docker. Docker tools được build một lần (apt cần network); boundary được tải và kiểm SHA256 nếu chưa có. Extraction/preparation chạy offline sau khi có input.
-
-Nếu chưa có Vietnam PBF, ưu tiên đặt bản đã tải tại `OSRM_SOURCE_DIR/vietnam-latest.osm.pbf`. Chỉ tải mới khi thật sự cần:
-
-```powershell
-.\scripts\osrm\prepare-hcm.ps1 -DownloadVietnam
-```
-
-Script download vào candidate riêng, kiểm MD5 nguồn rồi mới publish; không ghi đè Vietnam PBF đang tồn tại.
-
-Chạy lại bình thường sẽ xác minh fingerprint/input/graph và **bỏ qua extract/partition/customize** nếu hợp lệ. Để chủ động rebuild:
-
-```powershell
-.\scripts\osrm\prepare-hcm.ps1 -Force
-```
-
-Mỗi lần thành công tạo graph bất biến mới trong `graphs/`; chỉ cập nhật `active.txt` sau khi đủ sidecar và `osrm-routed --trial=on` thành công. Graph cũ và dữ liệu Vietnam giữ nguyên. Runtime đang chạy vẫn giữ graph đã mở; **prepare không phải hot reload**, cần restart/recreate OSRM và GIS sau đó.
-
-## Dữ liệu persistent
-
-Mặc định:
-
-```text
-data/osrm/
-  vietnam-latest.osm.pbf       # nguồn cũ giữ nguyên, không dùng trực tiếp để extract OSRM
-  build/                      # dữ liệu Vietnam dở dang cũ giữ nguyên nếu có
-  hcm/
-    hcm.osm.pbf
-    coverage.geojson
-    extract-manifest.json
-    active.txt                # graphs/<fingerprint>-<timestamp>
-    graphs/<id>/
-      hcm.osm.pbf
-      hcm.osrm.*              # MLD sidecars; không cần một file hcm.osrm riêng
-      coverage.geojson
-      extract-manifest.json
-      preparation-metrics.txt
-      ecoalert-ready
-    sources/                  # boundary đã kiểm checksum
-```
-
-Bind mount nằm ngoài writable layer container, ngoài Git. Có thể chuyển sang ổ/thư mục đủ disk bằng `OSRM_SOURCE_DIR` và `OSRM_DATA_DIR`; không chuyển/xóa dữ liệu đang chạy nếu chưa có phương án rollback.
-
-## Khởi động chỉ OSRM/GIS
-
-Compose hiện mount GIS `dist` read-only, phải build local trước. Các infrastructure/service khác cần đang chạy như stack hiện tại.
-
+### 5.4. Khởi động và Kiểm thử OSRM / GIS
 ```powershell
 Push-Location backend/gis-service
 npm run build
@@ -114,117 +145,36 @@ if ($LASTEXITCODE -ne 0) { throw 'GIS build failed' }
 Pop-Location
 
 docker compose up -d --no-deps --wait --wait-timeout 90 osrm
-if ($LASTEXITCODE -ne 0) { throw 'OSRM not healthy; inspect logs' }
 docker compose up -d --no-deps --force-recreate --wait --wait-timeout 90 gis-service
-if ($LASTEXITCODE -ne 0) { throw 'GIS not healthy; inspect logs' }
 docker compose ps osrm gis-service
 ```
 
-Nếu image GIS chưa được build, dùng `docker compose build gis-service` trước. Sau prepare Force với container OSRM đang chạy, dùng `docker compose restart osrm`, đợi healthy rồi restart GIS để mở đúng graph mới. Với lần khởi động Compose thông thường, GIS có `depends_on: osrm: condition: service_healthy`; các job prepare nằm trong profile `routing-tools`, không chạy theo startup.
-
-OSRM healthcheck dùng Bash `/dev/tcp` gửi HTTP nearest tại TP.HCM, kiểm HTTP 200 + code Ok; không cần curl/wget. Thiếu graph/sidecar: log rõ một lần, container chờ không mở HTTP và unhealthy, **không restart storm**. Sau prepare thành công phải restart OSRM.
-
-GIS `/health` giữ liveness; `/health/ready` kiểm coverage + nearest thật tới OSRM, trả 200/503. GIS log chỉ provider host, loại lỗi, thời gian, số điểm; không log token/URL chứa tọa độ.
-
-Runtime OSRM dùng `--verbosity WARNING` thay vì INFO mặc định, tránh access log chứa URL/tọa độ từng request; vẫn giữ cảnh báo/lỗi và log startup của wrapper. Log cũ trước thay đổi được giữ nguyên, không tự xóa.
-
-## Cấu hình
-
-| Biến | Mặc định | Ý nghĩa |
-| --- | --- | --- |
-| OSRM_IMAGE | ghcr.io/project-osrm/osrm-backend:v5.27.1 | Cùng phiên bản khi prepare/run |
-| OSRM_SOURCE_DIR | ./data/osrm | Nguồn Vietnam PBF giữ nguyên |
-| OSRM_DATA_DIR | ./data/osrm/hcm | HCM input + graph persistent |
-| OSRM_THREADS | 2 | Threads prepare/runtime |
-| OSMIUM_MEMORY | 4g | Limit riêng bước cắt PBF |
-| OSRM_PREPARE_MEMORY | 3g | Limit riêng prepare HCM |
-| OSRM_BASE_URL | http://osrm:5000 | Provider duy nhất, Docker DNS |
-| OSRM_TIMEOUT_MS | 10000 | Fetch timeout, giới hạn 100–30000ms |
-| OSRM_ROUTING_PROFILE | driving | Car graph; không hỗ trợ profile khác |
-| OSRM_DATA_ROOT | /osrm-data trong Compose | GIS đọc coverage active cùng graph |
-
-Xem `.env.example`, `backend/gis-service/.env.example`. Host-only GIS cần mount/path phù hợp và private OSRM URL riêng; không tự đổi sang provider công cộng.
-
-## Kiểm thử thực tế
-
-Windows:
-
+Kiểm thử tích hợp định tuyến hai chiều:
 ```powershell
 Get-Content -Raw scripts/osrm/integration.mjs | docker compose exec -T gis-service node --input-type=module
-if ($LASTEXITCODE -ne 0) { throw 'GIS/OSRM integration failed' }
 node scripts/osrm/mobile-integration.cjs
-if ($LASTEXITCODE -ne 0) { throw 'Mobile routing integration failed' }
 ```
 
-GIS integration gọi readiness, hai tuyến thật hai chiều, so sánh mọi tọa độ/metrics với private OSRM trực tiếp; kiểm input lỗi 400 và Hà Nội ngoài vùng 422. Mobile integration dùng **getOfficerRoute/parseOfficerRoute thật**, transport HTTP tới GIS bên trong container, kiểm đổi trục đúng, metrics và lỗi ngoài vùng. Không mock OSRM, không gọi Google/public provider. Đây **không phải** bằng chứng đã đăng nhập/hiển thị native trên thiết bị; gateway từ bên ngoài vẫn cần Officer Bearer token thật.
+### 5.5. Bảng Biến Môi trường OSRM / GIS
 
-Kết quả 12/10/2026, sau restart riêng OSRM và GIS (không restart toàn Docker Desktop):
+| Biến | Mặc định | Ý nghĩa |
+| :--- | :--- | :--- |
+| `OSRM_IMAGE` | `ghcr.io/project-osrm/osrm-backend:v5.27.1` | Image đồng nhất khi prepare và runtime |
+| `OSRM_SOURCE_DIR` | `./data/osrm` | Thư mục chứa file Vietnam PBF gốc |
+| `OSRM_DATA_DIR` | `./data/osrm/hcm` | Thư mục lưu PBF TP.HCM và đồ thị persistent |
+| `OSRM_THREADS` | `2` | Số luồng CPU khi prepare/runtime |
+| `OSMIUM_MEMORY` | `4g` | Giới hạn RAM bước cắt PBF bằng Osmium |
+| `OSRM_PREPARE_MEMORY` | `3g` | Giới hạn RAM bước dựng đồ thị TP.HCM |
+| `OSRM_BASE_URL` | `http://osrm:5000` | Địa chỉ OSRM nội bộ trong Docker network |
+| `OSRM_TIMEOUT_MS` | `10000` | Thời gian chờ tối đa mỗi truy vấn (100–30000ms) |
+| `OSRM_ROUTING_PROFILE` | `driving` | Cấu hình định tuyến đường bộ |
+| `OSRM_DATA_ROOT` | `/osrm-data` | Đường dẫn mount trong container để GIS đọc `coverage.geojson` |
 
-| Tuyến [latitude, longitude] | HTTP | Mét | Giây | Điểm geometry |
-| --- | --- | --- | --- | --- |
-| [10.7769,106.7009] → [10.84498,106.708477] | 200 | 10117.6 | 690.8 | 329 |
-| Chiều ngược lại | 200 | 10077.6 | 691.6 | 311 |
-
-OSRM và GIS healthy; graph/pointer giữ nguyên sau restart, không chạy extract lại. `osmium fileinfo -e` và `osmium check-refs` pass. Các bước extract/partition/customize + thử mở MLD graph đã chạy thành công, kể cả Force; chạy lại không Force đã xác minh skip.
-
-Kiểm tra hồi quy sau thay đổi:
-- Mobile `npx tsc --noEmit`: pass; `node --test tests/*.test.cjs`: **187 pass**, không fail/skip.
-- GIS `npm test` (gồm TypeScript build): **15 pass, 1 skip**; test MongoDB integration được skip theo cấu hình suite hiện có.
-- Web `npm run build`: pass; `npm run test:routing`: **3 pass**. Script `npm test` cũ của web tham chiếu các file không có trong repository, nên không tuyên bố toàn bộ web suite pass.
-- `git diff --check`: pass. Các lệnh test Node cần quyền tạo tiến trình; lỗi sandbox `spawn EPERM` ban đầu đã được xử lý bằng chạy lại có quyền phù hợp, không sửa tests để né lỗi.
-
-## Officer mobile / Expo Go
-
-1. Trong `mobile/.env`, `EXPO_PUBLIC_API_URL` phải là địa chỉ LAN máy backend, không dùng localhost trên iPhone. Workstation khi kiểm thử: `http://192.168.1.15:3000/api` (gateway health đã trả 200). Không hardcode IP này trong source dùng chung.
-2. Điện thoại và máy tính cùng Wi-Fi, cấp quyền vị trí, kiểm tra gateway reachable từ điện thoại.
-3. Reload Metro để nhận environment mới:
-
-```powershell
-cd mobile
-npx expo start -c
-```
-
-4. Đăng nhập Officer → mở nhiệm vụ tại vùng hỗ trợ → Bản đồ → **Bắt đầu chỉ đường**.
-5. App lấy GPS, gọi GIS, vẽ Polyline theo toàn bộ geometry OSRM, hiển thị km/ETA và fitToCoordinates sau map ready. Vẫn ở EcoAlert. Thử refresh tuyến, thiếu quyền GPS, lỗi kết nối và vị trí ngoài vùng.
-6. Nút Google Maps riêng chỉ chạy nếu chủ động bấm.
-
-Tests render/hook kiểm Polyline đúng điểm, chờ map ready, label khoảng cách và lỗi ngoài vùng; **chưa kiểm trực tiếp giao diện native trên iPhone/Android và chưa chạy luồng gateway có đăng nhập bằng thiết bị thật**. Cần hoàn tất bước này trong Expo Go; không coi unit test render là kiểm thử native.
-
-## Cập nhật OSM/ranh giới và rollback
-
-- Giữ nguồn cũ. Đặt nguồn mới vào **OSRM_SOURCE_DIR mới**, không ghi đè/xóa bản đang dùng; nếu cần boundary mới, cập nhật URL/hash/metadata rõ ràng.
-- Chọn **OSRM_DATA_DIR mới** khi cần giữ cả input cũ; chạy prepare (hoặc Force trong data dir hiện tại nếu chủ động thay input, graph cũ vẫn được giữ).
-- Kiểm tra manifest, checksum, trial open, rồi restart/recreate OSRM/GIS trong maintenance window; chạy cả hai integration scripts.
-- Rollback an toàn bằng thư mục nguồn/data cũ đã giữ, image cùng phiên bản; recreate riêng OSRM/GIS và kiểm tra lại. Không sửa pointer thủ công tới graph chưa kiểm.
-- Không dùng `docker compose down -v`; không tự dọn build/graph cũ.
-
-## Xử lý lỗi
-
-```powershell
-docker compose logs --tail 80 osrm gis-service
-docker compose ps osrm gis-service
-Get-Content data/osrm/hcm/active.txt
-Get-PSDrive C,D
-docker stats --no-stream ecoalert_osrm ecoalert_gis_service
-```
-
-- **Graph missing/incomplete**: chạy prepare-hcm.ps1, đọc lỗi đầu tiên; không tạo marker ready bằng tay. Sau prepare restart OSRM, đợi healthy rồi restart GIS.
-- **OOM / exit 137**: chỉ chạy một job, kiểm Docker RAM/headroom + disk; HCM đã chạy với limit ở trên. Không quay lại extract toàn Việt Nam, không tự tắt service khác/tăng cấu hình toàn Docker.
-- **Thiếu disk**: cần chỗ cho source/candidate/old/new graph. Chọn data dir ổ D hoặc ổ đủ chỗ; giữ dữ liệu cũ cho tới khi người dùng quyết định dọn.
-- **Stale lock sau SIGKILL/OOM**: trước tiên kiểm `docker ps` và xác nhận không còn osrm-tools/osrm-prepare nào chạy. Chỉ khi đã xác minh mới bỏ **thư mục rỗng chính xác** `data/osrm/hcm/.graph-prepare-lock` bằng `Remove-Item -LiteralPath 'D:\KhoaLuanTotNghiep\EcoAlert\data\osrm\hcm\.graph-prepare-lock'` (không -Recurse). Không xóa graph/build. File Windows `.prepare-hcm.lock` có thể còn nhưng handle đã đóng sẽ cho chạy lại.
-- **503 readiness**: thiếu coverage/graph hoặc OSRM chưa ready; kiểm mount cùng HCM data root và DNS osrm.
-- **422**: endpoint ngoài polygon phục vụ; không gửi sang server công cộng.
-- **404**: không có tuyến/điểm snap trong bán kính hỗ trợ; không nối đường thẳng.
-- **502/504**: provider lỗi/kết nối/timeout hoặc response không hợp lệ; giữ thông báo rõ, kiểm OSRM health/log. Không fallback công cộng.
-- **Mobile không hiện tuyến**: kiểm LAN API URL, reload Expo, quyền GPS, tọa độ endpoint thuộc vùng; đọc lỗi hiển thị trong app. Không coi gateway localhost reachable là điện thoại đã kết nối được.
-
-## Files triển khai
-
-- Runtime/config: `docker-compose.yml`, `.env.example`, `.gitignore`, `.gitattributes`, `README.md`.
-- Preparation: `scripts/osrm/Dockerfile.tools`, `hcm-region.json`, `extract-hcm.py`, `prepare-hcm.ps1`, `prepare.sh`, `validate-graph.sh`, `serve.sh`, `healthcheck.sh`.
-- GIS: `backend/gis-service/.env.example`, `package.json`, `package-lock.json`, `src/config/env.config.ts`, `src/app.ts`, `src/controllers/gis.controller.ts`, `src/services/gis.service.ts`, `osrm-routing.service.ts`, `routing-coverage.ts`, `src/tests/osrm-routing.test.ts`, `routing-coverage.test.ts`.
-- Mobile: `mobile/src/screens/officer/OfficerOperationalMap.tsx`, `mobile/tests/officer-stitch.test.cjs`; `mobile/.env` chỉ cập nhật LAN local, bị Git ignore.
-- Web compatibility từ đợt OSRM trước: `frontend/src/services/services.ts`, `frontend/src/features/officer/pages/OfficerReportDetail.tsx`, `frontend/src/services/officer-routing.test.ts`, `frontend/package.json`.
-- Integration: `scripts/osrm/integration.mjs`, `scripts/osrm/mobile-integration.cjs`.
-
-Không commit/push/merge tự động. Giữ nguyên những thay đổi local không thuộc định tuyến.
+### 5.6. Lưu ý Kết nối Mobile (Expo Go) trên Thiết bị Thật
+1. Trong `mobile/.env`, đặt `EXPO_PUBLIC_API_URL=http://<IP_LAN_MAY_TINH>:3000/api` (không dùng `localhost` khi chạy trên điện thoại thật).
+2. Điện thoại và máy tính kết nối cùng mạng Wi-Fi, cấp quyền Location cho ứng dụng.
+3. Khởi chạy lại Metro bundler xóa cache:
+   ```powershell
+   cd mobile
+   npx expo start -c
+   ```
