@@ -22,16 +22,22 @@ import {
   Clock,
   History,
   Image as ImageIcon,
+  Layers,
   Loader2,
   MapPin,
   Pencil,
   PlayCircle,
   Save,
+  Search,
   ShieldCheck,
   StickyNote,
   Trash2,
   Upload,
   UserCheck,
+  Maximize2,
+  Sparkles,
+  X,
+  Quote,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -74,7 +80,14 @@ import {
 } from "@/components/ui/card";
 import { IncidentLocationDetails } from "@/components/location/IncidentLocationDetails";
 import { ConfirmActionDialog } from "@/components/incidents/ConfirmActionDialog";
-import { AssignmentPreview } from "@/features/admin/components/AssignmentPreview";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { IncidentTimeline } from "@/components/incidents/IncidentTimeline";
 import { OverallAiAnalysisCard } from "@/components/incidents/OverallAiAnalysisCard";
 import type { OfficerAvailability, ResolutionInput } from "@/types";
@@ -184,12 +197,6 @@ const formatTimestamp = (value?: string, language: string = "vi") =>
       ? "Chưa thực hiện"
       : "Not completed";
 
-const getStaggerTransition = (index: number) => ({
-  type: "spring" as const,
-  stiffness: 260,
-  damping: 24,
-  delay: index * 0.07,
-});
 
 // Chuẩn hóa và giới hạn (clamp) tọa độ Bounding Box YOLO trong phạm vi [0, 100]% của ảnh thực tế
 const computeClampedYoloBox = (
@@ -266,7 +273,15 @@ export default function OfficerReportDetail() {
     width: number;
     height: number;
   } | null>(null);
-  const [showAdvancedDockPanel, setShowAdvancedDockPanel] = useState(false);
+  const [isVisionModalOpen, setIsVisionModalOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(true);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(true);
+  const [isDetectionsModalOpen, setIsDetectionsModalOpen] = useState(false);
+  const [detectionSearchQuery, setDetectionSearchQuery] = useState("");
+  const [detectionFilterClass, setDetectionFilterClass] = useState<string>("all");
+  const [highlightedDetectionIndex, setHighlightedDetectionIndex] = useState<
+    number | null
+  >(null);
 
   const [officerLocation, setOfficerLocation] =
     useState<OfficerLocation | null>(null);
@@ -326,6 +341,32 @@ export default function OfficerReportDetail() {
       (item) => item.imageUrl === alert?.mediaUrls?.[selectedYoloImageIndex],
     );
   const activeYoloDetections = activeVisionEvidence?.detections ?? [];
+
+  const detectionCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    activeYoloDetections.forEach((det) => {
+      const cls = det.materialClass || "unknown";
+      counts.set(cls, (counts.get(cls) ?? 0) + 1);
+    });
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [activeYoloDetections]);
+
+  const filteredDetections = useMemo(() => {
+    return activeYoloDetections
+      .map((det, originalIndex) => ({ ...det, originalIndex }))
+      .filter((det) => {
+        const matchesClass =
+          detectionFilterClass === "all" ||
+          det.materialClass.toLowerCase() === detectionFilterClass.toLowerCase();
+        const matchesQuery =
+          !detectionSearchQuery.trim() ||
+          det.materialClass
+            .toLowerCase()
+            .includes(detectionSearchQuery.trim().toLowerCase()) ||
+          `#${det.originalIndex + 1}`.includes(detectionSearchQuery.trim());
+        return matchesClass && matchesQuery;
+      });
+  }, [activeYoloDetections, detectionFilterClass, detectionSearchQuery]);
 
   const yoloDetectionGroups = useMemo(() => {
     const counts = new Map<string, number>();
@@ -521,7 +562,6 @@ export default function OfficerReportDetail() {
             id: `alert-updated-${id}`,
           });
           setConfirmAction(null);
-          setShowAdvancedDockPanel(false);
         },
         onError: (mutationError) =>
           onWorkflowError(mutationError, "Không thể phân công sự cố này."),
@@ -786,323 +826,95 @@ export default function OfficerReportDetail() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5 pb-12">
+    <div
+      className={
+        isAdmin
+          ? "-m-6 h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 p-4 select-none"
+          : "mx-auto max-w-7xl space-y-5 pb-12"
+      }
+    >
       {/* =======================================================================
-          GIAO DIỆN ADMIN: APPLE macOS BENTO 3 CỘT + FLOATING ACTION DOCK
+          GIAO DIỆN ADMIN: SMART COMMAND CONSOLE (BẢN ĐỒ GIS + ỐNG KÍNH AI + INSPECTOR)
       ======================================================================= */}
       {isAdmin ? (
-        <div className="space-y-5">
-          {/* -------------------------------------------------------------------
-              HEADER & APPLE SEGMENTED STEPPER (STAGGER INDEX 0)
-          ------------------------------------------------------------------- */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={getStaggerTransition(0)}
-            className="rounded-2xl border border-slate-200/80 bg-slate-900/90 p-5 text-slate-100 shadow-lg backdrop-blur-xl dark:border-white/[0.08] dark:bg-slate-900/60"
-          >
-            {/* Dòng trên: Nút Quay lại + Mã hồ sơ + Apple Segmented Pill Stepper */}
-            <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
-              <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-400">
-                <Link
-                  to="/admin/reports"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 font-medium text-slate-200 transition hover:bg-white/[0.12]"
+        <div className="h-full gap-4 lg:grid lg:grid-cols-12 lg:h-[calc(100vh-5rem)]">
+          {/* =================================================================
+              PHÂN VÙNG CANVAS CHÍNH (lg:col-span-8 - 65% màn hình):
+              STUDIO THẨM ĐỊNH AI VISION (YOLO) + MINI MAP GIS NỔI (PiP)
+          ================================================================= */}
+          <div className="relative flex h-full min-h-[560px] flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-slate-950/90 p-4 backdrop-blur-2xl lg:col-span-8 lg:h-[calc(100vh-5.5rem)]">
+            {/* Lớp nền mờ Ambient Glow đúng chuẩn Apple Vision */}
+            {originalEvidence[selectedYoloImageIndex] && (
+              <img
+                src={originalEvidence[selectedYoloImageIndex]}
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full scale-110 select-none object-cover opacity-25 blur-3xl"
+              />
+            )}
+
+            {/* -------------------------------------------------------------
+                THANH ĐIỀU KHIỂN TRÊN CÙNG CỦA CANVAS (FLOATING HEADER BAR)
+            ------------------------------------------------------------- */}
+            <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/15 bg-slate-900/90 px-3 py-2 text-white shadow-xl backdrop-blur-xl">
+              {/* Góc trái: Nút ← Danh sách, Mã #ID, Tiêu đề, Phân loại & Trạng thái */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white"
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                  <span>Danh sách</span>
-                </Link>
-                <span className="text-slate-600">/</span>
-                <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  HỒ SƠ THẨM ĐỊNH #{alert._id.slice(-6).toUpperCase()}
+                  <Link to="/admin/reports">
+                    <ChevronLeft className="mr-1 h-3.5 w-3.5" />
+                    Danh sách
+                  </Link>
+                </Button>
+
+                <div className="h-4 w-px bg-white/20" />
+
+                <span className="font-mono text-xs font-bold text-emerald-400">
+                  #{alert._id.slice(-6).toUpperCase()}
                 </span>
-              </div>
 
-              {/* Thanh tiến trình 4 bước dạng Apple Segmented Pill */}
-              <div
-                role="list"
-                aria-label="Tiến trình thẩm định sự cố"
-                className="inline-flex flex-wrap items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-950/60 p-1"
-              >
-                {segmentedSteps.map((step) => {
-                  const isCurrent = step.index === activeStepIndex;
-                  const isDone =
-                    step.index < activeStepIndex ||
-                    normalizedAlertStatus === "closed";
-
-                  return (
-                    <span
-                      key={step.index}
-                      role="listitem"
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
-                        isCurrent
-                          ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400 shadow-xs"
-                          : isDone
-                            ? "border-transparent text-emerald-400/80"
-                            : "border-transparent text-slate-500"
-                      }`}
-                    >
-                      <CheckCircle2
-                        className={`h-3.5 w-3.5 ${
-                          isCurrent || isDone
-                            ? "text-emerald-400"
-                            : "text-slate-600"
-                        }`}
-                      />
-                      <span className="whitespace-nowrap">{step.label}</span>
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Dòng dưới: Tiêu đề báo cáo rõ ràng + Badge mức độ */}
-            <div className="mt-4 flex flex-col justify-between gap-3 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center">
-              <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-                {alert.title}
-              </h1>
-
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
-                  Mức độ: {getIncidentSeverityLabel(displaySeverity, language)}
+                <span
+                  className="max-w-[140px] truncate text-xs font-semibold text-slate-100 sm:max-w-[220px]"
+                  title={alert.title}
+                >
+                  {alert.title}
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-medium text-slate-300">
+
+                {alert.category && (
+                  <span className="hidden rounded-md border border-white/10 bg-white/[0.08] px-2 py-0.5 text-[10.5px] font-medium text-slate-200 sm:inline-block">
+                    {getIncidentCategoryLabel(alert.category, language)}
+                  </span>
+                )}
+
+                <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   {getIncidentStatusLabel(alert.status, language)}
                 </span>
               </div>
-            </div>
-          </motion.div>
 
-          {/* -------------------------------------------------------------------
-              LƯỚI BENTO 3 CỘT CÂN ĐỐI (grid-cols-1 lg:grid-cols-12 gap-5)
-          ------------------------------------------------------------------- */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            {/* =================================================================
-                CỘT 1 (lg:col-span-4): 01 · HIỆN TRƯỜNG & VỊ TRÍ
-            ================================================================= */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={getStaggerTransition(1)}
-              className="flex flex-col justify-between space-y-5 rounded-2xl border border-white/[0.08] bg-slate-900/60 p-5 text-slate-100 backdrop-blur-xl lg:col-span-4"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                    01 · HIỆN TRƯỜNG & VỊ TRÍ
-                  </span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                    Báo cáo công dân
-                  </span>
-                </div>
-
-                {/* Mô tả của người dân */}
-                <p className="whitespace-pre-wrap text-base font-medium leading-relaxed text-slate-100">
-                  “
-                  {alert.description ||
-                    "Người dân phản ánh điểm tồn đọng rác thải đô thị cần thu dọn."}
-                  ”
-                </p>
-
-                {/* Thời gian gửi */}
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-emerald-400" />
-                    Ghi nhận: {format(new Date(alert.createdAt), "dd/MM/yyyy · HH:mm")}
-                  </span>
-                </div>
-              </div>
-
-              {/* Bản đồ Leaflet bo góc rounded-xl h-48 + dòng địa chỉ/tọa độ gọn bên dưới */}
-              <div className="space-y-3 border-t border-white/[0.06] pt-4">
-                {hasCoordinates ? (
-                  <div className="h-48 w-full overflow-hidden rounded-xl border border-white/[0.08]">
-                    <MapContainer
-                      center={[latitude, longitude]}
-                      zoom={15}
-                      maxZoom={19}
-                      minZoom={2}
-                      scrollWheelZoom={false}
-                      style={{ height: "100%", width: "100%" }}
-                    >
-                      <EcoAlertBaseMap />
-                      <Marker
-                        position={[latitude, longitude]}
-                        icon={redMapMarkerIcon}
-                      >
-                        <Popup>
-                          {alert.address ||
-                            `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`}
-                        </Popup>
-                      </Marker>
-                    </MapContainer>
-                  </div>
-                ) : (
-                  <div className="flex h-48 items-center justify-center rounded-xl bg-slate-950/50 text-xs text-slate-400">
-                    <MapPin className="mr-1.5 h-4 w-4" />
-                    Không có tọa độ GPS
-                  </div>
-                )}
-
-                <div className="hidden">
-                  <IncidentLocationDetails
-                    address={alert.address}
-                    latitude={latitude}
-                    longitude={longitude}
-                    showNavigation={false}
-                  />
-                </div>
-
-                <div className="flex items-start justify-between gap-2 text-xs text-slate-300">
-                  <p className="leading-relaxed">
-                    <strong className="text-slate-100">Vị trí:</strong>{" "}
-                    {alert.address || "Đang cập nhật địa chỉ"}
-                  </p>
-                  {hasCoordinates && (
-                    <span className="shrink-0 font-mono text-[11px] text-slate-400">
-                      {latitude.toFixed(4)}°N, {longitude.toFixed(4)}°E
-                    </span>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* =================================================================
-                CỘT 2 (lg:col-span-5): 02 · THẨM ĐỊNH AI VISION
-            ================================================================= */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={getStaggerTransition(2)}
-              className="flex flex-col justify-between space-y-5 rounded-2xl border border-white/[0.08] bg-slate-900/60 p-5 text-slate-100 backdrop-blur-xl lg:col-span-5"
-            >
-              <div className="space-y-4">
-                {/* Header + Công tắc iOS pill toggle "Khung AI: Bật/Tắt" */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                    02 · THẨM ĐỊNH AI VISION
-                  </span>
-
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={showYoloBoxes}
-                    onClick={() => setShowYoloBoxes((prev) => !prev)}
-                    className="inline-flex items-center gap-2 text-xs font-medium text-slate-300 transition hover:text-white"
-                  >
-                    <span>Khung AI: {showYoloBoxes ? "Bật" : "Tắt"}</span>
-                    <span
-                      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
-                        showYoloBoxes ? "bg-emerald-500" : "bg-slate-700"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition-transform duration-200 ${
-                          showYoloBoxes ? "translate-x-4" : "translate-x-1"
-                        }`}
-                      />
-                    </span>
-                  </button>
-                </div>
-
-                {/* Khung hiển thị ảnh (Stage) hỗ trợ ảnh dọc/ngang + Apple Preview Blurred Backdrop + Khung nội bộ ôm sát ảnh thật */}
-                {originalEvidence[selectedYoloImageIndex] ? (
-                  <div className="relative flex min-h-[360px] max-h-[460px] w-full items-center justify-center overflow-hidden rounded-xl bg-slate-950 p-2">
-                    {/* Lớp nền mờ Apple Preview phía sau để lấp khoảng trống ảnh dọc */}
-                    <img
-                      src={originalEvidence[selectedYoloImageIndex]}
-                      alt=""
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 h-full w-full scale-110 select-none object-cover opacity-35 blur-2xl"
-                    />
-
-                    {/* Khung nội bộ ôm sát đúng kích thước hiển thị của ảnh (inline-flex) */}
-                    <div className="relative z-10 inline-flex max-h-[440px] max-w-full items-center justify-center">
-                      <img
-                        src={originalEvidence[selectedYoloImageIndex]}
-                        alt={`Ảnh thẩm định AI ${selectedYoloImageIndex + 1}`}
-                        className="block h-auto max-h-[440px] w-auto max-w-full rounded-lg object-contain"
-                        onLoad={(event) =>
-                          setYoloImageSize({
-                            width: event.currentTarget.naturalWidth,
-                            height: event.currentTarget.naturalHeight,
-                          })
-                        }
-                      />
-
-                      {/* Lớp phủ Bounding Box nằm BÊN TRONG khung inline-flex để khớp 100% mép ảnh thật */}
-                      <div className="pointer-events-none absolute inset-0">
-                        <AnimatePresence>
-                          {showYoloBoxes &&
-                            yoloImageSize &&
-                            activeYoloDetections.map((detection, index) => {
-                              const {
-                                left,
-                                top,
-                                width,
-                                height,
-                                isNearTopEdge,
-                              } = computeClampedYoloBox(
-                                detection.bbox,
-                                yoloImageSize,
-                              );
-                              const confPct = Math.round(
-                                Math.max(0, Math.min(1, detection.confidence)) *
-                                  100,
-                              );
-                              return (
-                                <motion.div
-                                  key={`${detection.materialClass}-${index}`}
-                                  initial={{ opacity: 0, scale: 0.96 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.96 }}
-                                  transition={{ duration: 0.18 }}
-                                  className="pointer-events-none absolute rounded-md border-2 border-emerald-400 bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
-                                  style={{
-                                    left: `${left}%`,
-                                    top: `${top}%`,
-                                    width: `${width}%`,
-                                    height: `${height}%`,
-                                  }}
-                                >
-                                  <span
-                                    className={`absolute left-0 inline-flex max-w-full items-center gap-1 truncate whitespace-nowrap rounded-md bg-emerald-600/95 px-2 py-0.5 text-[11px] font-semibold text-white shadow-md backdrop-blur-md ${
-                                      isNearTopEdge ? "top-1" : "-top-6"
-                                    }`}
-                                  >
-                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
-                                    {detection.materialClass} · {confPct}%
-                                  </span>
-                                </motion.div>
-                              );
-                            })}
-                        </AnimatePresence>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex min-h-[360px] w-full items-center justify-center rounded-xl bg-slate-950/60 text-xs text-slate-400">
-                    Chưa có ảnh hiện trường
-                  </div>
-                )}
-
-                {/* Thumbnail chọn ảnh nếu có nhiều ảnh */}
+              {/* Góc phải: Thumbnail góc chụp + Công tắc iOS Khung AI + Nút Expand */}
+              <div className="flex items-center gap-2.5">
                 {originalEvidence.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pt-1">
+                  <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-slate-950/70 p-1">
                     {originalEvidence.map((url, idx) => (
                       <button
-                        type="button"
                         key={url}
+                        type="button"
                         onClick={() => setSelectedYoloImageIndex(idx)}
-                        className={`h-11 w-16 shrink-0 overflow-hidden rounded-lg border transition ${
+                        className={`relative h-6 w-9 overflow-hidden rounded transition-all ${
                           idx === selectedYoloImageIndex
-                            ? "border-emerald-400 ring-2 ring-emerald-400/30"
-                            : "border-white/10 opacity-60 hover:opacity-100"
+                            ? "ring-2 ring-emerald-400"
+                            : "opacity-50 hover:opacity-90"
                         }`}
+                        title={`Góc chụp ${idx + 1}`}
                       >
                         <img
                           src={url}
-                          alt={`Ảnh ${idx + 1}`}
+                          alt={`Thumb ${idx + 1}`}
                           className="h-full w-full object-cover"
                         />
                       </button>
@@ -1110,158 +922,709 @@ export default function OfficerReportDetail() {
                   </div>
                 )}
 
-                {/* Hàng chip nhỏ gọn hiển thị các vật thể phát hiện và khối lượng ước tính */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  {yoloDetectionGroups.map(([material, count]) => (
+                {/* Công tắc iOS pill switch "Khung AI: Bật / Tắt" */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={showYoloBoxes}
+                  onClick={() => setShowYoloBoxes((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
+                >
+                  <span className="text-[11px]">
+                    Khung AI: {showYoloBoxes ? "Bật" : "Tắt"}
+                  </span>
+                  <span
+                    className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                      showYoloBoxes ? "bg-emerald-500" : "bg-slate-700"
+                    }`}
+                  >
                     <span
-                      key={material}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.07] px-3 py-1 text-xs font-medium text-slate-200"
-                    >
-                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                      {material} ({count})
-                    </span>
-                  ))}
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.07] px-3 py-1 text-xs font-medium text-slate-200">
-                    <span className="h-2 w-2 rounded-full bg-amber-400" />
-                    Khối lượng: {massEstimateText}
-                  </span>
-                </div>
-              </div>
-
-              <div className="border-t border-white/[0.06] pt-4 text-xs text-slate-400">
-                Phân loại tự động:{" "}
-                <strong className="text-slate-200">
-                  {getIncidentCategoryLabel(
-                    analysis?.categorySuggestion ?? alert.category,
-                    language,
-                  )}
-                </strong>
-              </div>
-            </motion.div>
-
-            {/* =================================================================
-                CỘT 3 (lg:col-span-3): 03 · KẾT QUẢ AI & CA TRỰC
-            ================================================================= */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={getStaggerTransition(3)}
-              className="flex flex-col justify-between space-y-5 rounded-2xl border border-white/[0.08] bg-slate-900/60 p-5 text-slate-100 backdrop-blur-xl lg:col-span-3"
-            >
-              {/* Nửa trên: Độ tin cậy AI lớn + Mức độ đề xuất + 2-3 dòng nhận định AI */}
-              <div className="space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                  03 · KẾT QUẢ AI & CA TRỰC
-                </span>
-
-                <div className="flex items-baseline justify-between gap-2 pt-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-mono text-4xl font-extrabold tracking-tight text-white">
-                      {aiConfidenceText}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      Độ tin cậy AI
-                    </span>
-                  </div>
-
-                  <span className="rounded-lg bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                    Mức:{" "}
-                    {getIncidentSeverityLabel(
-                      analysis?.severity ?? displaySeverity,
-                      language,
-                    )}
-                  </span>
-                </div>
-
-                <p className="line-clamp-4 text-sm leading-relaxed text-slate-300">
-                  {analysis?.overallSummary ||
-                    alert.aiSummary ||
-                    "AI đã phân tích hình ảnh hiện trường và sẵn sàng hỗ trợ điều phối lực lượng thu gom."}
-                </p>
-              </div>
-
-              {/* Nửa dưới (ngăn cách bằng border-t border-white/[0.06]): Cán bộ & 3 mốc thời gian gọn */}
-              <div className="space-y-3 border-t border-white/[0.06] pt-4 text-xs">
-                <div className="flex items-center justify-between text-slate-300">
-                  <span className="text-slate-400">Cán bộ phụ trách:</span>
-                  <strong className="truncate font-semibold text-white">
-                    {assignedOfficerLabel}
-                  </strong>
-                </div>
-
-                <div className="space-y-2.5 pt-1">
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${
-                        alert.assignedAt
-                          ? "text-emerald-400"
-                          : "text-slate-600"
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition-transform duration-200 ${
+                        showYoloBoxes ? "translate-x-3.5" : "translate-x-0.5"
                       }`}
                     />
-                    <div>
-                      <p className="font-semibold text-slate-200">Nhận việc</p>
-                      <p className="text-[11px] text-slate-400">
-                        {formatTimestamp(alert.assignedAt, language)}
-                      </p>
+                  </span>
+                </button>
+
+                {/* Nút icon mở rộng xem ảnh toàn màn hình (Expand) */}
+                {originalEvidence[selectedYoloImageIndex] && (
+                  <button
+                    type="button"
+                    onClick={() => setIsVisionModalOpen(true)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.1] hover:text-white"
+                    title="Phóng to toàn màn hình"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* -------------------------------------------------------------
+                THÂN CANVAS (CO GIÃN ĐỘNG THEO TRẠNG THÁI INSPECTOR):
+                TRÁI: ẢNH HIỆN TRƯỜNG & YOLO (EXPAND KHI ĐÓNG BẢNG) | PHẢI: CỘT CÔNG CỤ
+            ------------------------------------------------------------- */}
+            <div className="relative z-20 my-3 flex min-h-0 flex-1 items-stretch justify-between gap-4 overflow-hidden">
+              {/* NỬA TRÁI: KHUNG ẢNH HIỆN TRƯỜNG & BOUNDING BOX YOLO (WRAPPED STAGE) */}
+              <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl bg-slate-950/80 p-4 transition-all duration-300 ease-out">
+                {/* KHUNG NỘI BỘ (IMAGE STAGE WRAPPER): Bắt buộc dùng `relative inline-flex max-h-[580px] max-w-full items-center justify-center overflow-hidden rounded-xl` để ôm khít 100% mép ảnh thật */}
+                {originalEvidence[selectedYoloImageIndex] ? (
+                  <div className="relative inline-flex max-h-[580px] max-w-full items-center justify-center overflow-hidden rounded-xl shadow-2xl">
+                    {/* 1. Thẻ Ảnh Hiện Trường */}
+                    <img
+                      src={originalEvidence[selectedYoloImageIndex]}
+                      alt="Hiện trường"
+                      className="block h-auto max-h-[580px] w-auto max-w-full rounded-xl object-contain"
+                      onLoad={(e) => {
+                        setYoloImageSize({
+                          width: e.currentTarget.naturalWidth,
+                          height: e.currentTarget.naturalHeight,
+                        });
+                      }}
+                    />
+
+                    {/* 2. Lớp phủ Bounding Box: Nằm BÊN TRONG thẻ inline-flex này để left/top/width/height % bám sát pixel mép ảnh */}
+                    {showYoloBoxes && yoloImageSize && (
+                      <div className="pointer-events-none absolute inset-0">
+                        {activeYoloDetections.map((detection, index) => {
+                          const { left, top, width, height, isNearTopEdge } =
+                            computeClampedYoloBox(
+                              detection.bbox,
+                              yoloImageSize,
+                            );
+                          const confPct = Math.round(
+                            Math.max(0, Math.min(1, detection.confidence)) *
+                              100,
+                          );
+                          const isHighlighted =
+                            highlightedDetectionIndex === index;
+                          return (
+                            <div
+                              key={`${detection.materialClass}-${index}`}
+                              className={`pointer-events-none absolute rounded-md transition-all duration-150 ${
+                                isHighlighted
+                                  ? "z-30 border-[2.5px] border-emerald-300 bg-emerald-400/30 ring-2 ring-emerald-300 shadow-[0_0_18px_rgba(16,185,129,0.65)]"
+                                  : "border-2 border-emerald-400 bg-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                              }`}
+                              style={{
+                                left: `${left}%`,
+                                top: `${top}%`,
+                                width: `${width}%`,
+                                height: `${height}%`,
+                              }}
+                            >
+                              <span
+                                className={`absolute left-0 inline-flex max-w-full items-center gap-1 truncate whitespace-nowrap rounded-md bg-slate-950/90 px-1.5 py-0.5 text-[10px] font-mono font-semibold border shadow-md backdrop-blur-md ${
+                                  isHighlighted
+                                    ? "border-emerald-300 bg-emerald-950/95 text-white"
+                                    : "border-emerald-400/40 text-emerald-300"
+                                } ${isNearTopEdge ? "top-1" : "-top-5"}`}
+                              >
+                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                                {detection.materialClass} · {confPct}%
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-400">
+                    <ImageIcon className="mb-2 h-10 w-10 text-slate-600" />
+                    <p className="text-sm font-medium">
+                      Chưa có hình ảnh hiện trường
+                    </p>
+                  </div>
+                )}
+
+                {/* Cụm nút pill khi thu gọn bảng: Neo cố định ở góc trên bên phải của Canvas cha, không đè lên ảnh */}
+                <AnimatePresence>
+                  {!isInspectorOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-4 top-4 z-30 flex items-center gap-1.5 rounded-full border border-white/20 bg-slate-900/85 p-1.5 shadow-2xl backdrop-blur-xl"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsInspectorOpen(true);
+                          setIsMapOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.08] px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.16] hover:text-white"
+                        title="Xem bản đồ vị trí"
+                      >
+                        <MapPin className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Bản đồ</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsDetectionsModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.08] px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.16] hover:text-white"
+                        title="Xem chi tiết danh sách vật thể"
+                      >
+                        <Search className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>{activeYoloDetections.length} vật thể</span>
+                      </button>
+
+                      <div className="mx-0.5 h-4 w-px bg-white/20" />
+
+                      <button
+                        type="button"
+                        onClick={() => setIsInspectorOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/30 hover:text-white"
+                        title="Mở lại bảng công cụ bên phải"
+                      >
+                        <Layers className="h-3.5 w-3.5" />
+                        <span>⇲ Mở bảng công cụ</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* NỬA PHẢI: CỘT PHỤ 3 KHỐI THẲNG HÀNG ĐỈNH & ĐÁY VỚI ẢNH (CO GIÃN ĐỘNG) */}
+              <div
+                className={`flex min-h-0 flex-col gap-3 transition-all duration-300 ease-out overflow-hidden ${
+                  isInspectorOpen
+                    ? "w-72 sm:w-80 shrink-0 opacity-100"
+                    : "w-0 shrink-0 opacity-0 pointer-events-none -ml-4"
+                }`}
+              >
+                {/* Header thu gọn bảng công cụ */}
+                <div className="flex shrink-0 items-center justify-between px-1">
+                  <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                    Bảng Công Cụ Giám Sát
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsInspectorOpen(false)}
+                    className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-slate-300 transition hover:bg-white/[0.14] hover:text-white"
+                    title="Thu gọn bảng để phóng to ảnh hiện trường"
+                  >
+                    <X className="h-3 w-3" />
+                    Thu gọn bảng
+                  </button>
+                </div>
+
+                {/* TẦNG 1: THẺ BẢN ĐỒ MINI MAP (ĐÓNG / MỞ MƯỢT MÀ) */}
+                <div className="flex shrink-0 flex-col">
+                  <AnimatePresence mode="wait">
+                    {isMapOpen ? (
+                      <motion.div
+                        key="mini-map-expanded"
+                        initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                        transition={{ duration: 0.18 }}
+                        className="flex w-full flex-col justify-between overflow-hidden rounded-xl border border-white/20 bg-slate-900/95 shadow-2xl backdrop-blur-xl"
+                      >
+                        {/* Header thẻ: Tiêu đề + Tọa độ GPS + Nút ✕ Thu gọn */}
+                        <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-slate-950/90 px-3 py-1.5">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <span className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-200">
+                              📍 VỊ TRÍ HIỆN TRƯỜNG
+                            </span>
+                            {hasCoordinates && (
+                              <span className="shrink-0 font-mono text-[10px] font-semibold text-emerald-400">
+                                {latitude.toFixed(4)}°, {longitude.toFixed(4)}°
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setIsMapOpen(false)}
+                            className="shrink-0 rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-slate-300 transition hover:bg-white/[0.14] hover:text-white"
+                            title="Thu gọn bản đồ"
+                          >
+                            ✕ Thu gọn
+                          </button>
+                        </div>
+
+                        {/* Phần bản đồ Leaflet compact h-32 w-full */}
+                        <div className="relative h-32 w-full overflow-hidden">
+                          {hasCoordinates ? (
+                            <MapContainer
+                              center={[latitude, longitude]}
+                              zoom={15}
+                              scrollWheelZoom={false}
+                              zoomControl={false}
+                              className="h-full w-full z-0"
+                            >
+                              <EcoAlertBaseMap />
+                              <CircleMarker
+                                center={[latitude, longitude]}
+                                radius={18}
+                                pathOptions={{
+                                  color: "#ef4444",
+                                  fillColor: "#ef4444",
+                                  fillOpacity: 0.2,
+                                  weight: 1.5,
+                                  className: "animate-ping",
+                                }}
+                              />
+                              <Marker
+                                position={[latitude, longitude]}
+                                icon={redMapMarkerIcon}
+                              >
+                                <Popup>
+                                  <div className="p-0.5 text-xs font-sans text-slate-900">
+                                    <p className="font-semibold">
+                                      {alert.title}
+                                    </p>
+                                    <p className="text-[11px] text-slate-600">
+                                      {alert.address}
+                                    </p>
+                                  </div>
+                                </Popup>
+                              </Marker>
+                            </MapContainer>
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-slate-950 text-[11px] text-slate-500">
+                              Không có tọa độ GPS
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Chân thẻ: 1 dòng địa chỉ ngắn gọn (truncate) */}
+                        <div className="flex items-center gap-1.5 border-t border-white/10 bg-slate-950/90 px-3 py-1.5 text-[10.5px] text-slate-300">
+                          <MapPin className="h-3 w-3 shrink-0 text-emerald-400" />
+                          <span className="truncate" title={alert.address}>
+                            {alert.address ||
+                              "Đang cập nhật địa chỉ hiện trường"}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.button
+                        key="mini-map-collapsed"
+                        type="button"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        onClick={() => setIsMapOpen(true)}
+                        className="inline-flex items-center gap-2 self-end rounded-full border border-white/15 bg-slate-900/85 px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg backdrop-blur-md transition hover:bg-slate-800 hover:text-white"
+                      >
+                        <MapPin className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Bản đồ vị trí · Mở</span>
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* TẦNG 2: BẢNG BÓC TÁCH CHI TIẾT VẬT THỂ (DETECTIONS INSPECTOR - TỰ GIÃN NỞ FLEX-1) */}
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/10 bg-slate-900/85 p-3 shadow-2xl backdrop-blur-xl">
+                  <div className="flex items-center justify-between border-b border-white/[0.08] pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        VẬT THỂ BÓC TÁCH ({activeYoloDetections.length})
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsDetectionsModalOpen(true)}
+                        className="inline-flex items-center gap-1 rounded border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-emerald-300 transition hover:bg-white/[0.14] hover:text-white"
+                        title="Xem danh sách chi tiết dạng bảng"
+                      >
+                        <Maximize2 className="h-2.5 w-2.5" />
+                        Xem tất cả
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2.5">
+                  <div className="mt-2 flex-1 space-y-1.5 overflow-y-auto pr-1">
+                    {activeYoloDetections.length > 0 ? (
+                      activeYoloDetections.map((det, idx) => {
+                        const pct = Math.round(
+                          Math.max(0, Math.min(1, det.confidence)) * 100,
+                        );
+                        const modelTag =
+                          (det as { model_id?: string }).model_id ||
+                          "YOLO11-Waste";
+                        const isActive = highlightedDetectionIndex === idx;
+                        return (
+                          <div
+                            key={`${det.materialClass}-${idx}`}
+                            onMouseEnter={() =>
+                              setHighlightedDetectionIndex(idx)
+                            }
+                            onMouseLeave={() =>
+                              setHighlightedDetectionIndex(null)
+                            }
+                            className={`cursor-pointer rounded-lg border p-2 transition-all ${
+                              isActive
+                                ? "border-emerald-400/60 bg-emerald-500/15 shadow-sm"
+                                : "border-white/[0.06] bg-slate-950/60 hover:border-white/15 hover:bg-white/[0.05]"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex min-w-0 items-center gap-1.5">
+                                <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-400" />
+                                <span className="truncate text-xs font-semibold text-slate-200">
+                                  {det.materialClass}
+                                </span>
+                                <span className="shrink-0 rounded bg-white/[0.06] px-1 py-0.2 font-mono text-[9.5px] text-slate-400">
+                                  #{idx + 1} · {modelTag}
+                                </span>
+                              </div>
+
+                              <span className="shrink-0 font-mono text-xs font-semibold text-emerald-300">
+                                {pct}%
+                              </span>
+                            </div>
+
+                            {/* Thanh mini progress bar 2px */}
+                            <div className="mt-1.5 h-0.5 w-full overflow-hidden rounded-full bg-slate-800">
+                              <div
+                                className="h-full rounded-full bg-emerald-400 transition-all duration-300"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-center text-[11px] text-slate-500">
+                        Không có khung bóc tách vật thể trên ảnh này.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* TẦNG 3: THẺ CHỨNG THỰC DỮ LIỆU & HIỆU NĂNG AI (VISION PROVENANCE) */}
+                <div className="shrink-0 space-y-1.5 rounded-xl border border-white/[0.08] bg-slate-950/80 p-2.5 text-[11px] text-slate-400 shadow-xl backdrop-blur-xl">
+                  <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
+                    <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                    <span>✓ Live Camera Verified (Chống ảnh thư viện)</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10.5px]">
+                    <span className="text-slate-400">Mô hình:</span>
+                    <span className="font-mono text-slate-200">
+                      YOLO11 Multi-Model (General + Asian Waste)
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between font-mono text-[10.5px] text-slate-300">
+                    <span>Độ trễ suy luận: ~35ms</span>
+                    <span>·</span>
+                    <span className="text-emerald-300/90">Sai số GPS: ±5m</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* -------------------------------------------------------------
+                DẢI THÔNG TIN DƯỚI ĐÁY ẢNH (THẲNG HÀNG DƯỚI CHÂN ẢNH, KHÔNG BỊ ĐÈ)
+            ------------------------------------------------------------- */}
+            <div className="relative z-20 flex w-full flex-wrap items-center justify-start gap-1.5 rounded-xl border border-white/15 bg-slate-900/90 px-3 py-2 shadow-xl backdrop-blur-xl">
+              <span className="mr-1 text-[10.5px] font-bold uppercase tracking-wider text-emerald-400">
+                AI Phát hiện:
+              </span>
+              {yoloDetectionGroups.length > 0 ? (
+                yoloDetectionGroups.map(([material, count]) => (
+                  <span
+                    key={material}
+                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-medium text-slate-200"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    {material} ({count})
+                  </span>
+                ))
+              ) : (
+                <span className="text-[11px] text-slate-400">
+                  Đang tổng hợp vật liệu...
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                KL: {massEstimateText}
+              </span>
+            </div>
+          </div>
+
+          {/* =================================================================
+              PHÂN VÙNG PHẢI: BẢNG KIỂM ĐỊNH & ĐIỀU PHỐI (INSPECTOR CONSOLE)
+          ================================================================= */}
+          <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 p-5 text-slate-100 shadow-2xl backdrop-blur-xl lg:col-span-4">
+            {/* -------------------------------------------------------------
+                PHẦN ĐẦU (Header & Stepper)
+            ------------------------------------------------------------- */}
+            <div className="space-y-3 border-b border-white/[0.08] pb-3.5">
+              {/* Huy hiệu mức độ nghiêm trọng và trạng thái hồ sơ */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      displaySeverity === "critical" || displaySeverity === "high"
+                        ? "border border-rose-500/30 bg-rose-500/15 text-rose-300"
+                        : displaySeverity === "medium"
+                          ? "border border-amber-500/30 bg-amber-500/15 text-amber-300"
+                          : "border border-emerald-500/30 bg-emerald-500/15 text-emerald-300"
+                    }`}
+                  >
+                    Mức: {getIncidentSeverityLabel(displaySeverity, language)}
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-xs font-medium text-slate-200">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        normalizedAlertStatus === "resolved" ||
+                        normalizedAlertStatus === "closed"
+                          ? "bg-emerald-400"
+                          : normalizedAlertStatus === "in_progress" ||
+                              normalizedAlertStatus === "assigned"
+                            ? "animate-pulse bg-cyan-400"
+                            : "bg-amber-400"
+                      }`}
+                    />
+                    {getIncidentStatusLabel(alert.status, language)}
+                  </span>
+                </div>
+
+                <span className="flex items-center gap-1 font-mono text-[11px] text-slate-400">
+                  <Clock className="h-3 w-3" />
+                  {format(new Date(alert.createdAt), "dd/MM/yyyy HH:mm")}
+                </span>
+              </div>
+
+              {/* Thanh tiến trình 4 bước Apple Segmented Pill */}
+              <div className="grid grid-cols-4 gap-1 rounded-xl border border-white/10 bg-slate-950/70 p-1 text-[11px]">
+                {segmentedSteps.map((step) => {
+                  const isCurrent = step.index === activeStepIndex;
+                  const isPassed = step.index < activeStepIndex;
+                  return (
+                    <div
+                      key={step.index}
+                      className={`flex items-center justify-center gap-1 rounded-lg py-1.5 text-center transition-all ${
+                        isCurrent
+                          ? "bg-emerald-500 font-bold text-slate-950 shadow-md shadow-emerald-500/20"
+                          : isPassed
+                            ? "font-medium text-emerald-400"
+                            : "font-normal text-slate-400"
+                      }`}
+                    >
+                      {isPassed && <span className="text-[10px]">✓</span>}
+                      <span className="truncate">{step.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* -------------------------------------------------------------
+                PHẦN THÂN (Thông tin tinh gọn, không box-in-box)
+            ------------------------------------------------------------- */}
+            <div className="my-2 flex-1 space-y-3.5 overflow-y-auto pr-1">
+              {/* 1. Mô tả của người dân (Trích dẫn thanh lịch) */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <Quote className="h-3 w-3 text-emerald-400" />
+                  <span>Ý kiến / Mô tả người dân</span>
+                </div>
+                <div className="rounded-xl border-l-2 border-emerald-500/70 bg-white/[0.02] py-1.5 pl-3 pr-2">
+                  <p className="line-clamp-4 text-xs italic leading-relaxed text-slate-200 sm:text-sm">
+                    "{alert.description || "Người dân không để lại mô tả chi tiết."}"
+                  </p>
+                </div>
+              </div>
+
+              {/* 2. Khối Giám định AI */}
+              <div className="space-y-2 rounded-xl border border-white/[0.06] bg-slate-950/50 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Giám định AI Vision</span>
+                  </div>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    {activeYoloDetections.length} vùng nhận diện
+                  </span>
+                </div>
+
+                <div className="flex items-baseline justify-between pt-0.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-mono text-3xl font-extrabold tracking-tight text-emerald-400">
+                      {aiConfidenceText}
+                    </span>
+                    <span className="text-[11px] text-slate-400">Độ tin cậy</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-mono text-xs font-semibold text-amber-300">
+                      {massEstimateText}
+                    </span>
+                    <div className="text-[10px] text-slate-400">Khối lượng ước tính</div>
+                  </div>
+                </div>
+
+                <p className="line-clamp-3 text-xs leading-relaxed text-slate-300">
+                  {analysis?.overallSummary ||
+                    alert.aiSummary ||
+                    "AI đã phân tích dữ liệu hình ảnh, khoanh vùng rác thải và xác nhận tọa độ hiện trường."}
+                </p>
+              </div>
+
+              {/* 3. Khối Cán bộ phụ trách & Timeline hiện trường */}
+              <div className="space-y-2.5 rounded-xl border border-white/[0.06] bg-slate-950/50 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Lực lượng phụ trách
+                  </span>
+                  {canAdminAssign && (
+                    <span className="text-[10.5px] font-medium text-emerald-400">
+                      {selectedAvailability?.shiftStatus === "ON_SHIFT"
+                        ? "Trong ca trực"
+                        : "Ngoài ca trực"}
+                    </span>
+                  )}
+                </div>
+
+                {/* Profile Cán bộ */}
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/20 text-xs font-bold text-emerald-300">
+                    {assignedOfficer?.fullName
+                      ? assignedOfficer.fullName.slice(0, 1).toUpperCase()
+                      : "CB"}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-semibold text-white sm:text-sm">
+                      {assignedOfficerLabel}
+                    </div>
+                    <div className="truncate text-[11px] text-slate-400">
+                      {assginedEmailLabel}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dropdown đổi cán bộ nhận lệnh nếu cần phân công */}
+                {canAdminAssign && (
+                  <div className="space-y-1.5 border-t border-white/[0.06] pt-1">
+                    <label
+                      htmlFor="inspector-select-officer"
+                      className="block text-[11px] font-medium text-slate-300"
+                    >
+                      Chọn Cán bộ nhận lệnh:
+                    </label>
+                    <select
+                      id="inspector-select-officer"
+                      value={selectedOfficerId}
+                      onChange={(e) => setSelectedOfficerId(e.target.value)}
+                      className="h-8 w-full rounded-lg border border-white/15 bg-slate-900 px-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                    >
+                      <option value="">-- Chọn Cán bộ phụ trách --</option>
+                      {availability.map((item) => (
+                        <option key={item.officer._id} value={item.officer._id}>
+                          {item.officer.fullName} ·{" "}
+                          {item.shiftStatus === "ON_SHIFT" ? "Trong ca" : "Ngoài ca"}{" "}
+                          · {item.activeTaskCount} việc
+                        </option>
+                      ))}
+                    </select>
+
+                    {assignmentWarning && (
+                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-1.5 text-[10.5px] text-amber-200">
+                        {assignmentWarning}
+                        <label className="mt-1 flex cursor-pointer items-center gap-1.5 text-[10px]">
+                          <input
+                            type="checkbox"
+                            checked={assignmentOverride}
+                            onChange={(e) => setAssignmentOverride(e.target.checked)}
+                            className="rounded border-white/20"
+                          />
+                          <span>Xác nhận điều phối ngoại lệ</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Lý do điều phối (tùy chọn)..."
+                          value={assignmentReason}
+                          onChange={(e) => setAssignmentReason(e.target.value)}
+                          className="mt-1.5 h-7 w-full rounded border border-white/10 bg-slate-950 px-2 text-[10.5px] text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Timeline 3 mốc Check-in GPS rõ ràng */}
+                <div className="space-y-1.5 border-t border-white/[0.06] pt-2 text-xs">
+                  <div className="flex items-center gap-2">
                     <CheckCircle2
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${
+                      className={`h-3.5 w-3.5 shrink-0 ${
+                        alert.assignedAt ? "text-emerald-400" : "text-slate-600"
+                      }`}
+                    />
+                    <div className="flex min-w-0 flex-1 items-baseline justify-between">
+                      <span className="font-medium text-slate-200">1. Phân công</span>
+                      <span className="font-mono text-[10.5px] text-slate-400">
+                        {alert.assignedAt
+                          ? formatTimestamp(alert.assignedAt, language)
+                          : "--:--"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2
+                      className={`h-3.5 w-3.5 shrink-0 ${
                         alert.arrivedAt || alert.checkIn?.verified
                           ? "text-emerald-400"
                           : "text-slate-600"
                       }`}
                     />
-                    <div>
-                      <p className="font-semibold text-slate-200">
-                        Check-in GPS
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {formatTimestamp(
-                          alert.checkIn?.checkedInAt || alert.arrivedAt,
-                          language,
-                        )}
-                      </p>
+                    <div className="flex min-w-0 flex-1 items-baseline justify-between">
+                      <span className="font-medium text-slate-200">
+                        2. Check-in hiện trường
+                      </span>
+                      <span className="font-mono text-[10.5px] text-slate-400">
+                        {alert.checkIn?.checkedInAt || alert.arrivedAt
+                          ? formatTimestamp(
+                              alert.checkIn?.checkedInAt || alert.arrivedAt,
+                              language,
+                            )
+                          : "--:--"}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2.5">
+                  <div className="flex items-center gap-2">
                     <CheckCircle2
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${
+                      className={`h-3.5 w-3.5 shrink-0 ${
                         alert.resolvedAt || resolutionEvidence.length > 0
                           ? "text-emerald-400"
                           : "text-slate-600"
                       }`}
                     />
-                    <div>
-                      <p className="font-semibold text-slate-200">
-                        Ảnh nghiệm thu
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {formatTimestamp(alert.resolvedAt, language)}
-                      </p>
+                    <div className="flex min-w-0 flex-1 items-baseline justify-between">
+                      <span className="font-medium text-slate-200">3. Nghiệm thu</span>
+                      <span className="font-mono text-[10.5px] text-slate-400">
+                        {alert.resolvedAt
+                          ? formatTimestamp(alert.resolvedAt, language)
+                          : "--:--"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Nếu đã có ảnh sau xử lý: hiển thị ảnh đối chiếu Trước/Sau ngay tại đây */}
+                {/* Mini đối chiếu Trước / Sau nếu đã có ảnh sau xử lý */}
                 {resolutionEvidence.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 pt-2">
+                  <div className="grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-1">
                     {originalEvidence[0] && (
                       <a
                         href={originalEvidence[0]}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="relative aspect-video overflow-hidden rounded-lg bg-slate-950"
+                        className="relative aspect-video overflow-hidden rounded-lg border border-white/10 bg-slate-950"
                       >
                         <img
                           src={originalEvidence[0]}
                           alt="Trước xử lý"
                           className="h-full w-full object-cover"
                         />
-                        <span className="absolute bottom-1 left-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-rose-300">
+                        <span className="absolute bottom-1 left-1 rounded bg-black/80 px-1 text-[9px] font-bold text-rose-300">
                           Trước
                         </span>
                       </a>
@@ -1270,316 +1633,122 @@ export default function OfficerReportDetail() {
                       href={resolutionEvidence[0].url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="relative aspect-video overflow-hidden rounded-lg bg-slate-950"
+                      className="relative aspect-video overflow-hidden rounded-lg border border-white/10 bg-slate-950"
                     >
                       <img
                         src={resolutionEvidence[0].url}
                         alt="Sau xử lý"
                         className="h-full w-full object-cover"
                       />
-                      <span className="absolute bottom-1 left-1 rounded bg-black/75 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300">
+                      <span className="absolute bottom-1 left-1 rounded bg-black/80 px-1 text-[9px] font-bold text-emerald-300">
                         Sau
                       </span>
                     </a>
                   </div>
                 )}
               </div>
-            </motion.div>
-          </div>
-
-          {/* -------------------------------------------------------------------
-              THANH QUYẾT ĐỊNH DƯỚI ĐÁY (04 · FLOATING ACTION DOCK - STAGGER INDEX 4)
-          ------------------------------------------------------------------- */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={getStaggerTransition(4)}
-            className="space-y-4 rounded-2xl border border-emerald-500/30 bg-slate-900/90 p-4 text-slate-100 shadow-2xl backdrop-blur-xl"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* Bên trái: Trạng thái câu lệnh cần làm */}
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="rounded-md bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                  04 · HÀNH ĐỘNG TIẾP THEO
-                </span>
-
-                {canAdminVerify && (
-                  <p className="text-slate-200">
-                    <strong className="text-white">
-                      Bước tiếp theo: Xác minh báo cáo
-                    </strong>{" "}
-                    · Kiểm tra ảnh AI Vision và vị trí trước khi chuyển sang
-                    điều phối.
-                  </p>
-                )}
-
-                {canAdminAssign && (
-                  <p className="text-slate-200">
-                    <strong className="text-white">
-                      Đề xuất điều phối tối ưu (OSRM):
-                    </strong>{" "}
-                    {selectedAvailability?.officer.fullName ||
-                      recommendedCandidate?.officer.fullName ||
-                      "Chọn cán bộ phụ trách"}{" "}
-                    ·{" "}
-                    <span className="text-emerald-400">
-                      {selectedAvailability?.shiftStatus === "ON_SHIFT"
-                        ? "Đang rảnh / Trong ca"
-                        : "Sẵn sàng nhận lệnh"}
-                    </span>
-                  </p>
-                )}
-
-                {["assigned", "in_progress"].includes(
-                  normalizedAlertStatus,
-                ) && (
-                  <p className="text-slate-200">
-                    <strong className="text-white">
-                      Đang xử lý tại hiện trường:
-                    </strong>{" "}
-                    Cán bộ <strong>{assignedOfficerLabel}</strong> đang thực
-                    hiện nhiệm vụ.
-                  </p>
-                )}
-
-                {normalizedAlertStatus === "resolved" && (
-                  <p className="text-slate-200">
-                    <strong className="text-white">
-                      Bước tiếp theo: Nghiệm thu & Đóng hồ sơ
-                    </strong>{" "}
-                    · Cán bộ đã gửi ảnh minh chứng hoàn thành.
-                  </p>
-                )}
-
-                {["closed", "rejected"].includes(normalizedAlertStatus) && (
-                  <p className="text-slate-300">
-                    Hồ sơ sự cố đã hoàn tất (
-                    <strong>
-                      {getIncidentStatusLabel(alert.status, language)}
-                    </strong>
-                    ).
-                  </p>
-                )}
-              </div>
-
-              {/* Bên phải: 1 nút phụ "Ghi chú / Tùy chọn nâng cao" + 1 Nút Hành Động Chính (Primary CTA) trên 1 dòng chữ ngang */}
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedDockPanel((prev) => !prev)}
-                  className="whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-                >
-                  {canAdminAssign
-                    ? "Đổi cán bộ / Ghi chú"
-                    : "Ghi chú / Tùy chọn nâng cao"}
-                </button>
-
-                {canAdminVerify && (
-                  <button
-                    type="button"
-                    onClick={() => void handleVerify()}
-                    className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
-                  >
-                    <ShieldCheck className="h-4 w-4" />
-                    <span>Xác minh & Tiếp nhận Báo cáo</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                )}
-
-                {canAdminAssign && (
-                  <button
-                    type="button"
-                    disabled={!selectedOfficerId || assignOfficer.isPending}
-                    onClick={() => setConfirmAction("assign")}
-                    className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:opacity-50"
-                  >
-                    <span>
-                      Giao việc cho{" "}
-                      {selectedAvailability?.officer.fullName || "Cán bộ"}
-                    </span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                )}
-
-                {normalizedAlertStatus === "resolved" && (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmAction("close")}
-                    className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>Phê duyệt Nghiệm thu & Đóng Sự cố</span>
-                  </button>
-                )}
-              </div>
             </div>
 
-            {/* Ngăn mở rộng của Floating Dock khi bấm "Ghi chú / Tùy chọn nâng cao" */}
-            <AnimatePresence>
-              {showAdvancedDockPanel && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden border-t border-white/[0.08] pt-4"
-                >
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Cột trái ngăn mở rộng: Chọn cán bộ khác / AssignmentPreview / Ghi chú nghiệm thu */}
-                    <div className="space-y-3">
-                      {canAdminAssign && (
-                        <>
-                          <AssignmentPreview id={id} />
-                          <div className="space-y-2 pt-2">
-                            <label
-                              htmlFor="assigned-officer"
-                              className="block text-xs font-semibold text-slate-300"
-                            >
-                              Đổi cán bộ nhận lệnh điều phối
-                            </label>
-                            <select
-                              id="assigned-officer"
-                              value={selectedOfficerId}
-                              onChange={(event) =>
-                                setSelectedOfficerId(event.target.value)
-                              }
-                              className="h-10 w-full rounded-xl border border-white/15 bg-slate-950 px-3 text-sm text-white"
-                            >
-                              <option value="">Chọn Cán bộ</option>
-                              {availability.map((item) => (
-                                <option
-                                  key={item.officer._id}
-                                  value={item.officer._id}
-                                >
-                                  {item.officer.fullName} ·{" "}
-                                  {item.shiftStatus === "ON_SHIFT"
-                                    ? "Trong ca"
-                                    : "Ngoài ca"}{" "}
-                                  · {item.activeTaskCount} nhiệm vụ
-                                </option>
-                              ))}
-                            </select>
-
-                            {assignmentWarning && (
-                              <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-200">
-                                {assignmentWarning}
-                              </p>
-                            )}
-
-                            <label className="flex items-start gap-2 text-xs text-slate-300">
-                              <input
-                                type="checkbox"
-                                checked={assignmentOverride}
-                                onChange={(e) =>
-                                  setAssignmentOverride(e.target.checked)
-                                }
-                              />
-                              Xác nhận điều phối ngoại lệ (ngoài ca hoặc khác
-                              khu vực).
-                            </label>
-
-                            <input
-                              type="text"
-                              placeholder="Lý do điều phối (tùy chọn)..."
-                              value={assignmentReason}
-                              onChange={(e) =>
-                                setAssignmentReason(e.target.value)
-                              }
-                              className="h-9 w-full rounded-xl border border-white/15 bg-slate-950 px-3 text-xs text-white"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {normalizedAlertStatus === "resolved" && (
-                        <div className="space-y-2">
-                          <label
-                            htmlFor="review-note"
-                            className="block text-xs font-semibold text-slate-300"
-                          >
-                            Ghi chú nghiệm thu của Admin
-                          </label>
-                          <textarea
-                            id="review-note"
-                            value={reviewNote}
-                            onChange={(event) =>
-                              setReviewNote(event.target.value)
-                            }
-                            maxLength={4000}
-                            placeholder="Nhập nhận xét nghiệm thu trước khi đóng sự cố..."
-                            className="min-h-20 w-full rounded-xl border border-white/15 bg-slate-950 p-3 text-sm text-white"
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Cột phải ngăn mở rộng: Ghi chú điều hành nội bộ & Nhật ký hệ thống */}
-                    <div className="space-y-3">
-                      <label className="block text-xs font-semibold text-slate-300">
-                        Ghi chú điều hành nội bộ
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={
-                            editingNote ? noteText : alert.officerNote || ""
-                          }
-                          onFocus={() => {
-                            if (!editingNote) {
-                              setNoteText(alert.officerNote || "");
-                              setEditingNote(true);
-                            }
-                          }}
-                          onChange={(e) => {
-                            setEditingNote(true);
-                            setNoteText(e.target.value);
-                          }}
-                          placeholder="Thêm ghi chú chỉ đạo cho hồ sơ này..."
-                          className="h-9 flex-1 rounded-xl border border-white/15 bg-slate-950 px-3 text-xs text-white"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={handleSaveNote}
-                          disabled={
-                            !noteText.trim() || addOfficerNote.isPending
-                          }
-                          className="whitespace-nowrap bg-emerald-600 text-white hover:bg-emerald-500"
-                        >
-                          Lưu ghi chú
-                        </Button>
-                      </div>
-
-                      <details className="group rounded-xl border border-white/10 bg-slate-950/60 p-3 text-xs">
-                        <summary className="flex cursor-pointer list-none items-center justify-between font-semibold text-slate-300">
-                          <span>
-                            Xem nhật ký hệ thống ({statusHistory.length} mốc)
-                          </span>
-                          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
-                        </summary>
-                        <div className="mt-3 max-h-48 space-y-2 overflow-y-auto border-t border-white/10 pt-3">
-                          {statusHistory.map((entry, idx) => (
-                            <div
-                              key={entry._id || idx}
-                              className="flex items-center justify-between text-[11px] text-slate-400"
-                            >
-                              <span>
-                                {entry.fromStatus || "khởi tạo"} ➔{" "}
-                                <strong className="text-slate-200">
-                                  {entry.toStatus}
-                                </strong>
-                              </span>
-                              <span>
-                                {formatTimestamp(entry.changedAt, language)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
-                    </div>
-                  </div>
-                </motion.div>
+            {/* -------------------------------------------------------------
+                PHẦN CHÂN (Cụm Hành Động Quyết Định)
+            ------------------------------------------------------------- */}
+            <div className="space-y-2 border-t border-white/[0.08] pt-3">
+              {/* Ô nhập ghi chú nghiệm thu nếu đã resolved */}
+              {normalizedAlertStatus === "resolved" && (
+                <input
+                  type="text"
+                  value={reviewNote}
+                  onChange={(e) => setReviewNote(e.target.value)}
+                  placeholder="Nhận xét nghiệm thu đóng báo cáo..."
+                  className="h-8 w-full rounded-xl border border-white/15 bg-slate-950 px-3 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                />
               )}
-            </AnimatePresence>
-          </motion.div>
+
+              {/* Ô nhập nhanh ghi chú điều hành */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={editingNote ? noteText : alert.officerNote || ""}
+                  onFocus={() => {
+                    if (!editingNote) {
+                      setNoteText(alert.officerNote || "");
+                      setEditingNote(true);
+                    }
+                  }}
+                  onChange={(e) => {
+                    setEditingNote(true);
+                    setNoteText(e.target.value);
+                  }}
+                  placeholder="Thêm ghi chú điều hành..."
+                  className="h-8 flex-1 rounded-xl border border-white/15 bg-slate-950 px-3 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveNote}
+                  disabled={!noteText.trim() || addOfficerNote.isPending}
+                  className="h-8 rounded-xl border border-white/10 bg-white/[0.06] px-3 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.12] hover:text-white disabled:opacity-50"
+                >
+                  Lưu
+                </button>
+              </div>
+
+              {/* Đúng 1 nút hành động chính (Primary CTA) màu xanh Emerald nổi bật */}
+              {canAdminVerify && (
+                <button
+                  type="button"
+                  onClick={() => void handleVerify()}
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-xs font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 sm:text-sm"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>Xác minh & Tiếp nhận Báo cáo</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
+
+              {canAdminAssign && (
+                <button
+                  type="button"
+                  disabled={!selectedOfficerId || assignOfficer.isPending}
+                  onClick={() => setConfirmAction("assign")}
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-xs font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:opacity-50 sm:text-sm"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  <span>
+                    Xác nhận Phân công cho{" "}
+                    {selectedAvailability?.officer.fullName || "Cán bộ"}
+                  </span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
+
+              {normalizedAlertStatus === "resolved" && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmAction("close")}
+                  className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-xs font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 sm:text-sm"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Phê duyệt Nghiệm thu Sự cố</span>
+                </button>
+              )}
+
+              {["assigned", "in_progress"].includes(normalizedAlertStatus) && (
+                <div className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/15 text-xs font-semibold text-cyan-300">
+                  <Clock className="h-3.5 w-3.5 animate-spin text-cyan-400" />
+                  <span>Cán bộ đang xử lý tại hiện trường</span>
+                </div>
+              )}
+
+              {["closed", "rejected"].includes(normalizedAlertStatus) && (
+                <div className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-xs font-semibold text-emerald-300">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>
+                    Sự cố đã hoàn tất ({getIncidentStatusLabel(alert.status, language)})
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       ) : (
         /* =====================================================================
@@ -2305,6 +2474,165 @@ export default function OfficerReportDetail() {
         </>
       )}
 
+      {/* =======================================================================
+          MODAL PHÓNG TO ỐNG KÍNH AI VISION TOÀN MÀN HÌNH
+      ======================================================================= */}
+      <AnimatePresence>
+        {isVisionModalOpen && originalEvidence[selectedYoloImageIndex] && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/85 p-4 backdrop-blur-md sm:p-6"
+          >
+            <div className="relative flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-slate-900/95 shadow-2xl">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="h-4 w-4 text-emerald-400" />
+                  <h3 className="text-sm font-bold text-white">
+                    Chi tiết Thẩm định AI Vision (YOLO Engine)
+                  </h3>
+                  <span className="rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 font-mono text-xs text-emerald-300">
+                    {activeYoloDetections.length} vùng nhận diện
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowYoloBoxes((prev) => !prev)}
+                    className="inline-flex items-center gap-1.5 text-xs text-slate-300 transition hover:text-white"
+                  >
+                    <span>Khung AI</span>
+                    <span
+                      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${
+                        showYoloBoxes ? "bg-emerald-500" : "bg-slate-700"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition-transform ${
+                          showYoloBoxes ? "translate-x-3.5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsVisionModalOpen(false)}
+                    className="rounded-lg p-1 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden p-4 lg:grid-cols-3">
+                {/* Big Image View with Bounding Boxes */}
+                <div className="relative flex items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-slate-950 p-2 lg:col-span-2">
+                  <img
+                    src={originalEvidence[selectedYoloImageIndex]}
+                    alt=""
+                    className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-20 blur-2xl"
+                  />
+                  <div className="relative z-10 inline-flex max-h-full max-w-full items-center justify-center">
+                    <img
+                      src={originalEvidence[selectedYoloImageIndex]}
+                      alt="AI Vision Full"
+                      className="max-h-[70vh] max-w-full rounded-lg object-contain"
+                      onLoad={(e) =>
+                        setYoloImageSize({
+                          width: e.currentTarget.naturalWidth,
+                          height: e.currentTarget.naturalHeight,
+                        })
+                      }
+                    />
+                    {showYoloBoxes && yoloImageSize && (
+                      <div className="pointer-events-none absolute inset-0">
+                        {activeYoloDetections.map((detection, index) => {
+                          const { left, top, width, height, isNearTopEdge } =
+                            computeClampedYoloBox(
+                              detection.bbox,
+                              yoloImageSize,
+                            );
+                          const confPct = Math.round(
+                            Math.max(0, Math.min(1, detection.confidence)) * 100,
+                          );
+                          return (
+                            <div
+                              key={index}
+                              className="absolute rounded border-[2px] border-emerald-400 bg-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+                              style={{
+                                left: `${left}%`,
+                                top: `${top}%`,
+                                width: `${width}%`,
+                                height: `${height}%`,
+                              }}
+                            >
+                              <span
+                                className={`absolute left-0 inline-flex items-center gap-1 rounded border border-emerald-400/40 bg-slate-950/90 px-1.5 py-0.5 text-[10.5px] font-bold text-emerald-300 shadow-md ${
+                                  isNearTopEdge ? "top-1" : "-top-6"
+                                }`}
+                              >
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                {detection.materialClass} · {confPct}%
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Detections List & Meta */}
+                <div className="flex flex-col justify-between overflow-hidden rounded-xl border border-white/10 bg-slate-950/60 p-4">
+                  <div className="space-y-3 overflow-y-auto">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      Danh sách phân loại ({activeYoloDetections.length})
+                    </h4>
+                    <div className="space-y-1.5">
+                      {activeYoloDetections.map((det, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.03] p-2 text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                            <span className="font-medium text-slate-200">
+                              {det.materialClass}
+                            </span>
+                          </div>
+                          <span className="font-mono font-semibold text-emerald-300">
+                            {Math.round(det.confidence * 100)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 border-t border-white/10 pt-3 text-xs">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Khối lượng ước tính:</span>
+                      <span className="font-semibold text-amber-300">
+                        {massEstimateText}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Danh mục đề xuất:</span>
+                      <span className="font-semibold text-slate-200">
+                        {analysis?.categorySuggestion || "Chưa xác định"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <ConfirmActionDialog
         open={confirmAction === "assign"}
         onOpenChange={(open) => !open && setConfirmAction(null)}
@@ -2362,6 +2690,200 @@ export default function OfficerReportDetail() {
         isPending={closeIncident.isPending}
         onConfirm={handleClose}
       />
+
+      {/* =======================================================================
+          MODAL PHÓNG TO CHI TIẾT BÓC TÁCH VẬT THỂ NHẬN DIỆN (YOLO DETECTIONS)
+      ======================================================================= */}
+      <Dialog
+        open={isDetectionsModalOpen}
+        onOpenChange={setIsDetectionsModalOpen}
+      >
+        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col border border-white/15 bg-slate-950 p-0 text-slate-100 shadow-2xl backdrop-blur-2xl">
+          {/* Header Modal */}
+          <DialogHeader className="border-b border-white/10 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center gap-2 text-base font-bold text-white">
+                  <Sparkles className="h-4 w-4 text-emerald-400" />
+                  BẢNG BÓC TÁCH CHI TIẾT VẬT THỂ NHẬN DIỆN (YOLO DETECTIONS)
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-xs text-slate-400">
+                  Ảnh #{selectedYoloImageIndex + 1} · Tổng cộng{" "}
+                  <span className="font-semibold text-emerald-400">
+                    {activeYoloDetections.length}
+                  </span>{" "}
+                  khung nhận diện · Mô hình:{" "}
+                  <span className="font-mono text-slate-300">
+                    YOLO11 Multi-Model (Waste Detection)
+                  </span>
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Bộ lọc nhanh (Filter Toolbar) */}
+          <div className="space-y-2.5 border-b border-white/10 bg-slate-900/70 px-6 py-3">
+            <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={detectionSearchQuery}
+                  onChange={(e) => setDetectionSearchQuery(e.target.value)}
+                  placeholder="Tìm theo tên vật thể hoặc #STT (vd: cardboard, #1)..."
+                  className="w-full rounded-lg border border-white/10 bg-slate-950/80 py-1.5 pr-8 pl-8 text-xs text-white placeholder-slate-500 transition focus:border-emerald-500 focus:outline-hidden"
+                />
+                {detectionSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setDetectionSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Tóm tắt số lượng */}
+              <div className="shrink-0 text-right text-[11px] text-slate-400">
+                Hiển thị{" "}
+                <span className="font-mono font-semibold text-emerald-400">
+                  {filteredDetections.length}
+                </span>{" "}
+                / {activeYoloDetections.length} vật thể
+              </div>
+            </div>
+
+            {/* Category Filter Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setDetectionFilterClass("all")}
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
+                  detectionFilterClass === "all"
+                    ? "bg-emerald-500 font-semibold text-slate-950"
+                    : "border border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]"
+                }`}
+              >
+                Tất cả ({activeYoloDetections.length})
+              </button>
+              {detectionCategories.map(([category, count]) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setDetectionFilterClass(category)}
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${
+                    detectionFilterClass.toLowerCase() ===
+                    category.toLowerCase()
+                      ? "bg-emerald-500 font-semibold text-slate-950"
+                      : "border border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]"
+                  }`}
+                >
+                  <span>{category}</span>
+                  <span className="rounded bg-black/30 px-1 py-0.2 font-mono text-[9.5px]">
+                    {count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Bảng dữ liệu cuộn (Scrollable Table) */}
+          <div className="flex-1 overflow-y-auto px-6 py-3">
+            {filteredDetections.length > 0 ? (
+              <table className="w-full border-collapse text-left text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="w-12 py-2.5 pr-2"># STT</th>
+                    <th className="py-2.5 px-3">Vật thể (Class)</th>
+                    <th className="py-2.5 px-3">
+                      Tọa độ Bounding Box [x1, y1, x2, y2]
+                    </th>
+                    <th className="w-44 py-2.5 px-3">Độ tin cậy</th>
+                    <th className="w-32 py-2.5 pl-3 text-right">Mô hình</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.06]">
+                  {filteredDetections.map((det) => {
+                    const pct = Math.round(
+                      Math.max(0, Math.min(1, det.confidence)) * 100,
+                    );
+                    const modelTag =
+                      (det as { model_id?: string }).model_id ||
+                      "YOLO11-Waste";
+                    const [x1 = 0, y1 = 0, x2 = 0, y2 = 0] = det.bbox ?? [];
+                    const isPixel = x1 > 1 || y1 > 1 || x2 > 1 || y2 > 1;
+                    const formattedBbox = isPixel
+                      ? `[${Math.round(x1)}, ${Math.round(y1)}, ${Math.round(x2)}, ${Math.round(y2)}] px`
+                      : `[${(x1 * 100).toFixed(1)}%, ${(y1 * 100).toFixed(1)}%, ${(x2 * 100).toFixed(1)}%, ${(y2 * 100).toFixed(1)}%]`;
+
+                    return (
+                      <tr
+                        key={`${det.materialClass}-${det.originalIndex}`}
+                        className="transition hover:bg-white/[0.04]"
+                      >
+                        <td className="py-2.5 pr-2 font-mono text-slate-400">
+                          #{det.originalIndex + 1}
+                        </td>
+                        <td className="py-2.5 px-3 font-semibold text-slate-100">
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            {det.materialClass}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-slate-300">
+                          {formattedBbox}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-800">
+                              <div
+                                className="h-full rounded-full bg-emerald-400 transition-all duration-300"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="w-9 text-right font-mono text-xs font-semibold text-emerald-300">
+                              {pct}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 pl-3 text-right">
+                          <span className="rounded border border-white/10 bg-white/[0.06] px-1.5 py-0.5 font-mono text-[10px] text-slate-300">
+                            {modelTag}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+                <Search className="mb-2 h-8 w-8 text-slate-600" />
+                <p className="text-sm font-medium">
+                  Không tìm thấy vật thể phù hợp.
+                </p>
+                <p className="text-xs text-slate-600">
+                  Thử thay đổi từ khóa hoặc bộ lọc danh mục.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Modal */}
+          <DialogFooter className="border-t border-white/10 bg-slate-950 px-6 py-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDetectionsModalOpen(false)}
+              className="border-white/15 bg-white/[0.06] text-xs text-slate-200 hover:bg-white/[0.12] hover:text-white"
+            >
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

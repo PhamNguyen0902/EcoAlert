@@ -40,3 +40,7 @@ Thumbs.db
 
 # Downloaded OpenStreetMap and prepared OSRM graphs (persistent, not source)
 /data/osrm/
+
+# AI / Agent tools & skills
+.agents/
+skills-lock.json
