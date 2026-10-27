@@ -871,8 +871,8 @@ const styles = StyleSheet.create({
   gpsText: { color: "#CBD5E1", fontSize: 11, flexShrink: 1 },
   gpsAction: { color: "#38BDF8", fontSize: 11, fontWeight: "700" },
   stageText: {
-    fontSize: 9,
-    lineHeight: 14,
+    fontSize: 11,
+    lineHeight: 16,
     color: "#38BDF8",
     fontWeight: "700",
   },
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 4,
   },
-  controlText: { color: "#CBD5E1", fontSize: 10, fontWeight: "700" },
+  controlText: { color: "#CBD5E1", fontSize: 11, fontWeight: "700" },
   thirdVertical: {
     position: "absolute",
     top: 0,

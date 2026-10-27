@@ -145,11 +145,11 @@ export default function AdminAiVision() {
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Độ tin cậy AI trung bình
               </p>
-              <p className="mt-2 text-2xl font-bold text-purple-500">
+              <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {stats.avgConfidence}%
               </p>
             </div>
-            <Sparkles className="h-8 w-8 text-purple-500/80" />
+            <Sparkles className="h-8 w-8 text-emerald-500/80" />
           </CardContent>
         </Card>
       </div>

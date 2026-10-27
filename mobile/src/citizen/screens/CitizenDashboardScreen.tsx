@@ -79,22 +79,24 @@ export const CitizenDashboardScreen: React.FC<
     [location.latitude, location.longitude],
   );
   const markerElements = useMemo(
-    () => markers.map(({ alert, coordinate, group }) => (
-      <Marker
-        key={alert._id}
-        coordinate={coordinate}
-        pinColor={INCIDENT_COLORS[group]}
-        title={alert.title}
-        tracksViewChanges={false}
-      />
-    )),
+    () =>
+      markers.map(({ alert, coordinate, group }) => (
+        <Marker
+          key={alert._id}
+          coordinate={coordinate}
+          pinColor={INCIDENT_COLORS[group]}
+          title={alert.title}
+          tracksViewChanges={false}
+        />
+      )),
     [markers],
   );
   const recent = useMemo(
-    () => ownReports.data?.pages
-      .flatMap((page) => page.items)
-      .filter((alert) => !alert.isDeleted)
-      .slice(0, 3) ?? [],
+    () =>
+      ownReports.data?.pages
+        .flatMap((page) => page.items)
+        .filter((alert) => !alert.isDeleted)
+        .slice(0, 3) ?? [],
     [ownReports.data],
   );
   const parent = () =>
@@ -383,6 +385,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  utilityText: { textAlign: "center" },
+  utilityText: { textAlign: "center", fontSize: 12, fontWeight: "600" },
   empty: { gap: 14, alignItems: "center" },
 });

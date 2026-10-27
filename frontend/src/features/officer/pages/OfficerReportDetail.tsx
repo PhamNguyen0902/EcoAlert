@@ -1427,7 +1427,7 @@ export default function OfficerReportDetail() {
                   <Quote className="h-3 w-3 text-emerald-400" />
                   <span>Ý kiến / Mô tả người dân</span>
                 </div>
-                <div className="rounded-xl border-l-2 border-emerald-500/70 bg-white/[0.02] py-1.5 pl-3 pr-2">
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-2.5">
                   <p className="line-clamp-4 text-xs italic leading-relaxed text-slate-200 sm:text-sm">
                     "{alert.description || "Người dân không để lại mô tả chi tiết."}"
                   </p>

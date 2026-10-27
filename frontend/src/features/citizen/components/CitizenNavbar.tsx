@@ -44,7 +44,7 @@ export default function CitizenNavbar() {
               <div className="bg-green-500/10 p-2 rounded-xl group-hover:bg-green-500/20 transition-colors">
                 <Leaf className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-500 dark:from-green-400 dark:to-emerald-300">
+              <span className="font-bold text-xl tracking-tight text-emerald-600 dark:text-emerald-400">
                 EcoAlert
               </span>
             </Link>
