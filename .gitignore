@@ -43,4 +43,6 @@ Thumbs.db
 
 # AI / Agent tools & skills
 .agents/
+.agent/
+docs
 skills-lock.json
