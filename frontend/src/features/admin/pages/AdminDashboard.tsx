@@ -602,26 +602,26 @@ export default function AdminDashboard() {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               {METRIC_CONFIGS.sla.title}
             </span>
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400">
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
               <Zap className="h-3.5 w-3.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
             <span
               ref={slaRateCountRef}
-              className="text-3xl font-mono tabular-nums font-bold tracking-tight text-purple-400"
+              className="text-3xl font-mono tabular-nums font-bold tracking-tight text-emerald-400"
             >
               {counts.slaRate}%
             </span>
-            <span className="text-xs text-purple-400/80 font-medium">đạt chuẩn</span>
+            <span className="text-xs text-emerald-400/80 font-medium">đạt chuẩn</span>
           </div>
           <p className="mt-1 text-[12px] text-slate-400 leading-snug line-clamp-1">
             {METRIC_CONFIGS.sla.subtitle}
           </p>
           {/* Ultra-thin 2px progress bar at the bottom */}
-          <div className="mt-2.5 h-[2px] w-full rounded-full bg-purple-950/60 overflow-hidden">
+          <div className="mt-2.5 h-[2px] w-full rounded-full bg-emerald-950/60 overflow-hidden">
             <div
-              className="h-full rounded-full bg-purple-400 transition-[width] duration-700 ease-out"
+              className="h-full rounded-full bg-emerald-400 transition-[width] duration-700 ease-out"
               style={{ width: `${Math.min(100, counts.slaRate)}%` }}
             />
           </div>

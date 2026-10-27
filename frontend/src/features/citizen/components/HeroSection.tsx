@@ -87,7 +87,7 @@
               variants={itemVariants}
               className="text-4xl sm:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6 leading-tight whitespace-nowrap"
             >
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-teal-500 ">
+              <span className="text-emerald-600 dark:text-emerald-400 mr-2">
                 {t("hero.protecting")}
               </span>
               {t("hero.our_environment")}

@@ -301,9 +301,9 @@ export default function AdminSettings() {
                   <span className="text-xs font-semibold uppercase text-muted-foreground">
                     Tiêu chuẩn Ảnh Nghiệm thu
                   </span>
-                  <ShieldCheck className="h-4 w-4 text-purple-500" />
+                  <ShieldCheck className="h-4 w-4 text-emerald-500" />
                 </div>
-                <p className="mt-2 font-mono text-2xl font-bold text-purple-500">
+                <p className="mt-2 font-mono text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                   Khung 3:4 · Ghost 35%
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">

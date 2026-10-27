@@ -39,14 +39,14 @@ import {
 } from "../../shared/hooks/useForegroundScreen";
 import { useCivicTheme } from "../../shared/theme/useCivicTheme";
 import { getOfficerRoute } from "../api/officerRouting";
-import {
-  OfficerHeader,
-  officerStyles as s,
-} from "../components/OfficerUI";
+import { OfficerHeader, officerStyles as s } from "../components/OfficerUI";
 import { OfficerTaskCard } from "../components/OfficerTaskCard";
 import { OfficerTaskFilters } from "../components/OfficerTaskFilters";
 import { Button } from "../../shared/components/ui/Button";
-import { getGeoJsonMapCoordinates, openGoogleMaps } from "../../shared/utils/maps";
+import {
+  getGeoJsonMapCoordinates,
+  openGoogleMaps,
+} from "../../shared/utils/maps";
 import {
   filterOfficerTasks,
   getOfficerTaskState,
@@ -386,33 +386,6 @@ export function OfficerOperationalMap() {
           pointerEvents="box-none"
           style={{ position: "absolute", top: 12, left: 12, right: 12, gap: 8 }}
         >
-          <View
-            pointerEvents="box-none"
-            style={[
-              s.row,
-              {
-                borderRadius: 14,
-                backgroundColor: colors.surface,
-                paddingHorizontal: 12,
-              },
-            ]}
-          >
-            {/* <Search pointerEvents="none" color={colors.cyan} size={17} />
-            <TextInput
-              accessibilityLabel="Tìm nhiệm vụ trên bản đồ"
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Tìm trong các nhiệm vụ của bạn"
-              placeholderTextColor={colors.textMuted}
-              style={{
-                flex: 1,
-                minHeight: 46,
-                color: colors.text,
-                fontSize: 12,
-              }}
-              clearButtonMode="while-editing"
-            /> */}
-          </View>
           {/* Bound the horizontal ScrollView: its default flex must not form
               a full-height touch surface above the native map on iOS. */}
           <View pointerEvents="box-none" style={{ height: 44 }}>
@@ -433,7 +406,7 @@ export function OfficerOperationalMap() {
             flexWrap: "wrap",
             maxWidth: "90%",
             justifyContent: "flex-end",
-            gap: 6,
+            gap: 8,
           }}
         >
           {controls.map(
@@ -443,6 +416,7 @@ export function OfficerOperationalMap() {
                 accessibilityRole="button"
                 accessibilityLabel={label}
                 accessibilityState={{ selected: activeControl === true }}
+                hitSlop={6}
                 onPress={() => void press()}
                 style={{
                   width: 44,
@@ -585,7 +559,8 @@ export function OfficerOperationalMap() {
               </View>
             </View>
             <Text style={[s.meta, { color: colors.textMuted }]}>
-              OSRM nội bộ · TP.HCM và vùng đệm 10 km. Google Maps chỉ đường xe máy trực tiếp khi bạn chọn nút trên.
+              OSRM nội bộ · TP.HCM và vùng đệm 10 km. Google Maps chỉ đường xe
+              máy trực tiếp khi bạn chọn nút trên.
             </Text>
           </>
         )}

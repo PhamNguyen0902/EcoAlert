@@ -122,10 +122,10 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
   const task = query.data;
   const allowed = Boolean(
     task &&
-      ownsOfficerTask(task, profile) &&
-      isWasteOfficerTask(task) &&
-      task.status.toUpperCase() === "IN_PROGRESS" &&
-      task.checkIn?.verified === true,
+    ownsOfficerTask(task, profile) &&
+    isWasteOfficerTask(task) &&
+    task.status.toUpperCase() === "IN_PROGRESS" &&
+    task.checkIn?.verified === true,
   );
 
   const incidentCoords = getGeoJsonMapCoordinates(task?.location?.coordinates);
@@ -230,8 +230,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
       return <CheckCircle2 size={20} color={colors.primary} />;
     if (status === "WARNING")
       return <AlertTriangle size={20} color={colors.warning} />;
-    if (status === "FAILED")
-      return <XCircle size={20} color={colors.danger} />;
+    if (status === "FAILED") return <XCircle size={20} color={colors.danger} />;
     return <Clock3 size={20} color={colors.cyan} />;
   };
 
@@ -256,9 +255,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
         disabled={submitting}
       />
       <OfficerStepProgressBar
-        task={
-          submitted ? { status: "RESOLVED", checkIn: task?.checkIn } : task
-        }
+        task={submitted ? { status: "RESOLVED", checkIn: task?.checkIn } : task}
         step={3}
       />
       <ScrollView
@@ -294,13 +291,7 @@ export const OfficerResolutionScreen: React.FC<Props> = ({
         <Card appearance="civic" style={styles.card}>
           <View style={s.row}>
             <ShieldCheck size={20} color={colors.primary} />
-            <Text
-              style={[
-                civicType.section,
-                s.grow,
-                { color: colors.text },
-              ]}
-            >
+            <Text style={[civicType.section, s.grow, { color: colors.text }]}>
               Danh sách kiểm tra nghiệm thu tự động
             </Text>
           </View>
@@ -596,8 +587,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   angleToggleBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 8,
     borderWidth: 1,
   },
