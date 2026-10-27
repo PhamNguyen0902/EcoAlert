@@ -10,7 +10,7 @@ export async function normalizeFieldCaptureImage(uri: string) {
     image = await context.renderAsync();
     const result = await image.saveAsync({
       format: SaveFormat.JPEG,
-      compress: 1,
+      compress: 0.75,
     });
     if (
       !result.uri ||

@@ -1,3 +1,4 @@
+import * as ImagePicker from "expo-image-picker";
 import {
   civicSpace as space,
   civicRadius as radius,
@@ -109,6 +110,24 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [captureError, setCaptureError] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const shutterScale = useRef(new Animated.Value(1)).current;
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapTimeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSecretTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimeRef.current) clearTimeout(tapTimeRef.current);
+
+    if (tapCountRef.current >= 3) {
+      tapCountRef.current = 0;
+      setIsDemoMode((prev) => !prev); // đảo ngược trạng thái bật/ tắt demo
+      return;
+    }
+    //nếu quá 1s không chạm tiếp thì reset bộ đếm về 0
+    tapTimeRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 1000);
+  };
 
   // hiệu ứng hoạt họa thu nhỏ nút chụp khi người dùng bấm
   const pressShutter = (pressed: boolean) =>
@@ -132,33 +151,38 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
     draft.capture?.originalLocalUri ||
     activePhotos[activePhotos.length - 1]?.originalLocalUri;
 
-  const refreshGps = useCallback((): Promise<FieldReportLocationDraft | null> => {
-    if (gpsRequest.current) return gpsRequest.current;
-    const request = (async () => {
-      const result = await gps.fetchLocation({
-        timeoutMs: 15_000,
-        deferAddress: true,
+  const refreshGps =
+    useCallback((): Promise<FieldReportLocationDraft | null> => {
+      if (gpsRequest.current) return gpsRequest.current;
+      const request = (async () => {
+        const result = await gps.fetchLocation({
+          timeoutMs: 15_000,
+          deferAddress: true,
+        });
+        if (
+          !result?.coords ||
+          result.accuracyMeters === null ||
+          !mountedRef.current
+        )
+          return null;
+        const updated: FieldReportLocationDraft = {
+          latitude: result.coords.coordinates[1],
+          longitude: result.coords.coordinates[0],
+          accuracyMeters: result.accuracyMeters,
+          address: result.address,
+          capturedAt: result.capturedAt,
+          source: "DEVICE_GPS",
+        };
+        setDraft((current) => ({ ...current, location: updated }));
+        // Capture callbacks read the returned fix, never wait for a React render.
+        draftRef.current = { ...draftRef.current, location: updated };
+        return updated;
+      })().finally(() => {
+        gpsRequest.current = null;
       });
-      if (!result?.coords || result.accuracyMeters === null || !mountedRef.current)
-        return null;
-      const updated: FieldReportLocationDraft = {
-        latitude: result.coords.coordinates[1],
-        longitude: result.coords.coordinates[0],
-        accuracyMeters: result.accuracyMeters,
-        address: result.address,
-        capturedAt: result.capturedAt,
-        source: "DEVICE_GPS",
-      };
-      setDraft((current) => ({ ...current, location: updated }));
-      // Capture callbacks read the returned fix, never wait for a React render.
-      draftRef.current = { ...draftRef.current, location: updated };
-      return updated;
-    })().finally(() => {
-      gpsRequest.current = null;
-    });
-    gpsRequest.current = request;
-    return request;
-  }, [gps.fetchLocation, setDraft]);
+      gpsRequest.current = request;
+      return request;
+    }, [gps.fetchLocation, setDraft]);
 
   // Tiến trình ngầm (Background Location Sync) tinh chỉnh tọa độ cho ảnh vừa chụp tức thì
   const syncLocationInBackground = useCallback(
@@ -284,6 +308,62 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
     if (locationAge > MAX_LOCATION_AGE_MS)
       setDraft((current) => ({ ...current, location: undefined }));
     navigation.navigate("ReportLocation");
+  };
+  //cho phép chọn ảnh ở thư viện
+  const PickDemoPicture = async () => {
+    if (capturing) return;
+    setCaptureError(null);
+    setCaptureErrorCode(null);
+    // mở thư viện ảnh để lựa chọn ảnh rác
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.9,
+    });
+    if (pickerResult.canceled || !pickerResult.assets?.[0]?.uri) return;
+    try {
+      setCapturing(true);
+      const pickedUri = pickerResult.assets[0].uri;
+      const capturedAt = new Date().toISOString();
+      const draftId = draftRef.current.id;
+      if (!draftId) {
+        throw new Error("Draft id is missing while saving demo photo.");
+      }
+      // 2. Lấy GPS hiện tại ngay tại điểm đứng demo (hoặc gọi refreshGps nếu chưa có)
+      setCaptureStage("GPS");
+      const currentLocation = draftRef.current.location || (await refreshGps());
+      // 3. Đưa ảnh qua đúng quy trình chuẩn hóa & lưu trữ y hệt ảnh chụp từ Camera
+      setCaptureStage("NORMALIZE");
+      const normalized = await normalizeFieldCaptureImage(pickedUri);
+      setCaptureStage("PERSIST");
+      const originalLocalUri = await persistOriginalFieldImage(
+        normalized.uri,
+        capturedAt,
+      );
+      const photo: FieldReportCaptureDraft = {
+        id: `photo_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+        originalLocalUri,
+        capturedAt,
+        location: currentLocation || undefined,
+        width: normalized.width,
+        height: normalized.height,
+        uploadState: "IDLE",
+        visionState: "IDLE",
+        detections: [],
+      };
+      // 4. Lưu vào bản nháp và đồng bộ GPS ngầm tại phòng bảo vệ
+      setCaptureStage("DRAFT");
+      await saveDraftNow((current) => addPhoto(current, photo));
+      if (photo.id) {
+        syncLocationInBackground(photo.id, draftId);
+      }
+      // 5. Chuyển sang màn hình Review & Phân tích AI như bình thường
+      setCaptureStage("NAVIGATION");
+      navigation.navigate("ReportPhotoReview");
+    } catch (error) {
+      setCaptureError("Không thể tải ảnh demo. Vui lòng thử lại.");
+    } finally {
+      setCapturing(false);
+    }
   };
 
   // Chụp ảnh tức thì (Instant Shutter) và đồng bộ GPS ngầm không chặn nút bấm
@@ -451,17 +531,18 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.stageRow}>
           <Text style={styles.stageText}>CHỤP BAO QUÁT ĐIỂM RÁC</Text>
-          <View style={styles.liveChip}>
+          <TouchableOpacity onPress={handleSecretTap} style={styles.liveChip}>
             <View
               style={[
                 styles.liveDot,
                 !cameraReady && { backgroundColor: "#38BDF8" },
+                isDemoMode && { backgroundColor: "#A855F7" },
               ]}
             />
             <Text style={styles.liveText}>
               {cameraReady ? "LIVE SENSOR" : "SẴN SÀNG CHỤP"}
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.gpsRow}>
@@ -517,10 +598,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
               ]}
             />
           ) : (
-            <View
-              pointerEvents="none"
-              style={styles.ambientGlowBackdrop}
-            />
+            <View pointerEvents="none" style={styles.ambientGlowBackdrop} />
           )}
 
           <View style={[styles.previewFrame, { width: previewWidth }]}>
@@ -670,13 +748,14 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         ) : null}
         {preparedPhoto && !capturing ? (
           <TouchableOpacity
-            onPress={() => void takePicture()}
+            onPress={() =>
+              void (isDemoMode ? PickDemoPicture() : takePicture())
+            }
+            onPressIn={() => pressShutter(true)}
             accessibilityRole="button"
           >
             <Text style={styles.gpsAction}>
-              {captureErrorCode === "DRAFT"
-                ? "LƯU LẠI ẢNH"
-                : "XEM ẢNH ĐÃ CHỤP"}
+              {captureErrorCode === "DRAFT" ? "LƯU LẠI ẢNH" : "XEM ẢNH ĐÃ CHỤP"}
             </Text>
           </TouchableOpacity>
         ) : null}
@@ -713,17 +792,13 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           {/* Nút chụp tức thì (Instant Shutter) luôn sẵn sàng 100%, không bị khóa bởi GPS */}
           <Animated.View style={{ transform: [{ scale: shutterScale }] }}>
             <TouchableOpacity
-              onPress={() => void takePicture()}
+              onPress={() =>
+                void (isDemoMode ? PickDemoPicture() : takePicture())
+              }
               onPressIn={() => pressShutter(true)}
               onPressOut={() => pressShutter(false)}
               disabled={capturing}
               style={styles.shutterOuter}
-              accessibilityRole="button"
-              accessibilityLabel="Chụp ảnh hiện trường tức thì"
-              accessibilityState={{
-                disabled: capturing,
-                busy: capturing,
-              }}
             >
               <View style={styles.shutterMiddle}>
                 <View style={styles.shutterInner}>
@@ -886,7 +961,12 @@ const styles = StyleSheet.create({
     gap: space.sm,
     backgroundColor: "rgba(7,16,31,0.60)",
   },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#22C55E" },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#22C55E",
+  },
   liveText: {
     color: "#F8FAFC",
     fontSize: 10,
@@ -930,7 +1010,12 @@ const styles = StyleSheet.create({
   },
   topLeft: { left: 0, top: 0, borderLeftWidth: 2, borderTopWidth: 2 },
   topRight: { right: 0, top: 0, borderRightWidth: 2, borderTopWidth: 2 },
-  bottomLeft: { left: 0, bottom: 0, borderLeftWidth: 2, borderBottomWidth: 2 },
+  bottomLeft: {
+    left: 0,
+    bottom: 0,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+  },
   bottomRight: {
     right: 0,
     bottom: 0,

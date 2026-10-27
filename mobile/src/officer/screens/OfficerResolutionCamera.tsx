@@ -1,3 +1,4 @@
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -46,6 +47,21 @@ export function OfficerResolutionCamera({
   const [foreground, setForeground] = useState(
     AppState.currentState === "active",
   );
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSecretTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (tapCountRef.current >= 3) {
+      tapCountRef.current = 0;
+      setIsDemoMode((prev) => !prev);
+      return;
+    }
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 1200);
+  };
 
   useEffect(() => {
     alive.current = true;
@@ -120,6 +136,70 @@ export function OfficerResolutionCamera({
       if (alive.current) setBusy(false);
     }
   };
+  const pickDemoCapture = async () => {
+    if (captureLock.current || busy) return;
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.9,
+    });
+
+    if (pickerResult.canceled || !pickerResult.assets?.[0]?.uri) return;
+
+    captureLock.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      // 1. Vẫn lấy GPS thực tế ngay tại phòng bảo vệ để khớp 100% với vị trí báo cáo của Citizen
+      const gps = await acquireOfficerGps({
+        permission: async () =>
+          (await Location.requestForegroundPermissionsAsync()).granted,
+        position: async () => {
+          const current = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Highest,
+          });
+          return {
+            latitude: current.coords.latitude,
+            longitude: current.coords.longitude,
+            accuracyMeters: current.coords.accuracy,
+          };
+        },
+      });
+
+      if (!alive.current) return;
+      const capturedAt = new Date().toISOString();
+      const pickedUri = pickerResult.assets[0].uri;
+
+      // 2. Chuẩn hóa & lưu ảnh giống hệt chụp từ Camera
+      const normalized = await normalizeFieldCaptureImage(pickedUri);
+      const originalLocalUri = await persistOriginalFieldImage(
+        normalized.uri,
+        capturedAt,
+      );
+
+      if (alive.current) {
+        onCapture({
+          originalLocalUri,
+          capturedAt,
+          location: gps,
+          width: normalized.width,
+          height: normalized.height,
+        });
+      }
+    } catch (failure: unknown) {
+      if (alive.current) {
+        setError(
+          officerErrorMessage(
+            failure,
+            "Không thể tải ảnh demo hoặc lấy vị trí GPS. Vui lòng thử lại.",
+          ),
+        );
+      }
+    } finally {
+      captureLock.current = false;
+      if (alive.current) setBusy(false);
+    }
+  };
 
   return (
     <View
@@ -142,7 +222,13 @@ export function OfficerResolutionCamera({
         >
           <X size={24} color={colors.text} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.primary }]}>
+        <Text
+          onPress={handleSecretTap}
+          style={[
+            styles.title,
+            { color: isDemoMode ? colors.cyan : colors.primary },
+          ]}
+        >
           CHỤP ẢNH KẾT QUẢ (SAU XỬ LÝ)
         </Text>
         <Pressable
@@ -240,11 +326,14 @@ export function OfficerResolutionCamera({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Chụp ảnh sau xử lý"
-          disabled={!ready || busy || !permission?.granted}
-          onPress={() => void capture()}
+          disabled={(!ready && !isDemoMode) || busy || !permission?.granted}
+          onPress={() => void (isDemoMode ? pickDemoCapture() : capture())}
           style={[
             styles.shutter,
-            { borderColor: colors.primary, opacity: ready && !busy ? 1 : 0.5 },
+            {
+              borderColor: isDemoMode ? colors.cyan : colors.primary,
+              opacity: (ready || isDemoMode) && !busy ? 1 : 0.5,
+            },
           ]}
         >
           {busy ? (

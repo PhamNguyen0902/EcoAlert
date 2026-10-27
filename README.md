@@ -40,7 +40,7 @@ Hệ thống được thiết kế theo kiến trúc **Microservices kết hợp
 | :--- | :--- | :--- |
 | **`vision-service`** | Python, FastAPI, PyTorch, Ultralytics YOLO11, OpenCV | Suy luận thị giác máy tính đa mô hình, trả về tọa độ Bounding Box, nhãn vật liệu rác, Vision Provenance và kiểm định ảnh sạch rác sau xử lý. |
 | **`ai-service`** | Node.js, TypeScript, RabbitMQ, OpenRouter LLM | Xử lý bất đồng bộ sự kiện `alert.created`, kết hợp kết quả YOLO Vision với LLM đa phương thức để ước tính khối lượng rác, đánh giá mức độ nghiêm trọng và tóm tắt hiện trường. |
-| **`media-service`** | Node.js, Express, S3/Cloudinary, HMAC Ownership | Lưu trữ hình ảnh minh chứng có chữ ký xác thực quyền sở hữu (`ownershipProof`), chống trùng lặp (`idempotencyKey`) và cầu nối phân tích ảnh từ xa với `vision-service`. |
+| **`media-service`** | Node.js, Express, AWS S3, HMAC Ownership | Lưu trữ hình ảnh minh chứng có chữ ký xác thực quyền sở hữu (`ownershipProof`), chống trùng lặp (`idempotencyKey`) và cầu nối phân tích ảnh từ xa với `vision-service`. |
 | **`alert-service`** | Node.js, Express, MongoDB, RabbitMQ | Trái tim nghiệp vụ quản lý vòng đời sự cố (`pending` → `verified` → `assigned` → `in_progress` → `resolved` → `closed`), kiểm chứng GPS hiện trường, quản lý ca trực và khóa phân công (`AssignmentLock`). |
 | **`gis-service`** | Node.js, Express, MongoDB 2dsphere, OSRM | Quản lý ranh giới vùng phục vụ (`ServiceArea` GeoJSON Polygon), bản đồ nhiệt mật độ sự cố (Heatmap) và tính toán lộ trình di chuyển thực tế qua OSRM TP.HCM. |
 | **`user-service`** | Node.js, Express, MongoDB, Redis, JWT | Quản lý định danh, xác thực JWT/Refresh Token, phân quyền 3 vai trò (`CITIZEN`, `OFFICER`, `ADMIN`), danh bạ cán bộ và nhật ký kiểm toán (`AuditLog`). |
