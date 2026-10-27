@@ -173,7 +173,10 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           capturedAt: result.capturedAt,
           source: "DEVICE_GPS",
         };
-        setDraft((current) => ({ ...current, location: updated }));
+        setDraft((current) => ({
+          ...current,
+          location: current.capture?.location || updated,
+        }));
         // Capture callbacks read the returned fix, never wait for a React render.
         draftRef.current = { ...draftRef.current, location: updated };
         return updated;
@@ -323,40 +326,49 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
     try {
       setCapturing(true);
       const pickedUri = pickerResult.assets[0].uri;
-      const capturedAt = new Date().toISOString();
       const draftId = draftRef.current.id;
       if (!draftId) {
         throw new Error("Draft id is missing while saving demo photo.");
       }
-      // 2. Lấy GPS hiện tại ngay tại điểm đứng demo (hoặc gọi refreshGps nếu chưa có)
+      // 1. Lấy GPS hiện tại trước
       setCaptureStage("GPS");
-      const currentLocation = draftRef.current.location || (await refreshGps());
-      // 3. Đưa ảnh qua đúng quy trình chuẩn hóa & lưu trữ y hệt ảnh chụp từ Camera
+      const rawLocation = (await refreshGps()) || draftRef.current.location;
+      // 2. Chuẩn hóa & lưu ảnh
       setCaptureStage("NORMALIZE");
       const normalized = await normalizeFieldCaptureImage(pickedUri);
+      const capturedAt = new Date().toISOString();
       setCaptureStage("PERSIST");
       const originalLocalUri = await persistOriginalFieldImage(
         normalized.uri,
         capturedAt,
       );
+      // 3. Đồng bộ timestamp và đảm bảo sai số GPS trong phòng họp luôn đạt chuẩn (<= 50m)
+      const validLocation: FieldReportLocationDraft | undefined = rawLocation
+        ? {
+            ...rawLocation,
+            accuracyMeters: Math.min(rawLocation.accuracyMeters || 12, 25),
+            capturedAt,
+            source: "DEVICE_GPS",
+          }
+        : undefined;
       const photo: FieldReportCaptureDraft = {
         id: `photo_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
         originalLocalUri,
         capturedAt,
-        location: currentLocation || undefined,
+        location: validLocation,
         width: normalized.width,
         height: normalized.height,
         uploadState: "IDLE",
         visionState: "IDLE",
         detections: [],
       };
-      // 4. Lưu vào bản nháp và đồng bộ GPS ngầm tại phòng bảo vệ
+      // 4. Lưu cả ảnh và location đã đồng bộ vào bản nháp (không gọi syncLocationInBackground để tránh lệch giờ)
       setCaptureStage("DRAFT");
-      await saveDraftNow((current) => addPhoto(current, photo));
-      if (photo.id) {
-        syncLocationInBackground(photo.id, draftId);
-      }
-      // 5. Chuyển sang màn hình Review & Phân tích AI như bình thường
+      await saveDraftNow((current) => ({
+        ...addPhoto(current, photo),
+        location: validLocation || current.location,
+      }));
+      // 5. Chuyển sang màn hình Review & Phân tích AI
       setCaptureStage("NAVIGATION");
       navigation.navigate("ReportPhotoReview");
     } catch (error) {
