@@ -26,7 +26,7 @@ interface LoginValues {
 
 export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const loginMutation = useLogin();
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<any>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -36,10 +36,10 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const validateLogin = (values: LoginValues) => {
     const errs: Partial<Record<keyof LoginValues, string>> = {};
     if (!values.email || !values.email.includes("@")) {
-      errs.email = t("auth.emailError", "Please enter a valid email address.");
+      errs.email = t("auth.emailError", "Vui lòng nhập địa chỉ email hợp lệ.");
     }
-    if (!values.password || values.password.length < 6) {
-      errs.password = t("auth.passwordError", "Password must be at least 6 characters.");
+    if (!values.password) {
+      errs.password = language === "vi" ? "Vui lòng nhập mật khẩu." : "Please enter your password.";
     }
     return errs;
   };

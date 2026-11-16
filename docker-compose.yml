@@ -3,7 +3,7 @@ services:
     image: mongo:6.0
     container_name: ecoalert_mongodb
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:
@@ -94,6 +94,10 @@ services:
       - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET:-${JWT_SECRET}}
       - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
+      - COGNITO_REGION=${COGNITO_REGION:-ap-southeast-1}
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - COGNITO_CLIENT_SECRET=${COGNITO_CLIENT_SECRET}
     volumes:
       - ./backend/user-service/dist:/app/user-service/dist:ro
     depends_on:

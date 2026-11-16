@@ -39,10 +39,11 @@ export const vi = {
     alreadyHaveAccount: "Đã có tài khoản?",
     signUpLink: "Đăng ký ngay",
     signInLink: "Đăng nhập",
-    emailError: "Vui lòng nhập email hợp lệ.",
-    passwordError: "Mật khẩu phải có ít nhất 6 ký tự.",
-    nameError: "Vui lòng nhập họ và tên.",
-    confirmPasswordError: "Mật khẩu xác nhận không khớp.",
+    emailError: "Vui lòng nhập địa chỉ email hợp lệ.",
+    passwordError: "Mật khẩu phải có tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.",
+    passwordRequirements: "Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.",
+    nameError: "Vui lòng nhập họ và tên của bạn.",
+    confirmPasswordError: "Mật khẩu xác nhận không trùng khớp.",
   },
 
   // Profile & Settings
