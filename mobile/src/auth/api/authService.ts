@@ -18,13 +18,32 @@ export const authService = {
 
   register: async (data: RegisterData) => {
     const res = await api.post("/v1/auth/register", data);
-    const { accessToken, refreshToken, user } = res.data?.data || res.data;
-    if (!accessToken || !user?._id)
-      throw new Error("Phản hồi đăng ký không hợp lệ. Vui lòng thử lại.");
+    const responseData = res.data?.data || res.data;
+    const { accessToken, refreshToken, user } = responseData || {};
     if (accessToken) await storage.setToken(accessToken);
     if (refreshToken) await storage.setRefreshToken(refreshToken);
     if (user) await storage.setUser(user);
-    return { accessToken, refreshToken, user };
+    return {
+      accessToken,
+      refreshToken,
+      user,
+      message: res.data?.message || responseData?.message,
+    };
+  },
+
+  resendVerification: async (email: string) => {
+    const res = await api.post("/v1/auth/resend-verification", { email });
+    return res.data;
+  },
+
+  confirmOtp: async (data: { email: string; code: string }) => {
+    const res = await api.post("/v1/auth/confirm-otp", data);
+    return res.data;
+  },
+
+  resendOtp: async (email: string) => {
+    const res = await api.post("/v1/auth/resend-otp", { email });
+    return res.data;
   },
 
   logout: async () => {

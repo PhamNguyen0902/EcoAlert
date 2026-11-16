@@ -23,10 +23,10 @@ export const useLogin = () => {
     onMutate: () =>
       queryClient.cancelQueries({ queryKey: ["profile"], exact: true }),
     onSuccess: (data) => {
-      if (data.user) {
+      if (data.accessToken && data.user) {
         queryClient.setQueryData(["profile"], data.user);
+        queryClient.invalidateQueries({ queryKey: ["alerts"] });
       }
-      queryClient.invalidateQueries({ queryKey: ["alerts"] });
     },
   });
 };
@@ -39,10 +39,10 @@ export const useRegister = () => {
     onMutate: () =>
       queryClient.cancelQueries({ queryKey: ["profile"], exact: true }),
     onSuccess: (data) => {
-      if (data.user) {
+      if (data.accessToken && data.user) {
         queryClient.setQueryData(["profile"], data.user);
+        queryClient.invalidateQueries({ queryKey: ["alerts"] });
       }
-      queryClient.invalidateQueries({ queryKey: ["alerts"] });
     },
   });
 };

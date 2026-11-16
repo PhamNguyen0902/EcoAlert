@@ -38,8 +38,13 @@ export default function Register() {
         password: formData.password
       },
       {
-        onSuccess: () => {
-          toast.success(t('toast.register_success'));
+        onSuccess: (data: any) => {
+          toast.success(
+            data?.data?.message ||
+              data?.message ||
+              "Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.",
+            { duration: 6000 }
+          );
           navigate('/login');
         },
         onError: (err: any) => {

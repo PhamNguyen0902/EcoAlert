@@ -5,6 +5,25 @@ import { auditLogService } from '../services/audit-log.service';
 import { successResponse } from '@ecoalert/shared';
 
 export class AuthController {
+  async confirmOtp(req: Request, res: Response) {
+    const { email, code } = req.body;
+    const result = await authService.confirmOtp(email, code);
+    await auditLogService.log({
+      user: email,
+      action: 'USER_CONFIRM_OTP',
+      resource: `User: ${email}`,
+      details: 'User confirmed OTP code via Cognito',
+      ipAddress: req.ip,
+    });
+    res.status(200).json(successResponse(result, result.message));
+  }
+
+  async resendOtp(req: Request, res: Response) {
+    const { email } = req.body;
+    const result = await authService.resendOtp(email);
+    res.status(200).json(successResponse(result, result.message));
+  }
+
   async register(req: Request, res: Response) {
     const result = await authService.register(req.body);
     await auditLogService.log({
@@ -12,10 +31,10 @@ export class AuthController {
       userId: result.user._id,
       action: 'USER_REGISTER',
       resource: `User: ${result.user.email}`,
-      details: 'Registered a new user account',
+      details: 'Registered a new user account with pending verification',
       ipAddress: req.ip,
     });
-    res.status(201).json(successResponse(result, 'User registered successfully'));
+    res.status(201).json(successResponse(result, result.message));
   }
 
   async login(req: Request, res: Response) {

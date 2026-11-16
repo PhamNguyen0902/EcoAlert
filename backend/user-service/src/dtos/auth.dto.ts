@@ -20,3 +20,14 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string(),
 });
 export type RefreshTokenDto = z.infer<typeof refreshTokenSchema>;
+
+export const confirmOtpSchema = z.object({
+  email: z.string().email(),
+  code: z.string().min(4, "OTP code must be at least 4 characters").max(10),
+});
+export type ConfirmOtpDto = z.infer<typeof confirmOtpSchema>;
+
+export const resendOtpSchema = z.object({
+  email: z.string().email(),
+});
+export type ResendOtpDto = z.infer<typeof resendOtpSchema>;

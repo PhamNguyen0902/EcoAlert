@@ -19,7 +19,7 @@ export interface InputProps extends TextInputProps {
   rightIcon?: React.ReactNode;
 }
 
-export const Input = forwardRef<TextInput, InputProps>(
+export const Input = forwardRef<any, InputProps>(
   (
     {
       label,
@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14.5,
     paddingVertical: 8,
+    letterSpacing: 0,
   },
   multilineInput: {
     minHeight: 86,

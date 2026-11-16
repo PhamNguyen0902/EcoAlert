@@ -8,9 +8,13 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Alert,
+  Linking,
+  Modal,
 } from "react-native";
 import { Mail, Lock, User as UserIcon, Phone, UserPlus, ArrowLeft, Sun, Moon, Globe, Eye, EyeOff } from "lucide-react-native";
 import { useRegister } from "../hooks/useAuth";
+import { authService } from "../api/authService";
 import { useFormValidation } from "../../shared/hooks/useFormValidation";
 import { GlassCard } from "../../shared/components/ui/GlassCard";
 import { Input } from "../../shared/components/ui/Input";
@@ -32,14 +36,20 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const { colors, isDark, setThemeMode } = useTheme();
   const { language, setLanguage, t } = useLanguage();
 
-  const emailRef = useRef<TextInput>(null);
-  const phoneRef = useRef<TextInput>(null);
-  const passwordRef = useRef<TextInput>(null);
-  const confirmPasswordRef = useRef<TextInput>(null);
+  const emailRef = useRef<any>(null);
+  const phoneRef = useRef<any>(null);
+  const passwordRef = useRef<any>(null);
+  const confirmPasswordRef = useRef<any>(null);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // States quản lý Modal OTP 6 số của AWS Cognito
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
 
   const validateRegister = (values: RegisterValues) => {
     const errs: Partial<Record<keyof RegisterValues, string>> = {};
@@ -69,6 +79,26 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     validateRegister
   );
 
+  // Hàm mở thẳng Google Gmail
+  const openEmailApp = async () => {
+    try {
+      await Linking.openURL("googlegmail://");
+    } catch (err) {
+      try {
+        if (Platform.OS === "android") {
+          await Linking.openURL(
+            "intent:#Intent;package=com.google.android.gm;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end"
+          );
+        } else {
+          await Linking.openURL("https://mail.google.com");
+        }
+      } catch {
+        await Linking.openURL("https://mail.google.com");
+      }
+    }
+  };
+
+  // 1. Xử lý bấm Đăng ký -> Cognito gửi OTP và mở popup nhập mã
   const handleRegister = async () => {
     setSubmitError(null);
     if (!validate()) return;
@@ -85,9 +115,63 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         phone: values.phone.trim() || undefined,
         password: values.password,
       });
+
+      // Mở modal nhập OTP 6 số
+      setOtpCode("");
+      setOtpError(null);
+      setShowOtpModal(true);
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Đăng ký thất bại. Vui lòng thử lại.";
       setSubmitError(msg);
+    }
+  };
+
+  // 2. Xử lý xác thực OTP 6 số với AWS Cognito
+  const handleConfirmOtp = async () => {
+    if (!otpCode || otpCode.trim().length < 6) {
+      setOtpError("Vui lòng nhập đủ 6 chữ số mã xác thực.");
+      return;
+    }
+    setOtpLoading(true);
+    setOtpError(null);
+    try {
+      await authService.confirmOtp({
+        email: values.email.trim(),
+        code: otpCode.trim(),
+      });
+      setShowOtpModal(false);
+      Alert.alert(
+        "Kích hoạt thành công!",
+        "Tài khoản của bạn đã được xác thực qua AWS Cognito thành công. Vui lòng đăng nhập.",
+        [
+          {
+            text: "Đến trang Đăng nhập",
+            onPress: () => navigation.navigate("Login"),
+          },
+        ]
+      );
+    } catch (err: any) {
+      setOtpError(
+        err.response?.data?.message || err.message || "Xác thực mã OTP thất bại."
+      );
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // 3. Xử lý gửi lại mã OTP 6 số
+  const handleResendOtp = async () => {
+    try {
+      await authService.resendOtp(values.email.trim());
+      Alert.alert(
+        "Đã gửi lại mã",
+        "Mã xác thực OTP mới đã được gửi tới: " + values.email.trim()
+      );
+    } catch (err: any) {
+      Alert.alert(
+        "Lỗi",
+        err.response?.data?.message || err.message || "Không thể gửi lại mã OTP."
+      );
     }
   };
 
@@ -147,13 +231,16 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
         <View style={styles.header}>
           <View style={[styles.iconBox, { backgroundColor: colors.primaryLight }]}>
-            <UserPlus size={40} color={colors.primary} />
+            <UserPlus size={36} color={colors.primary} />
           </View>
           <Text style={[styles.title, { color: colors.text }]}>
             {t("auth.createAccount", "Create Account")}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {t("auth.registerSubtitle", "Join EcoAlert to contribute to protecting your surrounding environment.")}
+            {t(
+              "auth.registerSubtitle",
+              "Join EcoAlert to contribute to protecting the environment around you."
+            )}
           </Text>
         </View>
 
@@ -161,8 +248,8 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <InlineBanner message={submitError} type="error" />
 
           <Input
-            label={t("auth.fullNameLabel", "Full Name")}
-            placeholder={t("auth.fullNamePlaceholder", "Nguyen Van A")}
+            label={t("auth.nameLabel", "Full Name")}
+            placeholder={t("auth.namePlaceholder", "Nguyen Van A")}
             autoCapitalize="words"
             returnKeyType="next"
             onSubmitEditing={() => emailRef.current?.focus()}
@@ -175,9 +262,10 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <Input
             ref={emailRef}
             label={t("auth.emailLabel", "Email Address")}
-            placeholder={t("auth.emailPlaceholder", "citizen@ecoalert.org")}
+            placeholder={t("auth.emailPlaceholder", "example@gmail.com")}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoComplete="email"
             returnKeyType="next"
             onSubmitEditing={() => phoneRef.current?.focus()}
             value={values.email}
@@ -188,7 +276,7 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
           <Input
             ref={phoneRef}
-            label={t("modals.phoneNumber", "Phone Number")}
+            label={t("auth.phoneLabel", "Phone Number (Optional)")}
             placeholder="0912345678"
             keyboardType="phone-pad"
             returnKeyType="next"
@@ -204,6 +292,7 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             label={t("auth.passwordLabel", "Password")}
             placeholder={t("auth.passwordPlaceholder", "••••••••")}
             secureTextEntry={!showPassword}
+            autoComplete="new-password"
             returnKeyType="next"
             onSubmitEditing={() => confirmPasswordRef.current?.focus()}
             value={values.password}
@@ -231,7 +320,8 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             label={t("auth.confirmPasswordLabel", "Confirm Password")}
             placeholder={t("auth.confirmPasswordPlaceholder", "••••••••")}
             secureTextEntry={!showConfirmPassword}
-            returnKeyType="go"
+            autoComplete="new-password"
+            returnKeyType="done"
             onSubmitEditing={handleRegister}
             value={values.confirmPassword}
             onChangeText={(v: string) => setField("confirmPassword", v)}
@@ -273,6 +363,94 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* MODAL NHẬP MÃ OTP 6 SỐ AWS COGNITO */}
+      <Modal
+        visible={showOtpModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowOtpModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.modalIconBox, { backgroundColor: colors.primaryLight }]}>
+              <Mail size={32} color={colors.primary} />
+            </View>
+
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Xác thực mã OTP
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
+              AWS Cognito đã gửi mã xác thực 6 số đến email:{"\n"}
+              <Text style={{ fontWeight: "bold", color: colors.primary }}>
+                {values.email.trim()}
+              </Text>
+            </Text>
+
+            {otpError && (
+              <View style={styles.otpErrorBox}>
+                <Text style={styles.otpErrorText}>{otpError}</Text>
+              </View>
+            )}
+
+            <TextInput
+              style={[
+                styles.otpInput,
+                {
+                  color: colors.text,
+                  borderColor: otpError ? colors.destructive : colors.border,
+                  backgroundColor: colors.background,
+                },
+              ]}
+              placeholder="123456"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+              maxLength={6}
+              value={otpCode}
+              onChangeText={(text) => {
+                setOtpCode(text);
+                if (otpError) setOtpError(null);
+              }}
+              autoFocus
+            />
+
+            <Button
+              title="Xác nhận kích hoạt"
+              onPress={handleConfirmOtp}
+              loading={otpLoading}
+              style={{ width: "100%", marginTop: 12 }}
+            />
+
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity onPress={handleResendOtp} style={styles.modalLinkBtn}>
+                <Text style={[styles.modalLinkText, { color: colors.primary }]}>
+                  Gửi lại mã
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={{ color: colors.textMuted }}>•</Text>
+
+              <TouchableOpacity onPress={openEmailApp} style={styles.modalLinkBtn}>
+                <Text style={[styles.modalLinkText, { color: colors.primary }]}>
+                  Mở Gmail
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setShowOtpModal(false)}
+              style={{ marginTop: 16 }}
+            >
+              <Text style={{ color: colors.textMuted, fontSize: 13, textDecorationLine: "underline" }}>
+                Đóng / Để sau
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -336,4 +514,79 @@ const styles = StyleSheet.create({
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 24 },
   footerText: { fontSize: 14 },
   loginLink: { fontSize: 14, fontWeight: "700" },
+
+  // Styles cho Modal OTP
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 380,
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: "center",
+  },
+  modalIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  otpInput: {
+    width: "100%",
+    height: 52,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    fontSize: 24,
+    fontWeight: "700",
+    textAlign: "center",
+    letterSpacing: 10,
+    marginBottom: 8,
+  },
+  otpErrorBox: {
+    marginBottom: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    width: "100%",
+  },
+  otpErrorText: {
+    color: "#EF4444",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  modalActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginTop: 16,
+  },
+  modalLinkBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  modalLinkText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
 });

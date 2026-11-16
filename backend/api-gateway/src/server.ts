@@ -88,6 +88,10 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     "/api/v1/auth/login",
     "/api/v1/auth/register",
     "/api/v1/auth/refresh-token",
+    "/api/v1/auth/verify-email",
+    "/api/v1/auth/resend-verification",
+    "/api/v1/auth/confirm-otp",
+    "/api/v1/auth/resend-otp",
   ];
 
   // Loại bỏ query string để so sánh đường dẫn
