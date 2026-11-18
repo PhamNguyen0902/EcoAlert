@@ -74,9 +74,9 @@ export default function Login() {
               {t("auth.no_account")}{" "}
               <Link
                 to="/register"
-                className="font-semibold text-primary hover:text-primary/80 nav.signup"
+                className="font-semibold text-primary hover:text-primary/80"
               >
-                {t("nav.signin")}
+                {t("nav.signup")}
               </Link>
             </p>
           </div>

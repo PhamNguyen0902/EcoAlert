@@ -16,11 +16,13 @@ export default function Register() {
   const navigate = useNavigate();
   const registerMutation = useRegister();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,6 +32,10 @@ export default function Register() {
   //xử lý đăng ký
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Mật khẩu xác nhận không trùng khớp.');
+      return;
+    }
     registerMutation.mutate(
       {
         firstName: formData.firstName,
@@ -88,14 +94,14 @@ export default function Register() {
             <form onSubmit={handleRegister} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="firstName">Tên</Label>
+                  <Label htmlFor="firstName">Họ</Label>
                   <div className="mt-2">
                     <Input id="firstName" name="firstName" placeholder="" required value={formData.firstName} onChange={handleChange} />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="lastName">Họ</Label>
+                  <Label htmlFor="lastName">Tên</Label>
                   <div className="mt-2">
                     <Input id="lastName" name="lastName" placeholder="" required value={formData.lastName} onChange={handleChange} />
                   </div>
@@ -116,7 +122,7 @@ export default function Register() {
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Tối thiểu 6 ký tự"
+                    placeholder="Tối thiểu 8 ký tự"
                     required
                     value={formData.password}
                     onChange={handleChange}
@@ -129,6 +135,30 @@ export default function Register() {
                     aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="confirmPassword">Xác nhận mật khẩu</Label>
+                <div className="mt-2 relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Nhập lại mật khẩu"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+                    aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>

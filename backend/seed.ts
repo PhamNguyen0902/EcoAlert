@@ -76,9 +76,31 @@ const locationSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+const serviceAreaSchema = new mongoose.Schema(
+  {
+    code: { type: String, required: true },
+    name: { type: String, required: true },
+    administrativeLevel: { type: String, required: true },
+    parentCode: String,
+    geometry: {
+      type: { type: String, required: true },
+      coordinates: { type: mongoose.Schema.Types.Mixed, required: true },
+    },
+    assignedOfficerIds: [String],
+    isActive: { type: Boolean, default: true },
+    priority: { type: Number, default: 0 },
+    createdBy: { type: String, default: "" },
+    updatedBy: { type: String, default: "" },
+    deletedAt: { type: Date, default: null },
+    isDeleted: { type: Boolean, default: false },
+  },
+  { timestamps: true },
+);
+
 const User = userDb.model("User", userSchema);
 const Alert = alertDb.model("Alert", alertSchema);
 const Location = gisDb.model("Location", locationSchema);
+const ServiceArea = gisDb.model("ServiceArea", serviceAreaSchema);
 
 async function seed() {
   try {
@@ -86,6 +108,7 @@ async function seed() {
     await User.deleteMany({});
     await Alert.deleteMany({});
     await Location.deleteMany({});
+    await ServiceArea.deleteMany({});
 
     console.log("Seeding Users...");
     const hashPassword = (pw: string) => bcrypt.hashSync(pw, 10);
@@ -419,6 +442,76 @@ async function seed() {
     }));
 
     await Location.insertMany(locationsData);
+
+    console.log("Seeding Service Areas...");
+    await ServiceArea.insertMany([
+      {
+        code: "Q01-PBN",
+        name: "Phường Bến Nghé - Quận 1",
+        administrativeLevel: "WARD",
+        parentCode: "DISTRICT-01",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [106.698, 10.778],
+              [106.708, 10.785],
+              [106.712, 10.776],
+              [106.702, 10.771],
+              [106.698, 10.778],
+            ],
+          ],
+        },
+        assignedOfficerIds: [officer1._id.toString(), officer2._id.toString()],
+        isActive: true,
+        priority: 10,
+        isDeleted: false,
+      },
+      {
+        code: "QGV-P04",
+        name: "Phường 4 - Quận Gò Vấp",
+        administrativeLevel: "WARD",
+        parentCode: "DISTRICT-GV",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [106.68, 10.82],
+              [106.69, 10.825],
+              [106.695, 10.815],
+              [106.685, 10.81],
+              [106.68, 10.82],
+            ],
+          ],
+        },
+        assignedOfficerIds: [officer1._id.toString()],
+        isActive: true,
+        priority: 8,
+        isDeleted: false,
+      },
+      {
+        code: "QBT-P25",
+        name: "Phường 25 - Quận Bình Thạnh",
+        administrativeLevel: "WARD",
+        parentCode: "DISTRICT-BT",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [106.71, 10.805],
+              [106.722, 10.81],
+              [106.725, 10.8],
+              [106.713, 10.795],
+              [106.71, 10.805],
+            ],
+          ],
+        },
+        assignedOfficerIds: [officer2._id.toString()],
+        isActive: true,
+        priority: 9,
+        isDeleted: false,
+      },
+    ]);
 
     console.log("Seeding Complete!");
     process.exit(0);

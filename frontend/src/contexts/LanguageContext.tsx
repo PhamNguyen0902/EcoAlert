@@ -28,6 +28,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.profile": "Hồ sơ cá nhân",
     "nav.logout": "Đăng xuất",
     "nav.signin": "Đăng nhập",
+    "nav.signup": "Đăng ký ngay",
     "nav.portal": "Cổng Quản trị EcoAlert",
 
     // Hero Section
@@ -239,8 +240,8 @@ const translations: Record<Language, Record<string, string>> = {
     "auth.phone": "Số điện thoại",
     "auth.remember_me": "Ghi nhớ đăng nhập",
     "auth.forgot_password": "Quên mật khẩu?",
-    "auth.no_account": "Chưa có tài khoản? Đăng ký ngay",
-    "auth.has_account": "Đã có tài khoản? Đăng nhập ngay",
+    "auth.no_account": "Chưa có tài khoản?",
+    "auth.has_account": "Đã có tài khoản?",
     "profile.title": "Hồ sơ cá nhân",
     "profile.change_password": "Đổi mật khẩu",
     "profile.old_password": "Mật khẩu hiện tại",
@@ -498,6 +499,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.profile": "Profile",
     "nav.logout": "Log out",
     "nav.signin": "Sign In",
+    "nav.signup": "Sign Up",
     "nav.portal": "EcoAlert Admin Portal",
 
     // Hero Section
@@ -854,8 +856,8 @@ const translations: Record<Language, Record<string, string>> = {
     "auth.phone": "Phone Number",
     "auth.remember_me": "Remember me",
     "auth.forgot_password": "Forgot password?",
-    "auth.no_account": "Don't have an account? Sign up",
-    "auth.has_account": "Already have an account? Sign in",
+    "auth.no_account": "Don't have an account?",
+    "auth.has_account": "Already have an account?",
     "profile.title": "User Profile",
     "profile.change_password": "Change Password",
     "profile.old_password": "Current Password",

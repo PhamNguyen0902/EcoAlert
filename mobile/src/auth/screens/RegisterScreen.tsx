@@ -290,7 +290,7 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <Input
             ref={passwordRef}
             label={t("auth.passwordLabel", "Password")}
-            placeholder={t("auth.passwordPlaceholder", "••••••••")}
+            placeholder={t("auth.registerPasswordPlaceholder", "Tối thiểu 8 ký tự")}
             secureTextEntry={!showPassword}
             autoComplete="new-password"
             returnKeyType="next"
@@ -318,7 +318,7 @@ export const RegisterScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <Input
             ref={confirmPasswordRef}
             label={t("auth.confirmPasswordLabel", "Confirm Password")}
-            placeholder={t("auth.confirmPasswordPlaceholder", "••••••••")}
+            placeholder={t("auth.confirmPasswordPlaceholder", "Nhập lại mật khẩu")}
             secureTextEntry={!showConfirmPassword}
             autoComplete="new-password"
             returnKeyType="done"
