@@ -270,7 +270,7 @@ jobs:
 
       # (#2, #7) Quét toàn bộ 9 service bằng trivy-action@0.28.0
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.name }}:${{ github.sha }}
           format: table
