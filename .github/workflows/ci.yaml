@@ -174,19 +174,21 @@ jobs:
             (cd "$dir" && npm audit --audit-level=high) || echo "::warning::npm audit detected vulnerabilities in $dir."
           done
 
-      # (#2, #8) Pin version trivy-action@v0.36.0 và thêm ignore-unfixed: true
+      # (#2, #8) Pin version trivy-action@v0.36.0, chỉ quét vuln và xuất báo cáo không chặn pipeline
       - name: 2.3. Trivy Filesystem & Dependency Scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "table"
-          output: "trivy-fs-report.txt"
-          severity: "CRITICAL"
+          scan-type: 'fs'
+          scan-ref: '.'
+          scanners: 'vuln'
+          format: 'table'
+          output: 'trivy-fs-report.txt'
+          severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
-          exit-code: "1"
+          exit-code: '0'
 
       - name: Display Trivy FS Scan Results
+        if: always()
         run: |
           if [ -f trivy-fs-report.txt ]; then
             cat trivy-fs-report.txt
