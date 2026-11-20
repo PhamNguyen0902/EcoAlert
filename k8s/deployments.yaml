@@ -456,6 +456,8 @@ spec:
                 secretKeyRef:
                   name: ecoalert-secrets
                   key: OPENROUTER_API_KEY
+            - name: OPENROUTER_ANALYSIS_MODEL
+              value: 'openai/gpt-4o-mini'
           resources:
             requests:
               memory: '128Mi'
