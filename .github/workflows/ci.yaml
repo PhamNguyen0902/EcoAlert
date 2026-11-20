@@ -38,16 +38,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
 
       # (#16) Bật cache: 'pip' trực tiếp trên setup-python
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: 'backend/vision-service/requirements*.txt'
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "backend/vision-service/requirements*.txt"
 
       - name: Install OpenCV System Dependencies
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
@@ -166,7 +166,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
 
       - name: 2.2. Dependency Vulnerability Audit
         run: |
@@ -175,17 +174,17 @@ jobs:
             (cd "$dir" && npm audit --audit-level=high) || echo "::warning::npm audit detected vulnerabilities in $dir."
           done
 
-      # (#2, #8) Pin version trivy-action@0.28.0 và thêm ignore-unfixed: true
+      # (#2, #8) Pin version trivy-action@v0.28.0 và thêm ignore-unfixed: true
       - name: 2.3. Trivy Filesystem & Dependency Scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          output: 'trivy-fs-report.txt'
-          severity: 'CRITICAL'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          output: "trivy-fs-report.txt"
+          severity: "CRITICAL"
           ignore-unfixed: true
-          exit-code: '1'
+          exit-code: "1"
 
       - name: Display Trivy FS Scan Results
         run: |
@@ -225,15 +224,54 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: frontend,             context: ./frontend,               file: ./frontend/Dockerfile }
-          - { name: vision-service,       context: ./backend/vision-service, file: ./backend/vision-service/Dockerfile }
-          - { name: api-gateway,          context: ./backend, file: ./backend/Dockerfile, svc: api-gateway }
-          - { name: user-service,         context: ./backend, file: ./backend/Dockerfile, svc: user-service }
-          - { name: alert-service,        context: ./backend, file: ./backend/Dockerfile, svc: alert-service }
-          - { name: media-service,        context: ./backend, file: ./backend/Dockerfile, svc: media-service }
-          - { name: gis-service,          context: ./backend, file: ./backend/Dockerfile, svc: gis-service }
-          - { name: ai-service,           context: ./backend, file: ./backend/Dockerfile, svc: ai-service }
-          - { name: notification-service, context: ./backend, file: ./backend/Dockerfile, svc: notification-service }
+          - { name: frontend, context: ./frontend, file: ./frontend/Dockerfile }
+          - {
+              name: vision-service,
+              context: ./backend/vision-service,
+              file: ./backend/vision-service/Dockerfile,
+            }
+          - {
+              name: api-gateway,
+              context: ./backend,
+              file: ./backend/Dockerfile,
+              svc: api-gateway,
+            }
+          - {
+              name: user-service,
+              context: ./backend,
+              file: ./backend/Dockerfile,
+              svc: user-service,
+            }
+          - {
+              name: alert-service,
+              context: ./backend,
+              file: ./backend/Dockerfile,
+              svc: alert-service,
+            }
+          - {
+              name: media-service,
+              context: ./backend,
+              file: ./backend/Dockerfile,
+              svc: media-service,
+            }
+          - {
+              name: gis-service,
+              context: ./backend,
+              file: ./backend/Dockerfile,
+              svc: gis-service,
+            }
+          - {
+              name: ai-service,
+              context: ./backend,
+              file: ./backend/Dockerfile,
+              svc: ai-service,
+            }
+          - {
+              name: notification-service,
+              context: ./backend,
+              file: ./backend/Dockerfile,
+              svc: notification-service,
+            }
 
     steps:
       - uses: actions/checkout@v4
@@ -277,7 +315,7 @@ jobs:
           output: trivy-image-${{ matrix.name }}.txt
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: '0'
+          exit-code: "0"
 
       # (#7) Retag và push chính image vừa quét (không build lại lần 2)
       - name: Push (retag, no rebuild)
