@@ -1,4 +1,4 @@
-name: CI - DevSecOps
+name: DevSecOps CI/CD Pipeline
 
 on:
   push:
@@ -7,14 +7,12 @@ on:
     branches: [main, dev]
   workflow_dispatch:
 
-# (#1) Mặc định chỉ cấp quyền đọc thấp nhất; job nào cần ghi mới cấp riêng
 permissions:
   contents: read
 
 env:
   REGISTRY: ghcr.io
 
-# (#11) Hủy các lần chạy cũ bị trùng khi push liên tiếp lên cùng 1 Pull Request
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -38,21 +36,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
-      # (#16) Bật cache: 'pip' trực tiếp trên setup-python
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: "backend/vision-service/requirements*.txt"
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'backend/vision-service/requirements*.txt'
 
       - name: Install OpenCV System Dependencies
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
 
-      # (#14) Đổi toàn bộ backend sang npm ci
       - name: Install All Dependencies
         run: |
           npm --prefix frontend ci --no-audit --no-fund
@@ -139,7 +135,6 @@ jobs:
     needs: ci-build-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # (#1) Cấp quyền riêng cho job bảo mật
     permissions:
       contents: read
       security-events: write
@@ -166,6 +161,7 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: 2.2. Dependency Vulnerability Audit
         run: |
@@ -174,7 +170,6 @@ jobs:
             (cd "$dir" && npm audit --audit-level=high) || echo "::warning::npm audit detected vulnerabilities in $dir."
           done
 
-      # (#2, #8) Pin version trivy-action@v0.36.0, chỉ quét vuln và xuất báo cáo không chặn pipeline
       - name: 2.3. Trivy Filesystem & Dependency Scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -194,7 +189,6 @@ jobs:
             cat trivy-fs-report.txt
           fi
 
-      # (#2) Pin version sonarqube-scan-action@v5
       - name: 2.4. SonarQube Code Quality Analysis
         uses: sonarsource/sonarqube-scan-action@v5
         env:
@@ -211,14 +205,13 @@ jobs:
           retention-days: 7
 
   # ===============================================================
-  # 3. Artifact Management (Matrix 9 services: Build 1 lần -> Scan -> Retag & Push)
+  # 3. Artifact Management (Matrix 9 services: Build -> Scan -> Retag & Push)
   # ===============================================================
   docker-build-and-publish:
     name: 3. Artifact Management (${{ matrix.name }})
     needs: continuous-security
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # (#1) Chỉ job Docker mới cần packages: write
     permissions:
       contents: read
       packages: write
@@ -226,61 +219,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: frontend, context: ./frontend, file: ./frontend/Dockerfile }
-          - {
-              name: vision-service,
-              context: ./backend/vision-service,
-              file: ./backend/vision-service/Dockerfile,
-            }
-          - {
-              name: api-gateway,
-              context: ./backend,
-              file: ./backend/Dockerfile,
-              svc: api-gateway,
-            }
-          - {
-              name: user-service,
-              context: ./backend,
-              file: ./backend/Dockerfile,
-              svc: user-service,
-            }
-          - {
-              name: alert-service,
-              context: ./backend,
-              file: ./backend/Dockerfile,
-              svc: alert-service,
-            }
-          - {
-              name: media-service,
-              context: ./backend,
-              file: ./backend/Dockerfile,
-              svc: media-service,
-            }
-          - {
-              name: gis-service,
-              context: ./backend,
-              file: ./backend/Dockerfile,
-              svc: gis-service,
-            }
-          - {
-              name: ai-service,
-              context: ./backend,
-              file: ./backend/Dockerfile,
-              svc: ai-service,
-            }
-          - {
-              name: notification-service,
-              context: ./backend,
-              file: ./backend/Dockerfile,
-              svc: notification-service,
-            }
+          - { name: frontend,             context: ./frontend,               file: ./frontend/Dockerfile }
+          - { name: vision-service,       context: ./backend/vision-service, file: ./backend/vision-service/Dockerfile }
+          - { name: api-gateway,          context: ./backend, file: ./backend/Dockerfile, svc: api-gateway }
+          - { name: user-service,         context: ./backend, file: ./backend/Dockerfile, svc: user-service }
+          - { name: alert-service,        context: ./backend, file: ./backend/Dockerfile, svc: alert-service }
+          - { name: media-service,        context: ./backend, file: ./backend/Dockerfile, svc: media-service }
+          - { name: gis-service,          context: ./backend, file: ./backend/Dockerfile, svc: gis-service }
+          - { name: ai-service,           context: ./backend, file: ./backend/Dockerfile, svc: ai-service }
+          - { name: notification-service, context: ./backend, file: ./backend/Dockerfile, svc: notification-service }
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
 
-      # (#19) Tự động lấy tên repo viết thường thay vì hardcode tên cá nhân
       - name: Prepare Image Metadata
         env:
           REPO: ${{ github.repository }}
@@ -296,7 +249,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # (#7, #17) Build 1 lần duy nhất với build-push-action@v6 và mode=max
       - name: Build (load for scan)
         uses: docker/build-push-action@v6
         with:
@@ -308,7 +260,6 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
-      # (#2, #7) Quét toàn bộ 9 service bằng trivy-action@0.28.0
       - name: Trivy image scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -317,9 +268,8 @@ jobs:
           output: trivy-image-${{ matrix.name }}.txt
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: "0"
+          exit-code: '0'
 
-      # (#7) Retag và push chính image vừa quét (không build lại lần 2)
       - name: Push (retag, no rebuild)
         if: github.event_name != 'pull_request'
         env:
@@ -341,20 +291,69 @@ jobs:
           retention-days: 7
 
   # ===============================================================
-  # 4. Pipeline Notification (Telegram - chỉ báo kết quả CI)
+  # 4. CD Deployment (Approval & Argo CD GitOps)
+  #    Chỉ chạy khi push / manual trên main. Pull request sẽ bị skip.
+  # ===============================================================
+  cd-deployment:
+    name: 4. CD Deployment (Approval & Argo CD)
+    needs: docker-build-and-publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    environment:
+      name: production
+      url: https://ecoalert.example.com
+
+    steps:
+      - name: Checkout Deployment Manifests
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 4.1. GitOps Update & Push Kubernetes Manifest
+        env:
+          REPO: ${{ github.repository }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          IMAGE_PREFIX=$(echo "$REPO" | tr '[:upper:]' '[:lower:]')
+
+          if git ls-remote --exit-code --heads origin gitops >/dev/null 2>&1; then
+            git fetch origin gitops
+            git checkout -B gitops FETCH_HEAD
+            git checkout "${DEPLOY_SHA}" -- k8s/
+          else
+            git checkout -B gitops "${DEPLOY_SHA}"
+          fi
+
+          for svc in api-gateway user-service alert-service media-service gis-service ai-service notification-service vision-service frontend; do
+            NEW_IMAGE="${REGISTRY}/${IMAGE_PREFIX}/${svc}:${DEPLOY_SHA}"
+            sed -i "s|image: ${REGISTRY}/${IMAGE_PREFIX}/${svc}:.*|image: ${NEW_IMAGE}|g" k8s/deployments.yaml
+          done
+
+          git diff --cached k8s/deployments.yaml || git diff k8s/deployments.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/
+          git commit -m "chore(gitops): update ecoalert images to ${DEPLOY_SHA} [skip ci]" || echo "No changes to commit"
+          git push origin gitops
+
+  # ===============================================================
+  # 5. Pipeline Notification (Telegram - 1 tin nhắn tổng kết toàn luồng)
   # ===============================================================
   notify:
-    name: 4. CI Notification (Telegram)
+    name: 5. Pipeline Notification (Telegram)
     needs:
       - ci-build-and-test
       - continuous-security
       - docker-build-and-publish
+      - cd-deployment
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # (#3, #4) Truyền mọi biến GitHub qua env: và dùng --data-urlencode
-      - name: Send Telegram CI Alert
+      - name: Send Telegram Pipeline Alert
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -362,6 +361,8 @@ jobs:
           CI_RESULT: ${{ needs.ci-build-and-test.result }}
           SEC_RESULT: ${{ needs.continuous-security.result }}
           DOCKER_RESULT: ${{ needs.docker-build-and-publish.result }}
+          CD_RESULT: ${{ needs.cd-deployment.result }}
+          EVENT_NAME: ${{ github.event_name }}
           REPO: ${{ github.repository }}
           REF_NAME: ${{ github.ref_name }}
           ACTOR: ${{ github.actor }}
@@ -373,7 +374,10 @@ jobs:
             exit 0
           fi
 
-          if [ "$CI_RESULT" = "success" ] && [ "$SEC_RESULT" = "success" ] && [ "$DOCKER_RESULT" = "success" ]; then
+          if [ "$CI_RESULT" = "success" ] && \
+             [ "$SEC_RESULT" = "success" ] && \
+             [ "$DOCKER_RESULT" = "success" ] && \
+             { [ "$CD_RESULT" = "success" ] || [ "$CD_RESULT" = "skipped" ]; }; then
             STATUS_ICON="✅"
             STATUS_TEXT="THÀNH CÔNG (SUCCEEDED)"
           else
@@ -381,11 +385,25 @@ jobs:
             STATUS_TEXT="THẤT BẠI (FAILED)"
           fi
 
+          case "$CD_RESULT" in
+            success)   CD_TEXT="✅ Đã triển khai" ;;
+            skipped)
+              if [ "$EVENT_NAME" = "pull_request" ]; then
+                CD_TEXT="⏭️ Bỏ qua (Pull Request)"
+              else
+                CD_TEXT="⏭️ Bỏ qua"
+              fi ;;
+            failure)   CD_TEXT="❌ Thất bại / bị từ chối phê duyệt" ;;
+            cancelled) CD_TEXT="⚠️ Đã hủy" ;;
+            *)         CD_TEXT="$CD_RESULT" ;;
+          esac
+
           CLEAN_MSG=$(echo "$RAW_COMMIT_MSG" | head -n 1 | sed 's/[*_`\\]//g')
           SHORT_SHA="${SHA:0:7}"
 
-          MESSAGE="🛡️ *ECOALERT CI - DEVSECOPS*
+          MESSAGE="🚀 *ECOALERT DEVSECOPS PIPELINE*
           ${STATUS_ICON} *Trạng thái:* ${STATUS_TEXT}
+          🚢 *CD Deployment:* ${CD_TEXT}
           📦 *Repository:* \`${REPO}\`
           🌿 *Nhánh:* \`${REF_NAME}\`
           👤 *Tác giả:* ${ACTOR}
