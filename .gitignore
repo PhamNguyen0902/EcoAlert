@@ -6,9 +6,12 @@
 **/build/
 **/__pycache__/
 *.py[cod]
+**/coverage/
+.coverage
 
 # Environment
 **/.env
+**/.env.qa
 **/.env.*
 !backend/ai-service/.env.example
 !backend/gis-service/.env.example

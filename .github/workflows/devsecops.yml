@@ -1,0 +1,357 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  # ===============================================================
+  # 0. Nhận diện thành phần thay đổi (Path Filtering) để tối ưu thời gian CI
+  # ===============================================================
+  detect-changes:
+    name: 0. Detect Changed Components
+    runs-on: ubuntu-latest
+    outputs:
+      run_frontend: ${{ steps.matrix.outputs.run_frontend }}
+      run_backend_node: ${{ steps.matrix.outputs.run_backend_node }}
+      backend_matrix: ${{ steps.matrix.outputs.backend_matrix }}
+      run_vision: ${{ steps.matrix.outputs.run_vision }}
+      run_mobile: ${{ steps.matrix.outputs.run_mobile }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect Changed Paths
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            workflow:
+              - '.github/workflows/**'
+            frontend:
+              - 'frontend/**'
+            backend_shared:
+              - 'backend/shared/**'
+            api_gateway:
+              - 'backend/api-gateway/**'
+            user_service:
+              - 'backend/user-service/**'
+            alert_service:
+              - 'backend/alert-service/**'
+            gis_service:
+              - 'backend/gis-service/**'
+            media_service:
+              - 'backend/media-service/**'
+            notification_service:
+              - 'backend/notification-service/**'
+            ai_service:
+              - 'backend/ai-service/**'
+            vision:
+              - 'backend/vision-service/**'
+            mobile:
+              - 'mobile/**'
+
+      - name: Compute CI Matrix
+        id: matrix
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          F_WORKFLOW: ${{ steps.filter.outputs.workflow }}
+          F_FRONTEND: ${{ steps.filter.outputs.frontend }}
+          F_SHARED: ${{ steps.filter.outputs.backend_shared }}
+          F_API_GATEWAY: ${{ steps.filter.outputs.api_gateway }}
+          F_USER: ${{ steps.filter.outputs.user_service }}
+          F_ALERT: ${{ steps.filter.outputs.alert_service }}
+          F_GIS: ${{ steps.filter.outputs.gis_service }}
+          F_MEDIA: ${{ steps.filter.outputs.media_service }}
+          F_NOTIFICATION: ${{ steps.filter.outputs.notification_service }}
+          F_AI: ${{ steps.filter.outputs.ai_service }}
+          F_VISION: ${{ steps.filter.outputs.vision }}
+          F_MOBILE: ${{ steps.filter.outputs.mobile }}
+        run: |
+          ALL_BACKEND='["api-gateway","user-service","alert-service","gis-service","media-service","notification-service","ai-service"]'
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$REF" = "refs/heads/main" ] || [ "$F_WORKFLOW" = "true" ]; then
+            echo "run_frontend=true" >> "$GITHUB_OUTPUT"
+            echo "run_backend_node=true" >> "$GITHUB_OUTPUT"
+            echo "backend_matrix=$ALL_BACKEND" >> "$GITHUB_OUTPUT"
+            echo "run_vision=true" >> "$GITHUB_OUTPUT"
+            echo "run_mobile=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "run_frontend=${F_FRONTEND:-false}" >> "$GITHUB_OUTPUT"
+          echo "run_vision=${F_VISION:-false}" >> "$GITHUB_OUTPUT"
+          echo "run_mobile=${F_MOBILE:-false}" >> "$GITHUB_OUTPUT"
+
+          if [ "$F_SHARED" = "true" ]; then
+            echo "run_backend_node=true" >> "$GITHUB_OUTPUT"
+            echo "backend_matrix=$ALL_BACKEND" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          SERVICES=()
+          [ "$F_API_GATEWAY" = "true" ] && SERVICES+=('"api-gateway"')
+          [ "$F_USER" = "true" ] && SERVICES+=('"user-service"')
+          [ "$F_ALERT" = "true" ] && SERVICES+=('"alert-service"')
+          [ "$F_GIS" = "true" ] && SERVICES+=('"gis-service"')
+          [ "$F_MEDIA" = "true" ] && SERVICES+=('"media-service"')
+          [ "$F_NOTIFICATION" = "true" ] && SERVICES+=('"notification-service"')
+          [ "$F_AI" = "true" ] && SERVICES+=('"ai-service"')
+
+          if [ "${#SERVICES[@]}" -eq 0 ]; then
+            echo "run_backend_node=false" >> "$GITHUB_OUTPUT"
+            echo 'backend_matrix=["api-gateway"]' >> "$GITHUB_OUTPUT"
+          else
+            echo "run_backend_node=true" >> "$GITHUB_OUTPUT"
+            JOINED=$(IFS=,; echo "${SERVICES[*]}")
+            echo "backend_matrix=[$JOINED]" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ===============================================================
+  # 2. CI Automation (Build, Lint, Health/Syntax Check, Unit Tests & Coverage)
+  # ===============================================================
+  ci-frontend:
+    name: 2.1. CI Frontend (Lint, Build & Tests)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_frontend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint Frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: TypeScript Check & Vite Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Run Frontend Unit Tests & Coverage
+        working-directory: frontend
+        run: |
+          mkdir -p coverage
+          npm run test:routing
+          node --test --experimental-test-coverage \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=lcov --test-reporter-destination=coverage/frontend-cjs.lcov \
+            tests/*.test.cjs
+
+      - name: Upload Frontend Coverage Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-frontend
+          path: frontend/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ci-backend-node:
+    name: 2.2. CI Backend Node (${{ matrix.service }})
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_backend_node == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.backend_matrix) }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'backend/**/package-lock.json'
+
+      - name: Build @ecoalert/shared
+        working-directory: backend/shared
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Install & Build ${{ matrix.service }}
+        working-directory: backend/${{ matrix.service }}
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          node --check dist/server.js
+
+      - name: Run Unit Tests & Code Coverage
+        run: |
+          mkdir -p coverage
+          cd "backend/${{ matrix.service }}"
+          case "${{ matrix.service }}" in
+            ai-service|alert-service|gis-service|media-service)
+              node --test --experimental-test-coverage \
+                --test-reporter=spec --test-reporter-destination=stdout \
+                --test-reporter=lcov --test-reporter-destination="../../coverage/${{ matrix.service }}.lcov" \
+                dist/tests/*.test.js
+              ;;
+            notification-service)
+              node --test --experimental-test-coverage \
+                --test-reporter=spec --test-reporter-destination=stdout \
+                --test-reporter=lcov --test-reporter-destination="../../coverage/${{ matrix.service }}.lcov" \
+                tests/*.test.cjs
+              ;;
+            *)
+              echo "No dedicated unit test suite yet for ${{ matrix.service }}; TypeScript build & entrypoint syntax check passed."
+              ;;
+          esac
+
+      - name: Upload Backend Coverage Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-backend-${{ matrix.service }}
+          path: coverage/${{ matrix.service }}.lcov
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ci-vision-python:
+    name: 2.3. CI Vision Service (Python FastAPI)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_vision == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install OpenCV System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+
+      - name: Cache pip Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-vision-${{ hashFiles('backend/vision-service/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-vision-
+
+      - name: Install CPU-only PyTorch & Vision Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 torchvision==0.20.1
+          pip install -r backend/vision-service/requirements-dev.txt coverage
+
+      - name: Syntax Check & Python Unit Tests with Coverage
+        run: |
+          mkdir -p coverage
+          cd backend/vision-service
+          python -m compileall -q main.py routers schemas services
+          python -m coverage run --source=routers,schemas,services -m unittest discover -s tests -v
+          python -m coverage report -m
+          python -m coverage xml -o ../../coverage/vision-coverage.xml
+
+      - name: Upload Vision Coverage Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-vision-service
+          path: coverage/vision-coverage.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ci-mobile:
+    name: 2.4. CI Mobile (Contract & Unit Tests)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_mobile == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install Mobile Dependencies
+        working-directory: mobile
+        run: npm ci --no-audit --no-fund
+
+      - name: Run Mobile Unit & Contract Tests
+        working-directory: mobile
+        run: npm test
+
+  # ===============================================================
+  # Cổng tổng hợp cho giai đoạn CI Automation (Dùng cho Branch Protection & Giai đoạn 3+)
+  # ===============================================================
+  ci-automation-gate:
+    name: 2. CI Automation Gate
+    needs: [detect-changes, ci-frontend, ci-backend-node, ci-vision-python, ci-mobile]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Evaluate CI Results & Write Summary
+        shell: bash
+        env:
+          DETECT_RESULT: ${{ needs.detect-changes.result }}
+          FRONTEND_RESULT: ${{ needs.ci-frontend.result }}
+          BACKEND_RESULT: ${{ needs.ci-backend-node.result }}
+          VISION_RESULT: ${{ needs.ci-vision-python.result }}
+          MOBILE_RESULT: ${{ needs.ci-mobile.result }}
+        run: |
+          {
+            echo "### EcoAlert CI Automation Summary"
+            echo ""
+            echo "| Component | Status |"
+            echo "| :--- | :--- |"
+            echo "| Detect Changes | \`$DETECT_RESULT\` |"
+            echo "| Frontend (Lint, Build & Tests) | \`$FRONTEND_RESULT\` |"
+            echo "| Backend Node.js Microservices | \`$BACKEND_RESULT\` |"
+            echo "| Vision Service (Python FastAPI) | \`$VISION_RESULT\` |"
+            echo "| Mobile (Contract & Unit Tests) | \`$MOBILE_RESULT\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$DETECT_RESULT" != "success" ]; then
+            echo "::error::detect-changes job failed ($DETECT_RESULT)"
+            exit 1
+          fi
+
+          for res in "$FRONTEND_RESULT" "$BACKEND_RESULT" "$VISION_RESULT" "$MOBILE_RESULT"; do
+            if [ "$res" = "failure" ] || [ "$res" = "cancelled" ]; then
+              echo "::error::One or more CI jobs failed or were cancelled."
+              exit 1
+            fi
+          done
