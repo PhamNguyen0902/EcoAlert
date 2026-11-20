@@ -1,0 +1,675 @@
+# triển khai toàn bộ hệ thống microservices và giao diện web của EcoAlert trên Kubernetes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app: api-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: ghcr.io/phamnguyen0902/ecoalert/api-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: '3000'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: JWT_SECRET
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: REDIS_URL
+            - name: USER_SERVICE_URL
+              value: 'http://user-service:3001'
+            - name: ALERT_SERVICE_URL
+              value: 'http://alert-service:3002'
+            - name: MEDIA_SERVICE_URL
+              value: 'http://media-service:3003'
+            - name: GIS_SERVICE_URL
+              value: 'http://gis-service:3004'
+            - name: AI_SERVICE_URL
+              value: 'http://ai-service:3005'
+            - name: NOTIFICATION_SERVICE_URL
+              value: 'http://notification-service:3006'
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '384Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: api-gateway
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  labels:
+    app: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: ghcr.io/phamnguyen0902/ecoalert/user-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+          env:
+            - name: PORT
+              value: '3001'
+            - name: MONGO_URI
+              value: 'mongodb://mongodb:27017/ecoalert-user-db'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: JWT_SECRET
+            - name: SERVICE_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: SERVICE_AUTH_SECRET
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: REDIS_URL
+            - name: COGNITO_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: COGNITO_REGION
+            - name: COGNITO_USER_POOL_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: COGNITO_USER_POOL_ID
+            - name: COGNITO_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: COGNITO_CLIENT_ID
+            - name: COGNITO_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: COGNITO_CLIENT_SECRET
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '384Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  type: ClusterIP
+  selector:
+    app: user-service
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-service
+  labels:
+    app: alert-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-service
+  template:
+    metadata:
+      labels:
+        app: alert-service
+    spec:
+      containers:
+        - name: alert-service
+          image: ghcr.io/phamnguyen0902/ecoalert/alert-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3002
+          env:
+            - name: PORT
+              value: '3002'
+            - name: MONGO_URI
+              value: 'mongodb://mongodb:27017/ecoalert-alert-db'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: JWT_SECRET
+            - name: SERVICE_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: SERVICE_AUTH_SECRET
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: RABBITMQ_URL
+            - name: USER_SERVICE_URL
+              value: 'http://user-service:3001'
+            - name: GIS_SERVICE_URL
+              value: 'http://gis-service:3004'
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '384Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-service
+spec:
+  type: ClusterIP
+  selector:
+    app: alert-service
+  ports:
+    - protocol: TCP
+      port: 3002
+      targetPort: 3002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-service
+  labels:
+    app: media-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-service
+  template:
+    metadata:
+      labels:
+        app: media-service
+    spec:
+      containers:
+        - name: media-service
+          image: ghcr.io/phamnguyen0902/ecoalert/media-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3003
+          env:
+            - name: PORT
+              value: '3003'
+            - name: MONGO_URI
+              value: 'mongodb://mongodb:27017/ecoalert-media-db'
+            - name: SERVICE_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: SERVICE_AUTH_SECRET
+            - name: VISION_SERVICE_URL
+              value: 'http://vision-service:8001'
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_REGION
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_S3_BUCKET_NAME
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '384Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-service
+spec:
+  type: ClusterIP
+  selector:
+    app: media-service
+  ports:
+    - protocol: TCP
+      port: 3003
+      targetPort: 3003
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gis-service
+  labels:
+    app: gis-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gis-service
+  template:
+    metadata:
+      labels:
+        app: gis-service
+    spec:
+      containers:
+        - name: gis-service
+          image: ghcr.io/phamnguyen0902/ecoalert/gis-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3004
+          env:
+            - name: PORT
+              value: '3004'
+            - name: MONGO_URI
+              value: 'mongodb://mongodb:27017/ecoalert-gis-db'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: JWT_SECRET
+            - name: SERVICE_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: SERVICE_AUTH_SECRET
+            - name: USER_SERVICE_URL
+              value: 'http://user-service:3001'
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: RABBITMQ_URL
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '384Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gis-service
+spec:
+  type: ClusterIP
+  selector:
+    app: gis-service
+  ports:
+    - protocol: TCP
+      port: 3004
+      targetPort: 3004
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  labels:
+    app: ai-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-service
+  template:
+    metadata:
+      labels:
+        app: ai-service
+    spec:
+      containers:
+        - name: ai-service
+          image: ghcr.io/phamnguyen0902/ecoalert/ai-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3005
+          env:
+            - name: PORT
+              value: '3005'
+            - name: MONGO_URI
+              value: 'mongodb://mongodb:27017/ecoalert-ai-db'
+            - name: ALERT_MONGO_URI
+              value: 'mongodb://mongodb:27017/ecoalert-alert-db'
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: RABBITMQ_URL
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: OPENROUTER_API_KEY
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '384Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+spec:
+  type: ClusterIP
+  selector:
+    app: ai-service
+  ports:
+    - protocol: TCP
+      port: 3005
+      targetPort: 3005
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  labels:
+    app: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: ghcr.io/phamnguyen0902/ecoalert/notification-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3006
+          env:
+            - name: PORT
+              value: '3006'
+            - name: MONGO_URI
+              value: 'mongodb://mongodb:27017/ecoalert-notification-db'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: JWT_SECRET
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: RABBITMQ_URL
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '384Mi'
+              cpu: '500m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3006
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3006
+            initialDelaySeconds: 20
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+spec:
+  type: ClusterIP
+  selector:
+    app: notification-service
+  ports:
+    - protocol: TCP
+      port: 3006
+      targetPort: 3006
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vision-service
+  labels:
+    app: vision-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vision-service
+  template:
+    metadata:
+      labels:
+        app: vision-service
+    spec:
+      containers:
+        - name: vision-service
+          image: ghcr.io/phamnguyen0902/ecoalert/vision-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+          env:
+            - name: YOLO_DEVICE
+              value: 'cpu'
+            - name: YOLO_MODELS_CONFIG
+              value: 'config/models.json'
+          resources:
+            requests:
+              memory: '512Mi'
+              cpu: '250m'
+            limits:
+              memory: '1536Mi'
+              cpu: '1000m'
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vision-service
+spec:
+  type: ClusterIP
+  selector:
+    app: vision-service
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/phamnguyen0902/ecoalert/frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: '64Mi'
+              cpu: '50m'
+            limits:
+              memory: '192Mi'
+              cpu: '250m'
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
