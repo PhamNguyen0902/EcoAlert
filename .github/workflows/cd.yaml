@@ -84,7 +84,10 @@ jobs:
           SHA: ${{ env.DEPLOY_SHA }}
           REPO: ${{ github.repository }}
         run: |
-          [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ] && exit 0
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets chua duoc cau hinh. Bo qua gui tin nhan."
+            exit 0
+          fi
           if [ "$RESULT" = "success" ]; then
             ICON="✅"
             TXT="DEPLOY THÀNH CÔNG"
