@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: ghcr.io/phamnguyen0902/ecoalert/api-gateway:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/api-gateway:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -97,7 +97,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: ghcr.io/phamnguyen0902/ecoalert/user-service:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/user-service:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
@@ -192,7 +192,7 @@ spec:
     spec:
       containers:
         - name: alert-service
-          image: ghcr.io/phamnguyen0902/ecoalert/alert-service:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/alert-service:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3002
@@ -220,6 +220,10 @@ spec:
               value: 'http://user-service:3001'
             - name: GIS_SERVICE_URL
               value: 'http://gis-service:3004'
+            - name: VISION_SERVICE_URL
+              value: 'http://vision-service:8001'
+            - name: MEDIA_SERVICE_URL
+              value: 'http://media-service:3003'
           resources:
             requests:
               memory: '128Mi'
@@ -271,7 +275,7 @@ spec:
     spec:
       containers:
         - name: media-service
-          image: ghcr.io/phamnguyen0902/ecoalert/media-service:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/media-service:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3003
@@ -280,6 +284,11 @@ spec:
               value: '3003'
             - name: MONGO_URI
               value: 'mongodb://mongodb:27017/ecoalert-media-db'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: JWT_SECRET
             - name: SERVICE_AUTH_SECRET
               valueFrom:
                 secretKeyRef:
@@ -358,7 +367,7 @@ spec:
     spec:
       containers:
         - name: gis-service
-          image: ghcr.io/phamnguyen0902/ecoalert/gis-service:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/gis-service:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3004
@@ -435,7 +444,7 @@ spec:
     spec:
       containers:
         - name: ai-service
-          image: ghcr.io/phamnguyen0902/ecoalert/ai-service:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/ai-service:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3005
@@ -458,6 +467,13 @@ spec:
                   key: OPENROUTER_API_KEY
             - name: OPENROUTER_ANALYSIS_MODEL
               value: 'openai/gpt-4o-mini'
+            - name: MEDIA_SERVICE_URL
+              value: 'http://media-service:3003'
+            - name: SERVICE_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: SERVICE_AUTH_SECRET
           resources:
             requests:
               memory: '128Mi'
@@ -509,7 +525,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: ghcr.io/phamnguyen0902/ecoalert/notification-service:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/notification-service:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3006
@@ -579,7 +595,7 @@ spec:
     spec:
       containers:
         - name: vision-service
-          image: ghcr.io/phamnguyen0902/ecoalert/vision-service:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/vision-service:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001
@@ -588,6 +604,16 @@ spec:
               value: 'cpu'
             - name: YOLO_MODELS_CONFIG
               value: 'config/models.json'
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_REGION
+            - name: AWS_S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_S3_BUCKET_NAME
           resources:
             requests:
               memory: '512Mi'
@@ -639,7 +665,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/phamnguyen0902/ecoalert/frontend:590a22e0af714c52298cdbd0bde2eee8cdc44723
+          image: ghcr.io/phamnguyen0902/ecoalert/frontend:ad66a0d34e43c6f680e99ceb013e893934b9ceca
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
