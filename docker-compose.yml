@@ -327,7 +327,10 @@ services:
       - ALERT_MONGO_URI=mongodb://mongodb:27017/ecoalert-alert-db
       - RABBITMQ_URL=${RABBITMQ_URL}
       - MEDIA_SERVICE_URL=http://media-service:3003
+      - JWT_SECRET=${JWT_SECRET}
       - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET:-${JWT_SECRET}}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       # The API key lives only in backend/ai-service/.env.  Do not let a stale
       # root-level migration copy override the service-specific credential.
       - OPENROUTER_ANALYSIS_MODEL=${OPENROUTER_ANALYSIS_MODEL:-openai/gpt-4o-mini}
@@ -364,10 +367,13 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - MONGO_URI=mongodb://mongodb:27017/ecoalert-notification-db
       - RABBITMQ_URL=${RABBITMQ_URL}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     depends_on:
       mongodb:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3006/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]

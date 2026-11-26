@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "asian_waste", "enabled": true,
+      "id": "asian_waste", "enabled": false,
       "path": "models/BEST_ASIAN_WASTE_YOLO11S.pt", "confidence": 0.25, "image_size": 640,
       "label_map": {
         "Animal Waste": "animal_waste", "Construction Waste": "construction_waste",

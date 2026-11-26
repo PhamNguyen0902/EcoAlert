@@ -190,7 +190,7 @@ class DetectorTests(unittest.TestCase):
             self.assertTrue(result['requiresManualReview'])
             self.assertEqual(result['detections'][0]['materialClass'], 'plastic')
             self.assertEqual(result['detections'][0]['model_id'], 'second')
-            self.assertEqual(result['detections'][0]['suggestedCategory'], 'other')
+            self.assertEqual(result['detections'][0]['suggestedCategory'], 'illegal_dumping')
             modern = self.upload(client, '/detect').json()
             self.assertTrue(modern['success'])
             self.assertEqual(modern['count'], 1)

@@ -40,6 +40,15 @@ MATERIAL_TO_CATEGORY = {
     "metal_can": "illegal_dumping",
     "cardboard": "illegal_dumping",
     "glass_bottle": "illegal_dumping",
+    "animal_waste": "illegal_dumping",
+    "construction_waste": "illegal_construction_waste",
+    "garbage_bag": "illegal_dumping",
+    "glass": "illegal_dumping",
+    "metal": "illegal_dumping",
+    "organic_waste": "illegal_dumping",
+    "paper": "illegal_dumping",
+    "plastic": "illegal_dumping",
+    "waste": "illegal_dumping",
 }
 
 
@@ -51,7 +60,7 @@ def get_detector(request: Request) -> WasteDetector:
 # đọc và kiểm tra tính hợp lệ về định dạng và kích thước của tập tin ảnh tải lên
 async def read_valid_image(file: UploadFile, detector: WasteDetector) -> bytes:
     extension = f".{file.filename.rsplit('.', 1)[-1].lower()}" if file.filename and "." in file.filename else ""
-    if file.content_type not in {"image/jpeg", "image/png", "image/webp"} or extension not in ALLOWED_EXTENSIONS:
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp"} or (extension and extension not in ALLOWED_EXTENSIONS):
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Only JPG, JPEG, PNG, and WEBP images are supported")
 
     image_bytes = await file.read(detector.settings.max_upload_bytes + 1)
@@ -123,11 +132,12 @@ async def infer(file: UploadFile, confidence: float | None, detector: WasteDetec
     if not detector.is_ready():
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Vision model is not ready")
 
+    image_bytes = await read_valid_image(file, detector)
+
     if not detector.admission.acquire(blocking=False):
         raise HTTPException(status_code=503, detail="Vision inference is busy; retry later", headers={"Retry-After": "1"})
     future = None
     try:
-        image_bytes = await read_valid_image(file, detector)
         def work():
             image = decode_image(image_bytes, detector.settings.max_image_pixels)
             return detector.detect_image(image, confidence)
@@ -236,8 +246,12 @@ async def verify_resolution_file(
     detector = get_detector(request)
     batch = await infer(file, confidence, detector)
     is_clean, wastes = is_clean_scene(batch, confidence_threshold=confidence)
-    serialized = serialize_detection_response(batch)
-    waste_serialized = [d for d in serialized.detections if d.confidence > confidence]
+    if batch.degraded and is_clean:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vision model degraded; cannot verify clean scene",
+        )
+    waste_serialized = _serialize_detections(wastes)
     if is_clean:
         return VerifyResolutionResponse(
             is_clean=True,

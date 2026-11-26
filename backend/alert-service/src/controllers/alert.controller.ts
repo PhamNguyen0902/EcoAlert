@@ -50,7 +50,7 @@ export class AlertController {
     const citizenId =
       role === "CITIZEN" ? (req.headers["x-user-id"] as string) : undefined;
     const filters = {
-      //chưa lấy req.query.title
+      title: typeof req.query.title === "string" ? req.query.title : undefined,
       unassigned: role === 'ADMIN' && req.query.unassigned === 'true',
       status: req.query.status as string | undefined,
       category: req.query.category as string | undefined,
@@ -67,30 +67,21 @@ export class AlertController {
   }
 
   public getOfficerTasks = async (req: Request, res: Response) => {
-    try {
-      const actor = workflowActor(req);
-      const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10) || 10;
-      const status = req.query.status as string | undefined;
+    const actor = workflowActor(req);
+    const { page, limit } = pagination(req);
+    const status = req.query.status as string | undefined;
 
-      // Chỉ trả các nhiệm vụ được phân công cho Officer đang đăng nhập.
-      const result = await alertService.getOfficerTasks(
-        actor,
-        page,
-        limit,
-        status,
-      );
+    // Chỉ trả các nhiệm vụ được phân công cho Officer đang đăng nhập.
+    const result = await alertService.getOfficerTasks(
+      actor,
+      page,
+      limit,
+      status,
+    );
 
-      res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error: any) {
-      res.status(error.status || 500).json({
-        success: false,
-        message: error.message || "Internal Server Error",
-      });
-    }
+    res
+      .status(200)
+      .json(paginatedResponse(result.items, result.total, page, limit));
   };
 
   async getAlertById(req: Request, res: Response) {

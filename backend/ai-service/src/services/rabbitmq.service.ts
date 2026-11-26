@@ -36,13 +36,15 @@ interface AlertCreatedData {
 const buildReportVisionSummary = (evidence: AlertCreatedData['visionEvidence']): string | undefined => {
   if (!evidence?.length) return undefined;
   const validEvidence = evidence.filter((item) => item && typeof item.imageUrl === 'string');
+  if (!validEvidence.length) return undefined;
   return [
     `YOLO đã kiểm tra ${validEvidence.length} ảnh độc lập; không cộng số vùng giữa ảnh như số vật thể duy nhất và không gộp confidence.`,
     ...validEvidence.map((item, index) => {
+      const detections = Array.isArray(item.detections) ? item.detections : [];
       const classes = new Map<string, number>();
-      for (const detection of item.detections) classes.set(detection.materialClass, (classes.get(detection.materialClass) || 0) + 1);
+      for (const detection of detections) classes.set(detection.materialClass, (classes.get(detection.materialClass) || 0) + 1);
       const labels = [...classes.entries()].slice(0, 12).map(([name, count]) => `${name}: ${count} vùng`).join(', ');
-      return `Ảnh ${index + 1}: trạng thái ${item.status}; ${item.detections.length} vùng phát hiện${labels ? ` (${labels})` : ''}.`;
+      return `Ảnh ${index + 1}: trạng thái ${item.status}; ${detections.length} vùng phát hiện${labels ? ` (${labels})` : ''}.`;
     }),
   ].join('\n');
 };
@@ -66,7 +68,7 @@ const detectWasteFromMedia = async (imageUrl: string): Promise<IVisionEvidence> 
   const response = await axios.post(
     `${mediaBaseUrl}/analyze-url`,
     payload,
-    { timeout: 25_000, ...(headers ? { headers } : {}) },
+    { timeout: 60_000, ...(headers ? { headers } : {}) },
   );
   const data = response.data?.data;
   if (!data?.aiAnalysis) throw new Error('Invalid media analysis response');
@@ -104,13 +106,16 @@ export const processAlertCreatedEvent = async (
     if (alert.visionEvidence && alert.visionEvidence.length > 0) {
       visionEvidence = alert.visionEvidence;
     } else {
-      visionEvidence = await Promise.all(urls.map(async (url): Promise<IVisionEvidence> => {
-        try { return await (dependencies.detectWaste || detectWasteFromMedia)(url); }
-        catch (error) {
-          logger.warn('Vision failed for one evidence image', { alertId: alert._id, imageIndex: urls.indexOf(url), error: error instanceof Error ? error.message : 'unknown' });
-          return { imageUrl: url, status: 'error', detections: [], requiresManualReview: true };
+      visionEvidence = [];
+      for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        try {
+          visionEvidence.push(await (dependencies.detectWaste || detectWasteFromMedia)(url));
+        } catch (error) {
+          logger.warn('Vision failed for one evidence image', { alertId: alert._id, imageIndex: i, error: error instanceof Error ? error.message : 'unknown' });
+          visionEvidence.push({ imageUrl: url, status: 'error', detections: [], requiresManualReview: true });
         }
-      }));
+      }
     }
     preservedVisionEvidence = visionEvidence;
     analysis = await dependencies.analyze({
@@ -125,13 +130,23 @@ export const processAlertCreatedEvent = async (
 
     if (pipeline === 'WASTE_DETECTION') {
       // gửi yêu cầu ngữ nghĩa lần hai kết hợp minh chứng nhận diện rác thải hợp lệ cho kết quả tổng quan
-      analysis = await dependencies.analyze({ alertId: alert._id, title: alert.title, description: alert.description || '', imageUrls: urls, reportVisionSummary: buildReportVisionSummary(visionEvidence) });
-      analysis.analysisPipeline = pipeline;
-      analysis.visionEvidence = visionEvidence;
-    } else {
-      analysis.analysisPipeline = pipeline;
-      analysis.visionEvidence = visionEvidence;
-      if (analysis.overallAnalysis) analysis.overallAnalysis.massEstimate = noWasteMassEstimate();
+      const visionSummary = buildReportVisionSummary(visionEvidence);
+      if (visionSummary) {
+        try {
+          analysis = await dependencies.analyze({ alertId: alert._id, title: alert.title, description: alert.description || '', imageUrls: urls, reportVisionSummary: visionSummary });
+        } catch (pass2Error) {
+          logger.warn('Pass 2 vision-assisted semantic analysis failed; keeping pass 1 analysis', {
+            alertId: alert._id,
+            ...safeOpenRouterErrorMetadata(pass2Error),
+          });
+        }
+      }
+    }
+    const finalPipeline = resolveVisionPipeline(analysis.category);
+    analysis.analysisPipeline = finalPipeline;
+    analysis.visionEvidence = visionEvidence;
+    if (finalPipeline !== 'WASTE_DETECTION' && analysis.overallAnalysis) {
+      analysis.overallAnalysis.massEstimate = noWasteMassEstimate();
     }
   } catch (error) {
     // không làm gián đoạn báo cáo khi nhà cung cấp lỗi hệ thống sẽ đánh dấu tạm thời chờ xử lý

@@ -21,7 +21,8 @@ class RabbitMQService {
       // Đồng bộ read model bản đồ khi báo cáo mới được tạo hoặc workflow thay đổi.
       await this.channel.bindQueue(q.queue, 'ecoalert_exchange', EVENTS.ALERT_CREATED);
       await this.channel.bindQueue(q.queue, 'ecoalert_exchange', EVENTS.ALERT_UPDATED);
-      
+
+      await this.channel.prefetch(1);
       this.channel.consume(q.queue, async (msg: any) => {
         if (msg) {
           try {

@@ -67,6 +67,13 @@ class RabbitMQService {
   }
   async handleEvent(event: IEventMessage<AlertEventData>) {
     const data = event.data;
+    if (
+      event.eventType === EVENTS.ALERT_UPDATED &&
+      Boolean(data.workflowNotificationHandled)
+    ) {
+      return;
+    }
+
     const entity = data.alertId || data._id;
     const alertId =
       typeof entity === "string" && /^[a-f\d]{24}$/i.test(entity)
@@ -77,6 +84,46 @@ class RabbitMQService {
       ...(data.citizenId ? [`user:${data.citizenId}`] : []),
       ...(data.assignedOfficerId ? [`user:${data.assignedOfficerId}`] : []),
     ];
+
+    const isNonTransitionAlertUpdate =
+      event.eventType === EVENTS.ALERT_UPDATED &&
+      (!data.previousStatus ||
+        !data.status ||
+        data.previousStatus.toUpperCase() === data.status.toUpperCase());
+    const isFailedAiEvent =
+      event.eventType === EVENTS.AI_ANALYZED &&
+      (!data.analysisMode || data.analysisMode === "FAILED");
+    const shouldPersistNotifications =
+      !isNonTransitionAlertUpdate && !isFailedAiEvent;
+
+    if (shouldPersistNotifications) {
+      const recipients: Array<
+        [string | undefined, "CITIZEN" | "OFFICER" | "ADMIN"]
+      > = [
+        [data.citizenId, "CITIZEN"],
+        [data.assignedOfficerId, "OFFICER"],
+        ["admins", "ADMIN"],
+      ];
+      for (const [recipientId, recipientRole] of recipients) {
+        if (!recipientId) continue;
+        const content = buildNotificationContent({
+          eventType: event.eventType,
+          status: data.status,
+          recipientRole,
+          alertTitle: data.title,
+        });
+        if (content)
+          await notificationService.notify(
+            recipientId,
+            content,
+            event.eventId,
+            alertId,
+            data.title,
+            event.eventType,
+          );
+      }
+    }
+
     // General subscribers get invalidation only, never a private report/AI payload.
     socketService.emitToAll("realtime:event", { type: event.eventType });
     const update = {
@@ -101,47 +148,6 @@ class RabbitMQService {
         "officer:assigned",
         update,
       );
-
-    if (event.eventType === EVENTS.ALERT_UPDATED) {
-      // Generic edits, AI persistence and the companion workflow update aren't transitions.
-      if (
-        data.workflowNotificationHandled ||
-        !data.previousStatus ||
-        !data.status ||
-        data.previousStatus.toUpperCase() === data.status.toUpperCase()
-      )
-        return;
-    }
-    if (
-      event.eventType === EVENTS.AI_ANALYZED &&
-      (!data.analysisMode || data.analysisMode === "FAILED")
-    )
-      return;
-    const recipients: Array<
-      [string | undefined, "CITIZEN" | "OFFICER" | "ADMIN"]
-    > = [
-      [data.citizenId, "CITIZEN"],
-      [data.assignedOfficerId, "OFFICER"],
-      ["admins", "ADMIN"],
-    ];
-    for (const [recipientId, recipientRole] of recipients) {
-      if (!recipientId) continue;
-      const content = buildNotificationContent({
-        eventType: event.eventType,
-        status: data.status,
-        recipientRole,
-        alertTitle: data.title,
-      });
-      if (content)
-        await notificationService.notify(
-          recipientId,
-          content,
-          event.eventId,
-          alertId,
-          data.title,
-          event.eventType,
-        );
-    }
   }
 }
 export const rabbitMQService = new RabbitMQService();

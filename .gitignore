@@ -16,6 +16,7 @@
 !backend/ai-service/.env.example
 !backend/gis-service/.env.example
 !backend/media-service/.env.example
+!backend/notification-service/.env.example
 !backend/vision-service/.env.example
 !mobile/.env.example
 !/.env.example

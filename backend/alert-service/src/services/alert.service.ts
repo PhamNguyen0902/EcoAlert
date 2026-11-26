@@ -24,7 +24,9 @@ import {
 } from "../models/alert.model";
 import { alertRepository } from "../repositories/alert.repository";
 import {
+  AlertCategory,
   AlertStatus,
+  BadRequestError,
   ConflictError,
   createLogger,
   EVENTS,
@@ -42,7 +44,6 @@ import { envConfig } from "../config/env.config";
 import { haversineDistanceMeters, isValidLatitude, isValidLongitude } from "../utils/geo-evidence.util";
 
 const logger = createLogger('alert-service');
-import { BadRequestError } from "@ecoalert/shared";
 
 export interface WorkflowActor {
   id: string;
@@ -52,6 +53,34 @@ export interface WorkflowActor {
 
 const normRole = (r?: string) => (r || "").toUpperCase() as WorkflowActorRole;
 const normStatus = (s?: string) => (s || "").toLowerCase() as AlertStatus;
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const buildCaseInsensitiveEnumFilter = (
+  raw: string | undefined,
+  allowedValues: readonly string[],
+) => {
+  if (!raw || !raw.trim()) return undefined;
+  const normalizedAllowed = new Map(
+    allowedValues.map((value) => [value.toUpperCase(), value]),
+  );
+  const tokens = raw
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+  if (tokens.length === 0) return undefined;
+  const matched = [
+    ...new Set(
+      tokens
+        .map((token) => normalizedAllowed.get(token.toUpperCase()))
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ];
+  if (matched.length === 0) return { $in: [] };
+  return {
+    $in: matched.map((value) => new RegExp(`^${escapeRegex(value)}$`, "i")),
+  };
+};
 
 export class AlertService {
   private validateFieldLocation(alert: IAlert, data: ConfirmArrivalDto, radiusMeters: number) {
@@ -141,10 +170,20 @@ export class AlertService {
       actorRole: normRole(actor.role),
       ...extra,
     };
+    const baseAlert =
+      typeof alert.toObject === "function" ? alert.toObject() : alert;
+    if (eventName === EVENTS.ALERT_UPDATED) {
+      await rabbitMQService.publishEvent(
+        EVENTS.ALERT_UPDATED,
+        { ...baseAlert, ...payload },
+        actor.correlationId,
+      );
+      return;
+    }
     await rabbitMQService.publishEvent(eventName, payload, actor.correlationId);
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_UPDATED,
-      { ...alert.toObject(), workflowNotificationHandled: true },
+      { ...baseAlert, workflowNotificationHandled: true },
       actor.correlationId,
     );
   }
@@ -335,16 +374,35 @@ export class AlertService {
     page: number,
     limit: number,
     citizenId?: string,
-    filters: { status?: string; category?: string; severity?: string; unassigned?: boolean } = {},
+    filters: { title?: string; status?: string; category?: string; severity?: string; unassigned?: boolean } = {},
   ) {
     const filter: Record<string, unknown> = {};
     if (filters.unassigned) { filter.status = /^verified$/i; filter.assignedOfficerId = null; }
     if (citizenId) filter.citizenId = citizenId;
-    if (filters.status && !filters.unassigned) filter.status = new RegExp(`^${filters.status}$`, "i");
-    if (filters.category)
-      filter.category = new RegExp(`^${filters.category}$`, "i");
-    if (filters.severity)
-      filter.severity = new RegExp(`^${filters.severity}$`, "i");
+    if (filters.title?.trim()) {
+      filter.title = new RegExp(escapeRegex(filters.title.trim()), "i");
+    }
+    if (filters.status && !filters.unassigned) {
+      const statusFilter = buildCaseInsensitiveEnumFilter(
+        filters.status,
+        Object.values(AlertStatus),
+      );
+      if (statusFilter) filter.status = statusFilter;
+    }
+    if (filters.category) {
+      const categoryFilter = buildCaseInsensitiveEnumFilter(
+        filters.category,
+        [...Object.values(AlertCategory), "UNCLASSIFIED"],
+      );
+      if (categoryFilter) filter.category = categoryFilter;
+    }
+    if (filters.severity) {
+      const severityFilter = buildCaseInsensitiveEnumFilter(
+        filters.severity,
+        Object.values(Severity),
+      );
+      if (severityFilter) filter.severity = severityFilter;
+    }
     return alertRepository.findPaginated(filter, (page - 1) * limit, limit);
   }
 
@@ -410,11 +468,36 @@ export class AlertService {
     this.checkRole(actor, ["ADMIN"]);
     const alert = await this.requireAlert(id);
     const finalCategory = data.category || alert.category;
+    if (
+      !finalCategory ||
+      finalCategory === "UNCLASSIFIED" ||
+      !Object.values(AlertCategory).includes(finalCategory as AlertCategory)
+    ) {
+      throw new BadRequestError("Vui lòng chọn danh mục hợp lệ trước khi xác nhận");
+    }
+
+    const previousCategory =
+      alert.classification?.finalCategory ||
+      (alert.category && alert.category !== "UNCLASSIFIED" ? alert.category : null) ||
+      alert.classification?.aiSuggestedCategory ||
+      null;
+    const classificationStatus =
+      previousCategory && previousCategory === finalCategory
+        ? "ADMIN_CONFIRMED"
+        : "ADMIN_CORRECTED";
 
     const updated = await alertRepository.findOneAndUpdate(
       { _id: id },
       {
-        $set: { category: finalCategory, updatedBy: actor.id },
+        $set: {
+          category: finalCategory,
+          updatedBy: actor.id,
+          "classification.status": classificationStatus,
+          "classification.finalCategory": finalCategory,
+          "classification.finalCategorySource": "ADMIN",
+          "classification.confirmedBy": actor.id,
+          "classification.confirmedAt": new Date(),
+        },
         $push: {
           timeline: this.makeTimeline(
             "ADMIN_CLASSIFICATION_CONFIRMED",
@@ -614,7 +697,11 @@ export class AlertService {
   ) {
     this.checkRole(actor, ["OFFICER"]);
     const filter: Record<string, unknown> = { assignedOfficerId: actor.id };
-    if (status) filter.status = new RegExp(`^${status}$`, "i");
+    const statusFilter = buildCaseInsensitiveEnumFilter(
+      status,
+      Object.values(AlertStatus),
+    );
+    if (statusFilter) filter.status = statusFilter;
     return alertRepository.findPaginated(filter, (page - 1) * limit, limit);
   }
 
@@ -635,6 +722,7 @@ export class AlertService {
         $set: {
           status: AlertStatus.IN_PROGRESS,
           startedAt: new Date(),
+          startedBy: actor.id,
           updatedBy: actor.id,
         },
         $push: {
@@ -667,6 +755,8 @@ export class AlertService {
     this.checkAssignedOfficer(alert, actor);
     if (normStatus(alert.status) !== AlertStatus.IN_PROGRESS)
       throw new ConflictError("Sự cố phải đang xử lý để check-in");
+    if (alert.checkIn?.verified)
+      throw new ConflictError("Đã xác nhận đến hiện trường");
 
     const distance = this.validateFieldLocation(alert, data, envConfig.officerCheckinRadiusMeters);
     const now = new Date();
@@ -681,15 +771,27 @@ export class AlertService {
       checkedInAt: now,
       verified: true,
     };
+    const arrivalLocation = {
+      latitude: data.latitude,
+      longitude: data.longitude,
+      accuracy: data.accuracyMeters,
+    };
 
     const updated = await alertRepository.findOneAndUpdate(
       {
         _id: id,
         assignedOfficerId: actor.id,
         status: new RegExp(`^${AlertStatus.IN_PROGRESS}$`, "i"),
+        "checkIn.verified": { $ne: true },
       },
       {
-        $set: { arrivedAt: now, checkIn, updatedBy: actor.id },
+        $set: {
+          arrivedAt: now,
+          arrivedBy: actor.id,
+          arrivalLocation,
+          checkIn,
+          updatedBy: actor.id,
+        },
         $push: {
           timeline: this.makeTimeline(
             "ARRIVED_ON_SCENE",
@@ -897,13 +999,53 @@ export class AlertService {
       overallAnalysis: analysis.overallAnalysis,
     });
 
+    const humanLocked =
+      alert.classification?.finalCategorySource === "ADMIN" ||
+      alert.classification?.finalCategorySource === "CITIZEN" ||
+      [
+        "ADMIN_CONFIRMED",
+        "ADMIN_CORRECTED",
+        "USER_CONFIRMED",
+        "USER_CORRECTED",
+      ].includes(alert.classification?.status || "");
+    const hasValidAiCategory =
+      Boolean(analysis.category) &&
+      analysis.category !== "UNCLASSIFIED" &&
+      Object.values(AlertCategory).includes(analysis.category as AlertCategory);
+    const resolvedCategory =
+      humanLocked || !hasValidAiCategory
+        ? alert.category
+        : (analysis.category as AlertCategory);
+
+    const classificationPatch: Record<string, unknown> = {};
+    if (alert.classification || hasValidAiCategory) {
+      if (hasValidAiCategory) {
+        classificationPatch["classification.aiSuggestedCategory"] =
+          analysis.category as AlertCategory;
+      }
+      classificationPatch["classification.aiConfidence"] =
+        displayConfidence.value;
+      classificationPatch["classification.aiReason"] =
+        analysis.overallAnalysis?.shortReason ??
+        analysis.reasoningSummary ??
+        alert.classification?.aiReason ??
+        null;
+      if (!humanLocked && hasValidAiCategory) {
+        classificationPatch["classification.status"] = "AI_SUGGESTED";
+        classificationPatch["classification.finalCategory"] =
+          analysis.category as AlertCategory;
+        classificationPatch["classification.finalCategorySource"] = "AI";
+      }
+    }
+
     const updated = await alertRepository.findOneAndUpdate(
-      { _id: id },
+      { _id: id, aiAnalysisId: { $ne: analysis.analysisId } },
       {
         $set: {
-          category: analysis.category || alert.category,
+          ...(resolvedCategory ? { category: resolvedCategory } : {}),
           severity: analysis.severity || alert.severity,
           aiConfidence: displayConfidence.value,
+          aiConfidenceSource: displayConfidence.source,
           aiSummary:
             analysis.overallAnalysis?.overallSummary ?? analysis.summary,
           aiReasoningSummary:
@@ -922,6 +1064,7 @@ export class AlertService {
           aiOverallAnalysis: analysis.overallAnalysis,
           aiAnalysisId: analysis.analysisId,
           aiAnalyzedAt: new Date(),
+          ...classificationPatch,
         },
         $push: {
           timeline: this.makeTimeline(

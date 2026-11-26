@@ -469,11 +469,26 @@ spec:
               value: 'openai/gpt-4o-mini'
             - name: MEDIA_SERVICE_URL
               value: 'http://media-service:3003'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: JWT_SECRET
             - name: SERVICE_AUTH_SECRET
               valueFrom:
                 secretKeyRef:
                   name: ecoalert-secrets
                   key: SERVICE_AUTH_SECRET
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_REGION
+            - name: AWS_S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_S3_BUCKET_NAME
           resources:
             requests:
               memory: '128Mi'
@@ -544,6 +559,11 @@ spec:
                 secretKeyRef:
                   name: ecoalert-secrets
                   key: RABBITMQ_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: REDIS_URL
           resources:
             requests:
               memory: '128Mi'
