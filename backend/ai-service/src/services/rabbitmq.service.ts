@@ -62,8 +62,9 @@ const detectWasteFromMedia = async (imageUrl: string): Promise<IVisionEvidence> 
   const payload = { imageUrl };
   const secret = process.env.SERVICE_AUTH_SECRET || process.env.JWT_SECRET || '';
   const headers = secret.length >= 16 ? internalServiceHeaders('ai-service', '/analyze-url', payload) : undefined;
+  const mediaBaseUrl = process.env.MEDIA_SERVICE_URL || 'http://localhost:3003';
   const response = await axios.post(
-    `${process.env.MEDIA_SERVICE_URL || 'http://media-service:3003'}/analyze-url`,
+    `${mediaBaseUrl}/analyze-url`,
     payload,
     { timeout: 25_000, ...(headers ? { headers } : {}) },
   );

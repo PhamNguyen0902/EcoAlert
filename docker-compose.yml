@@ -326,6 +326,8 @@ services:
       # về localhost:27017 -> connect thất bại trong container.
       - ALERT_MONGO_URI=mongodb://mongodb:27017/ecoalert-alert-db
       - RABBITMQ_URL=${RABBITMQ_URL}
+      - MEDIA_SERVICE_URL=http://media-service:3003
+      - SERVICE_AUTH_SECRET=${SERVICE_AUTH_SECRET:-${JWT_SECRET}}
       # The API key lives only in backend/ai-service/.env.  Do not let a stale
       # root-level migration copy override the service-specific credential.
       - OPENROUTER_ANALYSIS_MODEL=${OPENROUTER_ANALYSIS_MODEL:-openai/gpt-4o-mini}
