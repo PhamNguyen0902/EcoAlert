@@ -13,6 +13,7 @@ import { randomUUID } from "crypto";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
 const logger = createLogger("api-gateway");
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -108,7 +109,28 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   const token = authHeader.split(" ")[1];
-  // Kiểm tra xem token có bị blacklist trong Redis không
+  let decoded: any;
+  try {
+    decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
+    if (
+      typeof decoded === "string" ||
+      typeof decoded?.userId !== "string" ||
+      typeof decoded?.role !== "string"
+    ) {
+      return res
+        .status(HTTP_STATUS.UNAUTHORIZED)
+        .json(errorResponse("Invalid or expired token"));
+    }
+  } catch (error) {
+    logger.error("JWT Verification failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return res
+      .status(HTTP_STATUS.UNAUTHORIZED)
+      .json(errorResponse("Invalid or expired token"));
+  }
+
+  // Kiểm tra xem token có bị blacklist trong Redis không (sau khi chữ ký JWT hợp lệ)
   try {
     const isBlacklisted = await redisClient.get(`blacklist:${token}`);
     if (isBlacklisted) {
@@ -117,23 +139,19 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
         .json(errorResponse("Token is blacklisted"));
     }
   } catch (err) {
-    logger.error("Redis blacklist check error", err);
+    logger.error("Redis blacklist check error", {
+      message: err instanceof Error ? err.message : String(err),
+    });
     // Nếu Redis gặp sự cố, vẫn cho phép tiếp tục xác thực để tránh gián đoạn dịch vụ.
   }
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    // Gán thông tin người dùng đã xác thực vào header để các dịch vụ downstream có thể sử dụng.
-    req.headers["x-user-id"] = decoded.userId;
-    req.headers["x-user-role"] = decoded.role;
+  // Gán thông tin người dùng đã xác thực vào header để các dịch vụ downstream có thể sử dụng.
+  req.headers["x-user-id"] = decoded.userId;
+  req.headers["x-user-role"] = decoded.role;
+  if (typeof decoded.email === "string" && decoded.email.trim()) {
     req.headers["x-user-email"] = decoded.email;
-    next();
-  } catch (error) {
-    logger.error("JWT Verification failed", error);
-    return res
-      .status(HTTP_STATUS.UNAUTHORIZED)
-      .json(errorResponse("Invalid or expired token"));
   }
+  next();
 };
 
 // Middleware xác thực JWT cho tất cả các yêu cầu đến /api, ngoại trừ các route công khai như login/register.
@@ -141,20 +159,35 @@ app.use("/api", verifyToken);
 
 
 // WebSocket Proxy cho /socket.io
-const socketProxy = createProxyMiddleware({
+const socketProxy = createProxyMiddleware("/socket.io", {
   target: process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006",
   changeOrigin: true,
-  ws: true,
+  ws: false,
   onError: (err, req, res) => {
-    logger.error("WebSocket Proxy error for /socket.io", err);
-    if (res && "status" in res) {
-      (res as Response).status(502).json(errorResponse("Bad Gateway"));
+    logger.error("WebSocket Proxy error for /socket.io", {
+      message: err instanceof Error ? err.message : String(err),
+    });
+    if (res && "status" in res && typeof (res as Response).status === "function") {
+      if (!(res as Response).headersSent) {
+        (res as Response).status(502).json(errorResponse("Bad Gateway"));
+      }
+    } else if (res && "end" in res && typeof (res as any).end === "function") {
+      (res as any).end();
     }
   },
 });
 
 // WebSocket endpoint cho /socket.io
 app.use("/socket.io", socketProxy);
+
+// Chặn các đường dẫn nội bộ không được phép gọi từ bên ngoài qua API Gateway
+app.use((req, res, next) => {
+  const cleanPath = req.originalUrl.split("?")[0].toLowerCase();
+  if (cleanPath.includes("/internal/")) {
+    return res.status(HTTP_STATUS.FORBIDDEN).json(errorResponse("Forbidden"));
+  }
+  next();
+});
 
 // Hàm thiết lập proxy giúp giảm thiểu sự trùng lặp mã nguồn.
 const setupProxy = (
@@ -169,6 +202,8 @@ const setupProxy = (
       target,
       changeOrigin: true,
       ws,
+      proxyTimeout: 60_000,
+      timeout: 60_000,
       pathRewrite: rewrite ? { [`^${path}`]: "" } : undefined,
       onProxyReq: (proxyReq, req) => {
         if (req.body && Object.keys(req.body).length) {
@@ -176,8 +211,16 @@ const setupProxy = (
         }
       },
       onError: (err, req, res) => {
-        logger.error(`Proxy error for ${path}`, err);
-        res.status(502).json(errorResponse("Bad Gateway"));
+        logger.error(`Proxy error for ${path}`, {
+          message: err instanceof Error ? err.message : String(err),
+        });
+        if (res && "status" in res && typeof (res as Response).status === "function") {
+          if (!(res as Response).headersSent) {
+            (res as Response).status(502).json(errorResponse("Bad Gateway"));
+          }
+        } else if (res && "end" in res && typeof (res as any).end === "function") {
+          (res as any).end();
+        }
       },
     }),
   );
@@ -210,7 +253,7 @@ setupProxy(
   "/api/v1/notifications",
   process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006",
   true,
-  true,
+  false,
 );
 setupProxy(
   "/api/v1/ai",

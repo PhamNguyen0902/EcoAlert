@@ -8,11 +8,13 @@ import {
   closeAlertSchema,
   confirmArrivalSchema,
   createAlertSchema,
+  createCategorySchema,
   resolveAlertSchema,
   reviewClassificationSchema,
   shiftLocationSchema,
   updateAlertSchema,
   updateAlertStatusSchema,
+  updateCategorySchema,
 } from "../dtos/alert.dto";
 import {
   asyncHandler,
@@ -28,13 +30,21 @@ router.use(requireVerifiedRoles(["CITIZEN", "OFFICER", "ADMIN"]));
 // Category Routes
 router.get("/categories", asyncHandler(categoryController.getCategories));
 router.get("/categories/:id", asyncHandler(categoryController.getCategoryById));
-router.post("/categories", asyncHandler(categoryController.createCategory));
+router.post(
+  "/categories",
+  requireVerifiedRoles(["ADMIN"]),
+  validate(createCategorySchema),
+  asyncHandler(categoryController.createCategory),
+);
 router.patch(
   "/categories/:id",
+  requireVerifiedRoles(["ADMIN"]),
+  validate(updateCategorySchema),
   asyncHandler(categoryController.updateCategory),
 );
 router.delete(
   "/categories/:id",
+  requireVerifiedRoles(["ADMIN"]),
   asyncHandler(categoryController.deleteCategory),
 );
 

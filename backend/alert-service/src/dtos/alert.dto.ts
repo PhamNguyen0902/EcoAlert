@@ -208,3 +208,23 @@ export const addOfficerNoteSchema = z.object({
   note: z.string().min(1, "Note cannot be empty").max(2000, "Note too long"),
 });
 export type AddOfficerNoteDto = z.infer<typeof addOfficerNoteSchema>;
+
+export const createCategorySchema = z.object({
+  name: z.string().trim().min(1, "Category name is required").max(120),
+  code: z.string().trim().min(1).max(60).optional(),
+  description: z.string().trim().max(500).optional(),
+  icon: z.string().trim().max(60).optional(),
+  defaultSeverity: z.nativeEnum(Severity).optional(),
+  isActive: z.boolean().optional(),
+});
+export type CreateCategoryDto = z.infer<typeof createCategorySchema>;
+
+export const updateCategorySchema = z.object({
+  name: z.string().trim().min(1, "Category name is required").max(120).optional(),
+  code: z.string().trim().min(1).max(60).optional(),
+  description: z.string().trim().max(500).optional(),
+  icon: z.string().trim().max(60).optional(),
+  defaultSeverity: z.nativeEnum(Severity).optional(),
+  isActive: z.boolean().optional(),
+});
+export type UpdateCategoryDto = z.infer<typeof updateCategorySchema>;

@@ -201,15 +201,23 @@ export class AlertController {
   }
 
   async checkNearbyAlerts(req: Request, res: Response) {
-    const lng = Number.parseFloat(
-      (req.query.lng as string) || (req.query.longitude as string),
-    );
-    const lat = Number.parseFloat(
-      (req.query.lat as string) || (req.query.latitude as string),
-    );
-    const radius = Number.parseInt(req.query.radius as string, 10) || 200;
+    const lngRaw = (req.query.lng as string) || (req.query.longitude as string);
+    const latRaw = (req.query.lat as string) || (req.query.latitude as string);
+    const lng = typeof lngRaw === "string" && lngRaw.trim() !== "" ? Number(lngRaw) : Number.NaN;
+    const lat = typeof latRaw === "string" && latRaw.trim() !== "" ? Number(latRaw) : Number.NaN;
+    const rawRadius = Number.parseInt(req.query.radius as string, 10);
+    const radius = Number.isFinite(rawRadius)
+      ? Math.min(5000, Math.max(50, rawRadius))
+      : 200;
 
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
       res.status(400).json({
         success: false,
         message: "Valid latitude and longitude query parameters are required",
@@ -226,8 +234,10 @@ export class AlertController {
   }
 
   async confirmAlert(req: Request, res: Response) {
-    const citizenId = req.headers["x-user-id"] as string;
-    const result = await alertService.confirmAlert(req.params.id, citizenId);
+    const result = await alertService.confirmAlert(
+      req.params.id,
+      workflowActor(req),
+    );
     res
       .status(200)
       .json(successResponse(result, "Alert confirmed successfully"));

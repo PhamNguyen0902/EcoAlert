@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { useLogin } from "../hooks/hooks";
+import { useConfirmOtp, useLogin, useResendOtp } from "../hooks/hooks";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -9,6 +10,7 @@ import { Leaf, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { getRoleHome } from "../lib/routes";
+import { getApiErrorMessage } from "../lib/api-error";
 
 import { ThemeToggle } from "../components/ui/theme-toggle";
 import { useLanguage } from "../contexts/LanguageContext";
@@ -17,10 +19,24 @@ export default function Login() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const loginMutation = useLogin();
+  const confirmOtpMutation = useConfirmOtp();
+  const resendOtpMutation = useResendOtp();
   const { login, isAuthenticated, role } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [needsOtp, setNeedsOtp] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   if (isAuthenticated && role) {
     const targetPath = getRoleHome(role);
@@ -31,8 +47,9 @@ export default function Login() {
   // xử lý login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     loginMutation.mutate(
-      { email, password },
+      { email: email.trim(), password },
       {
         onSuccess: (data) => {
           const loginData = data.data;
@@ -48,6 +65,60 @@ export default function Login() {
           const userRole = loginData.user?.role;
           const target = getRoleHome(userRole);
           navigate(target, { replace: true });
+        },
+        onError: (err: unknown) => {
+          const msg = getApiErrorMessage(err, "Email hoặc mật khẩu không chính xác.");
+          setErrorMessage(msg);
+          toast.error(msg);
+          if (axios.isAxiosError(err) && err.response?.status === 403) {
+            setNeedsOtp(true);
+          }
+        },
+      },
+    );
+  };
+
+  const handleConfirmOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanedOtp = otpCode.trim();
+    if (!cleanedOtp) {
+      toast.error("Vui lòng nhập mã OTP.");
+      return;
+    }
+    confirmOtpMutation.mutate(
+      { email: email.trim(), code: cleanedOtp },
+      {
+        onSuccess: (data: any) => {
+          toast.success(
+            data?.message || data?.data?.message || "Kích hoạt tài khoản thành công!",
+          );
+          setNeedsOtp(false);
+          setOtpCode("");
+          setErrorMessage(null);
+        },
+        onError: (err: unknown) => {
+          const msg = getApiErrorMessage(err, "Xác thực mã OTP thất bại.");
+          setErrorMessage(msg);
+          toast.error(msg);
+        },
+      },
+    );
+  };
+
+  const handleResendOtp = () => {
+    const trimmed = email.trim();
+    if (!trimmed || resendCooldown > 0 || resendOtpMutation.isPending) return;
+    resendOtpMutation.mutate(
+      { email: trimmed },
+      {
+        onSuccess: (data: any) => {
+          toast.success(
+            data?.message || data?.data?.message || "Đã gửi lại mã OTP tới email của bạn.",
+          );
+          setResendCooldown(30);
+        },
+        onError: (err: unknown) => {
+          toast.error(getApiErrorMessage(err, "Không thể gửi lại mã OTP."));
         },
       },
     );
@@ -82,6 +153,54 @@ export default function Login() {
           </div>
 
           <div className="mt-10">
+            {errorMessage && (
+              <div
+                role="alert"
+                className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              >
+                {errorMessage}
+              </div>
+            )}
+
+            {needsOtp && (
+              <form onSubmit={handleConfirmOtp} className="mb-6 space-y-4 rounded-lg border border-border bg-muted/40 p-4">
+                <p className="text-sm text-muted-foreground">
+                  Tài khoản chưa kích hoạt. Nhập mã OTP đã gửi tới{' '}
+                  <span className="font-semibold text-foreground">{email.trim()}</span>.
+                </p>
+                <div>
+                  <Label htmlFor="loginOtpCode">Mã xác thực OTP</Label>
+                  <Input
+                    id="loginOtpCode"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Nhập 6 chữ số OTP"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D+/g, "").slice(0, 6))}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    disabled={confirmOtpMutation.isPending || otpCode.trim().length < 4}
+                  >
+                    {confirmOtpMutation.isPending ? "Đang xác thực..." : "Kích hoạt"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={resendCooldown > 0 || resendOtpMutation.isPending}
+                    onClick={handleResendOtp}
+                  >
+                    {resendCooldown > 0 ? `Gửi lại (${resendCooldown}s)` : "Gửi lại OTP"}
+                  </Button>
+                </div>
+              </form>
+            )}
+
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
                 <Label htmlFor="email">{t("auth.email")}</Label>

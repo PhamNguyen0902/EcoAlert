@@ -175,9 +175,23 @@ export const authService = {
     const res = await api.post("/v1/auth/register", data);
     return res.data;
   },
+  // xác nhận mã OTP kích hoạt tài khoản
+  confirmOtp: async (data: { email: string; code: string }) => {
+    const res = await api.post("/v1/auth/confirm-otp", data);
+    return res.data;
+  },
+  // gửi lại mã OTP kích hoạt tài khoản
+  resendOtp: async (data: { email: string }) => {
+    const res = await api.post("/v1/auth/resend-otp", data);
+    return res.data;
+  },
   // gửi yêu cầu đăng xuất khỏi hệ thống
-  logout: async (refreshToken?: string) => {
-    const res = await api.post("/v1/auth/logout", { refreshToken });
+  logout: async (refreshToken?: string, accessToken?: string) => {
+    const res = await api.post(
+      "/v1/auth/logout",
+      { refreshToken },
+      accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined,
+    );
     return res.data;
   },
 };

@@ -16,9 +16,9 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  // 2. Nếu role không hợp lệ -> Đẩy về trang tương ứng của role đó
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
-    return <Navigate to={getRoleHome(role)} replace />;
+  // 2. Nếu role không hợp lệ hoặc bị thiếu -> Chặn truy cập
+  if (allowedRoles && (!role || !allowedRoles.includes(role))) {
+    return <Navigate to={role ? getRoleHome(role) : "/login"} replace />;
   }
 
   // 3. Đã đăng nhập và đúng role -> Render trang bình thường

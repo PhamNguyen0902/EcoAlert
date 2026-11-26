@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { User, UserRole } from "@/types";
+import { authService } from "@/services/services";
 import toast from "react-hot-toast";
 
 interface AuthState {
@@ -24,34 +26,60 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const queryClient = useQueryClient();
   const [authState, setAuthState] = useState<AuthState>(() => {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
     const storedRefreshToken = localStorage.getItem("refreshToken");
 
-    let user = null;
+    let user: User | null = null;
     try {
-      if (storedUser) user = JSON.parse(storedUser);
-    } catch (e) {
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        if (parsed && typeof parsed === "object" && typeof parsed.role === "string") {
+          user = parsed;
+        }
+      }
+    } catch {
+      user = null;
+    }
+
+    if (!storedToken || !user) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
+      return { user: null, token: null, refreshToken: null };
     }
 
     return {
       user,
-      token: storedToken || null,
+      token: storedToken,
       refreshToken: storedRefreshToken || null,
     };
   });
 
   useEffect(() => {
     const handleUnauthorized = () => {
+      queryClient.clear();
       setAuthState({ token: null, refreshToken: null, user: null });
+    };
+    const handleTokenRefreshed = (event: Event) => {
+      const detail = (event as CustomEvent<{ token?: string; refreshToken?: string }>).detail;
+      if (!detail?.token) return;
+      setAuthState((prev) => ({
+        ...prev,
+        token: detail.token || prev.token,
+        refreshToken: detail.refreshToken || prev.refreshToken,
+      }));
     };
 
     window.addEventListener("auth:unauthorized", handleUnauthorized);
-    return () =>
+    window.addEventListener("auth:token-refreshed", handleTokenRefreshed);
+    return () => {
       window.removeEventListener("auth:unauthorized", handleUnauthorized);
-  }, []);
+      window.removeEventListener("auth:token-refreshed", handleTokenRefreshed);
+    };
+  }, [queryClient]);
 
   const login = (data: { token: string; refreshToken: string; user: User }) => {
     localStorage.setItem("token", data.token);
@@ -66,10 +94,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const logout = () => {
+    const currentAccessToken = authState.token || localStorage.getItem("token") || undefined;
+    const currentRefreshToken = authState.refreshToken || localStorage.getItem("refreshToken") || undefined;
+    if (currentAccessToken) {
+      void authService.logout(currentRefreshToken, currentAccessToken).catch(() => undefined);
+    }
+
     toast.dismiss();
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+    queryClient.clear();
 
     setAuthState({
       token: null,
@@ -84,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     role: authState.user?.role
       ? (authState.user.role.toUpperCase() as UserRole)
       : null,
-    isAuthenticated: !!authState.token,
+    isAuthenticated: Boolean(authState.token && authState.user),
     login,
     logout,
   };

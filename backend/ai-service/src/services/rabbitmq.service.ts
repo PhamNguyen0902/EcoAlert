@@ -7,6 +7,7 @@ import {
   EVENTS,
   IAiAnalysisCompletedData,
   IEventMessage,
+  internalServiceHeaders,
   IVisionEvidence,
   resolveVisionPipeline,
 } from '@ecoalert/shared';
@@ -58,8 +59,17 @@ export interface AlertCreatedProcessorDependencies {
 
 // gửi ảnh sang dịch vụ đa phương tiện để phân tích nhận diện rác thải
 const detectWasteFromMedia = async (imageUrl: string): Promise<IVisionEvidence> => {
-  const response = await axios.post(`${process.env.MEDIA_SERVICE_URL || 'http://media-service:3003'}/analyze-url`, { imageUrl }, { timeout: 25_000 });
+  const payload = { imageUrl };
+  const secret = process.env.SERVICE_AUTH_SECRET || process.env.JWT_SECRET || '';
+  const headers = secret.length >= 16 ? internalServiceHeaders('ai-service', '/analyze-url', payload) : undefined;
+  const mediaBaseUrl = process.env.MEDIA_SERVICE_URL || 'http://localhost:3003';
+  const response = await axios.post(
+    `${mediaBaseUrl}/analyze-url`,
+    payload,
+    { timeout: 25_000, ...(headers ? { headers } : {}) },
+  );
   const data = response.data?.data;
+  if (!data?.aiAnalysis) throw new Error('Invalid media analysis response');
   return { imageUrl, ...data.aiAnalysis } as IVisionEvidence;
 };
 

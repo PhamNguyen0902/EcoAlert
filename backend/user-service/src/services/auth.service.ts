@@ -26,8 +26,9 @@ export class AuthService {
       await userRepository.delete(existingUser._id.toString());
     }
 
-    const { firstName, lastName, fullName: inputFullName, ...rest } = data;
-    const fullName = inputFullName || `${firstName || ''} ${lastName || ''}`.trim() || data.email.split('@')[0];
+    const normalizedEmail = data.email.toLowerCase().trim();
+    const { firstName, lastName, fullName: inputFullName } = data;
+    const fullName = inputFullName || `${firstName || ''} ${lastName || ''}`.trim() || normalizedEmail.split('@')[0];
 
     // 1. Đăng ký tài khoản trên AWS Cognito
     let wasUnconfirmed = false;
@@ -57,20 +58,24 @@ export class AuthService {
 
     // 2. Lưu bản ghi người dùng vào MongoDB để các microservice EcoAlert sử dụng
     const hashedPassword = await hashPassword(data.password);
-    let user = await userRepository.findOne({ email: data.email });
+    let user = await userRepository.findOne({ email: normalizedEmail });
     if (!user) {
       user = await userRepository.create({
-        ...rest,
+        email: normalizedEmail,
+        phone: data.phone,
         fullName,
         password: hashedPassword,
         role: UserRole.CITIZEN,
         isVerified: false,
       });
+    } else if (user.isVerified) {
+      throw new ConflictError("Email này đã được đăng ký và kích hoạt. Vui lòng đăng nhập.");
     } else {
-      user.password = hashedPassword;
-      user.fullName = fullName;
-      user.isVerified = false;
-      await user.save();
+      // Giữ nguyên mật khẩu và họ tên gốc cho tài khoản chưa kích hoạt để tránh bị chiếm đoạt khi đăng ký lại.
+      if (user.isVerified !== false) {
+        user.isVerified = false;
+        await user.save();
+      }
     }
 
     const userObj = user.toObject();
@@ -150,17 +155,6 @@ export class AuthService {
     const user = await userRepository.findOneWithPassword({
       email: data.email,
     });
-    console.log(
-      "DEBUG - user found:",
-      user
-        ? {
-            email: user.email,
-            hasPassword: !!user.password,
-            isActive: user.isActive,
-            isVerified: user.isVerified,
-          }
-        : null,
-    );
     if (!user || !user.password) {
       throw new UnauthorizedError("Invalid credentials");
     }

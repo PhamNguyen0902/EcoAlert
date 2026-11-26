@@ -60,24 +60,31 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useReportTheme();
   const { draft, setDraft } = useFieldReport();
-  const gps = useLocation();
+  const { fetchLocation, loading: gpsLoading } = useLocation();
   const bgSyncTriggeredRef = useRef(false);
   const capture = draft.capture;
   const location = capture?.location || draft.location;
   const photos = normalizePhotoDraft(draft).photos;
   const viewShotRef = useRef<ViewShotRef>(null);
+  const watermarkKey = capture
+    ? `${capture.originalLocalUri}:${location?.capturedAt ?? "no-gps"}`
+    : null;
   const generatedForRef = useRef<string | null>(
-    capture?.displayLocalUri ? capture.originalLocalUri : null,
+    capture?.displayLocalUri ? watermarkKey : null,
   );
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [rendering, setRendering] = useState(false);
   const [watermarkError, setWatermarkError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [capture?.originalLocalUri]);
 
   // Tiến trình ngầm (Background Location Sync): Nếu bấm chụp tức thì khi GPS chưa kịp fix, tự động lấy/làm mới GPS ngầm tại màn hình Review
   useEffect(() => {
     if (!capture || location || bgSyncTriggeredRef.current) return;
     bgSyncTriggeredRef.current = true;
-    void gps
-      .fetchLocation({ timeoutMs: 12_000, deferAddress: true })
+    void fetchLocation({ timeoutMs: 12_000, deferAddress: true })
       .then((result) => {
         if (!result?.coords || result.accuracyMeters === null) return;
         const freshFix: FieldReportLocationDraft = {
@@ -99,7 +106,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
         });
       })
       .catch(() => undefined);
-  }, [capture, location, gps, setDraft]);
+  }, [capture, location, fetchLocation, setDraft]);
 
   // Định dạng thông tin watermark gồm tọa độ, địa chỉ, thời gian và nhãn tác nghiệp
   const watermark = useMemo(
@@ -129,15 +136,16 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
   const renderDisplayImage = useCallback(async () => {
     if (
       !capture ||
+      !watermarkKey ||
       capture.displayLocalUri ||
       !viewShotRef.current ||
       rendering ||
-      generatedForRef.current === capture.originalLocalUri
+      generatedForRef.current === watermarkKey
     )
       return;
     setRendering(true);
     setWatermarkError(null);
-    generatedForRef.current = capture.originalLocalUri;
+    generatedForRef.current = watermarkKey;
     try {
       const temporaryUri = await captureRef(viewShotRef, {
         format: "jpg",
@@ -161,7 +169,20 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
     } finally {
       setRendering(false);
     }
-  }, [capture, rendering, setDraft]);
+  }, [capture, rendering, setDraft, watermarkKey]);
+
+  useEffect(() => {
+    if (
+      imageLoaded &&
+      capture &&
+      watermarkKey &&
+      !capture.displayLocalUri &&
+      !rendering &&
+      generatedForRef.current !== watermarkKey
+    ) {
+      void renderDisplayImage();
+    }
+  }, [imageLoaded, capture, watermarkKey, rendering, renderDisplayImage]);
 
   // Xóa bức ảnh hiện tại và quay lại camera để chụp tấm khác
   const retake = () => {
@@ -232,7 +253,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             source={{ uri: capture.originalLocalUri }}
             style={[styles.image, { height: evidenceHeight }]}
             resizeMode="contain"
-            onLoad={() => void renderDisplayImage()}
+            onLoad={() => setImageLoaded(true)}
           />
           <View style={styles.watermark}>
             <View style={styles.watermarkBrand}>
@@ -405,7 +426,7 @@ export const ReportPhotoReviewScreen: React.FC<Props> = ({ navigation }) => {
             body={
               integrity.gps && location
                 ? `±${Math.round(location.accuracyMeters)}m`
-                : gps.loading
+                : gpsLoading
                   ? "Đang đồng bộ…"
                   : "Cần kiểm tra"
             }

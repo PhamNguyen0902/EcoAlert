@@ -45,5 +45,5 @@ class VerifyResolutionResponse(BaseModel):
 
 
 class VerifyResolutionUrlRequest(BaseModel):
-    imageUrl: str
-    confidence: float = 0.5
+    imageUrl: str = Field(min_length=1, max_length=2048)
+    confidence: float = Field(default=0.5, gt=0, le=1)

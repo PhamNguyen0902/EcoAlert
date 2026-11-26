@@ -394,6 +394,20 @@ test("evaluateResolutionVerification evaluates all 3 automated verification chec
   assert.equal(remainingWaste.resolutionClean.status, "WARNING");
   assert.equal(remainingWaste.resolutionClean.remainingWasteCount, 1);
   assert.equal(remainingWaste.needsRetake, true);
+
+  // 6. Vision UNAVAILABLE -> WARNING (manual review), NOT fake PASSED
+  const unavailableVision = resolution.evaluateResolutionVerification({
+    photo: validPhoto,
+    incidentLocation,
+    angleConfirmed: true,
+    visionStatus: "UNAVAILABLE",
+    visionResult: null,
+  });
+  assert.equal(unavailableVision.resolutionClean.status, "WARNING");
+  assert.equal(unavailableVision.resolutionClean.remainingWasteCount, 0);
+  assert.match(unavailableVision.resolutionClean.badgeLabel, /kiểm định tự động|thủ công/i);
+  assert.equal(unavailableVision.isAcceptable, true);
+  assert.equal(unavailableVision.needsRetake, false);
 });
 
 test("Officer workflow screens embed OfficerStepProgressBar, Ghost Overlay, Evidence Comparison, and Verification Checklist", () => {

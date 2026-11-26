@@ -1,14 +1,8 @@
 import { Request, Response } from 'express';
 import { gisService } from '../services/gis.service';
-import { BadRequestError, ForbiddenError, successResponse } from '@ecoalert/shared';
+import { BadRequestError, successResponse } from '@ecoalert/shared';
 
 export class GisController {
-  private requireAdmin(req: Request) {
-    if ((req.headers['x-user-role'] as string | undefined)?.toUpperCase() !== 'ADMIN') {
-      throw new ForbiddenError('Only Admins can access operational incident density data');
-    }
-  }
-
   async getNearby(req: Request, res: Response) {
     const lng = parseFloat(req.query.lng as string);
     const lat = parseFloat(req.query.lat as string);
@@ -53,7 +47,6 @@ export class GisController {
   }
 
   async getIncidentHeatmap(req: Request, res: Response) {
-    this.requireAdmin(req);
     const filters = parseIncidentFilters(req);
     const result = await gisService.getHeatmap(filters);
     res.status(200).json(successResponse(result));
@@ -61,7 +54,6 @@ export class GisController {
 
   // lấy thông tin chi tiết các sự cố theo bán kính từ điểm chọn trên bản đồ nhiệt
   async getIncidentDrilldown(req: Request, res: Response) {
-    this.requireAdmin(req);
     const coordinates = parseCoordinates(req);
     const radius = Number(req.query.radius || 500);
     if (!coordinates || !Number.isFinite(radius) || radius <= 0 || radius > 20_000) {
@@ -75,6 +67,14 @@ export class GisController {
 const parseCoordinates = (
   req: Request,
 ): { lat: number; lng: number } | null => {
+  if (
+    typeof req.query.lat !== 'string' ||
+    req.query.lat.trim() === '' ||
+    typeof req.query.lng !== 'string' ||
+    req.query.lng.trim() === ''
+  ) {
+    return null;
+  }
   const lat = Number(req.query.lat);
   const lng = Number(req.query.lng);
   return areValidCoordinates(lat, lng)

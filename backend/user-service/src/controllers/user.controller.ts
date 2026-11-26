@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { userService } from '../services/user.service';
 import { auditLogService } from '../services/audit-log.service';
-import { successResponse, paginatedResponse } from '@ecoalert/shared';
+import { ForbiddenError, UserRole, successResponse, paginatedResponse } from '@ecoalert/shared';
 
 export class UserController {
   async getMe(req: Request, res: Response) {
@@ -23,10 +23,12 @@ export class UserController {
   }
 
   async listUsers(req: Request, res: Response) {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const role = req.query.role as string;
-    const search = req.query.search as string;
+    const rawPage = typeof req.query.page === 'string' ? parseInt(req.query.page, 10) : 1;
+    const rawLimit = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : 10;
+    const page = Math.max(1, Number.isFinite(rawPage) ? rawPage : 1);
+    const limit = Math.min(100, Math.max(1, Number.isFinite(rawLimit) ? rawLimit : 10));
+    const role = typeof req.query.role === 'string' ? req.query.role : undefined;
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
     const { items, total } = await userService.getUsers(page, limit, role, search);
     res.status(200).json(paginatedResponse(items, total, page, limit));
   }
@@ -43,6 +45,11 @@ export class UserController {
   }
 
   async getUserById(req: Request, res: Response) {
+    const currentUserId = req.headers['x-user-id'] as string;
+    const currentUserRole = ((req.headers['x-user-role'] as string) || '').toUpperCase();
+    if (currentUserRole !== UserRole.ADMIN && req.params.id !== currentUserId) {
+      throw new ForbiddenError('Insufficient permissions');
+    }
     const user = await userService.getProfile(req.params.id);
     res.status(200).json(successResponse(user));
   }
