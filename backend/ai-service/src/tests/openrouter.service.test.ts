@@ -88,3 +88,22 @@ test('503 is a semantic failure, never a fabricated successful classification', 
   const client: OpenAiSdkClient = { chat: { completions: { create: async () => { throw Object.assign(new Error('unavailable'), { status: 503 }); } } } };
   await assert.rejects(analyzeIncidentWithClient(client, 'test-model', { imageUrl: 'https://example.com/test.jpg', description: 'Rác thải.' }));
 });
+
+test('empty or whitespace massEstimate.reasoningSummary preprocesses to null', () => {
+  const parsedEmpty = parseIncidentAnalysis(fixture({
+    massEstimate: {
+      available: false, minKg: null, maxKg: null, mostLikelyKg: null,
+      confidence: null, scale: null, reasoningSummary: '', limitations: [],
+    },
+  }));
+  assert.equal(parsedEmpty.massEstimate.available, false);
+  assert.equal(parsedEmpty.massEstimate.reasoningSummary, 'Ảnh chưa đủ bằng chứng để ước tính khối lượng đáng tin cậy.');
+
+  const parsedBlank = parseIncidentAnalysis(fixture({
+    massEstimate: {
+      available: true, minKg: 2, maxKg: 5, mostLikelyKg: 3,
+      confidence: 0.7, scale: 'SMALL', reasoningSummary: '   ', limitations: [],
+    },
+  }));
+  assert.equal(parsedBlank.massEstimate.reasoningSummary, null);
+});

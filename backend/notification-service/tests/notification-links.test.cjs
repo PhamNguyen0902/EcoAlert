@@ -270,3 +270,124 @@ test("service preserves separate event/entity IDs and emits after persistence fo
     socketService.emitToRoom = emit;
   }
 });
+
+test("companion ALERT_UPDATED suppresses duplicate broadcasts and workflow events persist before socket emit", async () => {
+  const sequence = [];
+  const originalNotify = notificationService.notify;
+  const originalAll = socketService.emitToAll;
+  const originalRooms = socketService.emitToRooms;
+  const originalRoom = socketService.emitToRoom;
+  notificationService.notify = async (recipientId, content) => {
+    sequence.push(["notify", recipientId, content.type]);
+  };
+  socketService.emitToAll = (eventName) => sequence.push(["emitToAll", eventName]);
+  socketService.emitToRooms = (_rooms, eventName) =>
+    sequence.push(["emitToRooms", eventName]);
+  socketService.emitToRoom = (_room, eventName) =>
+    sequence.push(["emitToRoom", eventName]);
+
+  try {
+    await rabbitMQService.handleEvent({
+      eventId,
+      eventType: EVENTS.ALERT_UPDATED,
+      data: {
+        alertId,
+        citizenId: "citizen",
+        assignedOfficerId: "officer",
+        status: "assigned",
+        workflowNotificationHandled: true,
+      },
+    });
+    assert.equal(sequence.length, 0);
+
+    await rabbitMQService.handleEvent({
+      eventId,
+      eventType: EVENTS.OFFICER_ASSIGNED,
+      data: {
+        alertId,
+        citizenId: "citizen",
+        assignedOfficerId: "officer",
+        status: "assigned",
+      },
+    });
+    const lastNotifyIdx = Math.max(
+      sequence.findIndex((item) => item[0] === "notify" && item[1] === "citizen"),
+      sequence.findIndex((item) => item[0] === "notify" && item[1] === "officer"),
+    );
+    const firstRealtimeIdx = sequence.findIndex(
+      (item) => item[0] === "emitToAll" || item[0] === "emitToRooms",
+    );
+    assert.ok(lastNotifyIdx >= 0);
+    assert.ok(firstRealtimeIdx > lastNotifyIdx);
+  } finally {
+    notificationService.notify = originalNotify;
+    socketService.emitToAll = originalAll;
+    socketService.emitToRooms = originalRooms;
+    socketService.emitToRoom = originalRoom;
+  }
+});
+
+test("SocketService rejects blacklisted JWT tokens and accepts non-blacklisted valid JWTs", async () => {
+  const http = require("node:http");
+  const jwt = require("jsonwebtoken");
+  const { io } = require("socket.io-client");
+  const { app } = require("../src/app");
+  const { SocketService } = require("../src/services/socket.service");
+
+  const prevSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "socket-blacklist-test-secret-32chars";
+  const isolatedSocket = new SocketService();
+  const revokedToken = jwt.sign(
+    { userId: "507f1f77bcf86cd799439011", role: "CITIZEN" },
+    process.env.JWT_SECRET,
+    { algorithm: "HS256", expiresIn: "5m" },
+  );
+  const validToken = jwt.sign(
+    { userId: "507f1f77bcf86cd799439012", role: "CITIZEN" },
+    process.env.JWT_SECRET,
+    { algorithm: "HS256", expiresIn: "5m" },
+  );
+  isolatedSocket.setBlacklistChecker(async (token) => token === revokedToken);
+
+  const server = http.createServer(app);
+  const ioServer = isolatedSocket.initialize(server);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const clients = [];
+
+  try {
+    const revokedClient = io(url, {
+      transports: ["websocket"],
+      auth: { token: revokedToken },
+      reconnection: false,
+    });
+    clients.push(revokedClient);
+    const error = await new Promise((resolve) => {
+      revokedClient.once("connect_error", resolve);
+      revokedClient.once("connect", () => resolve(null));
+    });
+    assert.ok(error instanceof Error);
+    assert.equal(revokedClient.connected, false);
+
+    const validClient = io(url, {
+      transports: ["websocket"],
+      auth: { token: validToken },
+      reconnection: false,
+    });
+    clients.push(validClient);
+    await new Promise((resolve, reject) => {
+      validClient.once("connect", resolve);
+      validClient.once("connect_error", reject);
+    });
+    assert.equal(validClient.connected, true);
+  } finally {
+    for (const c of clients) c.disconnect();
+    isolatedSocket.setBlacklistChecker(null);
+    await isolatedSocket.closeRedis();
+    await new Promise((resolve) => ioServer.close(resolve));
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+    if (prevSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = prevSecret;
+  }
+});

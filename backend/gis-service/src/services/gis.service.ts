@@ -14,40 +14,60 @@ export class GisService {
   // Lưu trữ hoặc cập nhật vị trí của sự cố môi trường.
   async saveLocation(alertData: any) {
     try {
-      const existing = await Location.findOne({ alertId: alertData._id });
-      if (existing) {
-        // update
-        existing.status = alertData.status;
-        existing.category = alertData.category;
-        existing.severity = alertData.severity;
-        existing.title = alertData.title;
-        existing.address = alertData.address;
-        existing.isDeleted = Boolean(alertData.isDeleted || alertData.status === 'deleted');
-        if (alertData.location?.type === 'Point' && Array.isArray(alertData.location.coordinates)) {
-          existing.location = alertData.location;
-        }
-        await existing.save();
+      const rawId = alertData?._id ?? alertData?.alertId;
+      const alertId = rawId != null ? String(rawId).trim() : '';
+      if (!alertId) {
+        logger.warn('Skipping saveLocation without alertId/_id');
         return;
       }
-      
-      const loc = new Location({
-        alertId: alertData._id,
-        category: alertData.category,
-        severity: alertData.severity,
-        status: alertData.status,
-        title: alertData.title,
-        address: alertData.address,
-        isDeleted: Boolean(alertData.isDeleted || alertData.status === 'deleted'),
-        location: alertData.location,
-      });
-      await loc.save();
-      logger.info(`Saved location for alert ${alertData._id}`);
+
+      const updateFields: Record<string, unknown> = {};
+      if (alertData.status !== undefined) updateFields.status = alertData.status;
+      if (alertData.category !== undefined) updateFields.category = alertData.category;
+      if (alertData.severity !== undefined) updateFields.severity = alertData.severity;
+      if (alertData.title !== undefined) updateFields.title = alertData.title;
+      if (alertData.address !== undefined) updateFields.address = alertData.address;
+      if (alertData.isDeleted !== undefined || alertData.status === 'deleted') {
+        updateFields.isDeleted = Boolean(alertData.isDeleted || alertData.status === 'deleted');
+      }
+
+      const coords = alertData.location?.coordinates;
+      const hasValidLocation =
+        alertData.location?.type === 'Point' &&
+        Array.isArray(coords) &&
+        coords.length === 2 &&
+        isValidCoordinate(Number(coords[1]), Number(coords[0]));
+      if (hasValidLocation) {
+        updateFields.location = {
+          type: 'Point',
+          coordinates: [Number(coords[0]), Number(coords[1])],
+        };
+      }
+
+      if (Object.keys(updateFields).length === 0) return;
+
+      if (hasValidLocation) {
+        await Location.findOneAndUpdate(
+          { alertId },
+          { $set: updateFields, $setOnInsert: { alertId } },
+          { upsert: true, new: true },
+        );
+      } else {
+        await Location.findOneAndUpdate(
+          { alertId },
+          { $set: updateFields },
+          { upsert: false, new: true },
+        );
+      }
+      logger.info(`Saved location for alert ${alertId}`);
     } catch (error) {
       logger.error('Failed to save location', error);
+      throw error;
     }
   }
 // Truy vấn 2dsphere để tìm các sự cố gần một tọa độ theo đơn vị mét ở đây là 5000m.
   async getNearby(lng: number, lat: number, maxDistanceInMeters: number = 5000) {
+    const boundedDistance = Math.min(50_000, Math.max(50, maxDistanceInMeters));
     return Location.find({
       isDeleted: { $ne: true },
       location: {
@@ -56,21 +76,22 @@ export class GisService {
             type: 'Point',
             coordinates: [lng, lat]
           },
-          $maxDistance: maxDistanceInMeters
+          $maxDistance: boundedDistance
         }
       }
-    });
+    }).limit(200);
   }
   // $centerSphere dùng radian, vì vậy chuyển bán kính km trước khi truy vấn MongoDB.
   async getRadius(lng: number, lat: number, radiusInKm: number = 5) {
+    const boundedRadiusKm = Math.min(50, Math.max(0.05, radiusInKm));
     return Location.find({
       isDeleted: { $ne: true },
       location: {
         $geoWithin: {
-          $centerSphere: [[lng, lat], radiusInKm / 6378.1]
+          $centerSphere: [[lng, lat], boundedRadiusKm / 6378.1]
         }
       }
-    });
+    }).limit(200);
   }
   //Lấy bản đồ nhiệt của sự cố
   async getHeatmap(filters: {
@@ -94,6 +115,8 @@ export class GisService {
 
     const locations = await Location.find(filter)
       .select('alertId title address category severity status location createdAt')
+      .sort({ createdAt: -1 })
+      .limit(5000)
       .lean();
     const points = locations.flatMap((location) => {
       const [lng, lat] = location.location?.coordinates || [];
@@ -128,23 +151,35 @@ export class GisService {
     if (filters.severity) query.severity = new RegExp(`^${escapeRegex(filters.severity)}$`, 'i');
     const statusFilter = buildStatusFilter(filters.status);
     if (statusFilter) query.status = statusFilter;
-    const locations = await Location.aggregate<{
-      alertId: string; title?: string; address?: string; category: string; severity: string; status: string; location: { coordinates: [number, number] }; createdAt?: Date; distanceMeters: number;
+    const [result] = await Location.aggregate<{
+      incidents: Array<{ alertId: string; title?: string; address?: string; category: string; severity: string; status: string; location: { coordinates: [number, number] }; createdAt?: Date; distanceMeters: number }>;
+      allLocations: Array<{ category?: string; severity?: string; status?: string }>;
     }>([
       { $geoNear: { near: { type: 'Point', coordinates: [lng, lat] }, distanceField: 'distanceMeters', maxDistance: radiusMeters, spherical: true, query } },
-      { $limit: 50 },
-      { $project: { alertId: 1, title: 1, address: 1, category: 1, severity: 1, status: 1, location: 1, createdAt: 1, distanceMeters: 1 } },
+      {
+        $facet: {
+          incidents: [
+            { $limit: 50 },
+            { $project: { alertId: 1, title: 1, address: 1, category: 1, severity: 1, status: 1, location: 1, createdAt: 1, distanceMeters: 1 } },
+          ],
+          allLocations: [
+            { $limit: 5000 },
+            { $project: { _id: 0, category: 1, severity: 1, status: 1 } },
+          ],
+        },
+      },
     ]);
-    const incidents = locations.map((location) => ({
+    const incidents = (result?.incidents || []).map((location) => ({
       ...location,
       category: normalizeCategoryCode(location.category),
       severity: normalizeSeverityCode(location.severity),
       status: normalizeStatusCode(location.status),
     }));
+    const allForSummary = result?.allLocations?.length ? result.allLocations : incidents;
     return {
       center: { lat, lng },
       radiusMeters,
-      summary: summarizeIncidentLocations(incidents),
+      summary: summarizeIncidentLocations(allForSummary),
       incidents,
     };
   }

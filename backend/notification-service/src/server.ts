@@ -1,11 +1,13 @@
 import { app } from './app';
 import http from 'http';
+import path from 'path';
 import dotenv from 'dotenv';
 import { createLogger } from '@ecoalert/shared';
 import { rabbitMQService } from './services/rabbitmq.service';
 import { socketService } from './services/socket.service';
 import mongoose from 'mongoose';
 
+dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 dotenv.config();
 const logger = createLogger('notification-service');
 const PORT = process.env.PORT || 3006;

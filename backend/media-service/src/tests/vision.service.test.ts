@@ -31,3 +31,39 @@ test('malformed Vision response and timeout remain errors, not no_detection', as
     assert.equal(result?.errorCode, 'VISION_TIMEOUT');
   } finally { axios.post = original; }
 });
+
+test('retries on 503 with a fresh FormData instance and recovers or exhausts cleanly', async () => {
+  const original = axios.post;
+  const file = { buffer: Buffer.from('image'), originalname: 'test.jpg', mimetype: 'image/jpeg' } as Express.Multer.File;
+  try {
+    let calls = 0;
+    const formInstances: unknown[] = [];
+    axios.post = (async (_url: string, body: unknown) => {
+      calls++;
+      formInstances.push(body);
+      if (calls === 1) {
+        throw Object.assign(new Error('busy'), { response: { status: 503, headers: { 'retry-after': '0.05' } } });
+      }
+      return { data: { status: 'no_detection', detections: [], requiresManualReview: false } };
+    }) as typeof axios.post;
+
+    const recovered = await new VisionService({ maxRetries: 2, baseDelayMs: 5 }).predict(file);
+    assert.equal(calls, 2);
+    assert.notEqual(formInstances[0], formInstances[1]);
+    assert.equal(recovered?.status, 'no_detection');
+
+    calls = 0;
+    axios.post = (async () => {
+      calls++;
+      throw Object.assign(new Error('busy'), { response: { status: 503, headers: {} } });
+    }) as typeof axios.post;
+
+    const exhausted = await new VisionService({ maxRetries: 2, baseDelayMs: 5 }).predict(file);
+    assert.equal(calls, 3);
+    assert.equal(exhausted?.status, 'error');
+    assert.equal(exhausted?.errorCode, 'VISION_UNAVAILABLE');
+    assert.equal(exhausted?.requiresManualReview, true);
+  } finally {
+    axios.post = original;
+  }
+});

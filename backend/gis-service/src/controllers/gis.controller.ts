@@ -4,28 +4,38 @@ import { BadRequestError, successResponse } from '@ecoalert/shared';
 
 export class GisController {
   async getNearby(req: Request, res: Response) {
-    const lng = parseFloat(req.query.lng as string);
-    const lat = parseFloat(req.query.lat as string);
-    const maxDist = parseInt(req.query.maxDistance as string) || 5000;
-    
-    if (isNaN(lng) || isNaN(lat)) {
+    const coordinates = parseCoordinates(req);
+    if (!coordinates) {
       return res.status(400).json({ success: false, message: 'Invalid coordinates' });
     }
-    
-    const results = await gisService.getNearby(lng, lat, maxDist);
+    let maxDist = 5000;
+    if (req.query.maxDistance !== undefined && String(req.query.maxDistance).trim() !== '') {
+      const parsedMaxDist = Number(req.query.maxDistance);
+      if (!Number.isFinite(parsedMaxDist) || parsedMaxDist <= 0 || parsedMaxDist > 50_000) {
+        return res.status(400).json({ success: false, message: 'maxDistance must be between 1 and 50000 meters' });
+      }
+      maxDist = parsedMaxDist;
+    }
+
+    const results = await gisService.getNearby(coordinates.lng, coordinates.lat, maxDist);
     res.status(200).json(successResponse(results));
   }
 
   async getRadius(req: Request, res: Response) {
-    const lng = parseFloat(req.query.lng as string);
-    const lat = parseFloat(req.query.lat as string);
-    const radius = parseFloat(req.query.radius as string) || 5;
-    
-    if (isNaN(lng) || isNaN(lat)) {
+    const coordinates = parseCoordinates(req);
+    if (!coordinates) {
       return res.status(400).json({ success: false, message: 'Invalid coordinates' });
     }
-    
-    const results = await gisService.getRadius(lng, lat, radius);
+    let radius = 5;
+    if (req.query.radius !== undefined && String(req.query.radius).trim() !== '') {
+      const parsedRadius = Number(req.query.radius);
+      if (!Number.isFinite(parsedRadius) || parsedRadius <= 0 || parsedRadius > 50) {
+        return res.status(400).json({ success: false, message: 'radius must be between 0 and 50 km' });
+      }
+      radius = parsedRadius;
+    }
+
+    const results = await gisService.getRadius(coordinates.lng, coordinates.lat, radius);
     res.status(200).json(successResponse(results));
   }
 

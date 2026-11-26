@@ -76,7 +76,10 @@ const rawMassEstimateSchema = z.object({
   mostLikelyKg: z.number().min(0).nullable(),
   confidence: z.number().min(0).max(1).nullable(),
   scale: z.enum(['VERY_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE']).nullable(),
-  reasoningSummary: z.string().trim().min(1).max(600).nullable(),
+  reasoningSummary: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+    z.string().trim().min(1).max(600).nullable(),
+  ),
   limitations: z.array(z.string().trim().min(1).max(250)).max(5),
 }).strict();
 
@@ -474,7 +477,7 @@ const structuredResponseFormat = {
               type: ['string', 'null'],
               enum: ['VERY_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'VERY_LARGE', null],
             },
-            reasoningSummary: { type: ['string', 'null'], maxLength: 600 },
+            reasoningSummary: { type: ['string', 'null'], minLength: 1, maxLength: 600 },
             limitations: {
               type: 'array',
               maxItems: 5,

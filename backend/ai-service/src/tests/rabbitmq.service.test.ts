@@ -112,3 +112,117 @@ test('reuses precomputed visionEvidence from mobile capture without re-running Y
   assert.equal(detectCalls, 0);
   assert.deepEqual(published.visionEvidence, frozenEvidence);
 });
+
+test('multi-photo vision detection runs sequentially, guards missing detections, and falls back to pass 1 on pass 2 errors', async () => {
+  let active = 0;
+  let maxActive = 0;
+  let analyzeCall = 0;
+  let published: any;
+  const event = JSON.parse(message().content.toString());
+  event.data.mediaUrls = ['https://example.com/1.jpg', 'https://example.com/2.jpg', 'https://example.com/3.jpg'];
+  const dependencies: AlertCreatedProcessorDependencies = {
+    detectWaste: async (imageUrl) => {
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((r) => setTimeout(r, 10));
+      active--;
+      if (imageUrl.endsWith('2.jpg')) {
+        return { imageUrl, status: 'no_detection', requiresManualReview: false } as any;
+      }
+      return {
+        imageUrl,
+        status: 'ok',
+        detections: [{ materialClass: 'plastic_bag', confidence: 0.9, bbox: [0, 0, 10, 10] }],
+        requiresManualReview: false,
+      };
+    },
+    analyze: async () => {
+      analyzeCall++;
+      if (analyzeCall === 2) throw Object.assign(new Error('pass 2 failed'), { status: 503 });
+      return {
+        category: AlertCategory.ILLEGAL_DUMPING,
+        severity: Severity.MEDIUM,
+        confidence: 0.85,
+        displayConfidenceSource: 'CATEGORY',
+        summary: 'Rác thải ven đường.',
+        reasoningSummary: 'Pass 1 thành công.',
+        analysisMode: 'IMAGE_AND_TEXT',
+        provider: 'openrouter',
+        model: 'openai/gpt-4o-mini',
+        pipelineVersion: 'openrouter-multimodal-v1',
+      };
+    },
+    publish: async (_key, data) => { published = data; },
+  };
+  const result = await settleAlertCreatedMessage(
+    { content: Buffer.from(JSON.stringify(event)) } as any,
+    { ack: () => undefined, nack: () => assert.fail('must not nack') } as any,
+    dependencies,
+  );
+  assert.equal(result.acknowledged, true);
+  assert.equal(maxActive, 1);
+  assert.equal(analyzeCall, 2);
+  assert.equal(published.analysisMode, 'IMAGE_AND_TEXT');
+  assert.equal(published.analysisPipeline, 'WASTE_DETECTION');
+  assert.equal(published.visionEvidence.length, 3);
+});
+
+test('pass 2 reclassifying to non-waste clears massEstimate and sets SEMANTIC_ONLY', async () => {
+  let analyzeCall = 0;
+  let published: any;
+  const dependencies: AlertCreatedProcessorDependencies = {
+    detectWaste: async (imageUrl) => ({
+      imageUrl,
+      status: 'no_detection',
+      detections: [],
+      requiresManualReview: false,
+    }),
+    analyze: async () => {
+      analyzeCall++;
+      const isSecond = analyzeCall === 2;
+      const cat = isSecond ? AlertCategory.FLOODING : AlertCategory.ILLEGAL_DUMPING;
+      return {
+        category: cat,
+        severity: Severity.HIGH,
+        confidence: 0.82,
+        displayConfidenceSource: 'CATEGORY',
+        summary: isSecond ? 'Đường bị ngập nước.' : 'Có rác trên đường.',
+        reasoningSummary: 'Đánh giá lại.',
+        analysisMode: 'IMAGE_AND_TEXT',
+        provider: 'openrouter',
+        model: 'openai/gpt-4o-mini',
+        pipelineVersion: 'openrouter-multimodal-v1',
+        overallAnalysis: {
+          isIncident: true,
+          incidentConfidence: 0.85,
+          categorySuggestion: cat,
+          categoryConfidence: 0.82,
+          classificationStatus: 'AI_SUGGESTED',
+          confidenceTier: 'HIGH_CONFIDENCE',
+          severity: Severity.HIGH,
+          severityScore: 70,
+          severityConfidence: 0.8,
+          overallSummary: 'Tóm tắt.',
+          shortReason: 'Lý do.',
+          massEstimate: {
+            available: true,
+            minKg: 10,
+            maxKg: 20,
+            mostLikelyKg: 15,
+            confidence: 0.6,
+            scale: 'SMALL',
+            reasoningSummary: 'Pass 1 estimate.',
+            limitations: [],
+          },
+          semanticModel: 'openai/gpt-4o-mini',
+          pipelineVersion: 'openrouter-multimodal-v1',
+        },
+      };
+    },
+    publish: async (_key, data) => { published = data; },
+  };
+  await settleAlertCreatedMessage(message(), { ack: () => undefined, nack: () => assert.fail('must not nack') } as any, dependencies);
+  assert.equal(published.analysisPipeline, 'SEMANTIC_ONLY');
+  assert.equal(published.overallAnalysis.massEstimate.available, false);
+  assert.equal(published.overallAnalysis.massEstimate.minKg, null);
+});
