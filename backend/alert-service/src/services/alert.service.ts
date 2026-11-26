@@ -30,6 +30,7 @@ import {
   EVENTS,
   ForbiddenError,
   IAiAnalysisCompletedData,
+  internalServiceHeaders,
   NotFoundError,
   resolveOverallAiConfidence,
   verifyMediaOwnership,
@@ -154,11 +155,11 @@ export class AlertService {
     if (data.clientReportId) {
       const existing = await alertRepository.findOne({ citizenId: actor.id, clientReportId: data.clientReportId });
       if (existing) return existing;
-      for (const evidence of data.fieldEvidence || []) {
-        if (!verifyMediaOwnership(actor.id, evidence.originalUrl, evidence.originalOwnershipProof || '') ||
-            (evidence.displayUrl && !verifyMediaOwnership(actor.id, evidence.displayUrl, evidence.displayOwnershipProof || '')))
-          throw new ForbiddenError('Ảnh minh chứng không thuộc về tài khoản hiện tại');
-      }
+    }
+    for (const evidence of data.fieldEvidence || []) {
+      if (!verifyMediaOwnership(actor.id, evidence.originalUrl, evidence.originalOwnershipProof || '') ||
+          (evidence.displayUrl && !verifyMediaOwnership(actor.id, evidence.displayUrl, evidence.displayOwnershipProof || '')))
+        throw new ForbiddenError('Ảnh minh chứng không thuộc về tài khoản hiện tại');
     }
     const createdAt = new Date();
     const {
@@ -166,7 +167,6 @@ export class AlertService {
       imageValidation,
       captureMetadata,
       fieldEvidence,
-      ...alertData
     } = data;
     // trích xuất danh mục và thiết lập thông tin phân loại ban đầu cho sự cố
     const categories = Array.from(new Set(data.categories || []));
@@ -225,7 +225,13 @@ export class AlertService {
     let alert;
     try {
       alert = await alertRepository.create({
-      ...alertData,
+      title: data.title,
+      description: data.description,
+      address: data.address,
+      location: data.location,
+      mediaUrls: data.mediaUrls,
+      ...(data.voiceNoteUrl ? { voiceNoteUrl: data.voiceNoteUrl } : {}),
+      ...(data.clientReportId ? { clientReportId: data.clientReportId } : {}),
       category,
       categories,
       classification,
@@ -281,10 +287,17 @@ export class AlertService {
       throw new ForbiddenError("Không có quyền sửa báo cáo");
     }
 
-    const updated = await alertRepository.update(id, {
-      ...data,
-      updatedBy: actor.id,
-    });
+    const updateFields: Partial<IAlert> = { updatedBy: actor.id };
+    if (data.title !== undefined) updateFields.title = data.title;
+    if (data.description !== undefined) updateFields.description = data.description;
+    if (data.mediaUrls !== undefined) updateFields.mediaUrls = data.mediaUrls;
+    if (data.location !== undefined) updateFields.location = data.location;
+    if (data.address !== undefined) updateFields.address = data.address;
+    if (data.category !== undefined) updateFields.category = data.category;
+    if (data.categories !== undefined) updateFields.categories = data.categories;
+    if (data.severity !== undefined) updateFields.severity = data.severity;
+
+    const updated = await alertRepository.update(id, updateFields);
     if (!updated) throw new NotFoundError("Không tìm thấy sự cố để cập nhật");
     await rabbitMQService.publishEvent(
       EVENTS.ALERT_UPDATED,
@@ -699,15 +712,12 @@ export class AlertService {
   async verifyResolutionCleanScene(imageUrl: string): Promise<{ isClean: boolean; reason?: string }> {
     try {
       const visionUrl = process.env.VISION_SERVICE_URL || 'http://localhost:8001';
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 8000);
-
       try {
         const response = await fetch(`${visionUrl}/verify-resolution-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageUrl, confidence: 0.5 }),
-          signal: controller.signal,
+          signal: AbortSignal.timeout(8000),
         });
 
         if (response.ok) {
@@ -720,37 +730,43 @@ export class AlertService {
           }
           return { isClean: true };
         }
-      } catch (err: any) {
-        // Fallback sang media-service nếu vision-service không gọi trực tiếp được
-        const mediaUrl = process.env.MEDIA_SERVICE_URL || 'http://localhost:3003';
-        const fallbackRes = await fetch(`${mediaUrl}/analyze-url`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageUrl }),
-          signal: controller.signal,
-        });
+      } catch {
+        // Tiếp tục fallback sang media-service bên dưới
+      }
 
-        if (fallbackRes.ok) {
-          const resData = (await fallbackRes.json()) as any;
-          const aiAnalysis = resData?.data?.aiAnalysis;
-          if (aiAnalysis) {
-            const highConfDetections = (aiAnalysis.detections || []).filter(
-              (d: any) => (d.confidence ?? 0) > 0.5,
-            );
-            if (highConfDetections.length > 0) {
-              return {
-                isClean: false,
-                reason: 'AI vẫn phát hiện rác thải tại vị trí này. Vui lòng kiểm tra lại hiện trường.',
-              };
-            }
-            return { isClean: true };
+      const mediaUrl = process.env.MEDIA_SERVICE_URL || 'http://localhost:3003';
+      const secret = process.env.SERVICE_AUTH_SECRET || process.env.JWT_SECRET || '';
+      const mediaHeaders: Record<string, string> =
+        secret.length >= 16
+          ? internalServiceHeaders('alert-service', '/analyze-url', { imageUrl })
+          : { 'Content-Type': 'application/json' };
+      const fallbackRes = await fetch(`${mediaUrl}/analyze-url`, {
+        method: 'POST',
+        headers: mediaHeaders,
+        body: JSON.stringify({ imageUrl }),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (fallbackRes.ok) {
+        const resData = (await fallbackRes.json()) as any;
+        const aiAnalysis = resData?.data?.aiAnalysis;
+        if (aiAnalysis) {
+          const highConfDetections = (aiAnalysis.detections || []).filter(
+            (d: any) => (d.confidence ?? 0) > 0.5,
+          );
+          if (highConfDetections.length > 0) {
+            return {
+              isClean: false,
+              reason: 'AI vẫn phát hiện rác thải tại vị trí này. Vui lòng kiểm tra lại hiện trường.',
+            };
           }
+          return { isClean: true };
         }
-      } finally {
-        clearTimeout(timer);
       }
     } catch (e: any) {
-      logger.warn('AI Vision resolution verification bypassed or failed to connect:', e?.message || e);
+      logger.warn('AI Vision resolution verification bypassed or failed to connect', {
+        error: e?.message || String(e),
+      });
     }
     return { isClean: true };
   }
@@ -985,21 +1001,37 @@ export class AlertService {
   }
 
   // citizen xác nhận cũng nhìn thấy sự cố
-  async confirmAlert(id: string, citizenId: string) {
+  async confirmAlert(id: string, actor: WorkflowActor) {
+    this.checkRole(actor, ["CITIZEN"]);
     const alert = await this.requireAlert(id);
-    if (alert.confirmations?.some((item) => item.citizenId === citizenId))
-      return alert;
+    if (alert.citizenId === actor.id) {
+      throw new ConflictError("Không thể tự xác nhận báo cáo của chính mình");
+    }
+    const status = normStatus(alert.status);
+    if (status === AlertStatus.CLOSED || status === AlertStatus.REJECTED) {
+      throw new ConflictError("Không thể xác nhận báo cáo đã đóng hoặc bị từ chối");
+    }
+    if (alert.confirmations?.some((item) => item.citizenId === actor.id)) {
+      return {
+        alertId: alert._id.toString(),
+        confirmationsCount: alert.confirmationsCount,
+      };
+    }
 
     const updated = await alertRepository.findOneAndUpdate(
-      { _id: id, "confirmations.citizenId": { $ne: citizenId } },
+      { _id: id, "confirmations.citizenId": { $ne: actor.id } },
       {
         $inc: { confirmationsCount: 1 },
-        $push: { confirmations: { citizenId, confirmedAt: new Date() } },
+        $push: { confirmations: { citizenId: actor.id, confirmedAt: new Date() } },
       },
     );
     if (updated)
-      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updated);
-    return updated || alert;
+      await rabbitMQService.publishEvent(EVENTS.ALERT_UPDATED, updated, actor.correlationId);
+    const current = updated || alert;
+    return {
+      alertId: current._id.toString(),
+      confirmationsCount: current.confirmationsCount,
+    };
   }
 }
 

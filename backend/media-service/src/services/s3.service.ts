@@ -37,7 +37,10 @@ export class S3Service {
     }
 
     try {
-      const fileExtension = file.originalname.split('.').pop() || 'jpg';
+      const rawExt = (file.originalname.split('.').pop() || '').toLowerCase();
+      const fileExtension = ['jpg', 'jpeg', 'png', 'webp'].includes(rawExt)
+        ? (rawExt === 'jpeg' ? 'jpg' : rawExt)
+        : 'jpg';
       const key = buildMediaObjectKey(folder, fileExtension, ownerId, idempotencyKey);
 
       const command = new PutObjectCommand({

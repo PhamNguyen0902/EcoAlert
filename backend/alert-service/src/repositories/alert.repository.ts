@@ -45,7 +45,7 @@ export class AlertRepository implements IBaseRepository<IAlert> {
     return Alert.findByIdAndUpdate(
       id,
       { $set: data },
-      { returnDocument: "after" },
+      { returnDocument: "after", runValidators: true },
     );
   }
 
@@ -82,7 +82,9 @@ export class AlertRepository implements IBaseRepository<IAlert> {
           $maxDistance: radiusMeters,
         },
       },
-    }).limit(10);
+    })
+      .select("_id title description category categories severity status address location mediaUrls confirmationsCount isAnonymous createdAt updatedAt")
+      .limit(10);
   }
 
   async softDelete(id: string, deletedBy: string): Promise<boolean> {

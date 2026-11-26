@@ -296,14 +296,23 @@ export function evaluateResolutionVerification(input: {
         remainingWasteCount,
       };
     }
+  } else if (visionStatus === "UNAVAILABLE") {
+    cleanCriterion = {
+      key: "RESOLUTION_CLEAN",
+      title: "Trạng thái xử lý sự cố",
+      status: "WARNING",
+      badgeLabel: "Chưa thể kiểm định tự động (cần duyệt thủ công)",
+      detail:
+        "Dịch vụ AI/Vision tạm thời không khả dụng. Ảnh hiện trường vẫn được lưu để quản trị viên đối chiếu nghiệm thu thủ công.",
+      remainingWasteCount: 0,
+    };
   } else {
     cleanCriterion = {
       key: "RESOLUTION_CLEAN",
       title: "Trạng thái xử lý sự cố",
-      status: "PASSED",
-      badgeLabel: "Đánh giá tự động: Đã dọn dẹp sạch sẽ",
-      detail:
-        "Đánh giá tự động: Đã dọn dẹp sạch sẽ — Ảnh hiện trường đạt chuẩn đối chiếu nghiệm thu.",
+      status: "PENDING",
+      badgeLabel: "Chờ kiểm tra tự động",
+      detail: "Ảnh hiện trường chưa được kiểm tra tự động bởi AI/Vision.",
       remainingWasteCount: 0,
     };
   }
@@ -318,7 +327,7 @@ export function evaluateResolutionVerification(input: {
     gpsCriterion.status === "FAILED" ||
     angleCriterion.status === "FAILED" ||
     angleCriterion.status === "WARNING" ||
-    cleanCriterion.status === "WARNING";
+    (cleanCriterion.status === "WARNING" && remainingWasteCount > 0);
 
   return {
     gpsMatch: gpsCriterion,

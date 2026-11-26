@@ -1,22 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useRegister } from '../hooks/hooks';
+import { useConfirmOtp, useRegister, useResendOtp } from '../hooks/hooks';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Leaf, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { getApiErrorMessage } from '../lib/api-error';
 
 import { ThemeToggle } from '../components/ui/theme-toggle';
 import { useLanguage } from '../contexts/LanguageContext';
-// trang đan ký
+// trang đăng ký
 export default function Register() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const registerMutation = useRegister();
+  const confirmOtpMutation = useConfirmOtp();
+  const resendOtpMutation = useResendOtp();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [step, setStep] = useState<'register' | 'otp'>('register');
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -24,6 +31,14 @@ export default function Register() {
     password: '',
     confirmPassword: ''
   });
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -36,27 +51,77 @@ export default function Register() {
       toast.error('Mật khẩu xác nhận không trùng khớp.');
       return;
     }
+    const trimmedEmail = formData.email.trim();
     registerMutation.mutate(
       {
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
+        email: trimmedEmail,
         password: formData.password
       },
       {
         onSuccess: (data: any) => {
+          const payload = data?.data ?? data;
+          const message =
+            payload?.message ||
+            data?.message ||
+            "Mã OTP 6 số đã được gửi tới email của bạn. Vui lòng nhập mã để kích hoạt tài khoản.";
+          toast.success(message, { duration: 6000 });
+          if (payload?.requiresOtp === false) {
+            navigate('/login');
+            return;
+          }
+          setPendingEmail(payload?.email || trimmedEmail);
+          setOtpCode('');
+          setResendCooldown(30);
+          setStep('otp');
+        },
+        onError: (err: unknown) => {
+          toast.error(getApiErrorMessage(err, t('toast.register_failed')));
+        }
+      }
+    );
+  };
+
+  const handleConfirmOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanedOtp = otpCode.trim();
+    if (!cleanedOtp) {
+      toast.error('Vui lòng nhập mã OTP.');
+      return;
+    }
+    confirmOtpMutation.mutate(
+      { email: pendingEmail, code: cleanedOtp },
+      {
+        onSuccess: (data: any) => {
           toast.success(
-            data?.data?.message ||
-              data?.message ||
-              "Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.",
-            { duration: 6000 }
+            data?.message || data?.data?.message || 'Kích hoạt tài khoản thành công! Vui lòng đăng nhập.',
+            { duration: 4000 },
           );
           navigate('/login');
         },
-        onError: (err: any) => {
-          toast.error(err.response?.data?.message || t('toast.register_failed'));
-        }
-      }
+        onError: (err: unknown) => {
+          toast.error(getApiErrorMessage(err, 'Xác thực mã OTP thất bại.'));
+        },
+      },
+    );
+  };
+
+  const handleResendOtp = () => {
+    if (!pendingEmail || resendCooldown > 0 || resendOtpMutation.isPending) return;
+    resendOtpMutation.mutate(
+      { email: pendingEmail },
+      {
+        onSuccess: (data: any) => {
+          toast.success(
+            data?.message || data?.data?.message || 'Đã gửi lại mã OTP tới email của bạn.',
+          );
+          setResendCooldown(30);
+        },
+        onError: (err: unknown) => {
+          toast.error(getApiErrorMessage(err, 'Không thể gửi lại mã OTP.'));
+        },
+      },
     );
   };
 
@@ -91,6 +156,64 @@ export default function Register() {
           </div>
 
           <div className="mt-10">
+            {step === 'otp' ? (
+              <form onSubmit={handleConfirmOtp} className="space-y-6">
+                <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+                  Mã xác thực 6 chữ số đã được gửi tới{' '}
+                  <span className="font-semibold text-foreground">{pendingEmail}</span>.
+                </div>
+
+                <div>
+                  <Label htmlFor="otpCode">Mã xác thực OTP</Label>
+                  <div className="mt-2">
+                    <Input
+                      id="otpCode"
+                      name="otpCode"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      placeholder="Nhập 6 chữ số OTP"
+                      required
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D+/g, '').slice(0, 6))}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={confirmOtpMutation.isPending || otpCode.trim().length < 4}
+                  >
+                    {confirmOtpMutation.isPending ? 'Đang xác thực...' : 'Xác nhận mã OTP'}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={resendCooldown > 0 || resendOtpMutation.isPending}
+                    onClick={handleResendOtp}
+                  >
+                    {resendOtpMutation.isPending
+                      ? 'Đang gửi lại...'
+                      : resendCooldown > 0
+                        ? `Gửi lại mã OTP (${resendCooldown}s)`
+                        : 'Gửi lại mã OTP'}
+                  </Button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStep('register')}
+                    className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Quay lại sửa thông tin đăng ký
+                  </button>
+                </div>
+              </form>
+            ) : (
             <form onSubmit={handleRegister} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -169,6 +292,7 @@ export default function Register() {
                 </Button>
               </div>
             </form>
+            )}
           </div>
         </motion.div>
       </div>

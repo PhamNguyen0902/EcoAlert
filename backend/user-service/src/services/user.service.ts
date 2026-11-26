@@ -31,7 +31,18 @@ export class UserService {
 
   // Cập nhật thông tin hồ sơ người dùng
   async updateProfile(userId: string, data: UpdateProfileDto) {
-    const updateData: any = { ...data };
+    const updateData: {
+      fullName?: string;
+      phone?: string;
+      avatar?: string;
+      pushToken?: string;
+    } = {};
+
+    if (data.fullName !== undefined) updateData.fullName = data.fullName;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.avatar !== undefined) updateData.avatar = data.avatar;
+    if (data.pushToken !== undefined) updateData.pushToken = data.pushToken;
+
     if ((data.firstName || data.lastName) && !data.fullName) {
       const user = await userRepository.findById(userId);
       const parts = (user?.fullName || '').trim().split(/\s+/);
@@ -57,21 +68,27 @@ export class UserService {
   }
   // Lấy danh sách người dùng với phân trang, lọc theo vai trò và tìm kiếm
   async getUsers(page: number, limit: number, role?: string, search?: string) {
-    const skip = (page - 1) * limit;
+    const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
+    const safeLimit = Math.min(100, Math.max(1, Number.isFinite(limit) ? Math.floor(limit) : 10));
+    const skip = (safePage - 1) * safeLimit;
     const filter: any = {};
-    if (role && role !== 'all') {
+    if (typeof role === 'string' && role && role !== 'all') {
       filter.role = role.toUpperCase();
     }
-    if (search) {
+    if (typeof search === 'string' && search.trim()) {
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { fullName: { $regex: escapedSearch, $options: 'i' } },
+        { email: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
-    return userRepository.findPaginated(filter, skip, limit);
+    return userRepository.findPaginated(filter, skip, safeLimit);
   }
   // Thay đổi vai trò người dùng
   async changeRole(userId: string, targetUserId: string, role: string) {
+    if (userId === targetUserId) {
+      throw new BadRequestError('Cannot perform this action on your own account');
+    }
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
     const newRole = (role || '').toUpperCase();
@@ -80,6 +97,9 @@ export class UserService {
 
   // Bật/tắt trạng thái hoạt động của người dùng
   async toggleStatus(userId: string, targetUserId: string, isActive: boolean) {
+    if (userId === targetUserId) {
+      throw new BadRequestError('Cannot perform this action on your own account');
+    }
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
     return userRepository.update(targetUserId, { isActive, updatedBy: userId });
@@ -87,6 +107,9 @@ export class UserService {
 
   // Xóa người dùng
   async deleteUser(userId: string, targetUserId: string) {
+    if (userId === targetUserId) {
+      throw new BadRequestError('Cannot perform this action on your own account');
+    }
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
     const success = await userRepository.delete(targetUserId);

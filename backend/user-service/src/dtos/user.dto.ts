@@ -18,16 +18,29 @@ export const changePasswordSchema = z.object({
 export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;
 
 export const changeRoleSchema = z.object({
-  role: z.string().transform((val) => val.toUpperCase()),
+  role: z.preprocess(
+    (val) => (typeof val === 'string' ? val.toUpperCase() : val),
+    z.nativeEnum(UserRole),
+  ),
 });
 export type ChangeRoleDto = z.infer<typeof changeRoleSchema>;
+
+export const toggleStatusSchema = z.object({
+  isActive: z.boolean(),
+});
+export type ToggleStatusDto = z.infer<typeof toggleStatusSchema>;
 
 export const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   fullName: z.string().min(1),
   phone: z.string().optional().or(z.literal('')),
-  role: z.string().optional(),
+  role: z
+    .preprocess(
+      (val) => (typeof val === 'string' ? val.toUpperCase() : val),
+      z.nativeEnum(UserRole),
+    )
+    .optional(),
 });
 export type CreateUserDto = z.infer<typeof createUserSchema>;
 

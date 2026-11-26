@@ -67,8 +67,18 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    const requestUrl = String(originalRequest?.url || "");
+    const isAuthEndpoint = [
+      "/v1/auth/login",
+      "/v1/auth/register",
+      "/v1/auth/confirm-otp",
+      "/v1/auth/resend-otp",
+      "/v1/auth/refresh-token",
+      "/v1/auth/logout",
+    ].some((path) => requestUrl.includes(path));
+
     // kiểm tra khi gặp lỗi hết phiên đăng nhập và chưa từng thử lại
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // đưa yêu cầu vào hàng đợi nếu đang trong quá trình làm mới
         return new Promise((resolve, reject) => {
@@ -106,6 +116,11 @@ api.interceptors.response.use(
         if (newRefreshToken) {
           localStorage.setItem("refreshToken", newRefreshToken);
         }
+        window.dispatchEvent(
+          new CustomEvent("auth:token-refreshed", {
+            detail: { token: newToken, refreshToken: newRefreshToken },
+          }),
+        );
 
         // gắn mã mới vào yêu cầu ban đầu và gọi lại
         originalRequest.headers.Authorization = `Bearer ${newToken}`;

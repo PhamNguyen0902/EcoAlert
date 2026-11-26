@@ -220,6 +220,10 @@ spec:
               value: 'http://user-service:3001'
             - name: GIS_SERVICE_URL
               value: 'http://gis-service:3004'
+            - name: VISION_SERVICE_URL
+              value: 'http://vision-service:8001'
+            - name: MEDIA_SERVICE_URL
+              value: 'http://media-service:3003'
           resources:
             requests:
               memory: '128Mi'
@@ -280,6 +284,11 @@ spec:
               value: '3003'
             - name: MONGO_URI
               value: 'mongodb://mongodb:27017/ecoalert-media-db'
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: JWT_SECRET
             - name: SERVICE_AUTH_SECRET
               valueFrom:
                 secretKeyRef:
@@ -588,6 +597,16 @@ spec:
               value: 'cpu'
             - name: YOLO_MODELS_CONFIG
               value: 'config/models.json'
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_REGION
+            - name: AWS_S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: ecoalert-secrets
+                  key: AWS_S3_BUCKET_NAME
           resources:
             requests:
               memory: '512Mi'

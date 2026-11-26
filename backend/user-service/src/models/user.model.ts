@@ -41,8 +41,20 @@ const userSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
-    toObject: { virtuals: true },
-    toJSON: { virtuals: true },
+    toObject: {
+      virtuals: true,
+      transform: (_doc: any, ret: any) => {
+        delete ret.password;
+        return ret;
+      },
+    },
+    toJSON: {
+      virtuals: true,
+      transform: (_doc: any, ret: any) => {
+        delete ret.password;
+        return ret;
+      },
+    },
   },
 );
 userSchema.virtual("firstName").get(function () {

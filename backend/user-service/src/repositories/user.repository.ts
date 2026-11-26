@@ -37,7 +37,7 @@ export class UserRepository implements IBaseRepository<IUser> {
   }
 
   async update(id: string, data: Partial<IUser>): Promise<IUser | null> {
-    return User.findByIdAndUpdate(id, { $set: data }, { new: true });
+    return User.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
   }
 
   async delete(id: string): Promise<boolean> {

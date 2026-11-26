@@ -20,6 +20,20 @@ export const useRegister = () => {
   });
 };
 
+// hook xác nhận mã OTP
+export const useConfirmOtp = () => {
+  return useMutation({
+    mutationFn: authService.confirmOtp,
+  });
+};
+
+// hook gửi lại mã OTP
+export const useResendOtp = () => {
+  return useMutation({
+    mutationFn: authService.resendOtp,
+  });
+};
+
 
 // nhóm hook quản lý sự cố và báo cáo
 

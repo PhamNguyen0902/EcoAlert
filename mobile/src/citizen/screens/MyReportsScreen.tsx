@@ -602,7 +602,7 @@ export const MyReportsScreen: React.FC<
                 </Text>
               )}
             </TouchableOpacity>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           !isLoading ? (
@@ -675,7 +675,7 @@ export const MyReportsScreen: React.FC<
                 </Text>
               </TouchableOpacity>
             </Card>
-          ) : null
+          ) : undefined
         }
       />
 

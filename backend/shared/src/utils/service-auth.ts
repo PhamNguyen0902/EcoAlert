@@ -13,7 +13,7 @@ const signature = (
   body: unknown,
 ) =>
   createHmac("sha256", secret())
-    .update(JSON.stringify([name, timestamp, method, path, body ?? null]))
+    .update(JSON.stringify([name, timestamp, method, path, body ?? {}]))
     .digest("hex");
 export function internalServiceHeaders(
   name: string,
@@ -77,10 +77,16 @@ export const requireVerifiedRoles =
         typeof claims.role !== "string"
       )
         throw new UnauthorizedError("Invalid authentication token");
-      if (!roles.includes(claims.role.toUpperCase()))
+      const allowed = roles.map((r) => r.toUpperCase());
+      if (!allowed.includes(claims.role.toUpperCase()))
         throw new ForbiddenError("Không có quyền thực hiện hành động này");
       req.headers["x-user-id"] = claims.userId;
       req.headers["x-user-role"] = claims.role.toUpperCase();
+      if (typeof claims.email === "string" && claims.email.trim()) {
+        req.headers["x-user-email"] = claims.email;
+      } else {
+        delete req.headers["x-user-email"];
+      }
       next();
     } catch (error) {
       next(

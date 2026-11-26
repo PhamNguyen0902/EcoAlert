@@ -1,7 +1,8 @@
 **/node_modules
 **/dist
-.env
-.env.example
+**/.env
+**/.env.*
+vision-service/
 .git
 .gitignore
 npm-debug.log

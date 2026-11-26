@@ -362,7 +362,7 @@ export const CitizenNotificationsScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               )}
             </TouchableOpacity>
-          ) : null
+          ) : undefined
         }
       />
     </View>
