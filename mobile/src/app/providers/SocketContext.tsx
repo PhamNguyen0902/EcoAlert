@@ -76,8 +76,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
 
     const refreshActiveData = () => {
-      queryClient.invalidateQueries();
-      queryClient.refetchQueries({ type: 'active' });
+      void queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      void queryClient.invalidateQueries({ queryKey: ['alert'] });
+      void queryClient.invalidateQueries({ queryKey: ['officer-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['officer-shift'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
     };
 
     socketInstance.on('alert:created', (data) => {
@@ -90,8 +94,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       refreshActiveData();
     });
 
-    socketInstance.on('image:analyzed', (data) => {
-      console.log('[Mobile Socket] image:analyzed', data);
+    socketInstance.on('ai:analyzed', (data) => {
+      console.log('[Mobile Socket] ai:analyzed', data);
       refreshActiveData();
     });
 

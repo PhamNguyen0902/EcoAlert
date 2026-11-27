@@ -61,7 +61,7 @@ export const OfficerTasksScreen = () => {
       : hour < 18
         ? "Chào buổi chiều"
         : "Chào buổi tối";
-  const priority = actionableTasks.sort((a, b) => {
+  const priority = [...actionableTasks].sort((a, b) => {
     const weight: Record<string, number> = {
       critical: 4,
       high: 3,

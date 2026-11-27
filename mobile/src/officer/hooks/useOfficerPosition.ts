@@ -24,7 +24,7 @@ export function useOfficerPosition() {
     };
   }, []);
   const refresh = async (): Promise<OfficerPosition | null> => {
-  if (!activeRef.current) return positionRef.current;
+  if (!activeRef.current) return null;
   // nếu đang có tiến trình lấy gps chạy ngầm thì đợi luôn kết quả của tiến trình đó
   if (inflightRef.current) return inflightRef.current;
 
@@ -92,7 +92,7 @@ export function useOfficerPosition() {
             ? "Chưa cấp quyền vị trí. Mở cài đặt để cho phép GPS khi dùng ứng dụng."
             : "Chưa lấy được GPS mới. Kiểm tra quyền vị trí, ra nơi thoáng rồi thử lại.",
         );
-      return positionRef.current;
+      return null;
     } finally {
       inflightRef.current = null;
       if (alive.current) setPending(false);

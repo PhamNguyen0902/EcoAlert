@@ -125,7 +125,7 @@ export const useConfirmArrival = () => {
       location,
     }: {
       id: string;
-      location?: { latitude?: number; longitude?: number; accuracy?: number };
+      location: { latitude: number; longitude: number; accuracyMeters: number };
     }) => alertService.confirmArrival(id, location),
     onSuccess: (_, variables) =>
       invalidateAlertWorkflow(queryClient, variables.id),

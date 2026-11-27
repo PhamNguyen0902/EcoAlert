@@ -188,8 +188,7 @@ export const MyReportsScreen: React.FC<
 
   const renderItem = ({ item }: { item: AlertItem }) => {
     const normalizedStatus = item.status?.toUpperCase();
-    const canEdit =
-      normalizedStatus === "PENDING" || normalizedStatus === "AI_ANALYZING";
+    const canEdit = normalizedStatus === "PENDING";
     const aiState = getAiAnalysisState(item);
     const aiLabel =
       aiState === "COMPLETED"

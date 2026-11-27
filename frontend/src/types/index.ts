@@ -39,7 +39,6 @@ export type AlertCategory =
   | "noise_pollution"
   | "soil_contamination"
   | "wildlife_threat"
-  | "fire"
   | "other"
   | "UNCLASSIFIED";
 export type severity = "low" | "medium" | "high" | "critical";
@@ -138,6 +137,21 @@ export interface Alert {
   severity: Severity | null;
   mediaUrls: string[];
   visionEvidence?: VisionEvidence[];
+  captureMetadata?: {
+    method?: string;
+    capturedAt?: string;
+    gpsAccuracyMeters?: number;
+    gpsCapturedAt?: string;
+    locationSource?: string;
+  };
+  fieldEvidence?: Array<{
+    photoId?: string;
+    isPrimary?: boolean;
+    originalUrl?: string;
+    displayUrl?: string;
+    capturedAt?: string;
+    gpsAccuracyMeters?: number;
+  }>;
   location: GeoLocation;
   address: string;
   citizenId: string;

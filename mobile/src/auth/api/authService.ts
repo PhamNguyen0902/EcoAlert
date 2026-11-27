@@ -32,7 +32,7 @@ export const authService = {
   },
 
   resendVerification: async (email: string) => {
-    const res = await api.post("/v1/auth/resend-verification", { email });
+    const res = await api.post("/v1/auth/resend-otp", { email });
     return res.data;
   },
 

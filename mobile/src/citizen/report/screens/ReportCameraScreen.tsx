@@ -113,8 +113,15 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const tapCountRef = useRef(0);
   const tapTimeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [liveCameraLocation, setLiveCameraLocation] = useState<
+    FieldReportLocationDraft | undefined
+  >(draft.location);
+  const liveCameraLocationRef = useRef<FieldReportLocationDraft | undefined>(
+    draft.location,
+  );
 
   const handleSecretTap = () => {
+    if (!__DEV__) return;
     tapCountRef.current += 1;
     if (tapTimeRef.current) clearTimeout(tapTimeRef.current);
 
@@ -137,7 +144,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       useNativeDriver: true,
     }).start();
 
-  const location = draft.location;
+  const location = liveCameraLocation || draft.location;
   const renderNow = Math.max(now, Date.now());
   const locationAge = location
     ? renderNow - Date.parse(location.capturedAt)
@@ -173,12 +180,17 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           capturedAt: result.capturedAt,
           source: "DEVICE_GPS",
         };
+        liveCameraLocationRef.current = updated;
+        setLiveCameraLocation(updated);
         setDraft((current) => ({
           ...current,
           location: current.capture?.location || updated,
         }));
         // Capture callbacks read the returned fix, never wait for a React render.
-        draftRef.current = { ...draftRef.current, location: updated };
+        draftRef.current = {
+          ...draftRef.current,
+          location: draftRef.current.capture?.location || updated,
+        };
         return updated;
       })().finally(() => {
         gpsRequest.current = null;
@@ -199,7 +211,13 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
               location: freshFix,
               displayLocalUri: undefined,
             });
-            return { ...updatedDraft, location: freshFix };
+            return {
+              ...updatedDraft,
+              location:
+                photoId === updatedDraft.primaryPhotoId
+                  ? freshFix
+                  : updatedDraft.capture?.location || updatedDraft.location,
+            };
           });
         })
         .catch(() => undefined);
@@ -222,6 +240,17 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => {
     if (!gps.addressResolved || !gps.capturedAt) return;
+    if (
+      liveCameraLocationRef.current?.capturedAt === gps.capturedAt &&
+      liveCameraLocationRef.current.address !== gps.address
+    ) {
+      const resolvedLive = {
+        ...liveCameraLocationRef.current,
+        address: gps.address,
+      };
+      liveCameraLocationRef.current = resolvedLive;
+      setLiveCameraLocation(resolvedLive);
+    }
     setDraft((current) => {
       const matches = (fix?: FieldReportLocationDraft) =>
         fix?.capturedAt === gps.capturedAt && fix.address !== gps.address;
@@ -268,6 +297,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      if (tapTimeRef.current) clearTimeout(tapTimeRef.current);
     };
   }, []);
 
@@ -312,9 +342,9 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
       setDraft((current) => ({ ...current, location: undefined }));
     navigation.navigate("ReportLocation");
   };
-  //cho phép chọn ảnh ở thư viện
+  //cho phép chọn ảnh ở thư viện (chỉ khả dụng ở chế độ dev)
   const PickDemoPicture = async () => {
-    if (capturing) return;
+    if (!__DEV__ || capturing) return;
     setCaptureError(null);
     setCaptureErrorCode(null);
     // mở thư viện ảnh để lựa chọn ảnh rác
@@ -391,7 +421,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           granted: permission?.granted === true,
           ready: cameraReadyRef.current || Boolean(cameraRef.current),
           camera: cameraRef.current,
-          location: draftRef.current.location,
+          location: liveCameraLocationRef.current || draftRef.current.location,
           draft: draftRef.current,
         }),
         refreshLocation: refreshGps,
@@ -543,12 +573,16 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
 
         <View style={styles.stageRow}>
           <Text style={styles.stageText}>CHỤP BAO QUÁT ĐIỂM RÁC</Text>
-          <TouchableOpacity onPress={handleSecretTap} style={styles.liveChip}>
+          <TouchableOpacity
+            onPress={__DEV__ ? handleSecretTap : undefined}
+            activeOpacity={__DEV__ ? 0.7 : 1}
+            style={styles.liveChip}
+          >
             <View
               style={[
                 styles.liveDot,
                 !cameraReady && { backgroundColor: "#38BDF8" },
-                isDemoMode && { backgroundColor: "#A855F7" },
+                __DEV__ && isDemoMode && { backgroundColor: "#A855F7" },
               ]}
             />
             <Text style={styles.liveText}>
@@ -761,7 +795,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
         {preparedPhoto && !capturing ? (
           <TouchableOpacity
             onPress={() =>
-              void (isDemoMode ? PickDemoPicture() : takePicture())
+              void (__DEV__ && isDemoMode ? PickDemoPicture() : takePicture())
             }
             onPressIn={() => pressShutter(true)}
             accessibilityRole="button"
@@ -805,7 +839,7 @@ export const ReportCameraScreen: React.FC<Props> = ({ navigation }) => {
           <Animated.View style={{ transform: [{ scale: shutterScale }] }}>
             <TouchableOpacity
               onPress={() =>
-                void (isDemoMode ? PickDemoPicture() : takePicture())
+                void (__DEV__ && isDemoMode ? PickDemoPicture() : takePicture())
               }
               onPressIn={() => pressShutter(true)}
               onPressOut={() => pressShutter(false)}

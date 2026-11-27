@@ -1,5 +1,5 @@
-import React, { useMemo, useState, type ReactNode } from "react";
-import { MapContainer, Marker, Popup } from "react-leaflet";
+import React, { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { createIncidentMarkerIcon } from "@/lib/incident-map-marker";
-import { SEVERITY_COLORS } from "@/lib/map-filters";
+import { getIncidentLatLng, SEVERITY_COLORS } from "@/lib/map-filters";
 import { useGeolocation } from "@/features/citizen/hooks/useGeolocation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -46,6 +46,29 @@ const userLocationIcon = L.divIcon({
 });
 
 const DEFAULT_CENTER: [number, number] = [10.8231, 106.6297]; // vị trí mặc định
+
+const UserLocationCenterer: React.FC<{
+  latitude: number | null | undefined;
+  longitude: number | null | undefined;
+}> = ({ latitude, longitude }) => {
+  const map = useMap();
+  const hasCenteredRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !hasCenteredRef.current &&
+      typeof latitude === "number" &&
+      typeof longitude === "number" &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude)
+    ) {
+      hasCenteredRef.current = true;
+      map.setView([latitude, longitude], map.getZoom());
+    }
+  }, [latitude, longitude, map]);
+
+  return null;
+};
 
 // bản đồ sự cố: hiển thị vị trí sự cố theo nhóm cụm (cluster), vị trí người dùng, bộ lọc mức độ nghiêm trọng và bảng chú thích
 export const IncidentMap: React.FC<IncidentMapProps> = ({
@@ -107,15 +130,16 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
       >
         <MapContainer center={center}  zoom={13}  maxZoom={19} minZoom={2} className="relative z-0 h-full w-full">
           <EcoAlertBaseMap />
+          <UserLocationCenterer latitude={latitude} longitude={longitude} />
 
           <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
-            {filteredAlerts.map((alert) => (
+            {filteredAlerts.flatMap((alert) => {
+              const position = getIncidentLatLng(alert);
+              if (!position) return [];
+              return (
               <Marker
                 key={alert._id}
-                position={[
-                  alert.location.coordinates[1],
-                  alert.location.coordinates[0],
-                ]}
+                position={position}
                 icon={createIncidentMarkerIcon(alert.severity, { size: 20 })}
               >
                 <Popup className="incident-popup">
@@ -156,7 +180,8 @@ export const IncidentMap: React.FC<IncidentMapProps> = ({
                   </div>
                 </Popup>
               </Marker>
-            ))}
+              );
+            })}
           </MarkerClusterGroup>
 
           {latitude && longitude && (

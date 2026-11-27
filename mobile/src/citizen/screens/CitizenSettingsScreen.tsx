@@ -69,7 +69,14 @@ export const CitizenSettingsScreen: React.FC<
         Camera.getCameraPermissionsAsync(),
         profile ? offlineQueue.getOfflineDrafts() : Promise.resolve([]),
       ]);
-      return { gps: gps.status, camera: camera.status, drafts: drafts.length };
+      const ownedDrafts = drafts.filter(
+        (draft) => !draft.ownerId || draft.ownerId === profile?._id,
+      );
+      return {
+        gps: gps.status,
+        camera: camera.status,
+        drafts: ownedDrafts.length,
+      };
     },
     staleTime: 30_000,
     retry: false,

@@ -304,10 +304,15 @@ export default function OfficerReportDetail() {
     [],
   );
 
-  // Reset kích thước ảnh YOLO khi chuyển sang ảnh khác
+  // Reset chỉ số ảnh và kích thước ảnh YOLO khi chuyển sang báo cáo khác hoặc ảnh khác
+  useEffect(() => {
+    setSelectedYoloImageIndex(0);
+    setYoloImageSize(null);
+  }, [id]);
+
   useEffect(() => {
     setYoloImageSize(null);
-  }, [selectedYoloImageIndex, id]);
+  }, [selectedYoloImageIndex]);
 
   // Tự động chọn sẵn cán bộ khả dụng đầu tiên (trong ca trực, ít việc nhất) cho Admin
   const availability = useMemo(
@@ -335,11 +340,11 @@ export default function OfficerReportDetail() {
 
   // Tổng hợp danh sách vật thể YOLO phát hiện cho Cột 2 của Admin
   const visionEvidenceList = alert?.visionEvidence ?? [];
+  const currentYoloImageUrl = alert?.mediaUrls?.[selectedYoloImageIndex];
   const activeVisionEvidence =
-    visionEvidenceList[selectedYoloImageIndex] ??
-    visionEvidenceList.find(
-      (item) => item.imageUrl === alert?.mediaUrls?.[selectedYoloImageIndex],
-    );
+    (currentYoloImageUrl
+      ? visionEvidenceList.find((item) => item.imageUrl === currentYoloImageUrl)
+      : undefined) ?? visionEvidenceList[selectedYoloImageIndex];
   const activeYoloDetections = activeVisionEvidence?.detections ?? [];
 
   const detectionCategories = useMemo(() => {
@@ -796,7 +801,7 @@ export default function OfficerReportDetail() {
       : analysis?.categoryConfidence !== undefined &&
           analysis?.categoryConfidence !== null
         ? `${Math.round(analysis.categoryConfidence * 100)}%`
-        : "80%";
+        : "—";
 
   const mass = analysis?.massEstimate;
   const massEstimateText =
@@ -1299,23 +1304,50 @@ export default function OfficerReportDetail() {
                 </div>
 
                 {/* TẦNG 3: THẺ CHỨNG THỰC DỮ LIỆU & HIỆU NĂNG AI (VISION PROVENANCE) */}
-                <div className="shrink-0 space-y-1.5 rounded-xl border border-white/[0.08] bg-slate-950/80 p-2.5 text-[11px] text-slate-400 shadow-xl backdrop-blur-xl">
-                  <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
-                    <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-                    <span>✓ Live Camera Verified (Chống ảnh thư viện)</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[10.5px]">
-                    <span className="text-slate-400">Mô hình:</span>
-                    <span className="font-mono text-slate-200">
-                      YOLO11 Multi-Model (General + Asian Waste)
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between font-mono text-[10.5px] text-slate-300">
-                    <span>Độ trễ suy luận: ~35ms</span>
-                    <span>·</span>
-                    <span className="text-emerald-300/90">Sai số GPS: ±5m</span>
-                  </div>
-                </div>
+                {(() => {
+                  const isLiveCamera =
+                    alert.captureMetadata?.method === "LIVE_CAMERA";
+                  const gpsAcc =
+                    alert.captureMetadata?.gpsAccuracyMeters ??
+                    alert.fieldEvidence?.[0]?.gpsAccuracyMeters;
+                  const gpsAccuracyLabel =
+                    typeof gpsAcc === "number" && Number.isFinite(gpsAcc)
+                      ? `Sai số GPS: ±${Math.round(gpsAcc)}m`
+                      : "GPS: Chưa có dữ liệu";
+                  const modelLabel =
+                    analysis?.semanticModel ||
+                    (alert.analysisPipeline === "WASTE_DETECTION"
+                      ? "YOLO11 + VLM"
+                      : "EcoAlert AI");
+
+                  return (
+                    <div className="shrink-0 space-y-1.5 rounded-xl border border-white/[0.08] bg-slate-950/80 p-2.5 text-[11px] text-slate-400 shadow-xl backdrop-blur-xl">
+                      <div
+                        className={`flex items-center gap-1.5 font-semibold ${
+                          isLiveCamera ? "text-emerald-400" : "text-slate-300"
+                        }`}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          {isLiveCamera
+                            ? "Live Camera (chụp trực tiếp)"
+                            : "Tải lên từ Web / Chưa xác thực camera"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-[10.5px]">
+                        <span className="text-slate-400">Mô hình:</span>
+                        <span className="truncate font-mono text-slate-200">
+                          {modelLabel}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between font-mono text-[10.5px] text-slate-300">
+                        <span className={isLiveCamera ? "text-emerald-300/90" : "text-slate-400"}>
+                          {gpsAccuracyLabel}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

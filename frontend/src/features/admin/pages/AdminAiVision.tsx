@@ -273,7 +273,10 @@ export default function AdminAiVision() {
                 </Button>
               </div>
 
-              <EnvironmentalAiAnalysisContent alert={selectedAlert} />
+              <EnvironmentalAiAnalysisContent
+                key={selectedAlert._id}
+                alert={selectedAlert}
+              />
 
               <OverallAiAnalysisCard alert={selectedAlert} />
             </>

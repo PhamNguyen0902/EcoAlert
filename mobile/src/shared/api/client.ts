@@ -30,6 +30,17 @@ let refreshQueue: {
   reject: (err: any) => void;
 }[] = [];
 
+const REFRESH_GRACE_MS = 30_000;
+let lastRefreshedFromToken: string | null = null;
+let lastRefreshedToToken: string | null = null;
+let lastRefreshedAt = 0;
+
+const resetRefreshedTokenRecord = () => {
+  lastRefreshedFromToken = null;
+  lastRefreshedToToken = null;
+  lastRefreshedAt = 0;
+};
+
 const processQueue = (error: any, token: string | null = null) => {
   refreshQueue.forEach(({ resolve, reject }) => {
     if (error) reject(error);
@@ -63,12 +74,27 @@ api.interceptors.response.use(
       !originalRequest._retry && !isAuthRoute
     ) {
       const sessionToken = await storage.getToken();
-      // Ignore anonymous requests and responses belonging to a previous login.
-      if (
-        !sessionToken ||
-        originalRequest.headers?.Authorization !== `Bearer ${sessionToken}`
-      )
+      if (!sessionToken) {
+        resetRefreshedTokenRecord();
         return Promise.reject(error);
+      }
+
+      const requestAuth = originalRequest.headers?.Authorization;
+      if (requestAuth !== `Bearer ${sessionToken}`) {
+        // Retry concurrent requests that left right before another request completed refresh in the same session.
+        const withinGraceWindow =
+          Boolean(lastRefreshedFromToken) &&
+          lastRefreshedToToken === sessionToken &&
+          Date.now() - lastRefreshedAt <= REFRESH_GRACE_MS &&
+          requestAuth === `Bearer ${lastRefreshedFromToken}`;
+        if (withinGraceWindow) {
+          originalRequest._retry = true;
+          originalRequest.headers.Authorization = `Bearer ${sessionToken}`;
+          return api(originalRequest);
+        }
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           refreshQueue.push({
@@ -109,11 +135,16 @@ api.interceptors.response.use(
           await storage.setRefreshToken(newRefreshToken);
         }
 
+        lastRefreshedFromToken = sessionToken;
+        lastRefreshedToToken = newToken;
+        lastRefreshedAt = Date.now();
+
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         processQueue(null, newToken);
 
         return api(originalRequest);
       } catch (err) {
+        resetRefreshedTokenRecord();
         processQueue(err, null);
         if (sessionToken === (await storage.getToken())) {
           await storage.clearAll();

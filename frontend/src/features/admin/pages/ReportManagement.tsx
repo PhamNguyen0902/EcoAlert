@@ -60,9 +60,18 @@ export default function ReportManagement() {
   const [previewId, setPreviewId] = useState<string>();
 
   const unassigned = activeTab === "unassigned";
-  const queryFilters: Record<string, string> = unassigned
-    ? { unassigned: "true" }
-    : {};
+  const queryFilters: Record<string, string> = {
+    ...(unassigned
+      ? { unassigned: "true" }
+      : activeTab === "pending"
+        ? { status: "pending,ai_analyzing" }
+        : activeTab === "processing"
+          ? { status: "assigned,in_progress" }
+          : activeTab === "resolved"
+            ? { status: "resolved" }
+            : {}),
+    ...(search.trim() ? { title: search.trim() } : {}),
+  };
 
   const { data, isLoading } = useAlerts(page, 10, queryFilters);
   const { data: unassignedSummary } = useAlerts(1, 1, { unassigned: "true" });
@@ -71,6 +80,10 @@ export default function ReportManagement() {
   if (isLoading) return <LoadingSpinner />;
 
   const rawItems = data?.items || [];
+  const totalPages = Math.max(
+    1,
+    data?.totalPages ?? Math.ceil((data?.total ?? 0) / 10),
+  );
   const unassignedCount =
     unassignedSummary?.total ??
     (unassigned
@@ -80,19 +93,7 @@ export default function ReportManagement() {
             a.status.toLowerCase() === "verified" && !a.assignedOfficerId,
         ).length);
 
-  const filteredAlerts = rawItems.filter((a: Alert) => {
-    const matchesSearch = a.title
-      .toLowerCase()
-      .includes(search.toLowerCase().trim());
-    if (!matchesSearch) return false;
-
-    const status = a.status.toLowerCase();
-    if (activeTab === "pending") return status === "pending";
-    if (activeTab === "processing")
-      return status === "assigned" || status === "in_progress";
-    if (activeTab === "resolved") return status === "resolved";
-    return true;
-  });
+  const filteredAlerts = rawItems;
 
   const tabs: {
     id: WorkQueueTab;
@@ -174,7 +175,10 @@ export default function ReportManagement() {
                 placeholder={t("reports.search_placeholder")}
                 className="w-full pl-8"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
           </div>
@@ -340,10 +344,25 @@ export default function ReportManagement() {
                                   className="text-red-500 focus:text-red-500"
                                   onSelect={() => {
                                     if (confirm("Xóa báo cáo?")) {
-                                      deleteAlert.mutate(alert._id);
-                                      toast.success(
-                                        t("toast.report_deleted_success"),
-                                      );
+                                      deleteAlert.mutate(alert._id, {
+                                        onSuccess: () => {
+                                          toast.success(
+                                            t("toast.report_deleted_success"),
+                                          );
+                                        },
+                                        onError: (err: unknown) => {
+                                          const msg =
+                                            (
+                                              err as {
+                                                response?: {
+                                                  data?: { message?: string };
+                                                };
+                                              }
+                                            )?.response?.data?.message ||
+                                            t("toast.report_delete_failed");
+                                          toast.error(msg);
+                                        },
+                                      });
                                     }
                                   }}
                                 >
@@ -376,6 +395,7 @@ export default function ReportManagement() {
               variant="outline"
               size="sm"
               onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPages}
             >
               {t("reports.next")}
             </Button>

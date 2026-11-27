@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronDown, ScanSearch } from "lucide-react";
 
@@ -77,7 +77,20 @@ export function EnvironmentalAiAnalysisContent({
     ? (alert.visionEvidence ?? [])
     : [];
 
-  const selectedEvidence = evidence[selectedImage];
+  const safeSelectedImage = Math.min(
+    selectedImage,
+    Math.max(0, alert.mediaUrls.length - 1),
+  );
+  const currentImageUrl = alert.mediaUrls[safeSelectedImage];
+
+  useEffect(() => {
+    setImageSize(null);
+  }, [currentImageUrl]);
+
+  const selectedEvidence =
+    (currentImageUrl
+      ? evidence.find((item) => item.imageUrl === currentImageUrl)
+      : undefined) ?? evidence[safeSelectedImage];
   const detections = selectedEvidence?.detections ?? [];
 
   const groups = useMemo(() => {
@@ -184,11 +197,11 @@ export function EnvironmentalAiAnalysisContent({
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)]">
           {/* Image analysis */}
           <div className="overflow-hidden rounded-xl border border-slate-800 bg-[#071321]">
-            {alert.mediaUrls[selectedImage] ? (
+            {currentImageUrl ? (
               <div className="relative flex min-h-[360px] max-h-[460px] w-full items-center justify-center overflow-hidden rounded-xl bg-slate-950 p-2">
                 {/* Lớp nền mờ Apple Preview phía sau để lấp khoảng trống ảnh dọc */}
                 <img
-                  src={alert.mediaUrls[selectedImage]}
+                  src={currentImageUrl}
                   alt=""
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0 h-full w-full scale-110 select-none object-cover opacity-35 blur-2xl"
@@ -197,8 +210,8 @@ export function EnvironmentalAiAnalysisContent({
                 {/* Khung nội bộ ôm sát đúng kích thước hiển thị của ảnh (inline-flex) */}
                 <div className="relative z-10 inline-flex max-h-[440px] max-w-full items-center justify-center">
                   <img
-                    src={alert.mediaUrls[selectedImage]}
-                    alt={`Minh chứng ${selectedImage + 1}`}
+                    src={currentImageUrl}
+                    alt={`Minh chứng ${safeSelectedImage + 1}`}
                     className="block h-auto max-h-[440px] w-auto max-w-full rounded-lg object-contain"
                     onLoad={(event) =>
                       setImageSize({
@@ -275,7 +288,7 @@ export function EnvironmentalAiAnalysisContent({
                     onClick={() => setSelectedImage(index)}
                     className={[
                       "h-14 w-16 shrink-0 overflow-hidden rounded border",
-                      index === selectedImage
+                      index === safeSelectedImage
                         ? "border-[#10B981]"
                         : "border-slate-700",
                     ].join(" ")}
