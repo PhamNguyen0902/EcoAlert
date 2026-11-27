@@ -1,6 +1,11 @@
 import amqp from "amqplib";
 import { envConfig } from "../config/env.config";
-import { createLogger, IEventMessage, EVENTS } from "@ecoalert/shared";
+import {
+  createLogger,
+  createResilientRabbitMQConnector,
+  IEventMessage,
+  EVENTS,
+} from "@ecoalert/shared";
 import { notificationService } from "./notification.service";
 import { socketService } from "./socket.service";
 import { buildNotificationContent } from "../utils/notification-content";
@@ -18,21 +23,16 @@ export interface AlertEventData {
   workflowNotificationHandled?: boolean;
 }
 class RabbitMQService {
-  private connection: unknown;
-  private channel: amqp.Channel | undefined;
-  async connect() {
-    try {
-      this.connection = await amqp.connect(envConfig.rabbitMqUrl);
-      this.channel = await (
-        this.connection as amqp.ChannelModel
-      ).createChannel();
-      await this.channel.assertExchange("ecoalert_exchange", "topic", {
-        durable: true,
-      });
-      const queue = await this.channel.assertQueue(
-        "notification_service_queue",
-        { durable: true },
-      );
+  private readonly connector = createResilientRabbitMQConnector<
+    amqp.ChannelModel,
+    amqp.Channel
+  >({
+    connect: () => amqp.connect(envConfig.rabbitMqUrl),
+    createChannel: (connection) => connection.createChannel(),
+    queueName: "notification_service_queue",
+    dlqName: "notification_service_dlq",
+    logger,
+    onConnected: async (channel, queue) => {
       const events = [
         EVENTS.ALERT_CREATED,
         EVENTS.AI_ANALYZED,
@@ -45,25 +45,27 @@ class RabbitMQService {
       ];
       await Promise.all(
         events.map((name) =>
-          this.channel!.bindQueue(queue.queue, "ecoalert_exchange", name),
+          channel.bindQueue(queue, "ecoalert_exchange", name),
         ),
       );
-      await this.channel.prefetch(10);
-      await this.channel.consume(queue.queue, async (message) => {
-        if (!message || !this.channel) return;
+      await channel.prefetch(10);
+      await channel.consume(queue, async (message) => {
+        const activeChannel = this.connector.getChannel();
+        if (!message || !activeChannel) return;
         try {
           await this.handleEvent(JSON.parse(message.content.toString()));
-          this.channel.ack(message);
+          activeChannel.ack(message);
         } catch (error) {
           logger.error("Error processing notification message", error);
-          this.channel.nack(message, false, false);
+          activeChannel.nack(message, false, false);
         }
       });
       logger.info("Listening to notification_service_queue");
-    } catch (error) {
-      logger.error("RabbitMQ Connection Error:", error);
-      setTimeout(() => this.connect(), 5000);
-    }
+    },
+  });
+
+  async connect() {
+    await this.connector.connect();
   }
   async handleEvent(event: IEventMessage<AlertEventData>) {
     const data = event.data;

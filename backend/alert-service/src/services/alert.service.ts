@@ -374,9 +374,15 @@ export class AlertService {
     page: number,
     limit: number,
     citizenId?: string,
-    filters: { title?: string; status?: string; category?: string; severity?: string; unassigned?: boolean } = {},
+    filters: { title?: string; status?: string; category?: string; severity?: string; unassigned?: boolean; isDeleted?: string } = {},
   ) {
     const filter: Record<string, unknown> = {};
+    if (filters.isDeleted === "true") {
+      filter.isDeleted = true;
+      filter.includeDeleted = true;
+    } else if (filters.isDeleted === "false") {
+      filter.isDeleted = false;
+    }
     if (filters.unassigned) { filter.status = /^verified$/i; filter.assignedOfficerId = null; }
     if (citizenId) filter.citizenId = citizenId;
     if (filters.title?.trim()) {

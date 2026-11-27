@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { envConfig } from '../config/env.config';
 import {
   createLogger,
+  createResilientRabbitMQConnector,
   EVENTS,
   IAiAnalysisCompletedData,
   IEventMessage,
@@ -212,23 +213,24 @@ export const settleAlertCreatedMessage = async (
 };
 
 class RabbitMQService {
-  private connection: amqp.ChannelModel | undefined;
-  private channel: amqp.Channel | undefined;
+  private readonly connector = createResilientRabbitMQConnector<
+    amqp.ChannelModel,
+    amqp.Channel
+  >({
+    connect: () => amqp.connect(envConfig.rabbitMqUrl),
+    createChannel: (connection) => connection.createChannel(),
+    queueName: 'ai_service_queue',
+    dlqName: 'ai_service_dlq',
+    logger,
+    onConnected: async (channel, queue) => {
+      await channel.bindQueue(queue, 'ecoalert_exchange', EVENTS.ALERT_CREATED);
+      await channel.prefetch(1);
 
-  async connect() {
-    try {
-      this.connection = await amqp.connect(envConfig.rabbitMqUrl);
-      this.channel = await this.connection.createChannel();
-      await this.channel.assertExchange('ecoalert_exchange', 'topic', { durable: true });
+      channel.consume(queue, async (message) => {
+        const activeChannel = this.connector.getChannel();
+        if (!message || !activeChannel) return;
 
-      const queue = await this.channel.assertQueue('ai_service_queue', { durable: true });
-      await this.channel.bindQueue(queue.queue, 'ecoalert_exchange', EVENTS.ALERT_CREATED);
-      await this.channel.prefetch(1);
-
-      this.channel.consume(queue.queue, async (message) => {
-        if (!message || !this.channel) return;
-
-        const result = await settleAlertCreatedMessage(message, this.channel, {
+        const result = await settleAlertCreatedMessage(message, activeChannel, {
           analyze: analyzeMultimodalIncident,
           publish: (routingKey, data, correlationId) =>
             this.publishEvent(routingKey, data, correlationId),
@@ -243,16 +245,16 @@ class RabbitMQService {
       });
 
       logger.info('Connected to RabbitMQ and listening to ai_service_queue');
-    } catch (error) {
-      logger.error('RabbitMQ connection failed', {
-        errorType: error instanceof Error ? error.name : 'UnknownError',
-      });
-      setTimeout(() => this.connect(), 5000);
-    }
+    },
+  });
+
+  async connect() {
+    await this.connector.connect();
   }
 
   async publishEvent<T>(routingKey: string, data: T, correlationId?: string) {
-    if (!this.channel) throw new Error('RabbitMQ channel is unavailable');
+    const channel = this.connector.getChannel();
+    if (!channel) throw new Error('RabbitMQ channel is unavailable');
 
     const event: IEventMessage<T> = {
       eventId: randomUUID(),
@@ -263,7 +265,7 @@ class RabbitMQService {
       data,
     };
 
-    this.channel.publish(
+    channel.publish(
       'ecoalert_exchange',
       routingKey,
       Buffer.from(JSON.stringify(event)),

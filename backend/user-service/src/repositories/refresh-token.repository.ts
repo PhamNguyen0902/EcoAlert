@@ -10,6 +10,10 @@ export class RefreshTokenRepository {
     return RefreshToken.findOne({ token });
   }
 
+  async consumeByToken(token: string): Promise<IRefreshToken | null> {
+    return RefreshToken.findOneAndDelete({ token });
+  }
+
   async deleteByToken(token: string): Promise<boolean> {
     const result = await RefreshToken.findOneAndDelete({ token });
     return !!result;

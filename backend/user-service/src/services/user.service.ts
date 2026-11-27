@@ -2,6 +2,7 @@ import { userRepository } from '../repositories/user.repository';
 import { UpdateProfileDto, ChangePasswordDto, CreateUserDto } from '../dtos/user.dto';
 import { NotFoundError, BadRequestError, UserRole } from '@ecoalert/shared';
 import { hashPassword, comparePassword } from '../utils/password.util';
+import { tokenService } from './token.service';
 
 export class UserService {
   // Tạo người dùng mới (dành cho Admin)
@@ -65,15 +66,22 @@ export class UserService {
 
     const newHashed = await hashPassword(data.newPassword);
     await userRepository.update(userId, { password: newHashed });
+    await tokenService.revokeAllUserTokens(userId);
   }
   // Lấy danh sách người dùng với phân trang, lọc theo vai trò và tìm kiếm
-  async getUsers(page: number, limit: number, role?: string, search?: string) {
+  async getUsers(page: number, limit: number, role?: string, search?: string, isDeleted?: string) {
     const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
     const safeLimit = Math.min(100, Math.max(1, Number.isFinite(limit) ? Math.floor(limit) : 10));
     const skip = (safePage - 1) * safeLimit;
     const filter: any = {};
     if (typeof role === 'string' && role && role !== 'all') {
       filter.role = role.toUpperCase();
+    }
+    if (isDeleted === 'true') {
+      filter.isDeleted = true;
+      filter.includeDeleted = true;
+    } else if (isDeleted === 'false') {
+      filter.isDeleted = false;
     }
     if (typeof search === 'string' && search.trim()) {
       const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -92,7 +100,9 @@ export class UserService {
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
     const newRole = (role || '').toUpperCase();
-    return userRepository.update(targetUserId, { role: newRole as any, updatedBy: userId });
+    const updated = await userRepository.update(targetUserId, { role: newRole as any, updatedBy: userId });
+    await tokenService.revokeAllUserTokens(targetUserId);
+    return updated;
   }
 
   // Bật/tắt trạng thái hoạt động của người dùng
@@ -102,7 +112,11 @@ export class UserService {
     }
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
-    return userRepository.update(targetUserId, { isActive, updatedBy: userId });
+    const updated = await userRepository.update(targetUserId, { isActive, updatedBy: userId });
+    if (!isActive) {
+      await tokenService.revokeAllUserTokens(targetUserId);
+    }
+    return updated;
   }
 
   // Xóa người dùng
@@ -114,13 +128,16 @@ export class UserService {
     if (!target) throw new NotFoundError('User not found');
     const success = await userRepository.delete(targetUserId);
     if (!success) throw new NotFoundError('User not found');
+    await tokenService.revokeAllUserTokens(targetUserId);
     return target;
   }
   // Xóa mềm người dùng (đánh dấu là đã xóa)
   async softDelete(userId: string, targetUserId: string) {
     const target = await userRepository.findById(targetUserId);
     if (!target) throw new NotFoundError('User not found');
-    return userRepository.update(targetUserId, { isDeleted: true, updatedBy: userId });
+    const updated = await userRepository.update(targetUserId, { isDeleted: true, updatedBy: userId });
+    await tokenService.revokeAllUserTokens(targetUserId);
+    return updated;
   }
 }
 

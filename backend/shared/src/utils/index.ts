@@ -2,5 +2,6 @@ export * from './api-response.util';
 export * from './async-handler.util';
 export * from './ai-confidence.util';
 export * from './logger.util';
+export * from './rabbitmq.util';
 export * from './vision-pipeline';
 export * from './media-ownership';

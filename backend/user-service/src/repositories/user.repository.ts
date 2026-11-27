@@ -29,9 +29,18 @@ export class UserRepository implements IBaseRepository<IUser> {
   }
 
   async findPaginated(filter: FilterQuery<IUser>, skip: number, limit: number): Promise<{ items: IUser[], total: number }> {
+    const includeDeleted = Boolean((filter as Record<string, unknown>).includeDeleted);
+    const queryFilter = { ...filter } as Record<string, unknown>;
+    delete queryFilter.includeDeleted;
+
+    if (!includeDeleted && queryFilter.isDeleted === undefined) {
+      queryFilter.isDeleted = false;
+    }
+
+    const findQuery = includeDeleted ? { ...queryFilter, includeDeleted: true } : queryFilter;
     const [items, total] = await Promise.all([
-      User.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 }),
-      User.countDocuments(filter)
+      User.find(findQuery as FilterQuery<IUser>).skip(skip).limit(limit).sort({ createdAt: -1 }),
+      User.countDocuments(queryFilter as FilterQuery<IUser>)
     ]);
     return { items, total };
   }
@@ -41,8 +50,8 @@ export class UserRepository implements IBaseRepository<IUser> {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await User.findByIdAndDelete(id);
-    return !!result;
+    const result = await User.deleteOne({ _id: id });
+    return result.deletedCount > 0;
   }
 
   async softDelete(id: string, deletedBy: string): Promise<boolean> {

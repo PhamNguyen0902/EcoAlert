@@ -29,7 +29,8 @@ export class UserController {
     const limit = Math.min(100, Math.max(1, Number.isFinite(rawLimit) ? rawLimit : 10));
     const role = typeof req.query.role === 'string' ? req.query.role : undefined;
     const search = typeof req.query.search === 'string' ? req.query.search : undefined;
-    const { items, total } = await userService.getUsers(page, limit, role, search);
+    const isDeleted = typeof req.query.isDeleted === 'string' ? req.query.isDeleted : undefined;
+    const { items, total } = await userService.getUsers(page, limit, role, search, isDeleted);
     res.status(200).json(paginatedResponse(items, total, page, limit));
   }
 
