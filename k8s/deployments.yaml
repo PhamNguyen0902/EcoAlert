@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: ghcr.io/phamnguyen0902/ecoalert/api-gateway:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/api-gateway:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -97,7 +97,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: ghcr.io/phamnguyen0902/ecoalert/user-service:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/user-service:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
@@ -192,7 +192,7 @@ spec:
     spec:
       containers:
         - name: alert-service
-          image: ghcr.io/phamnguyen0902/ecoalert/alert-service:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/alert-service:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3002
@@ -275,7 +275,7 @@ spec:
     spec:
       containers:
         - name: media-service
-          image: ghcr.io/phamnguyen0902/ecoalert/media-service:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/media-service:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3003
@@ -367,7 +367,7 @@ spec:
     spec:
       containers:
         - name: gis-service
-          image: ghcr.io/phamnguyen0902/ecoalert/gis-service:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/gis-service:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3004
@@ -444,7 +444,7 @@ spec:
     spec:
       containers:
         - name: ai-service
-          image: ghcr.io/phamnguyen0902/ecoalert/ai-service:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/ai-service:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3005
@@ -540,7 +540,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: ghcr.io/phamnguyen0902/ecoalert/notification-service:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/notification-service:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3006
@@ -615,7 +615,7 @@ spec:
     spec:
       containers:
         - name: vision-service
-          image: ghcr.io/phamnguyen0902/ecoalert/vision-service:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/vision-service:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001
@@ -685,7 +685,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/phamnguyen0902/ecoalert/frontend:a8634c7d2dbfa5f75bf126a453cd3c94bcafee22
+          image: ghcr.io/phamnguyen0902/ecoalert/frontend:55a7f8d2c6a506d4aebebfe73b4eb77062168f33
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
