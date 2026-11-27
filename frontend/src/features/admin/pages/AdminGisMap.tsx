@@ -591,8 +591,16 @@ export default function AdminGisMap() {
     null;
 
   // 4. Các hàm xử lý nghiệp vụ thật (Chỉ định cán bộ / Tự động điều phối / Báo sai tọa độ - Từ chối)
+  const DISPATCHABLE_STATUSES = new Set(["pending", "ai_analyzing", "verified"]);
+  const canDispatchSelectedAlert = Boolean(
+    selectedAlert &&
+      DISPATCHABLE_STATUSES.has(selectedAlert.status.toLowerCase()) &&
+      !selectedAlert.assignedOfficerId,
+  );
+
   const handleDispatchOfficer = async (officerId: string, fullName: string) => {
-    if (!selectedAlert) return;
+    if (!selectedAlert || !canDispatchSelectedAlert) return;
+    let verifiedNow = false;
     try {
       // Nếu báo cáo đang ở trạng thái pending / ai_analyzing, xác minh trước khi gán cán bộ
       if (
@@ -600,6 +608,7 @@ export default function AdminGisMap() {
         selectedAlert.status === "ai_analyzing"
       ) {
         await alertService.updateStatus(selectedAlert._id, "verified");
+        verifiedNow = true;
       }
 
       await assignOfficerMutation.mutateAsync({
@@ -613,20 +622,11 @@ export default function AdminGisMap() {
       void refetchAssignmentPreview();
       void queryClient.invalidateQueries({ queryKey: ["officer-availability"] });
     } catch (err) {
-      // Thử fallback sang autoAssign của serviceAreas nếu được cấu hình
-      try {
-        const autoRes = await serviceAreas.autoAssign(selectedAlert._id);
-        if (autoRes.assigned) {
-          toast.success(`Đã tự động điều phối cán bộ cho sự cố`);
-          void queryClient.invalidateQueries({
-            queryKey: ["alert", selectedAlert._id],
-          });
-          void queryClient.invalidateQueries({ queryKey: ["alerts"] });
-          void refetchAssignmentPreview();
-          return;
-        }
-      } catch {
-        // Bỏ qua lỗi fallback để hiển thị lỗi chính
+      if (verifiedNow) {
+        void queryClient.invalidateQueries({
+          queryKey: ["alert", selectedAlert._id],
+        });
+        void queryClient.invalidateQueries({ queryKey: ["alerts"] });
       }
       toast.error(
         getApiErrorMessage(
@@ -668,7 +668,7 @@ export default function AdminGisMap() {
   const confidencePercentText =
     confidenceInfo.value !== null
       ? `${(confidenceInfo.value * 100).toFixed(1)}%`
-      : selectedAlert?.aiOverallAnalysis?.categoryConfidence !== undefined
+      : typeof selectedAlert?.aiOverallAnalysis?.categoryConfidence === "number"
         ? `${(selectedAlert.aiOverallAnalysis.categoryConfidence * 100).toFixed(1)}%`
         : "Đang phân tích";
 
@@ -1505,6 +1505,7 @@ export default function AdminGisMap() {
                           type="button"
                           disabled={
                             assignOfficerMutation.isPending ||
+                            !canDispatchSelectedAlert ||
                             selectedAlert.assignedOfficerId ===
                               primaryCandidate.officer._id
                           }
@@ -1581,7 +1582,10 @@ export default function AdminGisMap() {
 
                                 <button
                                   type="button"
-                                  disabled={assignOfficerMutation.isPending}
+                                  disabled={
+                                    assignOfficerMutation.isPending ||
+                                    !canDispatchSelectedAlert
+                                  }
                                   onClick={() =>
                                     void handleDispatchOfficer(
                                       candidate.officer._id,

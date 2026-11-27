@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import {
+  Alert as RNAlert,
   View,
   Text,
   StyleSheet,
@@ -175,6 +176,15 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             style={styles.forgotPass}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
+            onPress={() =>
+              RNAlert.alert(
+                t("auth.forgotPasswordTitle", "Quên mật khẩu"),
+                t(
+                  "auth.forgotPasswordHelp",
+                  "Vui lòng liên hệ quản trị viên EcoAlert hoặc bộ phận hỗ trợ để được cấp lại mật khẩu tài khoản.",
+                ),
+              )
+            }
           >
             <Text style={[styles.forgotText, { color: colors.primary }]}>
               {t("auth.forgotPassword", "Forgot Password?")}

@@ -58,7 +58,6 @@ const INCIDENT_CATEGORIES: Array<{ value: AlertCategory; label: string }> = [
   { value: "noise_pollution", label: "Ô nhiễm tiếng ồn" },
   { value: "soil_contamination", label: "Ô nhiễm đất" },
   { value: "wildlife_threat", label: "Đe doạ động vật hoang dã" },
-  { value: "fire", label: "Hỏa hoạn" },
   { value: "other", label: "Khác" },
 ];
 
@@ -326,10 +325,19 @@ export default function CreateAlert() {
       setIsUploadingEvidence(true);
       toast.loading(t("toast.uploading_evidence"), { id: "submit" });
 
-      const uploads = await Promise.all(files.map((item) =>
-        analyzedUploads.find((upload) => upload.file === item)?.result
-        ?? alertService.uploadMediaWithVision(item, undefined, { includeSemanticAnalysis: false }),
-      ));
+      const uploads: MediaUploadResult[] = [];
+      for (const item of files) {
+        const cached = analyzedUploads.find((upload) => upload.file === item)?.result;
+        if (cached) {
+          uploads.push(cached);
+        } else {
+          uploads.push(
+            await alertService.uploadMediaWithVision(item, undefined, {
+              includeSemanticAnalysis: false,
+            }),
+          );
+        }
+      }
       toast.loading("AI đang nhận diện hiện trường và lưu báo cáo…", { id: "submit" });
 
       // tạo sự cố mới thông qua createAlertMutation

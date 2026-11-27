@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { usePreventRemove } from "@react-navigation/native";
 import { CameraView, useCameraPermissions, type FlashMode } from "expo-camera";
+import * as FileSystem from "expo-file-system/legacy";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Camera, CheckCircle2, Flashlight, MapPin, ShieldAlert } from "lucide-react-native";
@@ -34,7 +35,6 @@ import { Button } from "../../shared/components/ui/Button";
 import { EvidenceImageFrame } from "../../shared/components/media/EvidenceImageFrame";
 import { getGeoJsonMapCoordinates } from "../../shared/utils/maps";
 import { normalizeFieldCaptureImage } from "../../shared/utils/fieldCaptureImage";
-import { persistOriginalFieldImage } from "../../shared/utils/watermark";
 import {
   officerDate,
   officerDistance,
@@ -75,7 +75,13 @@ export function OfficerGpsCheckInScreen({
     AppState.currentState === "active",
   );
   const [capturedPhotoUri, setCapturedPhotoUri] = useState<string | null>(null);
+  const capturedPhotoUriRef = useRef<string | null>(null);
   const [capturedAt, setCapturedAt] = useState<string | null>(null);
+
+  const cleanupTempPhoto = (uri: string | null | undefined) => {
+    if (!uri) return;
+    void FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined);
+  };
   const [error, setError] = useState<string | null>(null);
   const [distanceErrorMeters, setDistanceErrorMeters] = useState<number | null>(
     null,
@@ -100,6 +106,8 @@ export function OfficerGpsCheckInScreen({
     return () => {
       alive.current = false;
       sub.remove();
+      cleanupTempPhoto(capturedPhotoUriRef.current);
+      capturedPhotoUriRef.current = null;
     };
   }, []);
 
@@ -149,14 +157,20 @@ export function OfficerGpsCheckInScreen({
       }
 
       const normalized = await normalizeFieldCaptureImage(picture.uri);
-      const savedUri = await persistOriginalFieldImage(normalized.uri, nowIso);
+      if (picture.uri !== normalized.uri) {
+        cleanupTempPhoto(picture.uri);
+      }
+      if (capturedPhotoUriRef.current && capturedPhotoUriRef.current !== normalized.uri) {
+        cleanupTempPhoto(capturedPhotoUriRef.current);
+      }
+      capturedPhotoUriRef.current = normalized.uri;
       if (alive.current) {
-        setCapturedPhotoUri(savedUri);
+        setCapturedPhotoUri(normalized.uri);
         setCapturedAt(nowIso);
       }
 
-      // Tự động lấy GPS nếu chưa có hoặc cần làm mới
-      const freshGps = gps.position || (await gps.refresh());
+      // Luôn lấy tọa độ GPS tươi tại thời điểm Check-in
+      const freshGps = await gps.refresh();
       if (!freshGps) {
         throw new Error(
           gps.error ||
@@ -234,6 +248,8 @@ export function OfficerGpsCheckInScreen({
   };
 
   const handleRetry = async () => {
+    cleanupTempPhoto(capturedPhotoUriRef.current);
+    capturedPhotoUriRef.current = null;
     setError(null);
     setDistanceErrorMeters(null);
     setCapturedPhotoUri(null);

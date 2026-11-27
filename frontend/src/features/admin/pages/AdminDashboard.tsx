@@ -163,15 +163,16 @@ export default function AdminDashboard() {
         a.status,
       ),
     ).length;
-    const slaRate = valid > 0 ? Math.round((resolved / valid) * 100) : 92; // Benchmark SLA target
+    const slaRate: number | null =
+      valid > 0 ? Math.round((resolved / valid) * 100) : null;
 
     return {
-      pending: pending || stats?.pendingIncidents || 0,
-      inProgress: inProgress || stats?.inProgressIncidents || 0,
-      resolved: resolved || stats?.resolvedIncidents || 0,
-      slaRate: slaRate || stats?.resolutionRate || 92,
+      pending,
+      inProgress,
+      resolved,
+      slaRate,
     };
-  }, [timeframeFilteredItems, stats]);
+  }, [timeframeFilteredItems]);
 
   // Filtered Alert List based on Active KPI selection + Search
   const displayAlerts = useMemo(() => {
@@ -260,15 +261,14 @@ export default function AdminDashboard() {
 
     // Transform into sorted percentage list
     const totalFound = Object.values(countMap).reduce((a, b) => a + b, 0);
-    const maxVal = Math.max(...Object.values(countMap), 1);
 
     return HCM_DISTRICT_KEYS.map((name) => {
-      const count = countMap[name] || (items.length > 0 ? 0 : Math.floor(Math.random() * 5) + 1);
-      const ratio = totalFound > 0 ? Math.round((count / totalFound) * 100) : Math.round((count / maxVal) * 100);
+      const count = countMap[name] ?? 0;
+      const ratio = totalFound > 0 ? Math.round((count / totalFound) * 100) : 0;
       return {
         name,
         count,
-        ratio: Math.min(100, Math.max(8, ratio)),
+        ratio: Math.min(100, Math.max(0, ratio)),
       };
     })
       .sort((a, b) => b.count - a.count)
@@ -338,6 +338,10 @@ export default function AdminDashboard() {
 
       targets.forEach(({ ref, val, isPercent }) => {
         if (!ref.current) return;
+        if (val === null) {
+          ref.current.textContent = "—";
+          return;
+        }
         const proxy = { value: 0 };
         gsap.to(proxy, {
           value: val,
@@ -611,7 +615,7 @@ export default function AdminDashboard() {
               ref={slaRateCountRef}
               className="text-3xl font-mono tabular-nums font-bold tracking-tight text-emerald-400"
             >
-              {counts.slaRate}%
+              {counts.slaRate !== null ? `${counts.slaRate}%` : "—"}
             </span>
             <span className="text-xs text-emerald-400/80 font-medium">đạt chuẩn</span>
           </div>
@@ -622,7 +626,7 @@ export default function AdminDashboard() {
           <div className="mt-2.5 h-[2px] w-full rounded-full bg-emerald-950/60 overflow-hidden">
             <div
               className="h-full rounded-full bg-emerald-400 transition-[width] duration-700 ease-out"
-              style={{ width: `${Math.min(100, counts.slaRate)}%` }}
+              style={{ width: `${Math.min(100, counts.slaRate ?? 0)}%` }}
             />
           </div>
         </div>

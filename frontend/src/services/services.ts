@@ -244,7 +244,7 @@ export const alertService = {
   // cán bộ xác nhận vị trí đã có mặt tại hiện trường
   confirmArrival: async (
     id: string,
-    location: { latitude?: number; longitude?: number; accuracy?: number } = {},
+    location: { latitude: number; longitude: number; accuracyMeters: number },
   ): Promise<Alert> => {
     const res = await api.post(`/v1/alerts/${id}/arrival`, location);
     return res.data.data;
@@ -266,7 +266,9 @@ export const alertService = {
   validateImage: async (
     input: ValidateImageInput,
   ): Promise<VisionSemanticAnalysis> => {
-    const res = await api.post("/v1/ai/validate-image", input);
+    const res = await api.post("/v1/ai/validate-image", input, {
+      timeout: 60_000,
+    });
     return res.data.data;
   },
   // quản trị viên xác nhận hoặc điều chỉnh danh mục phân loại sự cố
@@ -344,11 +346,41 @@ export const alertService = {
       },
     });
 
-    const uploadResult = uploadResponse.data.data as MediaUploadResult;
+    const uploadedResult = uploadResponse.data.data as MediaUploadResult;
     const includeSemanticAnalysis =
       options.includeSemanticAnalysis ?? true;
 
-    if (!includeSemanticAnalysis || !uploadResult.url) {
+    if (!uploadedResult.url) {
+      return uploadedResult;
+    }
+
+    let aiAnalysis: MediaUploadResult["aiAnalysis"] = uploadedResult.aiAnalysis;
+    try {
+      const visionResponse = await api.post(
+        "/v1/media/analyze-url",
+        { imageUrl: uploadedResult.url },
+        { timeout: 60_000 },
+      );
+      const analyzed =
+        visionResponse.data?.data?.aiAnalysis ??
+        visionResponse.data?.aiAnalysis;
+      if (analyzed) {
+        aiAnalysis = analyzed;
+      }
+    } catch {
+      aiAnalysis = {
+        status: "error",
+        detections: [],
+        requiresManualReview: true,
+      };
+    }
+
+    const uploadResult: MediaUploadResult = {
+      ...uploadedResult,
+      aiAnalysis,
+    };
+
+    if (!includeSemanticAnalysis) {
       return uploadResult;
     }
 

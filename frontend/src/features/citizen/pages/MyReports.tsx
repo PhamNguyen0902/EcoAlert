@@ -55,7 +55,7 @@ export default function MyReports() {
 
   // Hàm xử lý Xóa / Hủy báo cáo
   const handleDelete = (id: string, status: string) => {
-    if (status !== "pending" && status !== "ai_analyzing") {
+    if (status.toLowerCase() !== "pending") {
       toast.error(t("toast.delete_pending_only"));
       return;
     }
@@ -124,9 +124,9 @@ export default function MyReports() {
         <div className="space-y-3">
           {/* duyệt qua danh sách alerts và render từng thẻ báo cáo sự cố của người dân */}
           {alerts.map((alert, i) => {
-            // xóa và chỉnh sửa khi còn ở status là pending và ai_analyzing 
+            // xóa và chỉnh sửa chỉ khả dụng khi báo cáo còn ở trạng thái pending
             const canEditOrDelete =
-              alert.status === "pending" || alert.status === "ai_analyzing";
+              alert.status.toLowerCase() === "pending";
 
             return (
               <motion.div

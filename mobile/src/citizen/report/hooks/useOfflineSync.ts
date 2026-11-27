@@ -98,13 +98,27 @@ export function useOfflineSync() {
             uploaded.push({ photo: photos[index], originalUploadedUrl, originalOwnershipProof: originalUpload.ownershipProof, displayUploadedUrl, displayOwnershipProof });
           }
 
+          const primaryPhoto =
+            photos.find((photo) => photo.id === (draft.primaryPhotoId || photos[0]?.id)) ||
+            photos[0];
+          const primaryLocation = primaryPhoto?.location;
+          const submitLocation = primaryLocation
+            ? {
+                type: "Point" as const,
+                coordinates: [
+                  primaryLocation.longitude,
+                  primaryLocation.latitude,
+                ] as [number, number],
+              }
+            : draft.location;
+
           // gửi dữ liệu báo cáo lên máy chủ
           await alertService.createAlert({
             clientReportId: draft.clientReportId,
             title: draft.title,
             description: draft.description,
-            address: draft.address,
-            location: draft.location,
+            address: primaryLocation?.address || draft.address,
+            location: submitLocation,
             mediaUrls: uploaded.map(item => item.originalUploadedUrl),
             captureMetadata: draft.captureMetadata,
             imageValidation: draft.imageValidation,

@@ -55,7 +55,7 @@ export const CitizenDashboardScreen: React.FC<
   const { colors, isDark } = useCivicTheme();
   const { data: profile } = useProfile();
   const unread = useUnreadNotificationCount();
-  const alertsQuery = useAlerts(1, 30);
+  const alertsQuery = useAlerts(1, 30, undefined, Boolean(profile?._id));
   const ownReports = useCitizenReports(profile?._id);
   const markers = useMemo(
     () =>

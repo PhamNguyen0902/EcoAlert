@@ -69,8 +69,8 @@ export const CitizenMapScreen: React.FC<Props> = ({ navigation }) => {
   const { colors, isDark } = useCivicTheme();
   const { language } = useLanguage();
   const isVietnamese = language === "vi";
-  const alertsQuery = useAlerts(1, 100);
   const profile = useProfile();
+  const alertsQuery = useAlerts(1, 100, undefined, Boolean(profile.data?._id));
   const unread = useUnreadNotificationCount();
   const device = useLocation();
   const mapRef = useRef<MapView>(null);

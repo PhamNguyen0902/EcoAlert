@@ -42,9 +42,25 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
 
-    // trỏ trực tiếp đến api gateway cổng 3000 hoặc qua vite proxy
+    // trỏ trực tiếp đến VITE_API_URL (nếu có), api gateway cổng 3000 hoặc cùng origin
     const { protocol, hostname, port } = window.location;
-    const socketUrl = (port === '5173' || port === '4173') ? `${protocol}//${hostname}:3000` : window.location.origin;
+    const envApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+    let socketUrl: string;
+    if (envApiUrl) {
+      try {
+        socketUrl = new URL(envApiUrl).origin;
+      } catch {
+        socketUrl =
+          port === '5173' || port === '4173'
+            ? `${protocol}//${hostname}:3000`
+            : window.location.origin;
+      }
+    } else {
+      socketUrl =
+        port === '5173' || port === '4173'
+          ? `${protocol}//${hostname}:3000`
+          : window.location.origin;
+    }
     console.log('[Web Socket] Connecting to:', socketUrl);
 
     const socketInstance = io(socketUrl, {
@@ -82,6 +98,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // làm mới các dữ liệu đang hoạt động khi nhận được sự kiện thời gian thực
     const refreshActiveData = () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['alert'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['officer-availability'], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ['notifications'], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ['officer-tasks'], refetchType: 'active' });
       queryClient.invalidateQueries({ queryKey: ['users'], refetchType: 'active' });
@@ -91,7 +110,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const isSelfAction = (data: any) => {
       const currentUserId = userRef.current?._id || (userRef.current as any)?.id;
       if (!currentUserId || !data) return false;
-      const actorId = data.actorId || data.updatedBy || data.deletedBy || data.userId || data.citizenId || data.createdBy;
+      const actorId = data.actorId || data.updatedBy || data.deletedBy || data.userId || data.createdBy;
       return Boolean(actorId && String(actorId) === String(currentUserId));
     };
 
@@ -137,7 +156,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
 
     // nhận kết quả phân tích hình ảnh từ AI và hiển thị thông báo cho người dùng.
-    socketInstance.on('image:analyzed', (data: any) => {
+    socketInstance.on('ai:analyzed', (data: any) => {
       console.log('[Web Socket] Image analyzed by AI:', data);
       playNotificationSound('success');
       const alertId = data._id || data.alertId || 'analyzed';

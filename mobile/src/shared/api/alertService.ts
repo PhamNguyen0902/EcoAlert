@@ -99,7 +99,7 @@ export const alertService = {
   },
   getCurrentShift: async () => {
     const res = await api.get('/v1/alerts/officer/shifts/current');
-    return res.data?.data || res.data;
+    return res.data && "data" in res.data ? res.data.data : res.data;
   },
   getShiftHistory: async () => {
     const res = await api.get('/v1/alerts/officer/shifts/history');

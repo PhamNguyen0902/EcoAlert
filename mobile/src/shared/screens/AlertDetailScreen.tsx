@@ -158,22 +158,19 @@ export const AlertDetailScreen: React.FC<{ route: any; navigation: any }> = ({
       : alert?.citizenId;
   const isOwnReport = profile?._id && citizenIdStr === profile._id;
 
-  const canAssign =
-    isAdmin &&
-    normalizedStatus !== "RESOLVED" &&
-    normalizedStatus !== "CLOSED" &&
-    normalizedStatus !== "REJECTED";
-  const canClose = isAdmin && normalizedStatus === "RESOLVED";
-  const isPendingAdminReview = !isAdmin && normalizedStatus === "RESOLVED";
-  const canEdit =
-    (isOwnReport || isAdmin) &&
-    (normalizedStatus === "PENDING" || normalizedStatus === "AI_ANALYZING");
-  const canDelete = isOwnReport || isAdmin;
-
   const assignedOfficerIdStr =
     typeof alert?.assignedOfficerId === "object"
       ? alert.assignedOfficerId._id
       : alert?.assignedOfficerId;
+
+  const canAssign =
+    isAdmin && normalizedStatus === "VERIFIED" && !assignedOfficerIdStr;
+  const canClose = isAdmin && normalizedStatus === "RESOLVED";
+  const isPendingAdminReview = !isAdmin && normalizedStatus === "RESOLVED";
+  const canEdit =
+    isAdmin || (Boolean(isOwnReport) && normalizedStatus === "PENDING");
+  const canDelete =
+    isAdmin || (Boolean(isOwnReport) && normalizedStatus === "PENDING");
 
   const { data: fetchedOfficer } = useUser(assignedOfficerIdStr);
 

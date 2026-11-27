@@ -78,9 +78,10 @@ export const ReportConfirmScreen: React.FC<Props> = ({ navigation }) => {
   const [acknowledged, setAcknowledged] = useState(true);
   const [descriptionFocused, setDescriptionFocused] = useState(false);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
-  const location = draft.location;
-  const capture = draft.capture;
-  const photos = normalizePhotoDraft(draft).photos;
+  const normalizedDraft = normalizePhotoDraft(draft);
+  const capture = normalizedDraft.capture;
+  const photos = normalizedDraft.photos;
+  const location = capture?.location || normalizedDraft.location;
   // kiểm tra các sự cố môi trường đã tồn tại xung quanh vị trí hiện tại trong bán kính hai trăm mét
   const nearby = useCheckNearbyAlerts(
     location?.latitude,

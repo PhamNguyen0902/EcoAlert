@@ -35,6 +35,7 @@ import {
   useScreenClock,
 } from "../../../shared/hooks/useForegroundScreen";
 import { useFieldReport } from "../FieldReportContext";
+import { normalizePhotoDraft, updatePhoto } from "../photoDraft";
 import { ReportHeader } from "../components/ReportHeader";
 import { FieldMapPreview } from "../components/stitch/FieldMapPreview";
 import { FieldNotice } from "../components/stitch/FieldUI";
@@ -83,17 +84,25 @@ export const ReportLocationScreen: React.FC<Props> = ({ navigation }) => {
     const result = await fetchLocation();
     if (!result?.coords || result.accuracyMeters === null) return;
     const accuracy = result.accuracyMeters;
-    setDraft((current) => ({
-      ...current,
-      location: {
-        latitude: result.coords.coordinates[1],
-        longitude: result.coords.coordinates[0],
-        accuracyMeters: accuracy,
-        address: result.address,
-        capturedAt: result.capturedAt,
-        source: "DEVICE_GPS",
-      },
-    }));
+    const nextLocation = {
+      latitude: result.coords.coordinates[1],
+      longitude: result.coords.coordinates[0],
+      accuracyMeters: accuracy,
+      address: result.address,
+      capturedAt: result.capturedAt,
+      source: "DEVICE_GPS" as const,
+    };
+    setDraft((current) => {
+      const normalized = normalizePhotoDraft(current);
+      if (normalized.primaryPhotoId && normalized.capture) {
+        const updatedDraft = updatePhoto(normalized, normalized.primaryPhotoId, {
+          location: nextLocation,
+          displayLocalUri: undefined,
+        });
+        return { ...updatedDraft, location: nextLocation };
+      }
+      return { ...normalized, location: nextLocation };
+    });
   }, [fetchLocation, setDraft]);
   // tự động kích hoạt lấy vị trí gps khi vào màn hình nếu bản nháp chưa có dữ liệu vị trí
   useEffect(() => {

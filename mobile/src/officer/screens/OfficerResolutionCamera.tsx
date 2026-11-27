@@ -51,6 +51,7 @@ export function OfficerResolutionCamera({
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleSecretTap = () => {
+    if (!__DEV__) return;
     tapCountRef.current += 1;
     if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     if (tapCountRef.current >= 3) {
@@ -72,6 +73,7 @@ export function OfficerResolutionCamera({
     return () => {
       alive.current = false;
       listener.remove();
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
     };
   }, []);
 
@@ -137,7 +139,7 @@ export function OfficerResolutionCamera({
     }
   };
   const pickDemoCapture = async () => {
-    if (captureLock.current || busy) return;
+    if (!__DEV__ || captureLock.current || busy) return;
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -223,10 +225,10 @@ export function OfficerResolutionCamera({
           <X size={24} color={colors.text} />
         </Pressable>
         <Text
-          onPress={handleSecretTap}
+          onPress={__DEV__ ? handleSecretTap : undefined}
           style={[
             styles.title,
-            { color: isDemoMode ? colors.cyan : colors.primary },
+            { color: __DEV__ && isDemoMode ? colors.cyan : colors.primary },
           ]}
         >
           CHỤP ẢNH KẾT QUẢ (SAU XỬ LÝ)
@@ -326,8 +328,8 @@ export function OfficerResolutionCamera({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Chụp ảnh sau xử lý"
-          disabled={(!ready && !isDemoMode) || busy || !permission?.granted}
-          onPress={() => void (isDemoMode ? pickDemoCapture() : capture())}
+          disabled={(!ready && !(__DEV__ && isDemoMode)) || busy || !permission?.granted}
+          onPress={() => void (__DEV__ && isDemoMode ? pickDemoCapture() : capture())}
           style={[
             styles.shutter,
             {
