@@ -102,16 +102,50 @@ export async function internalServiceRequest<T>(
   name: string,
   body: unknown,
 ): Promise<T> {
+  const targetUrl = `${base.replace(/\/$/, "")}${path}`;
+  const signedPath = (() => {
+    try {
+      const parsed = new URL(targetUrl);
+      return `${parsed.pathname}${parsed.search}`;
+    } catch {
+      return path;
+    }
+  })();
+
+  // Compute signed headers up front so missing config (503) fails fast without retry or masking.
+  const headers = internalServiceHeaders(name, signedPath, body);
+
   // Bounded retry is safe here: these internal endpoints are read-only despite POST bodies.
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const response = await fetch(`${base.replace(/\/$/, "")}${path}`, {
+      const response = await fetch(targetUrl, {
         method: "POST",
-        headers: internalServiceHeaders(name, path, body),
-        body: JSON.stringify(body),
+        headers,
+        body: JSON.stringify(body ?? {}),
         signal: AbortSignal.timeout(5000),
       });
-      if (!response.ok) throw new AppError("Dependency unavailable", 502);
+      if (!response.ok) {
+        let errorMessage = response.statusText || "Dependency request failed";
+        try {
+          const text = await response.text();
+          if (text) {
+            const parsed = JSON.parse(text) as { message?: unknown };
+            if (typeof parsed?.message === "string" && parsed.message.trim()) {
+              errorMessage = parsed.message;
+            }
+          }
+        } catch {
+          // Ignore malformed error body and fall back to statusText
+        }
+
+        if (
+          (response.status >= 400 && response.status < 500) ||
+          response.status === 503
+        ) {
+          throw new AppError(errorMessage, response.status);
+        }
+        throw new Error(`Retryable dependency status ${response.status}`);
+      }
       const payload = (await response.json()) as {
         success?: boolean;
         data?: T;
@@ -120,7 +154,19 @@ export async function internalServiceRequest<T>(
         throw new AppError("Invalid dependency response", 502);
       return payload.data;
     } catch (error) {
-      if (attempt === 1) throw new AppError("Dependency unavailable", 502);
+      if (
+        error instanceof AppError &&
+        ((error.statusCode >= 400 && error.statusCode < 500) ||
+          error.statusCode === 503 ||
+          error.message === "Invalid dependency response")
+      ) {
+        throw error;
+      }
+      if (attempt === 1) {
+        throw error instanceof AppError
+          ? error
+          : new AppError("Dependency unavailable", 502);
+      }
     }
   }
   throw new AppError("Dependency unavailable", 502);

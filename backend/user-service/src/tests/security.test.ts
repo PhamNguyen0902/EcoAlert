@@ -10,6 +10,11 @@ import { User } from '../models/user.model';
 import { userController } from '../controllers/user.controller';
 import { userService } from '../services/user.service';
 import { errorHandler } from '../middlewares/error-handler.middleware';
+import { redisClient } from '../config/redis.config';
+
+test.after(() => {
+  redisClient.disconnect();
+});
 
 test('validate middleware strips unknown fields like role=ADMIN from req.body', async () => {
   const middleware = validate(updateProfileSchema);

@@ -39,8 +39,21 @@ export class TokenService {
     return doc;
   }
 
+  async consumeRefreshToken(token: string) {
+    const doc = await refreshTokenRepository.consumeByToken(token);
+    if (!doc) return null;
+    if (new Date() > doc.expiresAt) {
+      return null;
+    }
+    return doc;
+  }
+
   async deleteRefreshToken(token: string) {
     await refreshTokenRepository.deleteByToken(token);
+  }
+
+  async revokeAllUserTokens(userId: string): Promise<void> {
+    await refreshTokenRepository.deleteAllForUser(userId);
   }
 }
 

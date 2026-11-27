@@ -18,7 +18,8 @@ import { cognitoService } from "./cognito.service";
 export class AuthService {
   // Đăng ký người dùng mới qua AWS Cognito (Cognito tự gửi mã OTP 6 số về email)
   async register(data: RegisterDto) {
-    const existingUser = await userRepository.findOne({ email: data.email, includeDeleted: true });
+    const normalizedEmail = data.email.toLowerCase().trim();
+    const existingUser = await userRepository.findOne({ email: normalizedEmail, includeDeleted: true });
     if (existingUser && !existingUser.isDeleted && existingUser.isVerified) {
       throw new ConflictError("Email này đã được đăng ký và kích hoạt. Vui lòng đăng nhập.");
     }
@@ -26,7 +27,6 @@ export class AuthService {
       await userRepository.delete(existingUser._id.toString());
     }
 
-    const normalizedEmail = data.email.toLowerCase().trim();
     const { firstName, lastName, fullName: inputFullName } = data;
     const fullName = inputFullName || `${firstName || ''} ${lastName || ''}`.trim() || normalizedEmail.split('@')[0];
 
@@ -187,9 +187,9 @@ export class AuthService {
     return { user: userObj, ...tokens, token: tokens.accessToken };
   }
 
-  // Đổi mới access token bằng refresh token
+  // Đổi mới access token bằng refresh token (xoay token nguyên tử tránh reuse)
   async refreshToken(oldRefreshToken: string) {
-    const tokenDoc = await tokenService.verifyRefreshToken(oldRefreshToken);
+    const tokenDoc = await tokenService.consumeRefreshToken(oldRefreshToken);
     if (!tokenDoc) {
       throw new UnauthorizedError("Invalid or expired refresh token");
     }
@@ -202,8 +202,6 @@ export class AuthService {
     if (!user.isVerified) {
       throw new ForbiddenError("Tài khoản chưa được kích hoạt");
     }
-
-    await tokenService.deleteRefreshToken(oldRefreshToken);
 
     const payload: IUserPayload = {
       userId: user._id.toString(),

@@ -15,7 +15,7 @@ export const baseSchemaPlugin = (schema: Schema): void => {
 
   schema.pre(/^find/, function (this: Query<unknown, unknown>, next) {
     const query = this.getFilter();
-    if (!query.includeDeleted) {
+    if (!query.includeDeleted && query.isDeleted === undefined) {
       this.where({ isDeleted: false });
     } else {
       delete query.includeDeleted;

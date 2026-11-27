@@ -55,7 +55,7 @@ export class AlertController {
       status: req.query.status as string | undefined,
       category: req.query.category as string | undefined,
       severity: req.query.severity as string | undefined,
-      isDeleted: req.query.isDeleted as string | undefined,
+      isDeleted: role === "ADMIN" ? (req.query.isDeleted as string | undefined) : undefined,
     };
     const { items, total } = await alertService.getAlerts(
       page,

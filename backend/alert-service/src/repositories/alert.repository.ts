@@ -26,7 +26,7 @@ export class AlertRepository implements IBaseRepository<IAlert> {
     skip: number,
     limit: number,
   ): Promise<{ items: IAlert[]; total: number }> {
-    const includeDeleted = filter.includeDeleted;
+    const includeDeleted = Boolean(filter.includeDeleted);
     const queryFilter = { ...filter };
     delete queryFilter.includeDeleted;
 
@@ -34,8 +34,9 @@ export class AlertRepository implements IBaseRepository<IAlert> {
       queryFilter.isDeleted = false;
     }
 
+    const findQuery = includeDeleted ? { ...queryFilter, includeDeleted: true } : queryFilter;
     const [items, total] = await Promise.all([
-      Alert.find(queryFilter).skip(skip).limit(limit).sort({ createdAt: -1 }),
+      Alert.find(findQuery).skip(skip).limit(limit).sort({ createdAt: -1 }),
       Alert.countDocuments(queryFilter),
     ]);
     return { items, total };
