@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { envConfig } from '../config/env.config';
 import {
   createLogger,
+  createResilientRabbitMQConnector,
   EVENTS,
   IAiAnalysisCompletedData,
   IEventMessage,
@@ -212,89 +213,24 @@ export const settleAlertCreatedMessage = async (
 };
 
 class RabbitMQService {
-  private connection: amqp.ChannelModel | undefined;
-  private channel: amqp.Channel | undefined;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private isConnecting = false;
+  private readonly connector = createResilientRabbitMQConnector<
+    amqp.ChannelModel,
+    amqp.Channel
+  >({
+    connect: () => amqp.connect(envConfig.rabbitMqUrl),
+    createChannel: (connection) => connection.createChannel(),
+    queueName: 'ai_service_queue',
+    dlqName: 'ai_service_dlq',
+    logger,
+    onConnected: async (channel, queue) => {
+      await channel.bindQueue(queue, 'ecoalert_exchange', EVENTS.ALERT_CREATED);
+      await channel.prefetch(1);
 
-  private scheduleReconnect(delayMs = 5000) {
-    this.channel = undefined;
-    if (this.reconnectTimer) return;
-    this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = null;
-      void this.connect();
-    }, delayMs);
-    this.reconnectTimer.unref();
-  }
+      channel.consume(queue, async (message) => {
+        const activeChannel = this.connector.getChannel();
+        if (!message || !activeChannel) return;
 
-  private attachChannelHandlers(channel: amqp.Channel) {
-    channel.on('error', (error) => {
-      logger.warn('RabbitMQ channel error', {
-        errorType: error instanceof Error ? error.name : 'UnknownError',
-      });
-    });
-    channel.on('close', () => {
-      logger.warn('RabbitMQ channel closed; scheduling reconnect');
-      this.scheduleReconnect();
-    });
-  }
-
-  private async assertQueueWithDlq(queueName: string, dlqName: string) {
-    if (!this.channel || !this.connection) {
-      throw new Error('RabbitMQ channel is unavailable');
-    }
-    await this.channel.assertExchange('ecoalert_dlx', 'direct', { durable: true });
-    await this.channel.assertQueue(dlqName, { durable: true });
-    await this.channel.bindQueue(dlqName, 'ecoalert_dlx', queueName);
-
-    try {
-      return await this.channel.assertQueue(queueName, {
-        durable: true,
-        arguments: {
-          'x-dead-letter-exchange': 'ecoalert_dlx',
-          'x-dead-letter-routing-key': queueName,
-        },
-      });
-    } catch (error) {
-      if ((error as { code?: number })?.code !== 406) throw error;
-      logger.warn(`Legacy queue ${queueName} lacks DLX arguments; recreating channel without DLX args`);
-      this.channel = await this.connection.createChannel();
-      this.attachChannelHandlers(this.channel);
-      await this.channel.assertExchange('ecoalert_exchange', 'topic', { durable: true });
-      return this.channel.assertQueue(queueName, { durable: true });
-    }
-  }
-
-  async connect() {
-    if (this.isConnecting) return;
-    this.isConnecting = true;
-    try {
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
-      this.connection = await amqp.connect(envConfig.rabbitMqUrl);
-      this.connection.on('error', (error) => {
-        logger.warn('RabbitMQ connection error', {
-          errorType: error instanceof Error ? error.name : 'UnknownError',
-        });
-      });
-      this.connection.on('close', () => {
-        logger.warn('RabbitMQ connection closed; scheduling reconnect');
-        this.scheduleReconnect();
-      });
-      this.channel = await this.connection.createChannel();
-      this.attachChannelHandlers(this.channel);
-      await this.channel.assertExchange('ecoalert_exchange', 'topic', { durable: true });
-
-      const queue = await this.assertQueueWithDlq('ai_service_queue', 'ai_service_dlq');
-      await this.channel.bindQueue(queue.queue, 'ecoalert_exchange', EVENTS.ALERT_CREATED);
-      await this.channel.prefetch(1);
-
-      this.channel.consume(queue.queue, async (message) => {
-        if (!message || !this.channel) return;
-
-        const result = await settleAlertCreatedMessage(message, this.channel, {
+        const result = await settleAlertCreatedMessage(message, activeChannel, {
           analyze: analyzeMultimodalIncident,
           publish: (routingKey, data, correlationId) =>
             this.publishEvent(routingKey, data, correlationId),
@@ -309,18 +245,16 @@ class RabbitMQService {
       });
 
       logger.info('Connected to RabbitMQ and listening to ai_service_queue');
-    } catch (error) {
-      logger.error('RabbitMQ connection failed', {
-        errorType: error instanceof Error ? error.name : 'UnknownError',
-      });
-      this.scheduleReconnect();
-    } finally {
-      this.isConnecting = false;
-    }
+    },
+  });
+
+  async connect() {
+    await this.connector.connect();
   }
 
   async publishEvent<T>(routingKey: string, data: T, correlationId?: string) {
-    if (!this.channel) throw new Error('RabbitMQ channel is unavailable');
+    const channel = this.connector.getChannel();
+    if (!channel) throw new Error('RabbitMQ channel is unavailable');
 
     const event: IEventMessage<T> = {
       eventId: randomUUID(),
@@ -331,7 +265,7 @@ class RabbitMQService {
       data,
     };
 
-    this.channel.publish(
+    channel.publish(
       'ecoalert_exchange',
       routingKey,
       Buffer.from(JSON.stringify(event)),

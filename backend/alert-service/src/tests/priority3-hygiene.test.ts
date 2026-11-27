@@ -2,7 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { AlertCategory, AlertStatus, Severity } from "@ecoalert/shared";
+import {
+  AlertCategory,
+  AlertStatus,
+  createResilientRabbitMQConnector,
+  Severity,
+} from "@ecoalert/shared";
 import { alertService } from "../services/alert.service";
 import { alertRepository } from "../repositories/alert.repository";
 import { alertController } from "../controllers/alert.controller";
@@ -34,7 +39,6 @@ test("alertService.getAlerts passes isDeleted=true and includeDeleted=true when 
       },
     } as any;
 
-    // Non-admin citizen must have isDeleted stripped
     await alertController.getAlerts(
       {
         headers: { "x-user-id": "cit-1", "x-user-role": "CITIZEN" },
@@ -45,7 +49,6 @@ test("alertService.getAlerts passes isDeleted=true and includeDeleted=true when 
     assert.equal(getLastFilter()?.isDeleted, undefined);
     assert.equal(getLastFilter()?.includeDeleted, undefined);
 
-    // Admin keeps isDeleted=true
     await alertController.getAlerts(
       {
         headers: { "x-user-id": "adm-1", "x-user-role": "ADMIN" },
@@ -69,37 +72,107 @@ test("backend/seed.ts uses only valid lowercase AlertCategory, AlertStatus, and 
   const validStatuses = new Set<string>(Object.values(AlertStatus));
   const validSeverities = new Set<string>(Object.values(Severity));
 
-  const categories = [...seedSource.matchAll(/category:\s*"([^"]+)"/g)].map((m) => m[1]);
-  const statuses = [...seedSource.matchAll(/status:\s*"([^"]+)"/g)].map((m) => m[1]);
-  const severities = [...seedSource.matchAll(/severity:\s*"([^"]+)"/g)].map((m) => m[1]);
+  const tupleMatches = [
+    ...seedSource.matchAll(
+      /\[\s*\d+\s*,\s*"[^"]+"\s*,\s*"[^"]+"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,/g,
+    ),
+  ];
 
-  assert.ok(categories.length >= 20);
-  for (const cat of categories) {
-    assert.ok(validCategories.has(cat), `Invalid seeded category: ${cat}`);
-  }
-  for (const status of statuses) {
+  assert.equal(tupleMatches.length, 20);
+  for (const [, category, status, severity] of tupleMatches) {
+    assert.ok(validCategories.has(category), `Invalid seeded category: ${category}`);
     assert.ok(validStatuses.has(status), `Invalid seeded status: ${status}`);
-  }
-  for (const sev of severities) {
-    assert.ok(validSeverities.has(sev), `Invalid seeded severity: ${sev}`);
+    assert.ok(validSeverities.has(severity), `Invalid seeded severity: ${severity}`);
   }
 });
 
-test("All 4 RabbitMQ services attach error/close reconnect handlers and declare DLX/DLQ topology", () => {
-  const servicePaths = [
-    path.resolve(__dirname, "../../src/services/rabbitmq.service.ts"),
-    path.resolve(__dirname, "../../../ai-service/src/services/rabbitmq.service.ts"),
-    path.resolve(__dirname, "../../../gis-service/src/services/rabbitmq.service.ts"),
-    path.resolve(__dirname, "../../../notification-service/src/services/rabbitmq.service.ts"),
+test("createResilientRabbitMQConnector configures DLQ, handles 406 fallback, and reconnects on close across all 4 services", async () => {
+  const sharedPath = path.resolve(__dirname, "../../../shared/src/utils/rabbitmq.util.ts");
+  const sharedSrc = fs.readFileSync(sharedPath, "utf8");
+  assert.match(sharedSrc, /conn\.on\(\s*['"]error['"]/);
+  assert.match(sharedSrc, /conn\.on\(\s*['"]close['"]/);
+  assert.match(sharedSrc, /ch\.on\(\s*['"]error['"]/);
+  assert.match(sharedSrc, /ch\.on\(\s*['"]close['"]/);
+  assert.match(sharedSrc, /x-dead-letter-exchange/);
+
+  const serviceSpecs = [
+    { rel: "../../src/services/rabbitmq.service.ts", queue: "alert_service_queue", dlq: "alert_service_dlq" },
+    { rel: "../../../ai-service/src/services/rabbitmq.service.ts", queue: "ai_service_queue", dlq: "ai_service_dlq" },
+    { rel: "../../../gis-service/src/services/rabbitmq.service.ts", queue: "gis_service_queue", dlq: "gis_service_dlq" },
+    { rel: "../../../notification-service/src/services/rabbitmq.service.ts", queue: "notification_service_queue", dlq: "notification_service_dlq" },
   ];
 
-  for (const filePath of servicePaths) {
-    const src = fs.readFileSync(filePath, "utf8");
-    assert.match(src, /connection\.on\(\s*['"]error['"]/);
-    assert.match(src, /connection\.on\(\s*['"]close['"]/);
-    assert.match(src, /channel\.on\(\s*['"]error['"]/);
-    assert.match(src, /channel\.on\(\s*['"]close['"]/);
-    assert.match(src, /ecoalert_dlx/);
-    assert.match(src, /x-dead-letter-exchange/);
+  for (const spec of serviceSpecs) {
+    const src = fs.readFileSync(path.resolve(__dirname, spec.rel), "utf8");
+    assert.match(src, /createResilientRabbitMQConnector/);
+    assert.ok(src.includes(spec.queue));
+    assert.ok(src.includes(spec.dlq));
+  }
+
+  // Behavioral check: DLQ declaration, 406 fallback, and close -> reconnect
+  let connectCount = 0;
+  const events: string[] = [];
+  let simulate406Once = true;
+  let lastConnClose: (() => void) | undefined;
+
+  const makeChannel = () => {
+    const handlers: Record<string, () => void> = {};
+    return {
+      on(ev: "error" | "close", fn: () => void) {
+        handlers[ev] = fn;
+      },
+      async assertExchange(name: string) {
+        events.push(`ex:${name}`);
+      },
+      async assertQueue(name: string, opts?: { arguments?: Record<string, unknown> }) {
+        if (name === "q_main" && opts?.arguments && simulate406Once) {
+          simulate406Once = false;
+          throw Object.assign(new Error("PRECONDITION_FAILED"), { code: 406 });
+        }
+        events.push(`q:${name}:${Boolean(opts?.arguments)}`);
+        return { queue: name };
+      },
+      async bindQueue(q: string, ex: string, rk: string) {
+        events.push(`bind:${q}:${ex}:${rk}`);
+      },
+    };
+  };
+
+  const connector = createResilientRabbitMQConnector({
+    connect: async () => {
+      connectCount += 1;
+      const connHandlers: Record<string, () => void> = {};
+      return {
+        on(ev: "error" | "close", fn: () => void) {
+          connHandlers[ev] = fn;
+          if (ev === "close") lastConnClose = fn;
+        },
+      };
+    },
+    createChannel: async () => makeChannel(),
+    queueName: "q_main",
+    dlqName: "q_dlq",
+    reconnectDelayMs: 25,
+    logger: { info: () => {}, warn: () => {}, error: () => {} },
+    onConnected: async (_ch, queue) => {
+      events.push(`connected:${queue}`);
+    },
+  });
+
+  try {
+    await connector.connect();
+    assert.equal(connectCount, 1);
+    assert.ok(events.includes("ex:ecoalert_dlx"));
+    assert.ok(events.includes("bind:q_dlq:ecoalert_dlx:q_main"));
+    assert.ok(events.includes("q:q_main:false"));
+    assert.ok(events.includes("connected:q_main"));
+    assert.ok(connector.getChannel());
+
+    lastConnClose?.();
+    assert.equal(connector.getChannel(), undefined);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    assert.equal(connectCount, 2);
+  } finally {
+    connector.stop();
   }
 });
